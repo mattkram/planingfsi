@@ -1,0 +1,48 @@
+#!/usr/bin/python
+
+# Add subfolder for potential code to python path
+import os, sys, inspect, shutil
+from fnmatch import fnmatch
+
+import numpy as np
+import krampy as kp
+
+# Construct case directories
+baseDir = '.'
+
+if len(sys.argv) > 1:
+  casePrefix = sys.argv[1]
+
+else:
+  casePrefix = 'Fr'
+
+# Load all case directories that match format
+caseDirFormat = casePrefix + '*'
+caseDir = [case for case in os.listdir(baseDir) if fnmatch(case, caseDirFormat)]
+caseDir = [case for case in caseDir if not fnmatch(case, '*_*')]
+
+caseDir, Fr = kp.sortDirByNum(caseDir)
+
+dest = os.path.join(baseDir, 'figures')
+if not os.path.exists(dest):
+  os.mkdir(dest)
+
+figFormat = 'eps'
+figDir = 'figures'
+for case, Fri in zip(caseDir, Fr):
+  print case
+  figPath = os.path.join(case, figDir)
+  if os.path.exists(figPath):
+    figs = os.listdir(figPath)
+    try: 
+      figName = kp.sortDirByNum([f for f in figs if fnmatch(f[-3:], figFormat)])[0][-1]
+      
+      _, figExt = os.path.splitext(figName)
+      
+      oldFigPath = os.path.join(case, figDir, figName)
+  
+      newFigPath = os.path.join(dest, '{2}{0:0.3f}{1:s}'.format(Fri, figExt, casePrefix))
+    
+      shutil.copy2(oldFigPath, newFigPath)
+    except:
+      print 'No figures in {0}'.format(case)

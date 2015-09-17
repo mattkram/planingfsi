@@ -1,0 +1,140 @@
+#!/usr/bin/python
+
+# Add subfolder for potential code to python path
+import os, sys, inspect
+from fnmatch import fnmatch
+
+import numpy as np
+import krampy as kp
+from matplotlib.ticker import MultipleLocator, FixedLocator
+from scipy.interpolate import interp1d
+import config
+import matplotlib.pyplot as plt
+
+
+class Subplot:
+  obj = []
+
+  @classmethod
+  def All(cls):
+    return [o for o in cls.obj]
+
+  @classmethod
+  def Count(cls):
+    return len(cls.All())
+
+  def __init__(self):
+    self.series = []
+    Subplot.obj.append(self)
+    self.index = Subplot.Count()
+    
+  def addSeries(self, series):
+    self.series.append(series)  
+
+  def initialize(self, **kwargs):
+    self.ax = plt.subplot(Subplot.Count(), 1, self.index)
+    plt.setp(self.ax, **kwargs)
+
+  def plot(self, x, caseDir):
+    for s in self.series:
+      s.plot(self.ax, x, caseDir)
+  
+  def addLegend(self):
+    legEnt = [s.legEnt for s in self.series]
+    leg = self.ax.legend(legEnt, loc='upper center', bbox_to_anchor=(0.5,1.5), fancybox=True, ncol=3)
+
+
+class PlotSeries:
+  
+  def __init__(self, fileName, fieldName, **kwargs):
+    self.fileName  = fileName
+    self.fieldName = fieldName 
+    
+    # Process **kwargs
+    self.style  = kwargs.get('sty', 'k-')
+    self.scale  = kwargs.get('scale', 1.0)
+    self.legEnt = kwargs.get('legEnt', '')
+
+  def plot(self, ax, x, caseDir):
+    y = np.ones_like(x) * np.nan
+
+    for i, case in enumerate(caseDir):
+      try:
+        itDir = kp.sortDirByNum([it for it in os.listdir(case) if fnmatch(it, '[0-9]*')])[0][-1]
+      except:
+        itDir = ''
+
+      path = os.path.join(baseDir, case, itDir, self.fileName)
+      if os.path.exists(path):
+        K = kp.Dictionary(path)
+        y[i] = K.readOrDefault(self.fieldName, np.nan)
+
+    ax.plot(x, y * self.scale, self.style)
+
+# Physical constants
+rho = 1000.0
+Lc  = 64.2 * 0.3048 / 12
+g   = 9.81
+W   = 100.0 / 2.20462 / (25.75 * 0.3048 / 12) * 9.81
+
+# Construct case directories
+baseDir = './'
+# Load all case directories that match format
+caseDirFormat = r'Fr*'
+caseDir = [case for case in os.listdir(baseDir) if fnmatch(case, caseDirFormat)]
+caseDir = [case for case in caseDir if not fnmatch(case, '*_*')]
+
+caseDir, Fr = kp.sortDirByNum(caseDir)
+
+# Initialize result arrays
+forceScale = 1.0 / W
+draftScale = 1.0 / Lc
+
+plt.figure(figsize=(8,12))
+
+totSty   = 'k-'
+bowSty   = 'b:'
+sternSty = 'r--'
+cushSty  = 'm-'
+fricSty  = 'g--'
+
+liftSplt  = Subplot()
+liftSplt.addSeries(PlotSeries('forces_bowSealLower.txt',   'Lift',     sty=bowSty,   legEnt='Bow Seal',   scale=forceScale))
+liftSplt.addSeries(PlotSeries('forces_sternSealLower.txt', 'Lift',     sty=sternSty, legEnt='Stern Seal', scale=forceScale))
+liftSplt.addSeries(PlotSeries('forces_total.txt',          'FricLift', sty=fricSty,  legEnt='Fric',       scale=forceScale))
+liftSplt.addSeries(PlotSeries('forces_main.txt',           'WaveLift', sty=cushSty,  legEnt='Wave',       scale=forceScale))
+liftSplt.addSeries(PlotSeries('forces_total.txt',          'Lift',     sty=totSty,   legEnt='Total',      scale=forceScale))
+
+dragSplt  = Subplot()
+dragSplt.addSeries(PlotSeries('forces_bowSealLower.txt',   'Drag',     sty=bowSty,   legEnt='Bow Seal',   scale=forceScale))
+dragSplt.addSeries(PlotSeries('forces_sternSealLower.txt', 'Drag',     sty=sternSty, legEnt='Stern Seal', scale=forceScale))
+dragSplt.addSeries(PlotSeries('forces_total.txt',          'FricDrag', sty=fricSty,  legEnt='Fric',       scale=forceScale))
+dragSplt.addSeries(PlotSeries('forces_main.txt',           'WaveDrag', sty=cushSty , legEnt='Cush',       scale=forceScale))
+dragSplt.addSeries(PlotSeries('forces_total.txt',          'Drag',     sty=totSty,   legEnt='Total',      scale=forceScale))
+
+draftSplt = Subplot()
+draftSplt.addSeries(PlotSeries('motion_rigidBody.txt', 'draft', scale=draftScale))
+
+trimSplt  = Subplot()
+trimSplt.addSeries(PlotSeries('motion_rigidBody.txt', 'trim'))
+
+lenSplt   = Subplot()
+lenSplt.addSeries(PlotSeries('forces_bowSealLower.txt',   'Length', sty=bowSty))
+lenSplt.addSeries(PlotSeries('forces_sternSealLower.txt', 'Length', sty=sternSty))
+
+liftSplt.initialize(ylabel=r'$\mathcal{L}/W$')
+dragSplt.initialize(ylabel='$\mathcal{D}/W$')
+draftSplt.initialize(ylabel=r'$d/L_c$')
+trimSplt.initialize(ylabel=r'$\theta$ [deg]')
+lenSplt.initialize(ylabel=r'$L_w$ [m]', xlabel=r'$Fr = U / \sqrt{gL_c}$')
+
+for s in Subplot.All():
+  s.plot(Fr, caseDir)
+
+liftSplt.addLegend()
+liftSplt.ax.set_ylim(ymin=0.0)
+dragSplt.ax.set_ylim(ymin=0.0)
+
+plt.subplots_adjust(left=0.15)
+
+plt.savefig('results.eps', format='eps')

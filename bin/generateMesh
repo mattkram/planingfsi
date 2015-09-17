@@ -1,0 +1,34 @@
+#!/usr/bin/python
+
+import config, unit, kConfig, os, sys
+if os.environ.get('DISPLAY') is None:
+  import matplotlib as mpl
+  mpl.use('Agg')
+import numpy as np
+import krampy as kp
+from FEMesh import Mesh
+
+# Process input arguments
+plotShow = False
+plotSave = False
+disp     = False
+for arg in sys.argv[1:]:
+  if not arg[0] == '-':
+    config.meshDictDir = arg
+  if arg == '-show' or arg == 'show':
+    plotShow = True
+  if arg == '-save' or arg == 'save':
+    plotSave = True
+  if arg == '-print' or arg == 'print':
+    disp = True
+
+# Create mesh
+M = Mesh()
+
+# Process mesh dictionary
+execfile(config.meshDictDir)
+
+# Display, plot, and write mesh files
+M.display(disp=disp)
+M.plot(show=plotShow, save=plotSave)
+M.write()

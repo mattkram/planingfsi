@@ -1,0 +1,57 @@
+#!/usr/bin/python
+import config, kConfig, os, sys
+if os.environ.get('DISPLAY') is None:
+  import matplotlib as mpl
+  mpl.use('Agg')
+
+import numpy as np
+import krampy as kp
+from fnmatch import fnmatch
+
+for arg in sys.argv:
+  if arg == 'post' or arg == '-post':
+    print 'Running in post-processing mode'
+    config.plotSave        = True
+    config.plot            = True
+    config.resultsFromFile = True
+  if arg == 'plotSave' or arg == '-plotSave':
+    config.plotSave = True
+    config.plot = True
+  if arg == 'new' or arg == '-new':
+    kp.rm_rf([d for d in os.listdir(config.caseDir) if fnmatch(d, '[0-9]*')])
+
+from potentialPlaningLib import PotentialPlaningCalculation
+from rigidBodyFEM import FEStructure
+from FSIIterator import Simulation
+from FSIInterpolator import Interpolator
+
+# Create objects
+fluid = PotentialPlaningCalculation()
+solid = FEStructure()
+sim   = Simulation(solid, fluid)
+
+# Add all rigid bodies
+if os.path.exists(config.bodyDictDir):
+  for dictName in [dir for dir in os.listdir(config.bodyDictDir) if not fnmatch(dir, '.*')]:
+    solid.addRigidBody(os.path.join(config.bodyDictDir, dictName))
+else:
+  solid.addRigidBody()
+
+# Add all substructures
+for dictName in [dir for dir in os.listdir(config.inputDictDir) if not fnmatch(dir, '.*')]:
+  dictPath = os.path.join(config.inputDictDir, dictName)
+  K = kp.Dictionary(dictPath)
+  ssSolid = solid.addSubstructure(K)
+
+  if K.readOrDefault('hasPlaningSurface', False):
+    ssFluid = fluid.addPlaningSurface(K)
+    ssInterp = Interpolator(ssSolid, ssFluid, K)
+    ssInterp.setSolidPositionFunction(ssSolid.getCoordinates)
+    ssInterp.setFluidPressureFunction(ssFluid.getLoadsInRange)
+
+# Add all pressure cushions
+if os.path.exists(config.cushionDictDir):
+  for dictName in [dir for dir in os.listdir(config.cushionDictDir) if not fnmatch(dir, '.*')]:
+    fluid.addPressureCushion(os.path.join(config.cushionDictDir, dictName))
+
+sim.run()

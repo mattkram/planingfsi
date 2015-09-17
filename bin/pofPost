@@ -1,0 +1,16 @@
+#!/usr/bin/python
+import pofPost
+
+P = pofPost.Case()
+
+# Load files and perform calculations
+P.calculateForces()
+P.calculateWettedLength()
+P.calculateTimeAverages()
+P.calculateFreeSurfaceElevation()
+
+# Write post-processed data to files
+P.writePressureAndShear()
+P.writeTimeAverages()
+P.writeTimeHistories()
+P.writeFreeSurfaceElevation()
