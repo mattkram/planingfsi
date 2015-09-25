@@ -10,5 +10,6 @@ if [ -n "$oldline" ]; then
   oldval=`echo $oldline | cut -d ':' -f 3`
   oldval=`echo $oldval | cut -d ' ' -f 1 | tr -d ' '`
   
-  sed -i '' -e "${linenum}s,$oldval,$newval,g" $filename
+#  sed -i '' -e "${linenum}s,$oldval,$newval,g" $filename
+  sed -i "${linenum}s,$oldval,$newval,g" $filename
 fi

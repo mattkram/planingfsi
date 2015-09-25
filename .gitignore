@@ -1,0 +1,23 @@
+# git-ls-files --others --exclude-from=.git/info/exclude
+# Lines that start with '#' are comments
+#
+
+# Editor and misc backup files - anywhere
+*~
+.*~
+*.swp
+
+# Compiled files
+*.pyc
+
+# lnInclude (symlink) directories - anywhere
+#lnInclude
+
+## Build directories - anywhere
+#linux*Gcc*/
+#platforms/
+#bin/
+
+# Documentation and wiki
+wiki/
+doc/

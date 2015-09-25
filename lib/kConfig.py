@@ -36,6 +36,8 @@ elif C.Fr is not None:
 else:
   raise NameError('Must specify either U or Fr in configDict')
 
+print 'Flow Speed: {0} m/s'.format(C.U)
+
 C.pStag = 0.5 * C.rho * C.U**2
 C.k0    = C.g / C.U**2
 C.lam   = 2 * np.pi / C.k0
