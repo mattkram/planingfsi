@@ -1,8 +1,9 @@
 import numpy as np
-import krampy as kp
+import general.krampy as kp
 from scipy.interpolate import interp1d
 import FEMLib as fe
-import config, os
+import general.config as config
+import os
 if config.plot:
   import matplotlib.pyplot as plt
 

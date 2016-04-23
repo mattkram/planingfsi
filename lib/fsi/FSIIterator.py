@@ -1,6 +1,7 @@
 import numpy as np
-import krampy as kp
-import os, config
+import general.krampy as kp
+import os
+import general.config as config
 from scipy.optimize import *
 from fnmatch import fnmatch
 from FSIFigure import FSIFigure

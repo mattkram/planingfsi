@@ -1,13 +1,13 @@
 import os
-import config
+import general.config as config
 
 import numpy as np
-import krampy as kp
+import general.krampy as kp
 
 from scipy.optimize import fmin, fminbound, fmin_cg, fsolve, fmin_tnc, fmin_slsqp, fmin_l_bfgs_b, leastsq, anneal, fmin_powell, fmin_bfgs
 
-from PlaningSurface import PlaningSurface
-from PressureCushion import PressureCushion
+from PressurePatch import PlaningSurface
+from PressurePatch import PressureCushion
 
 if config.plot:
   import matplotlib.pyplot as plt

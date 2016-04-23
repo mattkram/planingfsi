@@ -1,11 +1,14 @@
 #!/usr/bin/python
-import config, kConfig, os, sys
+import os
+import sys
+import general.config as config
+import general.kConfig as kConfig
 if os.environ.get('DISPLAY') is None:
   import matplotlib as mpl
   mpl.use('Agg')
 
 import numpy as np
-import krampy as kp
+import general.krampy as kp
 from fnmatch import fnmatch
 
 for arg in sys.argv:
@@ -21,9 +24,9 @@ for arg in sys.argv:
     kp.rm_rf([d for d in os.listdir(config.caseDir) if fnmatch(d, '[0-9]*')])
 
 from potentialflow import PotentialPlaningCalculation
-from rigidBodyFEM import FEStructure
-from FSIIterator import Simulation
-from FSIInterpolator import Interpolator
+from finiteelement.rigidBodyFEM import FEStructure
+from fsi.FSIIterator import Simulation
+from fsi.FSIInterpolator import Interpolator
 
 # Create objects
 fluid = PotentialPlaningCalculation()

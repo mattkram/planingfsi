@@ -1,7 +1,7 @@
 import numpy as np
-import krampy as kp
+import general.krampy as kp
 from scipy.special import sici
-import config
+import general.config as config
 if config.plot:
   import matplotlib.pyplot as plt
 
