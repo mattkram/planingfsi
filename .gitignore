@@ -18,6 +18,10 @@
 #platforms/
 #bin/
 
+# Python virtualenv
+.env
+.env/*
+
 # Documentation and wiki
 wiki/
 doc/

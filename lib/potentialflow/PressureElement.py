@@ -5,8 +5,6 @@ import config
 if config.plot:
   import matplotlib.pyplot as plt
 
-#from pressureElementFunctions import getFG, getFunc1, getFunc2, getFunc3, evalLR
-
 def getFG(lam): 
   lam = abs(lam)
   (Si, Ci) = sici(lam)
@@ -231,6 +229,7 @@ class TransomPressureElement(PressureElement):
  
   def plot(self):
     return None 
+
 
 class CompleteTriangularPressureElement(PressureElement):
   

@@ -20,7 +20,7 @@ for arg in sys.argv:
   if arg == 'new' or arg == '-new':
     kp.rm_rf([d for d in os.listdir(config.caseDir) if fnmatch(d, '[0-9]*')])
 
-from potentialPlaningLib import PotentialPlaningCalculation
+from potentialflow import PotentialPlaningCalculation
 from rigidBodyFEM import FEStructure
 from FSIIterator import Simulation
 from FSIInterpolator import Interpolator
