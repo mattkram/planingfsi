@@ -30,13 +30,13 @@ C.PsBar     = ROD('PsBar', None)
  
 # Calculate U or Fr depending on which was specified in the file
 if C.U is not None:
-  C.Fr    = C.U  * (C.g * C.Lref) ** -0.5
+    C.Fr = C.U  * (C.g * C.Lref) ** -0.5
 elif C.Fr is not None:
-  C.U     = C.Fr * (C.g * C.Lref) **  0.5
+    C.U  = C.Fr * (C.g * C.Lref) **  0.5
 else:
-  raise NameError('Must specify either U or Fr in configDict')
+    raise NameError('Must specify either U or Fr in configDict')
 
-print 'Flow Speed: {0} m/s'.format(C.U)
+#print 'Flow Speed: {0} m/s'.format(C.U)
 
 C.pStag = 0.5 * C.rho * C.U**2
 C.k0    = C.g / C.U**2
@@ -46,35 +46,35 @@ C.lam   = 2 * np.pi / C.k0
 C.Pc    = ROD('Pc',    None)
 C.PcBar = ROD('PcBar', None)
 if C.Pc is not None:
-  C.PcBar = C.Pc * C.Lref / C.W
+    C.PcBar = C.Pc * C.Lref / C.W
 elif C.PcBar is not None:
-  C.Pc = C.PcBar * C.W / C.Lref
+    C.Pc = C.PcBar * C.W / C.Lref
 else:
-  C.Pc = 0.0
-  C.PcBar = 0.0
+    C.Pc = 0.0
+    C.PcBar = 0.0
 
 if C.Ps is not None:
-  C.PsBar = C.Ps / C.Pc
+    C.PsBar = C.Ps / C.Pc
 elif C.PsBar is not None:
-  C.Ps = C.PsBar * C.Pc
+    C.Ps = C.PsBar * C.Pc
 else:
-  C.Ps = 0.0
-  C.PsBar = 0.0
+    C.Ps = 0.0
+    C.PsBar = 0.0
 
 # Set pressure scale for plotting purposes 
 pType     = ROD('pScaleType', 'stagnation')
 if pType == 'stagnation':
-  pScale  = C.pStag
+    pScale  = C.pStag
 elif pType == 'cushion':
-  if C.Pc == 0.0:
-    pScale = 1.0
-  else:
-    pScale  = C.Pc
+    if C.Pc == 0.0:
+        pScale = 1.0
+    else:
+        pScale  = C.Pc
 elif pType == 'hydrostatic':
-  h       = ROD('pScaleHead', 1.0)
-  pScale  = C.rho * C.g * h
+    h       = ROD('pScaleHead', 1.0)
+    pScale  = C.rho * C.g * h
 else:
-  pScale  = ROD('pScale', 1.0)
+    pScale  = ROD('pScale', 1.0)
 C.pScale          = ROD('pScalePct', 0.1) / pScale
 C.pressureLimiter = ROD('pressureLimiter', False)
 
@@ -99,18 +99,18 @@ C.growthRate  = ROD('growthRate',  1.1)
 C.CofRGridLen = ROD('CofRGridLen', 0.5)
 
 # Directories and file formats
-C.caseDir                = ROD('caseDir'       , '.')
-C.dataFormat             = ROD('dataFormat'    , 'txt')
-C.figFormat              = ROD('figFormat'     , 'eps')
-C.figDirName             = ROD('figDirName'    , 'figures')
-C.bodyDictDir            = ROD('bodyDictDir'   , 'bodyDict')
-C.inputDictDir           = ROD('inputDictDir'  , 'inputDict')
-C.cushionDictDir         = ROD('cushionDictDir', 'cushionDict')
-C.cushionDictDir         = ROD('pressureCushionDictDir', C.cushionDictDir)
-C.meshDir                = ROD('meshDir'       , 'mesh')
-C.meshDictDir            = ROD('meshDictDir'   , 'meshDict')
-#C.geomDictPath           = ROD('geomDictPath', '.')
-#C.resultsDir             = ROD('resultsDir', C.caseDir)
+C.caseDir        = ROD('caseDir'       , '.')
+C.dataFormat     = ROD('dataFormat'    , 'txt')
+C.figFormat      = ROD('figFormat'     , 'eps')
+C.figDirName     = ROD('figDirName'    , 'figures')
+C.bodyDictDir    = ROD('bodyDictDir'   , 'bodyDict')
+C.inputDictDir   = ROD('inputDictDir'  , 'inputDict')
+C.cushionDictDir = ROD('cushionDictDir', 'cushionDict')
+C.cushionDictDir = ROD('pressureCushionDictDir', C.cushionDictDir)
+C.meshDir        = ROD('meshDir'       , 'mesh')
+C.meshDictDir    = ROD('meshDictDir'   , 'meshDict')
+#C.geomDictPath   = ROD('geomDictPath', '.')
+#C.resultsDir     = ROD('resultsDir', C.caseDir)
 
 # Whether to save, show, or watch plots
 C.plotSave     = ROD('plotSave',      False)
