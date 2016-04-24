@@ -1,3 +1,3 @@
-import rigidBodyFEM
+import RigidBodyFEM
 import FEMesh
 import FEMLib

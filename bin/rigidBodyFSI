@@ -24,7 +24,7 @@ for arg in sys.argv:
     kp.rm_rf([d for d in os.listdir(config.caseDir) if fnmatch(d, '[0-9]*')])
 
 from potentialflow import PotentialPlaningCalculation
-from finiteelement.rigidBodyFEM import FEStructure
+from finiteelement.RigidBodyFEM import FEStructure
 from fsi.FSIIterator import Simulation
 from fsi.FSIInterpolator import Interpolator
 
