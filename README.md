@@ -1,10 +1,10 @@
 # RigidBodyFSI #
 
-##Summary##
+## Summary ##
 
 This document has been prepared as an informal instruction manual for the code that I wrote for my Ph.D. The program is currently called "rigidBodyFSI" because it is constructed as a means of calculating the steady-state response of 2-d marine structures subject to planing flow with consideration for Fluid-Strucuture Interaction (FSI) as well as rigid body motion.
 
-### REQUIRED SOFTWARE PACKAGES ###
+## Required Software Packages ##
 
 The code is written in Python and has been tested using Python 2.6.5. Although future versions of Python **should** support, the code, I make no guarantees.
 
@@ -14,7 +14,7 @@ The code requires several Python modules, which are imported at the top of each 
 - Matplotlib (provides support for plotting)
 
 
-### INSTALLATION OF THE SOURCE CODE ###
+## Installation ##
 
 In the current directory, there are two directories and an install file. The install file is a shell script that creates a bashrc file. The bashrc file, once sourced, creates the shell environment variable $KCODEPATH, as well as appends the lib folder to the Python search path, and appends the bin folder to the shell search path. The install command only needs to be run once, however it can be run again if the location of the base folder changes.
 
