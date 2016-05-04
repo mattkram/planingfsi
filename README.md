@@ -1,9 +1,10 @@
 # RigidBodyFSI #
 
-
-### REQUIRED SOFTWARE PACKAGES ###
+##Summary##
 
 This document has been prepared as an informal instruction manual for the code that I wrote for my Ph.D. The program is currently called "rigidBodyFSI" because it is constructed as a means of calculating the steady-state response of 2-d marine structures subject to planing flow with consideration for Fluid-Strucuture Interaction (FSI) as well as rigid body motion.
+
+### REQUIRED SOFTWARE PACKAGES ###
 
 The code is written in Python and has been tested using Python 2.6.5. Although future versions of Python **should** support, the code, I make no guarantees.
 
@@ -11,14 +12,6 @@ The code requires several Python modules, which are imported at the top of each 
 - Numpy (provides support for array structures and other tools for numerical analysis)
 - Scipy (provides support for many standard scientific functions, including interpolation)
 - Matplotlib (provides support for plotting)
-
-The versions tested known to work can be found using Synaptic package manager an are called:
-- python-numpy - v1:1.3.0-3build1
-- python-scipy - v0.7.0-2ubuntu0.1
-- python-matplotlib - v0.99.1.2-3ubuntu1
-
-The code is also known to work on the CAC at University of Michigan. The following modules must be loaded:
-- FILL IN WITH APPROPRIATE MODULES
 
 
 ### INSTALLATION OF THE SOURCE CODE ###
