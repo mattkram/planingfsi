@@ -1,8 +1,11 @@
-import numpy as np
-import general.krampy as kp
 import os
-import general.config as config
+
+import numpy as np
 import matplotlib.pyplot as plt
+
+from general import config
+import general.krampy as kp
+
 
 class FSIFigure:
 

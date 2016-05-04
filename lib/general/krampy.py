@@ -1,5 +1,8 @@
+import os
+import sys
 import numpy as np
-import os, sys, config, unit
+import config
+import unit
 
 class Dictionary:
 

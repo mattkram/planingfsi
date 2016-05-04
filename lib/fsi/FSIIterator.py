@@ -1,9 +1,11 @@
-import numpy as np
-import general.krampy as kp
 import os
-import general.config as config
-from scipy.optimize import *
 from fnmatch import fnmatch
+
+import numpy as np
+
+from general import config
+import general.krampy as kp
+
 from FSIFigure import FSIFigure
 
 class Simulation:

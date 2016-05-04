@@ -37,8 +37,6 @@ elif Fr is not None:
 else:
     raise NameError('Must specify either U or Fr in configDict')
 
-#print 'Flow Speed: {0} m/s'.format(U)
-
 pStag = 0.5 * rho * U**2
 k0    = g / U**2
 lam   = 2 * np.pi / k0

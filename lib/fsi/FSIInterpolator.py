@@ -1,7 +1,8 @@
-import general.krampy as kp
 import numpy as np
 from scipy.optimize import fmin
-import general.config as config
+
+from general import config
+import general.krampy as kp
 
 
 class Interpolator():

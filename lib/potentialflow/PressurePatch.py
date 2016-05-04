@@ -1,13 +1,16 @@
-import numpy as np
-import general.krampy as kp
-from scipy.interpolate import interp1d
-from scipy.optimize import fmin, fminbound, fmin_cg, fsolve, fmin_tnc, fmin_slsqp, fmin_l_bfgs_b, leastsq, anneal, fmin_powell, fmin_bfgs
-import PressureElement as pe
 import os
-import general.config as config
+
+import numpy as np
+from scipy.interpolate import interp1d
+from scipy.optimize import fmin
+
+from general import config
+import general.krampy as kp
+
+import PressureElement as pe
+
 if config.plot:
     import matplotlib.pyplot as plt
-import random
 
 
 class PressurePatch():

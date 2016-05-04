@@ -1,10 +1,10 @@
 import os
-import general.config as config
 
 import numpy as np
-import general.krampy as kp
+from scipy.optimize import fmin
 
-from scipy.optimize import fmin, fminbound, fmin_cg, fsolve, fmin_tnc, fmin_slsqp, fmin_l_bfgs_b, leastsq, anneal, fmin_powell, fmin_bfgs
+from general import config
+import general.krampy as kp
 
 from PressurePatch import PlaningSurface
 from PressurePatch import PressureCushion
@@ -255,28 +255,6 @@ class PotentialPlaningCalculation:
          
         self.getResidual(self.storeLen)
     
-    #    plt.show()
-    
-    #      def f(x):
-    #        R = self.getResidual(x)
-    #        pen = 1 / (500.0 * (x - self.minLen))
-    #        pen = 0.0
-    #        return np.sum(np.abs(R**2 + pen))
-    #      fmin_bfgs(f, self.initLen)
-    
-    #      solve = diagbroyden
-    #      solve(self.getResidual, self.initLen)
-    #      fCon = lambda x: x - self.minLen
-    #      fObj = lambda x: np.sum(np.linalg.norm(self.getResidual(x)))
-    #      fObj = lambda x: self.getResidual(x) + np.exp(-(x - self.minLen))
-    #      fmin_tnc(fObj, self.initLen, bounds=[(xm, float('Inf')) for xm in self.minLen], approx_grad=True, ftol=config.wettedLengthTol)
-    
-    #      fsolve(self.getResidual, self.initLen, xtol=1e-4, factor=10)
-    #      f = lambda x: np.sum(np.linalg.norm(self.getResidual(x)))
-    #      fsolve(fObj, self.initLen)
-    
-    #      self.calculatePressureAndShearProfile()
-  
     def calculatePressureAndShearProfile(self):
         if self.X is None:
             if config.shearCalc:

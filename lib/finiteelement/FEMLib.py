@@ -1,7 +1,9 @@
 import numpy as np
-import general.krampy as kp
 from scipy.interpolate import interp1d
-import general.config as config
+
+from general import config
+import general.krampy as kp
+
 if config.plot:
     import matplotlib.pyplot as plt
 
