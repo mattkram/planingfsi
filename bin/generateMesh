@@ -2,7 +2,6 @@
 
 import general.config as config
 import general.unit as unit
-import general.kConfig as kConfig
 import os
 import sys
 if os.environ.get('DISPLAY') is None:

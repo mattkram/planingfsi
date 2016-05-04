@@ -2,7 +2,6 @@
 import os
 import sys
 import general.config as config
-import general.kConfig as kConfig
 if os.environ.get('DISPLAY') is None:
   import matplotlib as mpl
   mpl.use('Agg')
