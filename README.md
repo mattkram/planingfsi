@@ -1,8 +1,8 @@
-# README
-#
-#########################################################
-# REQUIRED SOFTWARE PACKAGES
-#########################################################
+# README #
+
+
+### REQUIRED SOFTWARE PACKAGES ###
+
 This document has been prepared as an informal instruction manual for the code that I wrote for my Ph.D. The program is currently called "rigidBodyFSI" because it is constructed as a means of calculating the steady-state response of 2-d marine structures subject to planing flow with consideration for Fluid-Strucuture Interaction (FSI) as well as rigid body motion.
 
 The code is written in Python and has been tested using Python 2.6.5. Although future versions of Python **should** support, the code, I make no guarantees.
@@ -21,9 +21,7 @@ The code is also known to work on the CAC at University of Michigan. The followi
 - FILL IN WITH APPROPRIATE MODULES
 
 
-#########################################################
-# INSTALLATION OF THE SOURCE CODE 
-#########################################################
+### INSTALLATION OF THE SOURCE CODE ###
 
 In the current directory, there are two directories and an install file. The install file is a shell script that creates a bashrc file. The bashrc file, once sourced, creates the shell environment variable $KCODEPATH, as well as appends the lib folder to the Python search path, and appends the bin folder to the shell search path. The install command only needs to be run once, however it can be run again if the location of the base folder changes.
 
@@ -38,9 +36,3 @@ The bin folder contains the main program and some utilities that may be run from
 chmod +x $KCODEPATH/bin/*
 
 Once the files are made executable, the names of the programs should be able to be autocompleted by the bash shell. Since the main program is called rigidBodyFSI, try typing rigi and then hitting tab. If everything is installed properly, it should autocomplete.
-
-
-#########################################################
-# RUNNING THE CODE
-#########################################################
-
