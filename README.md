@@ -1,4 +1,4 @@
-# README #
+# RigidBodyFSI #
 
 
 ### REQUIRED SOFTWARE PACKAGES ###
