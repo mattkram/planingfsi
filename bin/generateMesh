@@ -1,14 +1,18 @@
 #!/usr/bin/python
 
-import general.config as config
-import general.unit as unit
 import os
 import sys
+
 if os.environ.get('DISPLAY') is None:
-  import matplotlib as mpl
-  mpl.use('Agg')
+    import matplotlib as mpl
+    mpl.use('Agg')
+
 import numpy as np
+
+from general import config
+from general import unit
 import general.krampy as kp
+
 from finiteelement.FEMesh import Mesh
 
 # Process input arguments
@@ -16,14 +20,14 @@ plotShow = False
 plotSave = False
 disp     = False
 for arg in sys.argv[1:]:
-  if not arg[0] == '-':
-    config.meshDictDir = arg
-  if arg == '-show' or arg == 'show':
-    plotShow = True
-  if arg == '-save' or arg == 'save':
-    plotSave = True
-  if arg == '-print' or arg == 'print':
-    disp = True
+    if not arg[0] == '-':
+        config.meshDictDir = arg
+    if arg == '-show' or arg == 'show':
+        plotShow = True
+    if arg == '-save' or arg == 'save':
+        plotSave = True
+    if arg == '-print' or arg == 'print':
+        disp = True
 
 # Create mesh
 M = Mesh()
