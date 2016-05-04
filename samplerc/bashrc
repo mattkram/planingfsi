@@ -1,3 +1,0 @@
-export KCODEPATH=/home/mattkram/Dropbox/Shared/Rory/kCode
-export PYTHONPATH=$PYTHONPATH:$KCODEPATH/lib
-export PATH=$PATH:$KCODEPATH/bin
