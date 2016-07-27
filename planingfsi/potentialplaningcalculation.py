@@ -3,11 +3,11 @@ import os
 import numpy as np
 from scipy.optimize import fmin
 
-from general import config
-import general.krampy as kp
+import config
+import krampy as kp
 
-from PressurePatch import PlaningSurface
-from PressurePatch import PressureCushion
+from pressurepatch import PlaningSurface
+from pressurepatch import PressureCushion
 
 if config.plot:
     import matplotlib.pyplot as plt

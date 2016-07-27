@@ -3,8 +3,8 @@ import os
 import numpy as np
 import matplotlib.pyplot as plt
 
-from general import config
-import general.krampy as kp
+import config
+import krampy as kp
 
 
 class FSIFigure:

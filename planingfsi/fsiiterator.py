@@ -3,10 +3,10 @@ from fnmatch import fnmatch
 
 import numpy as np
 
-from general import config
-import general.krampy as kp
+import config
+import krampy as kp
 
-from FSIFigure import FSIFigure
+from fsifigure import FSIFigure
 
 class Simulation:
 

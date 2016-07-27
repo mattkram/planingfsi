@@ -9,8 +9,8 @@ if os.environ.get('DISPLAY') is None:
 
 import numpy as np
 
-from general import config
-import general.krampy as kp
+from planingfsi import config
+import planingfsi.krampy as kp
 
 for arg in sys.argv:
     if arg == 'post' or arg == '-post':
@@ -24,10 +24,10 @@ for arg in sys.argv:
     if arg == 'new' or arg == '-new':
         kp.rm_rf([d for d in os.listdir(config.caseDir) if fnmatch(d, '[0-9]*')])
 
-from potentialflow import PotentialPlaningCalculation
-from finiteelement.RigidBodyFEM import FEStructure
-from fsi.FSIIterator import Simulation
-from fsi.FSIInterpolator import Interpolator
+from planingfsi.potentialplaningcalculation import PotentialPlaningCalculation
+from planingfsi.rigidbody import FEStructure
+from planingfsi.fsiiterator import Simulation
+from planingfsi.fsiinterpolator import Interpolator
 
 # Create objects
 fluid = PotentialPlaningCalculation()

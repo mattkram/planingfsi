@@ -3,10 +3,10 @@ import os
 import numpy as np
 from scipy.interpolate import interp1d
 
-from general import config
-import general.krampy as kp
+import config
+import krampy as kp
 
-import FEMLib as fe
+import felib as fe
 
 if config.plot:
     import matplotlib.pyplot as plt
