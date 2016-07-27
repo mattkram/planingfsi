@@ -1,3 +1,0 @@
-import FSIInterpolator
-import FSIIterator
-import FSIFigure
