@@ -11,8 +11,13 @@ import numpy as np
 
 from planingfsi import config
 import planingfsi.krampy as kp
+from planingfsi.potentialplaningcalculation import PotentialPlaningCalculation
+from planingfsi.rigidbody import FEStructure
+from planingfsi.fsiiterator import Simulation
+from planingfsi.fsiinterpolator import Interpolator
 
-for arg in sys.argv:
+# Process system arguments
+for arg in sys.argv[1:]:
     if arg == 'post' or arg == '-post':
         print 'Running in post-processing mode'
         config.plotSave        = True
@@ -23,11 +28,6 @@ for arg in sys.argv:
         config.plot = True
     if arg == 'new' or arg == '-new':
         kp.rm_rf([d for d in os.listdir(config.caseDir) if fnmatch(d, '[0-9]*')])
-
-from planingfsi.potentialplaningcalculation import PotentialPlaningCalculation
-from planingfsi.rigidbody import FEStructure
-from planingfsi.fsiiterator import Simulation
-from planingfsi.fsiinterpolator import Interpolator
 
 # Create objects
 fluid = PotentialPlaningCalculation()
@@ -58,4 +58,5 @@ if os.path.exists(config.cushionDictDir):
     for dictName in [dir for dir in os.listdir(config.cushionDictDir) if not fnmatch(dir, '.*')]:
         fluid.addPressureCushion(os.path.join(config.cushionDictDir, dictName))
 
+# Run simulation
 sim.run()
