@@ -18,4 +18,6 @@
 wiki/
 doc/
 
+*.egg-info
+
 old/
