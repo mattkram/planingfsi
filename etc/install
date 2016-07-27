@@ -1,8 +1,0 @@
-#!/bin/bash
-
-RCFILE="bashrc"
-
-echo "export KCODEPATH=$PWD" > $RCFILE
-echo "export PYTHONPATH=\$PYTHONPATH:\$KCODEPATH/lib" >> $RCFILE
-echo "export PATH=\$PATH:\$KCODEPATH/bin" >> $RCFILE
-echo ". $PWD/$RCFILE" >> ~/.bashrc
