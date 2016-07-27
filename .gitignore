@@ -10,14 +10,6 @@
 # Compiled files
 *.pyc
 
-# lnInclude (symlink) directories - anywhere
-#lnInclude
-
-## Build directories - anywhere
-#linux*Gcc*/
-#platforms/
-#bin/
-
 # Python virtualenv
 .env
 .env/*
