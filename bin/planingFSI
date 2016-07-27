@@ -16,7 +16,7 @@ from planingfsi.rigidbody import FEStructure
 from planingfsi.fsiiterator import Simulation
 from planingfsi.fsiinterpolator import Interpolator
 
-# Process system arguments
+# Process command line arguments
 for arg in sys.argv[1:]:
     if arg == 'post' or arg == '-post':
         print 'Running in post-processing mode'
@@ -36,13 +36,13 @@ sim   = Simulation(solid, fluid)
 
 # Add all rigid bodies
 if os.path.exists(config.bodyDictDir):
-    for dictName in [dir for dir in os.listdir(config.bodyDictDir) if not fnmatch(dir, '.*')]:
+    for dictName in kp.listdir_nohidden(config.bodyDictDir):
         solid.addRigidBody(os.path.join(config.bodyDictDir, dictName))
 else:
     solid.addRigidBody()
 
 # Add all substructures
-for dictName in [dir for dir in os.listdir(config.inputDictDir) if not fnmatch(dir, '.*')]:
+for dictName in kp.listdir_nohidden(config.inputDictDir):
     dictPath = os.path.join(config.inputDictDir, dictName)
     K = kp.Dictionary(dictPath)
     ssSolid = solid.addSubstructure(K)
@@ -55,7 +55,7 @@ for dictName in [dir for dir in os.listdir(config.inputDictDir) if not fnmatch(d
 
 # Add all pressure cushions
 if os.path.exists(config.cushionDictDir):
-    for dictName in [dir for dir in os.listdir(config.cushionDictDir) if not fnmatch(dir, '.*')]:
+    for dictName in kp.listdir_nohidden(config.cushionDictDir):
         fluid.addPressureCushion(os.path.join(config.cushionDictDir, dictName))
 
 # Run simulation

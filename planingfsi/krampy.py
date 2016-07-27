@@ -1,5 +1,7 @@
 import os
 import sys
+from fnmatch import fnmatch
+
 import numpy as np
 import config
 import unit
@@ -564,12 +566,7 @@ def checkDir(f):
     if not os.path.isdir(f):
         os.makedirs(f)
 
-def listdirNoHidden(d):
-    f = os.listdir(d)
-    rmInd = []
-    for i in range(len(f)):
-        if f[i].startswith('.'):
-            rmInd.append(i)
-    for i in range(len(rmInd)):
-        del f[rmInd[i]]
-    return f
+def listdir_nohidden(d):
+    return [di for di in os.listdir(d) if not fnmatch(di, '.*')]
+
+listdirNoHidden = listdir_nohidden
