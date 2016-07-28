@@ -19,5 +19,6 @@ wiki/
 doc/
 
 *.egg-info
+*.out
 
 old/
