@@ -3,8 +3,8 @@ import os
 import numpy as np
 from scipy.optimize import fmin
 
-import config
-import krampy as kp
+import planingfsi.config as config
+import planingfsi.krampy as kp
 
 from pressurepatch import PlaningSurface
 from pressurepatch import PressureCushion

@@ -4,8 +4,8 @@ import numpy as np
 from scipy.interpolate import interp1d
 from scipy.optimize import fmin
 
-import config
-import krampy as kp
+import planingfsi.config as config
+import planingfsi.krampy as kp
 
 import pressureelement as pe
 

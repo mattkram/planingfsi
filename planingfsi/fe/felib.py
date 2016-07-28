@@ -1,8 +1,8 @@
 import numpy as np
 from scipy.interpolate import interp1d
 
-import config
-import krampy as kp
+import planingfsi.config as config
+import planingfsi.krampy as kp
 
 if config.plot:
     import matplotlib.pyplot as plt

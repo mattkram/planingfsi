@@ -1,8 +1,8 @@
 import numpy as np
 from scipy.special import sici
 
-import config
-import krampy as kp
+import planingfsi.config as config
+import planingfsi.krampy as kp
 
 if config.plot:
     import matplotlib.pyplot as plt

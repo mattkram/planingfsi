@@ -3,8 +3,8 @@ import os
 import numpy as np
 import matplotlib.pyplot as plt
 
-import config
-import krampy as kp
+import planingfsi.config as config
+import planingfsi.krampy as kp
 
 class Mesh:
   

@@ -3,8 +3,8 @@ from fnmatch import fnmatch
 
 import numpy as np
 
-import config
-import krampy as kp
+import planingfsi.config as config
+import planingfsi.krampy as kp
 
 from fsifigure import FSIFigure
 

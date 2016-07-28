@@ -11,10 +11,10 @@ import numpy as np
 
 from planingfsi import config
 import planingfsi.krampy as kp
-from planingfsi.potentialplaningcalculation import PotentialPlaningCalculation
-from planingfsi.rigidbody import FEStructure
-from planingfsi.fsiiterator import Simulation
-from planingfsi.fsiinterpolator import Interpolator
+from planingfsi.potentialflow.calculation import PotentialPlaningCalculation
+from planingfsi.fe.rigidbody import FEStructure
+from planingfsi.fsi.fsiiterator import Simulation
+from planingfsi.fsi.fsiinterpolator import Interpolator
 
 # Process command line arguments
 for arg in sys.argv[1:]:
