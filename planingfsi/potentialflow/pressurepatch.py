@@ -7,7 +7,7 @@ from scipy.optimize import fmin
 import planingfsi.config as config
 import planingfsi.krampy as kp
 
-import pressureelement as pe
+import planingfsi.potentialflow.pressureelement as pe
 
 if config.plot:
     import matplotlib.pyplot as plt
