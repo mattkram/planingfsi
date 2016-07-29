@@ -180,3 +180,5 @@ maxFEMDisp = ROD('maxFEMDisp', 1.0)
 numDamp = ROD('numDamp', 0.0)
 
 hasFreeStructure = False
+itDir = ''
+it = -1
