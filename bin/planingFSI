@@ -1,62 +1,31 @@
 #!/usr/bin/python
+
+import planingfsi.config as config
+import planingfsi.krampy as kp
+from planingfsi.fsi.fsisimulation import Simulation
+
 import os
 import sys
-from fnmatch import fnmatch
 
 if os.environ.get('DISPLAY') is None:
     import matplotlib as mpl
     mpl.use('Agg')
 
-import numpy as np
-
-from planingfsi import config
-import planingfsi.krampy as kp
-from planingfsi.potentialflow.calculation import PotentialPlaningCalculation
-from planingfsi.fe.rigidbody import FEStructure
-from planingfsi.fsi.fsiiterator import Simulation
-from planingfsi.fsi.fsiinterpolator import Interpolator
-
 # Process command line arguments
 for arg in sys.argv[1:]:
-    if arg == 'post' or arg == '-post':
+    if 'post' in arg:
         print 'Running in post-processing mode'
-        config.plotSave        = True
-        config.plot            = True
-        config.resultsFromFile = True
-    if arg == 'plotSave' or arg == '-plotSave':
         config.plotSave = True
         config.plot = True
-    if arg == 'new' or arg == '-new':
-        kp.rm_rf([d for d in os.listdir(config.caseDir) if fnmatch(d, '[0-9]*')])
+        config.resultsFromFile = True
+    if 'plotSave' in arg:
+        config.plotSave = True
+        config.plot = True
+    if 'new' in arg:
+        kp.rm_rf(kp.find_files(config.caseDir, '[0-9]*'))
 
-# Create objects
-fluid = PotentialPlaningCalculation()
-solid = FEStructure()
-sim   = Simulation(solid, fluid)
-
-# Add all rigid bodies
-if os.path.exists(config.bodyDictDir):
-    for dictName in kp.listdir_nohidden(config.bodyDictDir):
-        solid.addRigidBody(os.path.join(config.bodyDictDir, dictName))
-else:
-    solid.addRigidBody()
-
-# Add all substructures
-for dictName in kp.listdir_nohidden(config.inputDictDir):
-    dictPath = os.path.join(config.inputDictDir, dictName)
-    K = kp.Dictionary(dictPath)
-    ssSolid = solid.addSubstructure(K)
-
-    if K.readOrDefault('hasPlaningSurface', False):
-        ssFluid = fluid.addPlaningSurface(K)
-        ssInterp = Interpolator(ssSolid, ssFluid, K)
-        ssInterp.setSolidPositionFunction(ssSolid.getCoordinates)
-        ssInterp.setFluidPressureFunction(ssFluid.getLoadsInRange)
-
-# Add all pressure cushions
-if os.path.exists(config.cushionDictDir):
-    for dictName in kp.listdir_nohidden(config.cushionDictDir):
-        fluid.addPressureCushion(os.path.join(config.cushionDictDir, dictName))
+# Create simulation
+sim = Simulation()
 
 # Run simulation
 sim.run()
