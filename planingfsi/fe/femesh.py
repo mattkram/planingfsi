@@ -92,7 +92,7 @@ class Mesh:
     def getDiff(self, pt0, pt1):
         return Point.findByID(pt1).getPos() - Point.findByID(pt0).getPos()
 
-    def getLength(self, pt0, pt1):
+    def get_length(self, pt0, pt1):
         return np.linalg.norm(self.getDiff(pt0, pt1))
 
     def display(self, **kwargs):
@@ -125,15 +125,15 @@ class Mesh:
                 plt.show()
 
     def write(self):
-        kp.createIfNotExist(config.meshDir)
+        kp.createIfNotExist(config.mesh_dir)
         x, y = zip(*[pt.getPos() for pt in Point.All()])
-        kp.writeaslist(os.path.join(config.meshDir, 'nodes.txt'), ['x', x], ['y', y])
+        kp.writeaslist(os.path.join(config.mesh_dir, 'nodes.txt'), ['x', x], ['y', y])
 
         x, y = zip(*[pt.getFixedDOF() for pt in Point.All()])
-        kp.writeaslist(os.path.join(config.meshDir, 'fixedDOF.txt'), ['x', x], ['y', y], headerFormat='>1', dataFormat='>1')
+        kp.writeaslist(os.path.join(config.mesh_dir, 'fixedDOF.txt'), ['x', x], ['y', y], headerFormat='>1', dataFormat='>1')
 
         x, y = zip(*[pt.getFixedLoad() for pt in Point.All()])
-        kp.writeaslist(os.path.join(config.meshDir, 'fixedLoad.txt'), ['x', x], ['y', y], headerFormat='>6', dataFormat='6.4e')
+        kp.writeaslist(os.path.join(config.mesh_dir, 'fixedLoad.txt'), ['x', x], ['y', y], headerFormat='>6', dataFormat='6.4e')
 
         for sm in self.submesh:
             sm.write()
@@ -172,7 +172,7 @@ class Submesh(Mesh):
     def write(self):
         if len(self.line) > 0:
             ptL, ptR = zip(*[[pt.getIndex() for pt in l.getPts()] for l in self.line])
-            kp.writeaslist(os.path.join(config.meshDir, 'elements_{0}.txt'.format(self.name)), ['ptL', ptL], ['ptR', ptR], headerFormat='<4', dataFormat='>4')
+            kp.writeaslist(os.path.join(config.mesh_dir, 'elements_{0}.txt'.format(self.name)), ['ptL', ptL], ['ptR', ptR], headerFormat='<4', dataFormat='>4')
 
 
 class Shape:

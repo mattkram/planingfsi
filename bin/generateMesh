@@ -1,5 +1,11 @@
 #!/usr/bin/python
 
+import planingfsi.config as config
+import planingfsi.unit as unit
+import planingfsi.krampy as kp
+
+from planingfsi.fe.femesh import Mesh
+
 import os
 import sys
 
@@ -9,19 +15,13 @@ if os.environ.get('DISPLAY') is None:
 
 import numpy as np
 
-from general import config
-from general import unit
-import general.krampy as kp
-
-from finiteelement.FEMesh import Mesh
-
 # Process input arguments
 plotShow = False
 plotSave = False
-disp     = False
+disp = False
 for arg in sys.argv[1:]:
     if not arg[0] == '-':
-        config.meshDictDir = arg
+        config.mesh_dict_dir = arg
     if arg == '-show' or arg == 'show':
         plotShow = True
     if arg == '-save' or arg == 'save':
@@ -33,7 +33,7 @@ for arg in sys.argv[1:]:
 M = Mesh()
 
 # Process mesh dictionary
-execfile(config.meshDictDir)
+execfile(config.mesh_dict_dir)
 
 # Display, plot, and write mesh files
 M.display(disp=disp)

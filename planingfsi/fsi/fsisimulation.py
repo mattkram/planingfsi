@@ -1,79 +1,99 @@
 import os
-from fnmatch import fnmatch
 
 import numpy as np
 
 import planingfsi.config as config
 import planingfsi.krampy as kp
 
+from planingfsi.potentialflow.solver import PotentialPlaningSolver
+from planingfsi.fe.structure import FEStructure
+
 from fsifigure import FSIFigure
 
-class Simulation:
 
-    def __init__(self, solid, fluid, dictName='configDict'):
-        self.solid = solid
-        self.fluid = fluid
+class Simulation(object):
+    """Simulation object to manage the FSI problem. Handles the iteration
+    between the fluid and solid solvers.
 
-    def setFluidPressureFunc(self, func):
-        self.fluidPressureFunc = func
+    Attributes
+    ----------
+    solid : FEStructure
+        Solid solver.
 
-    def setSolidPositionFunc(self, func):
-        self.solidPositionFunc = func
+    fluid : PotentialPlaningSolver
+        Fluid solver.
+    """
+
+    def __init__(self):
+
+        # Create solid and fluid solver objects
+        self.solid = FEStructure()
+        self.fluid = PotentialPlaningSolver()
+
+#     def setFluidPressureFunc(self, func):
+#         self.fluidPressureFunc = func
+#
+#     def setSolidPositionFunc(self, func):
+#         self.solidPositionFunc = func
 
     def updateFluidResponse(self):
-        self.fluid.calculateResponse()
-        self.solid.updateFluidForces()
+        self.fluid.calculate_response()
+        self.solid.update_fluid_forces()
 
     def updateSolidResponse(self):
-        self.solid.calculateResponse()
+        self.solid.calculate_response()
 
     def createDirs(self):
-        config.itDir  = os.path.join(config.caseDir, '{0}'.format(config.it))
-        config.figDir = os.path.join(config.caseDir, config.figDirName)
+        config.it_dir = os.path.join(config.case_dir, '{0}'.format(config.it))
+        config.fig_dir_name = os.path.join(
+            config.case_dir, config.fig_dir_name)
 
         if self.checkOutputInterval() and not config.resultsFromFile:
-            kp.createIfNotExist(config.caseDir)
-            kp.createIfNotExist(config.itDir)
+            kp.createIfNotExist(config.case_dir)
+            kp.createIfNotExist(config.it_dir)
 
         if config.plotSave:
-            kp.createIfNotExist(config.figDir)
+            kp.createIfNotExist(config.fig_dir_name)
             if config.it == 0:
-                for f in os.listdir(config.figDir):
-                    os.remove(os.path.join(config.figDir, f))
+                for f in os.listdir(config.fig_dir_name):
+                    os.remove(os.path.join(config.fig_dir_name, f))
 
     def run(self):
+        """Run the fluid-structure interaction simulation by iterating
+        between the fluid and solid solvers.
+        """
         config.it = 0
-        self.solid.generateMesh()
+        self.solid.load_mesh()
 
         if config.resultsFromFile:
             self.createDirs()
             self.applyRamp()
-            self.itDirs = kp.sortDirByNum([d for d in os.listdir(config.caseDir) if fnmatch(d, '[0-9]*')])[1]
+            self.itDirs = kp.sortDirByNum(kp.find_files('[0-9]*'))[1]
 
         if config.plot:
             self.figure = FSIFigure(self.solid, self.fluid)
-        
-        # Initialize body at specified trim and draft 
-        self.solid.initializeRigidBodies()
+
+        # Initialize body at specified trim and draft
+        self.solid.initialize_rigid_bodies()
         self.updateFluidResponse()
-        
+
         # Iterate between solid and fluid solvers until equilibrium
         while config.it <= config.rampIt \
-            or (self.getResidual() >= config.maxRes \
-                and config.it <= config.maxIt):
-            
+            or (self.get_residual() >= config.maxRes and
+                config.it <= config.maxIt):
+
             # Calculate response
-            if config.hasFreeStructure:
+            if config.has_free_structure:
                 self.applyRamp()
                 self.updateSolidResponse()
                 self.updateFluidResponse()
-                self.solid.getResidual()
+                self.solid.get_residual()
             else:
                 self.solid.res = 0.0
-          
-            # Write, print, and plot results  
+
+            # Write, print, and plot results
             self.createDirs()
-            self.writeResults()
+            self.write_results()
             self.printStatus()
             self.updateFigure()
 
@@ -86,19 +106,19 @@ class Simulation:
 
         if config.writeTimeHistories:
             self.figure.writeTimeHistories()
-        
+
         print "Execution complete"
-       
+
         if config.plotShow:
             self.figure.show()
 
-    def increment(self):      
+    def increment(self):
         if config.resultsFromFile:
             oldInd = np.nonzero(config.it == self.itDirs)[0][0]
-            if not oldInd == len(self.itDirs)-1:
-                config.it = int(self.itDirs[oldInd+1])
+            if not oldInd == len(self.itDirs) - 1:
+                config.it = int(self.itDirs[oldInd + 1])
             else:
-                config.it = config.maxIt + 1 
+                config.it = config.maxIt + 1
             self.createDirs()
         else:
             config.it += 1
@@ -112,31 +132,32 @@ class Simulation:
         self.solid.updateNodalPositions()
         self.updateFluidResponse()
 
-        # Write, print, and plot results  
+        # Write, print, and plot results
         self.createDirs()
-        self.writeResults()
+        self.write_results()
         self.printStatus()
         self.updateFigure()
 
-        # Update iteration number depending on whether loading existing or simply incrementing by 1
+        # Update iteration number depending on whether loading existing or
+        # simply incrementing by 1
         if config.resultsFromFile:
             if it < len(self.itDirs) - 1:
-                config.it = int(self.itDirs[it+1])
+                config.it = int(self.itDirs[it + 1])
             else:
                 config.it = config.maxIt
             it += 1
         else:
             config.it += 1
-      
-        config.resL = self.solid.rigidBody[0].getResL()
-        config.resM = self.solid.rigidBody[0].getResM()
-       
+
+        config.resL = self.solid.rigid_body[0].get_res_l()
+        config.resM = self.solid.rigid_body[0].get_res_moment()
+
         print 'Rigid Body Residuals:'
         print '  Lift:   {0:0.4e}'.format(config.resL)
         print '  Moment: {0:0.4e}\n'.format(config.resM)
-               
+
         return np.array([config.resL, config.resM])
-   
+
     def applyRamp(self):
         if config.resultsFromFile:
             self.loadResults()
@@ -146,32 +167,33 @@ class Simulation:
             else:
                 ramp = np.min((config.it / float(config.rampIt), 1.0))
 
-            config.ramp     = ramp
+            config.ramp = ramp
             config.relaxFEM = (1 - ramp) * config.relaxI + ramp * config.relaxF
 
-    def getResidual(self):
+    def get_residual(self):
         if config.resultsFromFile:
             return 1.0
-            return kp.Dictionary(os.path.join(config.itDir,'overallQuantities.txt')).readOrDefault('Residual',0.0)
+            return kp.Dictionary(os.path.join(config.it_dir, 'overallQuantities.txt')).read('Residual', 0.0)
         else:
             return self.solid.res
 
     def printStatus(self):
-        print 'Residual after iteration {1:>4d}: {0:5.3e}'.format(self.getResidual(), config.it)
+        print 'Residual after iteration {1:>4d}: {0:5.3e}'.format(self.get_residual(), config.it)
 
     def checkOutputInterval(self):
         return config.it >= config.maxIt or \
-               self.getResidual() < config.maxRes or \
-               np.mod(config.it, config.writeInterval) == 0
-    
-    def writeResults(self):
-        if self.checkOutputInterval() and not config.resultsFromFile:
-            kp.writeasdict(os.path.join(config.itDir, 'overallQuantities.txt'), ['Ramp', config.ramp], ['Residual', self.solid.res])
+            self.get_residual() < config.maxRes or \
+            np.mod(config.it, config.writeInterval) == 0
 
-            self.fluid.writeResults()
-            self.solid.writeResults()
+    def write_results(self):
+        if self.checkOutputInterval() and not config.resultsFromFile:
+            kp.writeasdict(os.path.join(config.it_dir, 'overallQuantities.txt'), [
+                           'Ramp', config.ramp], ['Residual', self.solid.res])
+
+            self.fluid.write_results()
+            self.solid.write_results()
 
     def loadResults(self):
-        K = kp.Dictionary(os.path.join(config.itDir, 'overallQuantities.txt'))
-        config.ramp = K.readOrDefault('Ramp', 0.0)
-        self.solid.res = K.readOrDefault('Residual', 0.0)
+        K = kp.Dictionary(os.path.join(config.it_dir, 'overallQuantities.txt'))
+        config.ramp = K.read('Ramp', 0.0)
+        self.solid.res = K.read('Residual', 0.0)

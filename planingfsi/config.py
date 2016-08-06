@@ -8,19 +8,20 @@ Usage: import planingfsi.config as config
 import numpy as np
 import planingfsi.krampy as kp
 
-config_dict_name = 'configDict'
+dict_name = 'configDict'
 
-print 'Loading {0}'.format(config_dict_name)
-config_dict = kp.Dictionary(config_dict_name)
+print 'Loading {0}'.format(dict_name)
 
 # TODO: Read default values from a defaults file. Specialized logic and import
 # of values from configDict should be handled in this file
 
-# TODO: readOrDefault is not necessary, read method should handle default value
+# TODO: read is not necessary, read method should handle default value
 # on its own.
 
+config_dict = kp.Dictionary(dict_name)
+
 # Shortcut since called a lot
-read = config_dict.readOrDefault
+read = config_dict.read
 
 # Load run properties from dictionary
 rho = read('rho', 1.0)
@@ -35,7 +36,7 @@ xCofR = read('xCofR', xCofG)
 yCofR = read('yCofR', yCofG)
 m = read('m', 1 / g)
 W = read('W', m * g)
-Lref = read('Lref', read('Lc', 1.0)) # read Lc for backwards-compatibility
+Lref = read('Lref', read('Lc', 1.0))  # read Lc for backwards-compatibility
 dim = read('dim', 2)
 shearCalc = read('shearCalc', False)
 Ps = read('Ps', None)
@@ -47,7 +48,8 @@ if U is not None:
 elif Fr is not None:
     U = Fr * (g * Lref) ** 0.5
 else:
-    raise NameError('Must specify either U or Fr in {0}'.format(config_dict_name))
+    raise NameError(
+        'Must specify either U or Fr in {0}'.format(dict_name))
 
 pStag = 0.5 * rho * U**2
 k0 = g / U**2
@@ -94,38 +96,40 @@ extW = read('extW', 0.1)
 extN = read('extN', 0.1)
 extS = read('extS', 0.1)
 
-plotXMin = read('plotXMin', None)
-plotXMax = read('plotXMax', None)
-plotYMin = read('plotYMin', None)
-plotYMax = read('plotYMax', None)
+plot_xmin = read('plotXMin', None)
+plot_xmax = read('plotXMax', None)
+plot_ymin = read('plotYMin', None)
+plot_ymax = read('plotYMax', None)
 
-lamMin = read('lamMin', -1.0)
-lamMax = read('lamMax', 1.0)
+lambda_min = read('lamMin', -1.0)
+lambda_max = read('lamMax', 1.0)
 
-xFSMin = read('xFSMin', plotXMin if plotXMin is not None else lamMin * lam)
-xFSMax = read('xFSMax', plotXMax if plotXMax is not None else lamMax * lam)
+xFSMin = read(
+    'xFSMin', plot_xmin if plot_xmin is not None else lambda_min * lam)
+xFSMax = read(
+    'xFSMax', plot_xmax if plot_xmax is not None else lambda_max * lam)
 
 growthRate = read('growthRate', 1.1)
 CofRGridLen = read('CofRGridLen', 0.5)
 
 # Directories and file formats
-caseDir = read('caseDir', '.')
-dataFormat = read('dataFormat', 'txt')
-figFormat = read('figFormat', 'eps')
-figDirName = read('figDirName', 'figures')
-bodyDictDir = read('bodyDictDir', 'bodyDict')
-inputDictDir = read('inputDictDir', 'inputDict')
-cushionDictDir = read('cushionDictDir', 'cushionDict')
-cushionDictDir = read('pressureCushionDictDir', cushionDictDir)
-meshDir = read('meshDir', 'mesh')
-meshDictDir = read('meshDictDir', 'meshDict')
+case_dir = read('caseDir', '.')
+data_format = read('dataFormat', 'txt')
+fig_format = read('figFormat', 'eps')
+fig_dir_name = read('figDirName', 'figures')
+body_dict_dir = read('bodyDictDir', 'bodyDict')
+input_dict_dir = read('inputDictDir', 'inputDict')
+cushion_dict_dir = read(
+    'pressureCushionDictDir', read('cushionDictDir', 'cushionDict'))
+mesh_dir = read('meshDir', 'mesh')
+mesh_dict_dir = read('meshDictDir', 'meshDict')
 
 # Whether to save, show, or watch plots
 plotSave = read('plotSave', False)
-plotPressure = read('plotPressure', False)
+plot_pressure = read('plot_pressure', False)
 plotShow = read('plotShow', False)
 plotWatch = read('plotWatch', False) or plotShow
-plot = plotShow or plotSave or plotWatch or plotPressure
+plot = plotShow or plotSave or plotWatch or plot_pressure
 
 # File IO settings
 writeInterval = read('writeInterval', 1)
@@ -163,17 +167,18 @@ relaxDraft = read('draftRelax', relaxRB)
 relaxTrim = read('trimRelax', relaxRB)
 
 # Parameters for wetted length solver
-wettedLengthSolver = read('wettedLengthSolver', 'Secant')
-wettedLengthTol = read('wettedLengthTol', 1e-6)
-wettedLengthRelax = read('wettedLengthRelax', 1.0)
-wettedLengthMaxIt = read('wettedLengthMaxIt', 20)
-wettedLengthMaxIt0 = read('wettedLengthMaxIt0', 100)
-wettedLengthMaxStepPct = read('wettedLengthMaxStepPct', 0.2)
-wettedLengthMaxStepPctInc = read('wettedLengthMaxStepPctDec', wettedLengthMaxStepPct)
-wettedLengthMaxStepPctDec = read('wettedLengthMaxStepPctInc', wettedLengthMaxStepPct)
-wettedLengthMaxJacobianResetStep = read('wettedLengthMaxJacobianResetStep', 100)
-
-ramp = 1.0
+wetted_length_solver = read('wettedLengthSolver', 'Secant')
+wetted_length_tol = read('wettedLengthTol', 1e-6)
+wetted_length_relax = read('wettedLengthRelax', 1.0)
+wetted_length_max_it = read('wettedLengthMaxIt', 20)
+wetted_length_max_it_0 = read('wettedLengthMaxIt0', 100)
+wetted_length_max_step_pct = read('wettedLengthMaxStepPct', 0.2)
+wetted_length_max_step_pct_inc = read(
+    'wettedLengthMaxStepPctInc', wetted_length_max_step_pct)
+wetted_length_max_step_pct_dec = read(
+    'wettedLengthMaxStepPctDec', wetted_length_max_step_pct)
+wetted_length_max_jacobian_reset_step = read(
+    'wettedLengthMaxJacobianResetStep', 100)
 
 maxIt = read('maxIt', 1)
 rampIt = read('rampIt', 0)
@@ -185,6 +190,9 @@ relaxFEM = read('FEMRelax', 1.0)
 maxFEMDisp = read('maxFEMDisp', 1.0)
 numDamp = read('numDamp', 0.0)
 
-hasFreeStructure = False
-itDir = ''
+# Initialized constants
+ramp = 1.0
+
+has_free_structure = False
+it_dir = ''
 it = -1

@@ -46,7 +46,7 @@ class Node():
         self.x += dx
         self.y += dy
 
-    def getCoordinates(self):
+    def get_coordinates(self):
         return self.x, self.y
 
     def plot(self, sty=None):
@@ -66,7 +66,7 @@ class Element():
         self.node   = [None] * 2
         self.dof    = [0] * config.dim
         self.length = 0.0
-        self.initialLength = None
+        self.initial_length = None
         self.qp     = np.zeros((2))
         self.qs     = np.zeros((2))
 
@@ -81,7 +81,7 @@ class Element():
 
         if not length == None:
             self.length = length
-            self.initialLength = length
+            self.initial_length = length
 
         if not axialForce == None:
             self.axialForce = axialForce
@@ -90,25 +90,25 @@ class Element():
         if not EA == None:
             self.EA = EA
 
-    def getLength(self):
+    def get_length(self):
         return self.length
 
     def setNodes(self, nodeList):
         self.node = nodeList
         self.dof = [dof for nd in self.node for dof in nd.dof]
-        self.updateGeometry()
-        self.initPos = [np.array(nd.getCoordinates()) for nd in self.node]
+        self.update_geometry()
+        self.initPos = [np.array(nd.get_coordinates()) for nd in self.node]
     
-    def setParent(self, parent):
+    def set_parent(self, parent):
         self.parent = parent
 
-    def updateGeometry(self):
+    def update_geometry(self):
         x = [nd.x for nd in self.node]
         y = [nd.y for nd in self.node]
 
         self.length = ((x[1] - x[0])**2 + (y[1] - y[0])**2)**0.5
-        if self.initialLength is None:
-            self.initialLength = self.length
+        if self.initial_length is None:
+            self.initial_length = self.length
         self.gamma = kp.atand2(y[1] - y[0], x[1] - x[0])
 
     def setPressureAndShear(self, qp, qs):
@@ -174,9 +174,9 @@ class TrussElement(Element):
         
         return K, F
 
-    def updateGeometry(self):
-        Element.updateGeometry(self)
-        self.axialForce = (1 - config.ramp) * self.initialAxialForce + self.EA * (self.length - self.initialLength) / self.initialLength
+    def update_geometry(self):
+        Element.update_geometry(self)
+        self.axialForce = (1 - config.ramp) * self.initialAxialForce + self.EA * (self.length - self.initial_length) / self.initial_length
 
 
 class RigidElement(Element):

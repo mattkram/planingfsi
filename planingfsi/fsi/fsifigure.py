@@ -32,7 +32,7 @@ class FSIFigure:
                 el.lineEl,  = plt.plot([], [], 'k-', linewidth=2)
 
         self.lineCofR = []
-        for bd in self.solid.rigidBody:
+        for bd in self.solid.rigid_body:
             CofRPlot(self.geometryAx, bd, symbol=False, style='k--', marker='s', fill=False)
             self.lineCofR.append(CofRPlot(self.geometryAx, bd, symbol=False, style='k-', marker='o'))
 
@@ -61,7 +61,7 @@ class FSIFigure:
 
         self.subplot = []
        
-        bd = [bd for bd in self.solid.rigidBody]
+        bd = [bd for bd in self.solid.rigid_body]
 
         if len(bd) > 0:
             self.subplot.append(ForceSubplot( [0.70,0.30,0.25,0.2], bd[0]))
@@ -75,7 +75,7 @@ class FSIFigure:
 
     def update(self):
         self.solid.plot()
-        self.fluid.plotFreeSurface()
+        self.fluid.plot_free_surface()
         self.TXT.set_text((r'Iteration {0}' + '\n' + \
                            r'$Fr={1:>8.3f}$' + '\n' + \
                            r'$\bar{{P_c}}={2:>8.3f}$').format(config.it, config.Fr, config.PcBar))
@@ -98,7 +98,7 @@ class FSIFigure:
                 s.write()
 
     def save(self):
-        plt.savefig(os.path.join(config.figDir, 'frame{1:04d}.{0}'.format(config.figFormat, config.it)), format=config.figFormat)#, dpi=300)
+        plt.savefig(os.path.join(config.fig_dir_name, 'frame{1:04d}.{0}'.format(config.figFormat, config.it)), format=config.figFormat)#, dpi=300)
 
     def show(self):
         plt.show()
@@ -270,9 +270,9 @@ class ResidualSubplot(TimeHistory):
         itFunc = lambda : config.it
 
         col = ['r','b','g']
-        for bd, coli in zip(solid.rigidBody, col):
-            self.addSeries(PlotSeries(itFunc, bd.getResL, sty='{0}-'.format(coli), type='history+curr', legEnt='ResL: {0}'.format(bd.name), ignoreFirst=True))
-            self.addSeries(PlotSeries(itFunc, bd.getResM, sty='{0}--'.format(coli), type='history+curr', legEnt='ResM: {0}'.format(bd.name), ignoreFirst=True))
+        for bd, coli in zip(solid.rigid_body, col):
+            self.addSeries(PlotSeries(itFunc, bd.get_res_lift, sty='{0}-'.format(coli), type='history+curr', legEnt='ResL: {0}'.format(bd.name), ignoreFirst=True))
+            self.addSeries(PlotSeries(itFunc, bd.get_res_moment, sty='{0}--'.format(coli), type='history+curr', legEnt='ResM: {0}'.format(bd.name), ignoreFirst=True))
         
         self.addSeries(PlotSeries(itFunc, lambda : np.abs(solid.res), sty='k-', type='history+curr', legEnt='Total', ignoreFirst=True))
         

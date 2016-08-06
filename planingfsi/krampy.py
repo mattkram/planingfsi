@@ -1,77 +1,82 @@
 import os
-import sys
 from fnmatch import fnmatch
 
 import numpy as np
-import config
-import unit
+
+# import planingfsi.config as config
+import planingfsi.unit as unit
+
 
 class Dictionary:
 
     def __init__(self, name=''):
-        self.Dict = {}
+        self.dict_ = {}
         if os.path.exists(name):
-            with open(name) as f:
-                for line in f:
-                    if not line[0] == '#':
-                        split = line.partition(':')
-                        (key, val) = split[0].strip(), split[2].strip()
-              
-                        # Process non-empty keys
-                        if not len(key) == 0:
-                            # Convert val to appropriate variable type from string
-                            if val == 'nan' or val == '-nan' or val == '+nan':
-                                exec('self.Dict[\'{0}\'] = np.nan'.format(key))
-                            elif val == 'inf' or val == '-inf' or val == '+inf':
-                                exec('self.Dict[\'{0}\'] = float(\'{1}\')'.format(key, val))
-                            else:
-                                exec('self.Dict[\'{0}\'] = {1}'.format(key, val))
+            try:
+                with open(name) as f:
+                    for line in f:
+                        if not line[0] == '#':
+                            split = line.partition(':')
+                            (key, val) = split[0].strip(), split[2].strip()
 
+                            # Process non-empty keys
+                            if not len(key) == 0:
+                                # Convert val to appropriate variable type from
+                                # string
+                                if val in ['nan', '-nan', '+nan']:
+                                    self.dict_[key] = np.nan
+                                elif val in ['inf', '-inf', '+inf']:
+                                    self.dict_ = float(val)
+                                else:
+                                    exec(
+                                        'self.dict_[\'{0}\'] = {1}'.format(key,
+                                                                           val))
+
+            except IOError:
+                raise Exception(
+                    'Dictionary file {0} does not exist'.format(name))
         # If specified, read values from a base dictionary
         # All local values override the base dictionary values
-        baseDictDir = self.readOrDefault('baseDict', None)
+        baseDictDir = self.read('baseDict', None)
         if baseDictDir is not None:
             baseDict = Dictionary(baseDictDir)
-            for key in baseDict.Dict:
-                self.Dict[key] = self.readOrDefault(key, baseDict.Dict[key])
+            for key in baseDict.dict_:
+                self.dict_[key] = self.read(key, baseDict.dict_[key])
 
     def readLoadOrDefault(self, key, default):
-        val = self.readOrDefault(key, default)
+        val = self.read(key, default)
         if isinstance(val, str):
             exec('val = config.{0}'.format(val))
         return val
 
-    def readOrDefault(self, key, default):
-        try:
-            return self.read(key)
-        except:
+    def read(self, key, default=None):
+        if key in self.dict_:
+            return self.dict_[key]
+        else:
             return default
-
-    def read(self, key):
-        return self.Dict[key]
 
 
 class RootFinder:
 
     def __init__(self, func, xo, method, **kwargs):
         self.func = func
-        self.dim  = len(xo)
+        self.dim = len(xo)
 
-        self.xMin   = kwargs.get('xMin', -np.ones_like(xo) * float('Inf'))
-        self.xMax   = kwargs.get('xMax',  np.ones_like(xo) * float('Inf'))
-        self.maxIt  = kwargs.get('maxIt', 100)
-        self.dx0    = kwargs.get('firstStep', 1e-6)
+        self.xMin = kwargs.get('xMin', -np.ones_like(xo) * float('Inf'))
+        self.xMax = kwargs.get('xMax',  np.ones_like(xo) * float('Inf'))
+        self.maxIt = kwargs.get('maxIt', 100)
+        self.dx0 = kwargs.get('firstStep', 1e-6)
         self.errLim = kwargs.get('errLim', 1e-6)
-        self.relax  = kwargs.get('relax', 1.0)
-        self.dxMax  = kwargs.get('dxMax',  np.ones_like(xo) * float('Inf'))
+        self.relax = kwargs.get('relax', 1.0)
+        self.dxMax = kwargs.get('dxMax',  np.ones_like(xo) * float('Inf'))
         self.dxMaxInc = kwargs.get('dxMaxInc', self.dxMax)
         self.dxMaxDec = kwargs.get('dxMaxDec', self.dxMax)
-     
+
         self.relax = kwargs.get('relax', 1.0)
-        self.derivativeMethod = kwargs.get('derivativeMethod', 'right') 
-        self.err  = 1.0
-        self.it   = 0
-        self.J    = None
+        self.derivativeMethod = kwargs.get('derivativeMethod', 'right')
+        self.err = 1.0
+        self.it = 0
+        self.J = None
         self.xOld = None
         self.fOld = None
         self.maxJacobianResetStep = kwargs.get('maxJacobianResetStep', 5)
@@ -79,27 +84,27 @@ class RootFinder:
 
         # Calculate function value at initial point
         self.x = xo
-        
-        # Convert to numpy arrays 
+
+        # Convert to numpy arrays
         for v in ['x', 'xMin', 'xMax', 'dxMax', 'dxMaxInc', 'dxMaxDec']:
             exec('self.{0} = np.array([a for a in self.{0}])'.format(v))
 
         self.evalF()
-        
+
         if method.lower() == 'broyden':
             self.getStep = self.getStepBroyden
         else:
             self.getStep = self.getStepSecant
 
-    def reinitialize(self, xo): 
-        self.err  = 1.0
-        self.it   = 0
-        self.J    = None
+    def reinitialize(self, xo):
+        self.err = 1.0
+        self.it = 0
+        self.J = None
 
         # Calculate function value at initial point
         self.x = xo
         self.evalF()
-      
+
     def setMaxStep(self, *args):
         if len(args) == 1:
             self.dxMaxInc = args[0]
@@ -107,7 +112,7 @@ class RootFinder:
         else:
             self.dxMaxInc = args[0]
             self.dxMaxDec = args[1]
-       
+
     def limitStep(self, dx=None):
         if dx is None:
             dx = self.dx
@@ -119,7 +124,7 @@ class RootFinder:
         x = np.min(np.vstack((x, self.xMax)), axis=0)
 
         dx = x - self.x
-        
+
         dxLimPct = np.ones_like(dx)
         for i in range(len(dxLimPct)):
             if dx[i] > 0:
@@ -132,10 +137,10 @@ class RootFinder:
 
         return dx
 
-    def storePrevStep(self): 
+    def storePrevStep(self):
         self.xOld = self.x * 1.0
         self.fOld = self.f * 1.0
-   
+
     def evalErr(self):
         self.err = np.max(np.abs(self.dx + 1e-8))
         if self.df is not None:
@@ -149,9 +154,9 @@ class RootFinder:
             self.df = self.f - self.fOld
         else:
             self.df = None
-    
+
     def takeStep(self, dx=None):
-        if not dx is None:
+        if dx is not None:
             self.dx = dx
         self.storePrevStep()
         self.x += self.dx
@@ -161,42 +166,46 @@ class RootFinder:
         if self.it == 0:
             self.dx = np.ones_like(self.x) * self.dx0
         else:
-            self.dx = -self.f * (self.x - self.xOld) / (self.f - self.fOld + 1e-8)
+            self.dx = -self.f * \
+                (self.x - self.xOld) / (self.f - self.fOld + 1e-8)
         return self.dx
 
-    def resetJacobian(self):
+    def reset_jacobian(self):
         self.J = np.array([[dfi / dxj for dxj in self.dx] for dfi in self.df])
         self.step = 0
 
-    def getStepBroyden(self): 
+    def getStepBroyden(self):
         if self.it == 0:
             self.dx = np.ones_like(self.x) * self.dx0
             for i in range(1, self.dim):
-                self.dx[i] += self.dx[i-1] / 10
-        else: 
+                self.dx[i] += self.dx[i - 1] / 10
+        else:
             dx = np.reshape(self.dx, (self.dim, 1))
             df = np.reshape(self.df, (self.dim, 1))
             if self.J is None:
-                self.resetJacobian()
-            
-            self.J += np.dot(df - np.dot(self.J, dx), dx.T) / np.linalg.norm(dx)**2
+                self.reset_jacobian()
+
+            self.J += np.dot(df - np.dot(self.J, dx), dx.T) / \
+                np.linalg.norm(dx)**2
             dx *= 0.0
-            dof = [not x <= xMin and not x >= xMax for x, xMin, xMax in zip(self.x, self.xMin, self.xMax)]
+            dof = [not x <= xMin and not x >= xMax for x, xMin,
+                   xMax in zip(self.x, self.xMin, self.xMax)]
             if any(dof):
                 A = -self.J
-                b =  self.f.reshape(self.dim, 1)
-                dx[np.ix_(dof)] = np.linalg.solve(A[np.ix_(dof,dof)], b[np.ix_(dof)])
-             
+                b = self.f.reshape(self.dim, 1)
+                dx[np.ix_(dof)] = np.linalg.solve(
+                    A[np.ix_(dof, dof)], b[np.ix_(dof)])
+
             if any(np.abs(self.f) - np.abs(self.fOld) > 0.0):
                 self.step += 1
-        
+
             if self.step >= self.maxJacobianResetStep:
                 dx = np.ones_like(dx) * self.dx0
                 self.J = None
-      #self.resetJacobian()
-            
+#             self.reset_jacobian()
+
             self.dx = dx.reshape(self.dim)
-        
+
         return self.dx
 
     def solve(self):
@@ -206,23 +215,24 @@ class RootFinder:
             self.limitStep()
             self.takeStep()
             self.evalErr()
-        
-        self.converged = self.err < self.errLim and not any(self.x <= self.xMin)
-        
+
+        self.converged = self.err < self.errLim and not any(
+            self.x <= self.xMin)
+
         return self.x
 
 
 class RootFinderNew(RootFinder):
 
     def takeStep(self, dx=None):
-        if not dx is None:
+        if dx is not None:
             self.dx = dx
         self.storePrevStep()
         self.x += self.dx
         self.evalF()
         self.it += 1
 
-    def resetJacobian(self):
+    def reset_jacobian(self):
         fo = self.f * 1.0
         xo = self.x * 1.0
 
@@ -231,37 +241,39 @@ class RootFinderNew(RootFinder):
             self.dx = np.zeros_like(self.x)
             self.dx[i] = self.dx0
             self.takeStep()
-            self.J[:,i] = self.df / self.dx[i]
+            self.J[:, i] = self.df / self.dx[i]
             self.f = fo
             self.x = xo
 
         self.step = 0
 
-    def getStepBroyden(self): 
+    def getStepBroyden(self):
         if self.it == 0 or self.J is None:
-            self.resetJacobian()
-        
+            self.reset_jacobian()
+
         dx = np.reshape(self.dx, (self.dim, 1))
         df = np.reshape(self.df, (self.dim, 1))
 
         self.J += np.dot(df - np.dot(self.J, dx), dx.T) / np.linalg.norm(dx)**2
 
         dx *= 0.0
-        dof = [not x <= xMin and not x >= xMax for x, xMin, xMax in zip(self.x, self.xMin, self.xMax)]
+        dof = [not x <= xMin and not x >= xMax for x, xMin,
+               xMax in zip(self.x, self.xMin, self.xMax)]
         if any(dof):
             A = -self.J
-            b =  self.f.reshape(self.dim, 1)
-            dx[np.ix_(dof)] = np.linalg.solve(A[np.ix_(dof,dof)], b[np.ix_(dof)])
-         
+            b = self.f.reshape(self.dim, 1)
+            dx[np.ix_(dof)] = np.linalg.solve(
+                A[np.ix_(dof, dof)], b[np.ix_(dof)])
+
         if any(np.abs(self.f) - np.abs(self.fOld) > 0.0):
             self.step += 1
 
         if self.step >= self.maxJacobianResetStep:
             dx = np.ones_like(dx) * self.dx0
             self.J = None
-        
+
         self.dx = dx.reshape(self.dim)
-        
+
         return self.dx
 
     def solve(self):
@@ -270,62 +282,76 @@ class RootFinderNew(RootFinder):
             self.limitStep()
             self.takeStep()
             self.evalErr()
-        
-        self.converged = self.err < self.errLim and not any(self.x <= self.xMin)
-        
+
+        self.converged = self.err < self.errLim and not any(
+            self.x <= self.xMin)
+
         return self.x
 
 
 def mag(vec):
     return np.sum(np.array([veci**2 for veci in vec])) ** 0.5
 
+
 def ang2vec(ang):
     return np.array([np.cos(ang), np.sin(ang)])
+
 
 def ang2vecd(ang):
     return np.array([cosd(ang), sind(ang)])
 
+
 def deg2rad(ang):
     return ang * np.pi / 180
+
 
 def rad2deg(ang):
     return ang * 180 / np.pi
 
+
 def cosd(ang):
     return np.cos(deg2rad(ang))
+
 
 def sind(ang):
     return np.sin(deg2rad(ang))
 
+
 def tand(ang):
     return np.tan(deg2rad(ang))
+
 
 def acosd(slope):
     return rad2deg(np.arccos(slope))
 
+
 def asind(slope):
     return rad2deg(np.arcsin(slope))
+
 
 def atand(slope):
     return rad2deg(np.arctan(slope))
 
+
 def atand2(y, x):
     return rad2deg(np.arctan2(y, x))
+
 
 def cumdiff(x):
     return np.sum(np.diff(x))
 
+
 def fzero(f, xo, **kwargs):
-    maxIt     = kwargs.get('maxIt', 100)
-    dx0       = kwargs.get('firstStep', 1e-6)
-    errLim    = kwargs.get('errLim', 1e-6)
-    printout  = kwargs.get('printout', False)
-    xname     = kwargs.get('xname', 'x')
-    xscale    = kwargs.get('xscale', 1.0)
-    xmin      = kwargs.get('xmin', -float('Inf'))
-    xmax      = kwargs.get('xmax',  float('Inf'))
-    nspace    = kwargs.get('nspace', 0.0)
-    method    = kwargs.get('method', 'Secant')
+    maxIt = kwargs.get('maxIt', 100)
+    dx0 = kwargs.get('firstStep', 1e-6)
+    errLim = kwargs.get('errLim', 1e-6)
+    printout = kwargs.get('printout', False)
+    xname = kwargs.get('xname', 'x')
+    xscale = kwargs.get('xscale', 1.0)
+    xmin = kwargs.get('xmin', -float('Inf'))
+    xmax = kwargs.get('xmax',  float('Inf'))
+    nspace = kwargs.get('nspace', 0.0)
+    method = kwargs.get('method', 'Secant')
 
     if nspace == 0:
         space = ' '
@@ -335,33 +361,35 @@ def fzero(f, xo, **kwargs):
     if method == 'Secant' or method == 'Newton':
         def grad(x):
             dx = 1e-6
-            return (f(x+dx) - f(x-dx)) / (2*dx)
+            return (f(x + dx) - f(x - dx)) / (2 * dx)
 
-        err  = 1
-        it   = 0
+        err = 1
+        it = 0
         xOld = xo
         fOld = f(xOld)
         xNew = xOld + dx0
         while err >= errLim and it < maxIt:
-            fNew  = f(xNew)
+            fNew = f(xNew)
 
             if printout:
-                print '{5}Iteration {0}: {1} = {2:f}, {3} = {4:5.3e}'.format(it, xname, xNew*xscale, 'residual', err, space)
+                string = '{5}Iteration {0}: {1} = {2:f}, {3} = {4:5.3e}'
+                print string.format(it, xname, xNew * xscale,
+                                    'residual', err, space)
 
             if method == 'Newton':
                 dx = -fNew / grad(xOld)
             elif method == 'Secant':
-                dx    = -fNew * (xNew - xOld) / (fNew - fOld)
+                dx = -fNew * (xNew - xOld) / (fNew - fOld)
 
-            xOld  = xNew
-            fOld  = fNew
+            xOld = xNew
+            fOld = fNew
             xNew += dx
 
             xNew = max(min(xNew, xmax), xmin)
-            dx  = xNew - xOld
+            dx = xNew - xOld
 
-            err  = np.abs(dx)
-            it  += 1
+            err = np.abs(dx)
+            it += 1
         return xNew
 
     elif method == 'Golden':
@@ -388,6 +416,7 @@ def fzero(f, xo, **kwargs):
 
         return f((X[2] + X[0]) / 2)
 
+
 def integrate(x, f):
     # Trapezoidal integration
     I = np.argsort(x)
@@ -397,16 +426,18 @@ def integrate(x, f):
 
     return 0.5 * np.sum((x[1:] - x[0:-1]) * (f[1:] + f[0:-1]))
 
+
 def growPoints(x0, x1, xMax, rate=1.1):
     dx = x1 - x0
     x = [x1]
 
-    if dx > 0:
-        done = lambda xt: xt > xMax
-    elif dx < 0:
-        done = lambda xt: xt < xMax
-    else:
-        done = lambda xt: True
+    def done(xt):
+        if dx > 0:
+            return xt > xMax
+        elif dx < 0:
+            return xt < xMax
+        else:
+            return True
 
     while not done(x[-1]):
         x.append(x[-1] + dx)
@@ -414,36 +445,46 @@ def growPoints(x0, x1, xMax, rate=1.1):
 
     return np.array(x[1:])
 
+
 def fillPoints(x0, x1, L, pctLast, targetRate=1.1):
     dxLast = pctLast * L
     x2 = x1 + np.sign(x1 - x0) * (L - 0.5 * dxLast)
 
-    func = lambda rate: growPoints(x0, x1, x2, rate)
-    res1 = lambda rate: np.abs(np.diff(func(rate)[-2:])[0]) - dxLast
-    res2 = lambda rate: func(rate)[-1] - x2
+    def func(rate):
+        return growPoints(x0, x1, x2, rate)
+
+    def res1(rate):
+        return np.abs(np.diff(func(rate)[-2:])[0]) - dxLast
+
+    def res2(rate):
+        return func(rate)[-1] - x2
 
     return func(fzero(res2, fzero(res1, targetRate)))
 
+
 def getDerivative(f, x, direction='c'):
     dx = 1e-6
-    fr = f(x+dx)
-    fl = f(x-dx)
-    
-    if   direction[0].lower() == 'r' or np.isnan(fl):
+    fr = f(x + dx)
+    fl = f(x - dx)
+
+    if direction[0].lower() == 'r' or np.isnan(fl):
         return (fr - f(x)) / dx
     elif direction[0].lower() == 'l' or np.isnan(fr):
         return (f(x) - fl) / dx
     else:
-        return (f(x+dx) - f(x-dx)) / (2 * dx)
+        return (f(x + dx) - f(x - dx)) / (2 * dx)
+
 
 def cross2(a, b):
-    return a[0]*b[1] - a[1]*b[0]
+    return a[0] * b[1] - a[1] * b[0]
+
 
 def rotateVec(v, ang):
     C = cosd(ang)
     S = sind(ang)
 
     return np.array([C * v[0] - S * v[1], S * v[0] + C * v[1]])
+
 
 def rotatePt(oldPt, basePt, ang):
     relPos = np.array(oldPt) - np.array(basePt)
@@ -452,22 +493,26 @@ def rotatePt(oldPt, basePt, ang):
 
     return newPt
 
+
 def extrap1d(interpolator):
     xs = interpolator.x
     ys = interpolator.y
 
     def pointwise(x):
         if x < xs[0]:
-            return ys[0]  + (x - xs[0]) * (ys[1] - ys[0]) / (xs[1] - xs[0])
+            return ys[0] + (x - xs[0]) * (ys[1] - ys[0]) / (xs[1] - xs[0])
         elif x > xs[-1]:
-            return ys[-1] + (x - xs[-1]) * (ys[-1] - ys[-2]) / (xs[-1] - xs[-2])
+            return ys[-1] + (x - xs[-1]) * (ys[-1] - ys[-2]) / \
+                (xs[-1] - xs[-2])
         else:
             return interpolator(x)
 
     return pointwise
 
+
 def minMax(x):
     return min(x), max(x)
+
 
 def sign(x):
     if x > 0:
@@ -477,6 +522,7 @@ def sign(x):
     else:
         return 0.0
 
+
 def heaviside(x):
     if x > 0:
         return 1.0
@@ -485,57 +531,67 @@ def heaviside(x):
     else:
         return 0.5
 
+
 def inRange(x, lims):
     if x >= lims[0] and x <= lims[1]:
         return True
     else:
         return False
 
+
 def createIfNotExist(dirName):
     if not os.path.exists(dirName):
-        os.makedirs(dirName)#, 0755)
+        os.makedirs(dirName)  # , 0755)
+
 
 def writeasdict(filename, *args, **kwargs):
-    dataFormat   = kwargs.get('dataFormat', '>+10.8e')
+    dataFormat = kwargs.get('dataFormat', '>+10.8e')
     ff = open(filename, 'w')
     for name, value in args:
         ff.write('{2:{0}} : {3:{1}}\n'.format('<14', dataFormat, name, value))
     ff.close()
 
+
 def writeaslist(filename, *args, **kwargs):
     headerFormat = kwargs.get('headerFormat', '<15')
-    dataFormat   = kwargs.get('dataFormat', '>+10.8e')
+    dataFormat = kwargs.get('dataFormat', '>+10.8e')
     ff = open(filename, 'w')
     write(ff, headerFormat, [item for item in [arg[0] for arg in args]])
     for value in zip(*[arg[1] for arg in args]):
         write(ff, dataFormat, value)
     ff.close()
 
+
 def write(ff, writeFormat, items):
     if isinstance(items[0], str):
         ff.write('# ')
     else:
         ff.write('  ')
-    ff.write(''.join('{1:{0}} '.format(writeFormat, item) for item in items) + '\n')
+    ff.write(''.join('{1:{0}} '.format(writeFormat, item)
+                     for item in items) + '\n')
+
 
 def sortDirByNum(dirStr, direction='forward'):
-    num = np.array([float(''.join(i for i in dir.lower() if i.isdigit() or i == '.').strip('.')) for dir in dirStr])
+    num = np.array([float(''.join(i for i in d.lower()
+                                  if i.isdigit() or i == '.').strip('.'))
+                    for d in dirStr])
     if direction == 'reverse':
         ind = np.argsort(num)[::-1]
     else:
         ind = np.argsort(num)
     return [dirStr[i] for i in ind], num[ind]
 
+
 def getFG(x):
     txMax = 5.0
     N = 20
 
-    pt = np.array([-1., 0., 1.]) * np.sqrt(3./5.)
-    w  = np.array([5., 8., 5.]) / 9
-    
-    t  = np.linspace(0.0, txMax / x, N + 1)
+    pt = np.array([-1., 0., 1.]) * np.sqrt(3. / 5.)
+    w = np.array([5., 8., 5.]) / 9
+
+    t = np.linspace(0.0, txMax / x, N + 1)
     dt = 0.5 * (t[1] - t[0])
-    
+
     f = 0.
     g = 0.
     for i in range(N):
@@ -544,27 +600,46 @@ def getFG(x):
 
         f += np.sum(F)
         g += np.sum(F * ti)
-    
-    return f, g 
+
+    return f, g
+
 
 def ensureDict(Dict):
+    """If argument is string, create a dictionary. Otherwise, return argument. Used to ensure a dictionary is used."""
     if isinstance(Dict, str):
         Dict = Dictionary(Dict)
     return Dict
 
+
 def rm_rf(dList):
     dList = map(None, dList)
     for d in dList:
-        for path in (os.path.join(d,f) for f in os.listdir(d)):
+        for path in (os.path.join(d, f) for f in os.listdir(d)):
             if os.path.isdir(path):
                 rm_rf(path)
             else:
                 os.unlink(path)
-        os.rmdir(d) 
+        os.rmdir(d)
+
+
+def find_files(path='.', pattern='*'):
+    """Return list of files in path matching the pattern.
+
+    Args
+    ----
+    path : str, optional
+        Path to search. Default is current directory.
+
+    pattern : str
+        Wildcard pattern to match.
+    """
+    return [d for d in os.listdir(path) if fnmatch(d, pattern)]
+
 
 def checkDir(f):
     if not os.path.isdir(f):
         os.makedirs(f)
+
 
 def listdir_nohidden(d):
     return [di for di in os.listdir(d) if not fnmatch(di, '.*')]

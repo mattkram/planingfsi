@@ -22,3 +22,7 @@ doc/
 *.out
 
 old/
+
+#Pydev files
+.project
+.pydevproject
