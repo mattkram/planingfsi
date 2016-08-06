@@ -11,15 +11,20 @@ Contents:
 .. toctree::
    :maxdepth: 5
 
-.. automodule:: planingfsi
-    :members:
-    :undoc-members:
+.. .. automodule:: planingfsi
+..    :members:
+..    :undoc-members:
+..
+.. .. automodule:: planingfsi.potentialflow
+..    :members:
+..    :undoc-members:
+..
+.. .. automodule:: planingfsi.potentialflow.calculation
+..    :members:
+..    :undoc-members:
 
-.. automodule:: planingfsi.potentialflow
-    :members:
-    :undoc-members:
-
-.. automodule:: planingfsi.potentialflow.calculation
+.. automodule:: planingfsi.potentialflow.pressureelement
+    :show-inheritance:
     :members:
     :undoc-members:
 
