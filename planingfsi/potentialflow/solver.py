@@ -26,17 +26,6 @@ class PotentialPlaningSolver(object):
     calculation is then solved during iteration with the structural solver.
     """
 
-#     # TODO: getTotalFreeSurfaceHeight should not be a class method. There
-#     # should only be one instance of PotentialPlaningSolver
-#     obj = []
-#
-#     @classmethod
-#     def getTotalFreeSurfaceHeight(cls, x):
-#         """Class method gets total free surface height by summing the response
-#         from all elements.
-#         """
-#         return cls.obj[0].get_free_surface_height(x)
-
     def __init__(self):
         self.X = None
         self.xFS = None
@@ -100,6 +89,7 @@ class PotentialPlaningSolver(object):
             Instance created from dictionary.
         """
         dict_ = kp.ensureDict(dict_name)
+        kwargs['parent'] = self
         instance = PlaningSurface(dict_, **kwargs)
         self.planing_surfaces.append(instance)
         self.add_pressure_patch(instance)
@@ -119,6 +109,7 @@ class PotentialPlaningSolver(object):
             Instance created from dictionary.
         """
         dict_ = kp.ensureDict(dict_name)
+        kwargs['parent'] = self
         instance = PressureCushion(dict_, **kwargs)
         self.pressure_cushions.append(instance)
         self.add_pressure_patch(instance)
@@ -137,7 +128,7 @@ class PotentialPlaningSolver(object):
         PlaningSurface
             Planing surface object match
         """
-        l = [surf for surf in self.planing_surfaces if surf.patchName == name]
+        l = [surf for surf in self.planing_surfaces if surf.patch_name == name]
         if len(l) > 0:
             return l[0]
         else:
@@ -208,11 +199,11 @@ class PotentialPlaningSolver(object):
         """
         # Set length of each planing surface
         for Lwi, p in zip(Lw, self.planing_surfaces):
-            p.set_length(np.min([Lwi, p.maximum_length]))
+            p.length = np.min([Lwi, p.maximum_length])
 
         # Update bounds of pressure cushions
         for p in self.pressure_cushions:
-            p.update_end_pts()
+            p._update_end_pts()
 
         # Solve for unknown pressures and output residual
         self.calculate_pressure()
@@ -252,7 +243,7 @@ class PotentialPlaningSolver(object):
             print '  Solving for wetted length:'
 
             if self.min_len is None:
-                self.min_len = np.array([p.get_min_length()
+                self.min_len = np.array([p.minimum_length
                                          for p in self.planing_surfaces])
                 self.max_len = np.array(
                     [p.maximum_length for p in self.planing_surfaces])
@@ -353,16 +344,16 @@ class PotentialPlaningSolver(object):
         if self.X is None:
             if config.shearCalc:
                 for p in self.planing_surfaces:
-                    p.calculateShearStress()
+                    p._calculate_shear_stress()
 
             # Calculate forces on each patch
             for p in self.pressure_patches:
-                p.calculateForces()
+                p.calculate_forces()
 
             # Calculate pressure profile
             if len(self.pressure_patches) > 0:
                 self.X = np.sort(
-                    np.unique(np.hstack([p.getPts()
+                    np.unique(np.hstack([p._get_element_coords()
                                          for p in self.pressure_patches])))
                 self.p = np.zeros_like(self.X)
                 self.shear_stress = np.zeros_like(self.X)
@@ -399,8 +390,8 @@ class PotentialPlaningSolver(object):
             xFS = []
             # Grow points upstream and downstream from first and last plate
             for surf in self.planing_surfaces:
-                if surf.get_length() > 0:
-                    pts = surf.getPts()
+                if surf.length > 0:
+                    pts = surf._get_element_coords()
                     xFS.append(
                         kp.growPoints(pts[1], pts[0],
                                       config.xFSMin, config.growthRate))
@@ -409,9 +400,9 @@ class PotentialPlaningSolver(object):
                                       config.xFSMax, config.growthRate))
 
             # Add points from each planing surface
-            fsList = [patch.getPts()
+            fsList = [patch._get_element_coords()
                       for patch in self.planing_surfaces
-                      if patch.get_length() > 0]
+                      if patch.length > 0]
             if len(fsList) > 0:
                 xFS.append(np.hstack(fsList))
 
@@ -419,12 +410,12 @@ class PotentialPlaningSolver(object):
             xFS.append(np.linspace(config.xFSMin, config.xFSMax, 100))
 #             for patch in self.pressure_cushions:
 #                 if patch.neighborDown is not None:
-#                     ptsL = patch.neighborDown.getPts()
+#                     ptsL = patch.neighborDown._get_element_coords()
 #                 else:
 #                     ptsL = np.array([patch.endPt[0] - 0.01, patch.endPt[0]])
 #
 #                 if patch.neighborDown is not None:
-#                     ptsR = patch.neighborUp.getPts()
+#                     ptsR = patch.neighborUp._get_element_coords()
 #                 else:
 #                     ptsR = np.array([patch.endPt[1], patch.endPt[1] + 0.01])
 #
@@ -479,7 +470,7 @@ class PotentialPlaningSolver(object):
         return ddx
 
     def write_results(self):
-        """Write resultsto file."""
+        """Write results to file."""
         # Post-process results from current solution
     #    self.calculate_pressure_and_shear_profile()
         self.calculate_free_surface_profile()
@@ -546,7 +537,7 @@ class PotentialPlaningSolver(object):
                 el.set_shear_stress(self.shear_stress[compare][0])
 
         for p in self.planing_surfaces:
-            p.calculateForces()
+            p.calculate_forces()
 
     def load_free_surface(self):
         """Load free surface coordinates from file."""
