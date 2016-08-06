@@ -1,10 +1,4 @@
-"""Classes representing a pressure patch on the free surface.
-
-Consists of the abstract base class `PressurePatch` and two derived classes,
-representing a `PressureCushion`, which consists of all source terms, and
-`PlaningSurface`, where the pressure profile is solved-for to meet the body
- boundary condition and trailing edge condition.
-"""
+"""Classes representing a pressure patch on the free surface."""
 import os
 
 import numpy as np
@@ -13,8 +7,6 @@ from scipy.optimize import fmin
 
 import planingfsi.config as config
 import planingfsi.krampy as kp
-
-# from planingfsi.potentialflow.solver import PotentialPlaningCalculation
 import planingfsi.potentialflow.pressureelement as pe
 
 
@@ -24,115 +16,84 @@ class PressurePatch(object):
 
     Args
     ----
-    neighbor_up
+    pressure_elements : list
+        List of pressure elements.
+
+    base_pt : float
+        x-location of base point.
+
+    length : float
+        Length of pressure patch.
+
+    is_kutta_unknown : bool
+        True of trailing edge pressure unknown
+
+    neighbor_up : PressurePatch
         PressurePatch instance upstream of this one.
 
-
-    neighbor_up
+    neighbor_down : PressurePatch
         PressurePatch instance downstream of this one.
+
+    interpolator : FSIInterpolator
+        Object to get interpolated body position if a `PlaningSurface`
+
+    force_dict : dict
+        Dictionary of global force values derived from element pressure/shear
+        stress.
+
+    parent : PotentialPlaningCalculation
+        Parent solver this patch belongs to.
     """
 
-    def __init__(self, neighbor_up=None, neighbor_down=None):
+    def __init__(self, neighbor_up=None, neighbor_down=None, parent=None):
         self.pressure_elements = []
-        self.endPt = np.zeros(2)
-        self.kuttaUnknown = False
+        self._end_pts = np.zeros(2)
+        self.is_kutta_unknown = False
+        self._neighbor_up = None
+        self._neighbor_down = None
+        self.neighbor_up = neighbor_up
+        self.neighbor_down = neighbor_down
+        self.interpolator = None
+        self.force_dict = {}
+        self.parent = parent
 
-        self.D = 0.0
-        self.Dw = 0.0
-        self.Dp = 0.0
-        self.Df = 0.0
-        self.L = 0.0
-        self.Lp = 0.0
-        self.Lf = 0.0
-        self.M = 0.0
+    @property
+    def base_pt(self):
+        return self._end_pts[0]
 
-        self.neighborDown = neighbor_down
-        self.neighborUp = neighbor_up
+    @base_pt.setter
+    def base_pt(self, x):
+        self._end_pts[0] = x
 
-    def setNeighbor(self, up=None, down=None):
-        """Assign an upstream or downstream neighbor to this patch, and assign
-        this patch as the appropriate neighbor of the other.
+    @property
+    def length(self):
+        return self._end_pts[1] - self._end_pts[0]
 
-        Args
-        ----
-        down : , optional
-            Downstream neighbor.
+    @property
+    def neighbor_up(self):
+        return self._neighbor_up
 
-        up : , optional
-            Upstream neighbor.
+    @neighbor_up.setter
+    def neighbor_up(self, obj):
+        if obj is not None:
+            self._neighbor_up = obj
+            self._neighbor_up.neighbor_down = self
+
+    @property
+    def neighbor_down(self):
+        return self._neighbor_down
+
+    @neighbor_down.setter
+    def neighbor_down(self, obj):
+        if obj is not None:
+            self._neighbor_down = obj
+            self._neighbor_down.neighbor_up = self
+
+    def _reset_element_coords(self):
+        """Re-distribute pressure element positions given the length and end
+        points of this patch.
         """
-        # TODO: Clean up this logic, it is terrible. Use this method in
-        #       constructor instead of assigning explicitly.
-        if down is not None:
-            self.neighborDown = down
-        if self.neighborDown is not None:
-            self.neighborDown.neighborUp = self
-
-        if up is not None:
-            self.neighborUp = up
-        if self.neighborUp is not None:
-            self.neighborUp.neighborDown = self
-
-    def setEndPts(self, endPt):
-        """Set the location of the end points.
-
-        Args
-        -----
-        endPt : numpy.ndarray
-            Array of end point locations. [trailing, leading] edge
-        """
-        self.endPt = endPt
-
-    def getEndPts(self):
-        """Get array of end point locations."""
-        return self.endPt
-
-    def getBasePt(self):
-        """Get location of trailing edge, or left-most point.
-
-        Returns
-        -------
-        float : x-location of base point.
-        """
-        return self.endPt[0]
-
-    def get_length(self):
-        """Return length of `PressurePatch` instance.
-
-        Returns
-        -------
-        float : Length of pressure patch.
-        """
-        return self.endPt[1] - self.endPt[0]
-
-    def setKuttaUnknown(self, unknown):
-        """Set trailing eldge to be unknown.
-
-        Args
-        ----
-        unknown : bool
-            True of Kutta condition must be satisfied.
-        """
-        self.kuttaUnknown = unknown
-
-    def isKuttaUnknown(self):
-        """Return True if trailing edge pressure is unknown.
-
-        Returns
-        -------
-        bool
-        """
-        return self.kuttaUnknown
-
-    def resetElements(self):
-        """Reset position of elements given the length and end points of the
-        `PressurePatch` instance.
-
-        Returns
-        -------
-        None, -1 if element type is invalid
-        """
-        x = self.getPts()
+        x = self._get_element_coords()
         for i, el in enumerate(self.pressure_elements):
             el.x_coord = x[i]
             if not el.is_source:
@@ -147,9 +108,7 @@ class PressurePatch(object):
             elif isinstance(el, pe.AftSemiInfinitePressureBand):
                 el.width = np.inf
             else:
-                print 'Invalid Element Type!'
-                return -1
-        return None
+                raise ValueError('Invalid Element Type!')
 
     def get_free_surface_height(self, x):
         """Get free surface height at a position x due to the elements on this
@@ -159,29 +118,27 @@ class PressurePatch(object):
         ----
         x : float
             x-position at which to calculate free-surface height.
-
-        Returns
-        -------
-        float : Free-surface height.
         """
         return sum([el.get_influence(x) for el in self.pressure_elements])
 
-    def calculateWaveDrag(self):
+    def calculate_wave_drag(self):
         """Calculate wave drag of patch.
 
         Returns
         -------
         None
         """
-        f = self.get_free_surface_height
         xo = -10.1 * config.lam
-        xTrough = fmin(f, xo, disp=False)[0]
-        xCrest = fmin(lambda x: -f(x), xo, disp=False)[0]
-        self.Dw = 0.0625 * config.rho * config.g * (f(xCrest) - f(xTrough))**2
+        xTrough, = fmin(self.get_free_surface_height, xo, disp=False)
+        xCrest, = fmin(
+            lambda x: -self.get_free_surface_height(x), xo, disp=False)
+        self.Dw = (0.0625 * config.rho * config.g *
+                   (self.get_free_surface_height(xCrest) -
+                    self.get_free_surface_height(xTrough))**2)
 
-    def printForces(self):
+    def print_forces(self):
         """Print forces to screen."""
-        print 'Forces and Moment for {0}:'.format(self.patchName)
+        print 'Forces and Moment for {0}:'.format(self.patch_name)
         print '    Total Drag [N]      : {0:6.4e}'.format(self.D)
         print '    Wave Drag [N]       : {0:6.4e}'.format(self.Dw)
         print '    Pressure Drag [N]   : {0:6.4e}'.format(self.Dp)
@@ -194,7 +151,7 @@ class PressurePatch(object):
     def write_forces(self):
         """Write forces to file."""
         kp.writeasdict(os.path.join(config.it_dir, 'forces_{0}.{1}'.format(
-            self.patchName,
+            self.patch_name,
             config.data_format)),
             ['Drag', self.D],
             ['WaveDrag', self.Dw],
@@ -204,13 +161,13 @@ class PressurePatch(object):
             ['PressLift', self.Lp],
             ['FricLift', self.Lf],
             ['Moment', self.M],
-            ['BasePt', self.getBasePt()],
-            ['Length', self.get_length()])
+            ['BasePt', self.base_pt],
+            ['Length', self.length])
 
     def load_forces(self):
         """Load forces from file."""
         K = kp.Dictionary(os.path.join(
-            config.it_dir, 'forces_{0}.{1}'.format(self.patchName,
+            config.it_dir, 'forces_{0}.{1}'.format(self.patch_name,
                                                    config.data_format)))
         self.D = K.read('Drag', 0.0)
         self.Dw = K.read('WaveDrag', 0.0)
@@ -220,278 +177,287 @@ class PressurePatch(object):
         self.Lp = K.read('PressLift', 0.0)
         self.Lf = K.read('FricLift', 0.0)
         self.M = K.read('Moment', 0.0)
-        self.setBasePt(K.read('BasePt', 0.0))
-        self.set_length(K.read('Length', 0.0))
+        self.base_pt = K.read('BasePt', 0.0)
+        self.length = K.read('Length', 0.0)
 
 
 class PressureCushion(PressurePatch):
+    """Pressure Cushion consisting solely of source elements.
+
+    Args
+    ----
+    dict_ : krampy.Dictionary or str
+        Dictionary instance or string with dictionary path to load properties.
+
+    **kwargs : dict
+        Keyword arguments.
+
+    Attributes
+    ----------
+    patch_name : str
+        Name of patch
+
+    base_pt : float
+        Right end of `PressurePatch`.
+    """
     count = 0
 
     def __init__(self, dict_, **kwargs):
-        PressurePatch.__init__(self, **kwargs)
+        super(self.__class__, self).__init__(self, **kwargs)
         self.index = PressureCushion.count
         PressureCushion.count += 1
 
-        self.Dict = dict_
+        dict_ = kp.ensureDict(dict_)
 
-        self.patchName = self.Dict.read(
+        self.patch_name = dict_.read(
             'pressureCushionName', 'pressureCushion{0}'.format(self.index))
-        self.cushionType = self.Dict.read('cushionType', '')
-        self.cushionPressure = kwargs.get(
-            'Pc', self.Dict.readLoadOrDefault('cushionPressure', 0.0))
 
-        upstreamSurf = PlaningSurface.findByName(
-            self.Dict.read('upstreamPlaningSurface', ''))
-        downstreamSurf = PlaningSurface.findByName(
-            self.Dict.read('downstreamPlaningSurface', ''))
+        # TODO: cushion_type variability should be managed by sub-classing
+        # PressurePatch
+        self.cushion_type = dict_.read('cushionType', '')
+        self.cushion_pressure = kwargs.get(
+            'Pc', dict_.readLoadOrDefault('cushionPressure', 0.0))
 
-        self.setNeighbor(down=downstreamSurf, up=upstreamSurf)
+        self.neighbor_up = PlaningSurface.find_by_name(
+            dict_.read('upstreamPlaningSurface', ''))
+        self.neighbor_down = PlaningSurface.find_by_name(
+            dict_.read('downstreamPlaningSurface', ''))
 
-        if self.neighborDown is not None:
-            self.neighborDown.setUpstreamPressure(self.cushionPressure)
-        if self.neighborUp is not None:
-            self.neighborUp.setKuttaPressure(self.cushionPressure)
+        if self.neighbor_down is not None:
+            self.neighbor_down.upstream_pressure = self.cushion_pressure
+        if self.neighbor_up is not None:
+            self.neighbor_up.kutta_pressure = self.cushion_pressure
 
-        if self.cushionType == 'infinite':
+        if self.cushion_type == 'infinite':
             # Dummy element, will have 0 pressure
             self.pressure_elements += [
-                pe.AftSemiInfinitePressureBand(is_source=True, is_on_body=False)]
+                pe.AftSemiInfinitePressureBand(is_source=True,
+                                               is_on_body=False)]
             self.pressure_elements += [
-                pe.AftSemiInfinitePressureBand(is_source=True, is_on_body=False)]
-            self.downstreamLoc = -1000.0  # doesn't matter where
+                pe.AftSemiInfinitePressureBand(is_source=True,
+                                               is_on_body=False)]
+            self._end_pts[0] = -1000.0  # doesn't matter where
 
         else:
             self.pressure_elements += [
-                pe.ForwardHalfTriangularPressureElement(is_source=True, is_on_body=False)]
+                pe.ForwardHalfTriangularPressureElement(is_source=True,
+                                                        is_on_body=False)]
 
-            Nfl = self.Dict.read('numElements', 10)
-            self.sf = self.Dict.read('smoothingFactor', np.nan)
-            for n in [self.neighborDown, self.neighborUp]:
-                if n is None and ~np.isnan(self.sf):
+            Nfl = dict_.read('numElements', 10)
+            self.smoothing_factor = dict_.read('smoothingFactor', np.nan)
+            for n in [self.neighbor_down, self.neighbor_up]:
+                if n is None and ~np.isnan(self.smoothing_factor):
                     self.pressure_elements += [
-                        pe.CompleteTriangularPressureElement(is_source=True) for _ in range(Nfl)]
+                        pe.CompleteTriangularPressureElement(is_source=True,
+                                                             is_on_body=False)
+                        for __ in range(Nfl)]
 
-            self.upstreamLoc = self.Dict.readLoadOrDefault(
-                'upstreamLoc',   0.0)
-            self.downstreamLoc = self.Dict.readLoadOrDefault(
-                'downstreamLoc', 0.0)
+            self.end_pts = [
+                dict_.readLoadOrDefault(key, 0.0) for key in
+                ['downstreamLoc', 'upstreamLoc']]
 
             self.pressure_elements += [
-                pe.AftHalfTriangularPressureElement(is_source=True, is_on_body=False)]
+                pe.AftHalfTriangularPressureElement(is_source=True,
+                                                    is_on_body=False)]
 
-        self.update_end_pts()
+        self._update_end_pts()
 
-    def setBasePt(self, x):
-        self.endPt[1] = x
-
-    def set_pressure(self, p):
-        self.cushionPressure = p
-
-    def get_pressure(self):
-        return self.cushionPressure
-
-    def getPts(self):
-        if self.cushionType == 'smoothed':
-            if np.isnan(self.sf):
-                return np.array([self.downstreamLoc, self.upstreamLoc])
-            else:
-                N = len(self.pressure_elements) + 2
-                addWidth = np.arctanh(0.99) * self.get_length() / (2 * self.sf)
-                addL = np.linspace(-addWidth, addWidth, N / 2)
-                x = np.hstack(
-                    (self.downstreamLoc + addL, self.upstreamLoc + addL))
-                return x
+    @property
+    def base_pt(self):
+        if self.neighbor_up is None:
+            return self._end_pts[1]
         else:
-            return self.getEndPts()
+            return self.neighbor_up.base_pt
 
-    def getBasePt(self):
-        if self.neighborUp is None:
-            return PressurePatch.getBasePt(self)
+    @base_pt.setter
+    def base_pt(self, x):
+        self._end_pts[1] = x
+
+    def _get_element_coords(self):
+        """Return x-locations of all elements."""
+        if (not self.cushion_type == 'smoothed' or
+                np.isnan(self.smoothing_factor)):
+            return self.end_pts
         else:
-            return self.neighborUp.getPts()[0]
+            add_width = (np.arctanh(0.99) *
+                         self.length / (2 * self.smoothing_factor))
+            addL = np.linspace(-add_width, add_width,
+                               len(self.pressure_elements) / 2 + 1)
+            x = np.hstack((self.end_pts[0] + addL, self.end_pts[1] + addL))
+            return x
 
-    def update_end_pts(self):
-        if self.neighborDown is not None:
-            self.downstreamLoc = self.neighborDown.getPts()[-1]
-        if self.neighborUp is not None:
-            self.upstreamLoc = self.neighborUp.getPts()[0]
+    def _update_end_pts(self):
+        if self.neighbor_down is not None:
+            self._end_pts[0] = self.neighbor_down.end_pts[1]
+        if self.neighbor_up is not None:
+            self._end_pts[1] = self.neighbor_up.end_pts[0]
 
-        self.setEndPts([self.downstreamLoc, self.upstreamLoc])
+        self._reset_element_coords()
 
-        self.resetElements()
-
+        # Set source pressure of elements
         for elNum, el in enumerate(self.pressure_elements):
-            if self.cushionType == 'smoothed' and ~np.isnan(self.sf):
-                alf = 2 * self.sf / self.get_length()
-                el.set_source_pressure(0.5 * self.get_pressure() * (
-                    np.tanh(alf * el.get_xloc()) -
-                    np.tanh(alf * (el.get_xloc() - self.get_length()))))
+            el.is_source = True
+            if (self.cushion_type == 'smoothed' and not
+                    np.isnan(self.smoothing_factor)):
+                alf = 2 * self.smoothing_factor / self.length
+                el.set_source_pressure(0.5 * self.cushion_pressure * (
+                    np.tanh(alf * el.x_coord) -
+                    np.tanh(alf * (el.x_coord - self.length))))
             # for infinite pressure cushion, first element is dummy, set to
             # zero, second is semiInfinitePressureBand and set to cushion
             # pressure
-            elif self.cushionType == 'infinite':
+            elif self.cushion_type == 'infinite':
                 if elNum == 0:
-                    el.set_source_pressure(0)
+                    el.pressure = 0.0
                 else:
-                    el.set_source_pressure(self.get_pressure())
+                    el.pressure = self.cushion_pressure
             else:
-                el.set_source_pressure(self.get_pressure())
+                el.pressure = self.cushion_pressure
 
-    def set_length(self, length):
-        self.endPt[0] = self.endPt[1] - length
+    @PressurePatch.length.setter
+    def length(self, length):
+        self._end_pts[0] = self._end_pts[1] - length
 
-    def calculateForces(self):
-        self.calculateWaveDrag()
+    def calculate_forces(self):
+        self.calculate_wave_drag()
 
 
 class PlaningSurface(PressurePatch):
+    """Planing Surface consisting of unknown elements."""
     count = 0
-    obj = []
+    all = []
 
     @classmethod
-    def findByName(cls, name):
+    def find_by_name(cls, name):
+        """Return first planing surface matching provided name.
+
+        Returns
+        -------
+        PlaningSurface instance or None of no match found
+        """
         if not name == '':
-            matches = [o for o in cls.obj if o.patchName == name]
+            matches = [o for o in cls.all if o.patch_name == name]
             if len(matches) > 0:
                 return matches[0]
-            else:
-                return None
-        else:
-            return None
+        return None
 
     def __init__(self, dict_, **kwargs):
         PressurePatch.__init__(self)
         self.index = PlaningSurface.count
         PlaningSurface.count += 1
-        PlaningSurface.obj.append(self)
+        PlaningSurface.all.append(self)
 
-        self.Dict = dict_
-        self.patchName = self.Dict.read('substructureName', '')
-        Nfl = self.Dict.read('Nfl', 0)
-        self.pointSpacing = self.Dict.read('pointSpacing', 'linear')
-        self.initial_length = self.Dict.read('initialLength', None)
-        self.minimumLength = self.Dict.read('minimumLength', 0.0)
-        self.maximum_length = self.Dict.read(
+        dict_ = kp.ensureDict(dict_)
+
+        self.patch_name = dict_.read('substructureName', '')
+        Nfl = dict_.read('Nfl', 0)
+        self.point_spacing = dict_.read('pointSpacing', 'linear')
+        self.initial_length = dict_.read('initialLength', None)
+        self.minimum_length = dict_.read('minimumLength', 0.0)
+        self.maximum_length = dict_.read(
             'maximum_length', float('Inf'))
-        self.springConstant = self.Dict.read('springConstant', 1e4)
-        self.kuttaPressure = kwargs.get(
-            'kuttaPressure', self.Dict.readLoadOrDefault('kuttaPressure', 0.0))
-        self.upstreamPressure = kwargs.get(
-            'upstreamPressure', self.Dict.readLoadOrDefault('upstreamPressure', 0.0))
-        self.upstreamPressureCushion = None
 
-        self.isInitialized = False
-        self.active = True
-        self.kuttaUnknown = True
-        self.sprung = self.Dict.read('sprung', False)
-        if self.sprung:
+        self.spring_constant = dict_.read('springConstant', 1e4)
+        self.kutta_pressure = kwargs.get(
+            'kuttaPressure', dict_.readLoadOrDefault('kuttaPressure', 0.0))
+        self._upstream_pressure = kwargs.get(
+            'upstreamPressure',
+            dict_.readLoadOrDefault('upstreamPressure', 0.0))
+
+        self.is_initialized = False
+        self.is_active = True
+        self.is_kutta_unknown = True
+        self.is_sprung = dict_.read('isSprung', False)
+        if self.is_sprung:
             self.initial_length = 0.0
-            self.minimumLength = 0.0
+            self.minimum_length = 0.0
             self.maximum_length = 0.0
 
-        self.get_residual = self.getPressureResidual
         self.pressure_elements += [
             pe.ForwardHalfTriangularPressureElement(is_on_body=False)]
 
         self.pressure_elements += [pe.ForwardHalfTriangularPressureElement(
-            is_source=True, pressure=self.kuttaPressure)]
+            is_source=True, pressure=self.kutta_pressure)]
         self.pressure_elements += [pe.CompleteTriangularPressureElement()
-                                   for _ in range(Nfl - 1)]
+                                   for __ in range(Nfl - 1)]
         self.pressure_elements += [pe.AftHalfTriangularPressureElement(
-            is_source=True, pressure=self.upstreamPressure)]
+            is_source=True, pressure=self.upstream_pressure)]
 
         for el in self.pressure_elements:
             el.parent = self
 
         # Define point spacing
-        if self.pointSpacing == 'cosine':
+        if self.point_spacing == 'cosine':
             self.pct = 0.5 * (1 - kp.cosd(np.linspace(0, 180, Nfl + 1)))
         else:
             self.pct = np.linspace(0.0, 1.0, Nfl + 1)
         self.pct /= self.pct[-2]
         self.pct = np.hstack((0.0, self.pct))
 
-        self.xBar = 0.0
+    @property
+    def upstream_pressure(self):
+        if self.neighbor_up is not None:
+            return self.neighbor_up.cushion_pressure
+        else:
+            return 0.0
 
-    def set_interpolator(self, interpolator):
-        self.interpolator = interpolator
+    @property
+    def downstream_pressure(self):
+        if self.neighbor_down is not None:
+            return self.neighbor_down.cushion_pressure
+        else:
+            return 0.0
 
-    def get_min_length(self):
-        return self.minimumLength
-
-    def initialize_end_pts(self):
-        self.setBasePt(self.interpolator.getSeparationPoint()[0])
-
-        if not self.isInitialized:
-            if self.initial_length is None:
-                self.set_length(
-                    self.interpolator.getImmersedLength() - self.getBasePt())
-            else:
-                self.set_length(self.initial_length)
-            self.isInitialized = True
-
-    def resetElements(self):
-        PressurePatch.resetElements(self)
-        x = self.getPts()
-        self.pressure_elements[0].width = x[2] - x[0]
-
-    def setKuttaPressure(self, p):
-        self.kuttaPressure = p
-
-    def setUpstreamPressure(self, p):
-        self.upstreamPressure = p
+    @upstream_pressure.setter
+    def upstream_pressure(self, pressure):
+        self._upstream_pressure = pressure
         el = self.pressure_elements[-1]
-        el.pressure = p
+        el.pressure = pressure
         el.is_source = True
         el.z_coord = np.nan
 
-    def getKuttaPressure(self):
-        return self.kuttaPressure
+    @PressurePatch.length.setter
+    def length(self, length):
+        length = np.max([length, 0.0])
 
-    def set_length(self, Lw):
-        Lw = np.max([Lw, 0.0])
+        x0 = self.interpolator.get_separation_point()[0]
+        self._end_pts = [x0, x0 + length]
+        self._reset_element_coords()
 
-        x0 = self.interpolator.getSeparationPoint()[0]
-        self.setEndPts([x0, x0 + Lw])
+    def initialize_end_pts(self):
+        """Initialize end points to be at separation point and wetted length
+        root.
+        """
+        self.base_pt = self.interpolator.get_separation_point()[0]
 
-    def setBasePt(self, x):
-        self.endPt[0] = x
+        if not self.is_initialized:
+            if self.initial_length is None:
+                self.length = self.interpolator.immersed_length - \
+                    self.base_pt
+            else:
+                self.length = self.initial_length
+            self.is_initialized = True
 
-    def setEndPts(self, endPt):
-        self.endPt = endPt
-        self.resetElements()
+    def _reset_element_coords(self):
+        """Set width of first element to be twice as wide."""
+        PressurePatch._reset_element_coords(self)
+        x = self._get_element_coords()
+        self.pressure_elements[0].width = x[2] - x[0]
 
-    def getPts(self):
-        return self.pct * self.get_length() + self.endPt[0]
+    def _get_element_coords(self):
+        """Get position of pressure elements."""
+        return self.pct * self.length + self._end_pts[0]
 
-    def getPressureResidual(self):
-        if self.get_length() <= 0.0:
+    def get_residual(self):
+        """Get residual to drive first element pressure to zero."""
+        if self.length <= 0.0:
             return 0.0
         else:
             return self.pressure_elements[0].pressure / config.pStag
 
-    def getTransomHeightResidual(self):
-        if self.get_length() <= 0.0:
-            return 0.0
-        else:
-            el = self.pressure_elements[0]
-            return ((el.z_coord - el.pressure) *
-                    config.rho * config.g / config.pStag)
-
-    def getUpstreamPressure(self):
-        if self.neighborUp is not None:
-            return self.neighborUp.get_pressure()
-        else:
-            return 0.0
-
-    def getDownstreamPressure(self):
-        if self.neighborDown is not None:
-            return self.neighborDown.get_pressure()
-        else:
-            return 0.0
-
-    def calculateForces(self):
-        if self.get_length() > 0.0:
+    def calculate_forces(self):
+        # TODO: Re-factor, this is messy."
+        if self.length > 0.0:
             el = [el for el in self.pressure_elements if el.is_on_body]
             self.x = np.array([eli.x_coord for eli in el])
             self.p = np.array([eli.pressure for eli in el])
@@ -506,7 +472,7 @@ class PlaningSurface(PressurePatch):
             self.fTau = interp1d(
                 self.x, self.shear_stress, bounds_error=False, fill_value=0.0)
 
-            AOA = kp.atand(self.getBodyDerivative(self.x))
+            AOA = kp.atand(self._get_body_derivative(self.x))
 
             self.Dp = kp.integrate(self.s, self.p * kp.sind(AOA))
             self.Df = kp.integrate(self.s, self.shear_stress * kp.cosd(AOA))
@@ -525,22 +491,25 @@ class PlaningSurface(PressurePatch):
             self.L = 0.0
             self.M = 0.0
             self.x = []
-        if self.sprung:
-            self.applySpring()
+        if self.is_sprung:
+            self._apply_spring()
 
-        self.calculateWaveDrag()
+        self.calculate_wave_drag()
 
     def get_loads_in_range(self, x0, x1):
+        """Return pressure and shear stress values at points between two
+        arguments.
+        """
         # Get indices within range unless length is zero
-        if self.get_length() > 0.0:
+        if self.length > 0.0:
             ind = np.nonzero((self.x > x0) * (self.x < x1))[0]
         else:
             ind = []
 
         # Output all values within range
         if not ind == []:
-            x = np.hstack((x0,    self.x[ind],           x1))
-            p = np.hstack((self.fP(x0),   self.p[ind],   self.fP(x1)))
+            x = np.hstack((x0, self.x[ind], x1))
+            p = np.hstack((self.fP(x0), self.p[ind], self.fP(x1)))
             tau = np.hstack(
                 (self.fTau(x0), self.shear_stress[ind], self.fTau(x1)))
         else:
@@ -549,34 +518,31 @@ class PlaningSurface(PressurePatch):
             tau = np.zeros_like(x)
         return x, p, tau
 
-#     def applySpring(self):
-#         xs = self.pressure_elements[0].get_xloc()
-#         zs = self.pressure_elements[0].get_zloc()
-#         disp = zs - PotentialPlaningCalculation.getTotalFreeSurfaceHeight(xs)
-#         Fs = -self.springConstant * disp
-#         self.L += Fs
-#         self.M += Fs * (xs - config.xCofR)
+    def _apply_spring(self):
+        xs = self.pressure_elements[0].x_coord
+        zs = self.pressure_elements[0].z_coord
+        disp = zs - self.parent.get_free_surface_height(xs)
+        Fs = -self.spring_constant * disp
+        self.L += Fs
+        self.M += Fs * (xs - config.xCofR)
 
-    def calculateShearStress(self):
-        def shearStressFunc(xx):
+    def _calculate_shear_stress(self):
+        def shear_stress_func(xx):
             if xx == 0.0:
                 return 0.0
             else:
                 Rex = config.U * xx / config.nu
-                tau = 0.332 * config.rho * config.U**2 * Rex**-0.5
-                if np.isnan(tau):
-                    return 0.0
-                else:
-                    return tau
+                return 0.332 * config.rho * config.U**2 * Rex**-0.5
 
-        x = self.getPts()[0:-1]
+        x = self._get_element_coords()[0:-1]
         s = np.array([self.interpolator.getSFixedX(xx) for xx in x])
         s = s[-1] - s
 
         for si, el in zip(s, self.pressure_elements):
-            el.set_shear_stress(shearStressFunc(si))
+            el.shear_stress = shear_stress_func(si)
 
-    def getBodyDerivative(self, x, direction='r'):
+    def _get_body_derivative(self, x, direction='r'):
         if isinstance(x, float):
             x = [x]
-        return np.array(map(lambda xx: kp.getDerivative(self.interpolator.getBodyHeight, xx, direction), x))
+        return np.array([kp.getDerivative(self.interpolator.getBodyHeight,
+                                          xx, direction) for xx in x])

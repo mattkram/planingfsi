@@ -12,7 +12,7 @@ class Interpolator():
         self.fluid = fluid
 
         self.solid.set_interpolator(self)
-        self.fluid.set_interpolator(self)
+        self.fluid.interpolator = self
 
         self.solidPositionFunction = None
         self.fluidPressureFunction = None
@@ -45,7 +45,7 @@ class Interpolator():
         return self.solidPositionFunction(s)
 
     def getMinMaxS(self):
-        pts = self.fluid.getPts()
+        pts = self.fluid._get_element_coords()
         return [self.getSFixedX(x) for x in [pts[0], pts[-1]]]
 
     def getSFixedX(self, fixedX, soPct=0.5):
@@ -54,7 +54,8 @@ class Interpolator():
     def getSFixedY(self, fixedY, soPct):
         return kp.fzero(lambda s: self.get_coordinates(s)[1] - fixedY, soPct * self.solid.get_arc_length())
 
-    def getImmersedLength(self):
+    @property
+    def immersed_length(self):
         if self.sImm == []:
             self.sImm = self.sImmPctStart * self.solid.get_arc_length()
 
@@ -63,7 +64,7 @@ class Interpolator():
 
         return self.get_coordinates(self.sImm)[0]
 
-    def getSeparationPoint(self):
+    def get_separation_point(self):
         def yCoord(s):
             return self.get_coordinates(s[0])[1]
 

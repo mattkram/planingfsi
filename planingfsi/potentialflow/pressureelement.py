@@ -153,13 +153,7 @@ class PressureElement(object):
 
     @property
     def width(self):
-        return self._width_total
-
-    @width.setter
-    def width(self, width):
-        self._width_total = width
-        self._width_right = width
-        self._width_left = width
+        return sum(self._width)
 
     @property
     def pressure(self):
@@ -181,8 +175,8 @@ class PressureElement(object):
         if self.width == 0.0:
             _influence = 0.0
         elif (_x_rel == 0.0 or
-                _x_rel == self._width_right or
-                _x_rel == -self._width_left):
+                _x_rel == self._width[1] or
+                _x_rel == -self._width[0]):
             _influence = _eval_left_right(
                 self._get_local_influence_coefficient, _x_rel)
         else:
@@ -248,6 +242,10 @@ class AftHalfTriangularPressureElement(PressureElement):
         kwargs['is_on_body'] = kwargs.get('is_on_body', True)
         super(self.__class__, self).__init__(**kwargs)
 
+    @PressureElement.width.setter
+    def width(self, width):
+        self._width[0] = width
+
     @PressureElement.pressure.getter
     def pressure(self, x_coord=None):
         """Return shape of pressure profile."""
@@ -293,6 +291,10 @@ class ForwardHalfTriangularPressureElement(PressureElement):
     def __init__(self, **kwargs):
         kwargs['is_on_body'] = kwargs.get('is_on_body', True)
         super(self.__class__, self).__init__(**kwargs)
+
+    @PressureElement.width.setter
+    def width(self, width):
+        self._width[1] = width
 
     @PressureElement.pressure.getter
     def pressure(self, x_coord=None):
@@ -345,21 +347,15 @@ class CompleteTriangularPressureElement(PressureElement):
 
     def __init__(self, **kwargs):
         kwargs['is_on_body'] = kwargs.get('is_on_body', True)
+        kwargs['width'] = kwargs.get('width', np.zeros(2))
         super(self.__class__, self).__init__(**kwargs)
 
     @PressureElement.width.setter
     def width(self, width):
-        """Set width.
-
-        Args
-        ----
-        width : list(float)
-            length-two list or tuple defining left and right widths of
-            elements.
-        """
-        self._width_total = np.sum(width)
-        self._width_left = width[0]
-        self._width_right = width[1]
+        if not len(width) == 2:
+            raise ValueError('Width must be length-two array')
+        else:
+            self._width = np.array(width)
 
     @PressureElement.pressure.getter
     def pressure(self, x_coord=None):
@@ -368,13 +364,13 @@ class CompleteTriangularPressureElement(PressureElement):
             return self._pressure
 
         _x_rel = x_coord - self.x_coord
-        if (_x_rel > self._width_right or
-                _x_rel < -self._width_left):
+        if (_x_rel > self._width[1] or
+                _x_rel < -self._width[0]):
             return 0.0
         elif _x_rel < 0.0:
-            return self._pressure * (1 + _x_rel / self._width_left)
+            return self._pressure * (1 + _x_rel / self._width[0])
         else:
-            return self._pressure * (1 - _x_rel / self._width_right)
+            return self._pressure * (1 - _x_rel / self._width[1])
 
     def _get_local_influence_coefficient(self, x_rel):
         """Return _get_local_influence_coefficient coefficient in iso-geometric
@@ -388,21 +384,21 @@ class CompleteTriangularPressureElement(PressureElement):
         Lambda0 = config.k0 * x_rel
         __, aux_g = _get_aux_fg(Lambda0)
         _influence = _get_gamma1(Lambda0, aux_g) * self.width / \
-            (self._width_right * self._width_left)
+            (self._width[1] * self._width[0])
 
-        Lambda1 = config.k0 * (x_rel - self._width_right)
+        Lambda1 = config.k0 * (x_rel - self._width[1])
         __, aux_g = _get_aux_fg(Lambda1)
-        _influence -= _get_gamma1(Lambda1, aux_g) / self._width_right
+        _influence -= _get_gamma1(Lambda1, aux_g) / self._width[1]
 
-        Lambda2 = config.k0 * (x_rel + self._width_left)
+        Lambda2 = config.k0 * (x_rel + self._width[0])
         __, aux_g = _get_aux_fg(Lambda2)
-        _influence -= _get_gamma1(Lambda2, aux_g) / self._width_left
+        _influence -= _get_gamma1(Lambda2, aux_g) / self._width[0]
         return _influence / config.k0
 
     def plot(self):
         """Plot pressure element shape."""
         _x_coords = self.x_coord + \
-            np.array([-self._width_left, 0.0, self._width_right])
+            np.array([-self._width[0], 0.0, self._width[1]])
         super(self.__class__, self).plot(_x_coords, color='r')
 
 

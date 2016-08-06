@@ -577,7 +577,7 @@ class Substructure:
         return [o for o in cls.obj]
 
     @classmethod
-    def findByName(cls, name):
+    def find_by_name(cls, name):
         return [o for o in cls.obj if o.name == name][0]
 
     def __init__(self, dict_):
@@ -740,9 +740,9 @@ class Substructure:
             Pc = 0.0
             if self.interpolator is not None:
                 if ss > sMax:
-                    Pc = self.interpolator.fluid.getUpstreamPressure()
+                    Pc = self.interpolator.fluid.upstream_pressure
                 elif ss < sMin:
-                    Pc = self.interpolator.fluid.getDownstreamPressure()
+                    Pc = self.interpolator.fluid.downstream_pressure
             elif self.cushionPressureType == 'Total':
                 Pc = config.Pc
 
@@ -772,9 +772,9 @@ class Substructure:
             for ii, ss in enumerate(s):
                 if self.interpolator is not None:
                     if ss > sMax:
-                        Pc = self.interpolator.fluid.getUpstreamPressure()
+                        Pc = self.interpolator.fluid.upstream_pressure
                     elif ss < sMin:
-                        Pc = self.interpolator.fluid.getDownstreamPressure()
+                        Pc = self.interpolator.fluid.downstream_pressure
                 elif self.cushionPressureType == 'Total':
                     Pc = config.Pc
 
@@ -1040,7 +1040,7 @@ class TorsionalSpringSubstructure(FlexibleSubstructure, RigidSubstructure):
         self.elementType = fe.RigidElement
         self.tipLoadPct = self.Dict.read('tipLoadPct', 0.0)
         self.basePtPct = self.Dict.read('basePtPct', 1.0)
-        self.springConstant = self.Dict.read('springConstant', 1000.0)
+        self.spring_constant = self.Dict.read('spring_constant', 1000.0)
         self.theta = 0.0
         self.Mt = 0.0
         self.MOld = None
@@ -1073,7 +1073,7 @@ class TorsionalSpringSubstructure(FlexibleSubstructure, RigidSubstructure):
         attachedSubstructureName = self.Dict.read(
             'attachedSubstructure', None)
         if attachedSubstructureName is not None:
-            self.attachedSubstructure = Substructure.findByName(
+            self.attachedSubstructure = Substructure.find_by_name(
                 attachedSubstructureName)
         else:
             self.attachedSubstructure = None
@@ -1260,8 +1260,8 @@ class TorsionalSpringSubstructure(FlexibleSubstructure, RigidSubstructure):
         else:
             theta = -self.Mt
 
-        if not self.springConstant == 0.0:
-            theta /= self.springConstant
+        if not self.spring_constant == 0.0:
+            theta /= self.spring_constant
 
         dTheta = (theta - self.theta) * self.relax
         dTheta = np.min([np.abs(dTheta), self.maxAngleStep]) * np.sign(dTheta)
@@ -1290,7 +1290,7 @@ class TorsionalSpringSubstructure(FlexibleSubstructure, RigidSubstructure):
 
     def get_residual(self):
         return self.residual
-    #    return self.theta + self.Mt / self.springConstant
+    #    return self.theta + self.Mt / self.spring_constant
 
     def writeDeformation(self):
         kp.writeasdict(os.path.join(config.it_dir, 'deformation_{0}.{1}'.format(self.name, config.data_format)),

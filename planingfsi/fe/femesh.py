@@ -171,7 +171,7 @@ class Submesh(Mesh):
 
     def write(self):
         if len(self.line) > 0:
-            ptL, ptR = zip(*[[pt.getIndex() for pt in l.getPts()] for l in self.line])
+            ptL, ptR = zip(*[[pt.getIndex() for pt in l._get_element_coords()] for l in self.line])
             kp.writeaslist(os.path.join(config.mesh_dir, 'elements_{0}.txt'.format(self.name)), ['ptL', ptL], ['ptR', ptR], headerFormat='<4', dataFormat='>4')
 
 
@@ -311,7 +311,7 @@ class Curve(Shape):
         Curve.obj.append(self)
         self.pt    = []
         self.line  = []
-        self.endPt = []
+        self._end_pts = []
         self.Nel   = Nel
         self.plotSty = 'm--'
 
@@ -319,14 +319,14 @@ class Curve(Shape):
         self.setEndPts([Point.findByID(pid) for pid in [ptID1, ptID2]])
 
     def getShapeFunc(self):
-        xy = [pt.getPos() for pt in self.endPt]
+        xy = [pt.getPos() for pt in self._end_pts]
         if self.radius == 0.0:
             return lambda s: xy[0] * (1 - s) + xy[1] * s
         else:
             x, y = zip(*xy)
             gam = np.arctan2(y[1] - y[0], x[1] - x[0])
             alf = self.arcLen / (2 * self.radius)
-            return lambda s: self.endPt[0].getPos() + 2*self.radius*np.sin(s*alf) * kp.ang2vec(gam + (s-1)*alf)
+            return lambda s: self._end_pts[0].getPos() + 2*self.radius*np.sin(s*alf) * kp.ang2vec(gam + (s-1)*alf)
     
     def setRadius(self, R):
         self.radius = R
@@ -346,7 +346,7 @@ class Curve(Shape):
         self.radius = 1 / self.calculateCurvature()
 
     def calculateChord(self):
-        x, y = zip(*[pt.getPos() for pt in self.endPt])
+        x, y = zip(*[pt.getPos() for pt in self._end_pts])
         self.chord = ((x[1] - x[0])**2 + (y[1] - y[0])**2)**0.5
 
     def calculateArcLength(self):
@@ -371,7 +371,7 @@ class Curve(Shape):
         return kap
 
     def distributePoints(self):
-        self.pt.append(self.endPt[0])
+        self.pt.append(self._end_pts[0])
         if not self.Nel == 1:
             # Distribute N points along a parametric curve defined by f(s), s in [0,1]
             s = np.linspace(0.0, 1.0, self.Nel + 1)[1:-1]
@@ -379,7 +379,7 @@ class Curve(Shape):
                 P = Point()
                 self.pt.append(P)
                 P.setPos(xy)
-        self.pt.append(self.endPt[1])
+        self.pt.append(self._end_pts[1])
         self.generateLines()
 
     def generateLines(self):
@@ -395,9 +395,9 @@ class Curve(Shape):
         self.pt = pt
     
     def setEndPts(self, endPt):
-        self.endPt = endPt
+        self._end_pts = endPt
     
-    def getPts(self):
+    def _get_element_coords(self):
         return self.pt
       
     def getPtIDs(self):
