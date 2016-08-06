@@ -145,10 +145,8 @@ class PressureElement(object):
         self.z_coord = z_coord
         self._pressure = pressure
         self.shear_stress = shear_stress
-        # TODO: Replace these widths with _width as list and appropriate getter
-        self._width_total = width
-        self._width_right = width
-        self._width_left = width
+        self._width = np.zeros(2)
+        self.width = width
         self.is_source = is_source
         self.is_on_body = is_on_body
         self.parent = parent
