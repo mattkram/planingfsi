@@ -16,7 +16,7 @@
 
 # Documentation and wiki
 wiki/
-doc/
+doc/build/
 
 *.egg-info
 *.out
