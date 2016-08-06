@@ -107,8 +107,6 @@ class PressureElement(object):
 
     Attributes
     ----------
-    #TODO: Replace x_coord with coord pointer to Coordinate object,
-    (e.g. self.coords.x).
     x_coord : float
         x-location of element.
 
@@ -133,6 +131,7 @@ class PressureElement(object):
     parent : PressurePatch
         Pressure patch that this element belongs to.
     """
+
     all = []
 
     def __init__(self, x_coord=np.nan, z_coord=np.nan, pressure=np.nan,
@@ -140,10 +139,13 @@ class PressureElement(object):
                  is_on_body=False, parent=None):
         PressureElement.all.append(self)
 
+        # TODO: Replace x_coord with coord pointer to Coordinate object,
+        # (e.g. self.coords.x).
         self.x_coord = x_coord
         self.z_coord = z_coord
         self._pressure = pressure
         self.shear_stress = shear_stress
+        # TODO: Replace these widths with _width as list and appropriate getter
         self._width_total = width
         self._width_right = width
         self._width_left = width
