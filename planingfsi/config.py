@@ -167,18 +167,21 @@ relaxDraft = read('draftRelax', relaxRB)
 relaxTrim = read('trimRelax', relaxRB)
 
 # Parameters for wetted length solver
-wetted_length_solver = read('wettedLengthSolver', 'Secant')
-wetted_length_tol = read('wettedLengthTol', 1e-6)
-wetted_length_relax = read('wettedLengthRelax', 1.0)
-wetted_length_max_it = read('wettedLengthMaxIt', 20)
-wetted_length_max_it_0 = read('wettedLengthMaxIt0', 100)
-wetted_length_max_step_pct = read('wettedLengthMaxStepPct', 0.2)
-wetted_length_max_step_pct_inc = read(
-    'wettedLengthMaxStepPctInc', wetted_length_max_step_pct)
-wetted_length_max_step_pct_dec = read(
-    'wettedLengthMaxStepPctDec', wetted_length_max_step_pct)
-wetted_length_max_jacobian_reset_step = read(
+dict_ = {}
+dict_['solver'] = read('wettedLengthSolver', 'Secant')
+dict_['tol'] = read('wettedLengthTol', 1e-6)
+dict_['relax'] = read('wettedLengthRelax', 1.0)
+dict_['max_it'] = read('wettedLengthMaxIt', 20)
+dict_['max_it_0'] = read('wettedLengthMaxIt0', 100)
+dict_['max_step_pct'] = read('wettedLengthMaxStepPct', 0.2)
+dict_['max_step_pct_inc'] = read(
+    'wettedLengthMaxStepPctInc', dict_['max_step_pct'])
+dict_['max_step_pct_dec'] = read(
+    'wettedLengthMaxStepPctDec', dict_['max_step_pct'])
+dict_['max_jacobian_reset_step'] = read(
     'wettedLengthMaxJacobianResetStep', 100)
+wetted_length_solver_dict = dict_
+del(dict_)
 
 maxIt = read('maxIt', 1)
 rampIt = read('rampIt', 0)
