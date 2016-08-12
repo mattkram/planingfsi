@@ -50,6 +50,7 @@ clean:
 
 .PHONY: html
 html:
+	sphinx-apidoc -f -o source/api ../planingfsi
 	$(SPHINXBUILD) -b html $(ALLSPHINXOPTS) $(BUILDDIR)/html
 	@echo
 	@echo "Build finished. The HTML pages are in $(BUILDDIR)/html."

@@ -9,24 +9,9 @@ Welcome to PlaningFSI's documentation!
 Contents:
 
 .. toctree::
-   :maxdepth: 5
+   :maxdepth: 4
 
-.. .. automodule:: planingfsi
-..    :members:
-..    :undoc-members:
-..
-.. .. automodule:: planingfsi.potentialflow
-..    :members:
-..    :undoc-members:
-..
-.. .. automodule:: planingfsi.potentialflow.calculation
-..    :members:
-..    :undoc-members:
-
-.. automodule:: planingfsi.potentialflow.pressureelement
-    :show-inheritance:
-    :members:
-    :undoc-members:
+   api/modules
 
 Indices and tables
 ==================
