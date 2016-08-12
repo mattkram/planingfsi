@@ -160,6 +160,7 @@ class RootFinder:
             self.dx = dx
         self.storePrevStep()
         self.x += self.dx
+        self.evalF()
         self.it += 1
 
     def getStepSecant(self):
@@ -169,68 +170,6 @@ class RootFinder:
             self.dx = -self.f * \
                 (self.x - self.xOld) / (self.f - self.fOld + 1e-8)
         return self.dx
-
-    def reset_jacobian(self):
-        self.J = np.array([[dfi / dxj for dxj in self.dx] for dfi in self.df])
-        self.step = 0
-
-    def getStepBroyden(self):
-        if self.it == 0:
-            self.dx = np.ones_like(self.x) * self.dx0
-            for i in range(1, self.dim):
-                self.dx[i] += self.dx[i - 1] / 10
-        else:
-            dx = np.reshape(self.dx, (self.dim, 1))
-            df = np.reshape(self.df, (self.dim, 1))
-            if self.J is None:
-                self.reset_jacobian()
-
-            self.J += np.dot(df - np.dot(self.J, dx), dx.T) / \
-                np.linalg.norm(dx)**2
-            dx *= 0.0
-            dof = [not x <= xMin and not x >= xMax for x, xMin,
-                   xMax in zip(self.x, self.xMin, self.xMax)]
-            if any(dof):
-                A = -self.J
-                b = self.f.reshape(self.dim, 1)
-                dx[np.ix_(dof)] = np.linalg.solve(
-                    A[np.ix_(dof, dof)], b[np.ix_(dof)])
-
-            if any(np.abs(self.f) - np.abs(self.fOld) > 0.0):
-                self.step += 1
-
-            if self.step >= self.maxJacobianResetStep:
-                dx = np.ones_like(dx) * self.dx0
-                self.J = None
-#             self.reset_jacobian()
-
-            self.dx = dx.reshape(self.dim)
-
-        return self.dx
-
-    def solve(self):
-        while self.err >= self.errLim and self.it < self.maxIt:
-            self.evalF()
-            self.getStep()
-            self.limitStep()
-            self.takeStep()
-            self.evalErr()
-
-        self.converged = self.err < self.errLim and not any(
-            self.x <= self.xMin)
-
-        return self.x
-
-
-class RootFinderNew(RootFinder):
-
-    def takeStep(self, dx=None):
-        if dx is not None:
-            self.dx = dx
-        self.storePrevStep()
-        self.x += self.dx
-        self.evalF()
-        self.it += 1
 
     def reset_jacobian(self):
         fo = self.f * 1.0
