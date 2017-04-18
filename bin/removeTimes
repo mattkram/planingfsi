@@ -1,0 +1,20 @@
+#!/usr/bin/python
+
+# Add subfolder for potential code to python path
+import numpy as np
+import krampy as kp
+import os, sys
+from fnmatch import fnmatch
+
+# Load all case directories that match format
+baseDir = '.'
+
+times = kp.sortDirByNum([f for f in os.listdir(baseDir) if fnmatch(f, '[0-9]*')])[0]
+
+for t in times[1:-1]:
+  kp.rm_rf([t])
+
+if os.path.exists(os.path.join(baseDir, 'figures')):
+  figs = kp.sortDirByNum([f for f in os.listdir(os.path.join(baseDir, 'figures')) if fnmatch(f, '*.png')])[0]
+  for f in figs[:-1]:
+    os.remove(os.path.join('figures',f))

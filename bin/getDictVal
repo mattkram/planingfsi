@@ -1,0 +1,11 @@
+#!/bin/sh
+
+filename=$1
+varname=$2
+
+oldline=`grep -n "$varname " $filename`
+if [ -n "$oldline" ]; then
+  oldval=`echo $oldline | cut -d ':' -f 3`
+  oldval=`echo $oldval | cut -d ' ' -f 1 | tr -d ' '`
+  echo $oldval  
+fi

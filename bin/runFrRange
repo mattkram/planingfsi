@@ -1,0 +1,175 @@
+#!/usr/bin/python
+
+# Add subfolder for potential code to python path
+import os, sys, inspect
+from fnmatch import fnmatch
+
+import numpy as np
+import krampy as kp
+
+baseDir = os.getcwd()
+
+FrSt = float(sys.argv[1])
+if len(sys.argv) > 2:
+  FrEnd = float(sys.argv[2])
+else:
+  FrEnd = FrSt
+
+if len(sys.argv) > 3:
+  FrInt = float(sys.argv[3])
+  if not FrEnd == FrSt:
+    FrInt = np.abs(FrInt) * np.sign(FrEnd - FrSt)
+else:
+  FrInt = FrEnd - FrSt
+
+if len(sys.argv) > 4:
+  runCommands = [c for c in sys.argv[4:]]
+else:
+  runCommands = ['rigidBodyFSI new']
+
+if not FrSt == FrEnd:
+  N = int(round(np.abs(FrEnd - FrSt) / np.abs(FrInt)) + 0.1)
+  FrList = np.linspace(FrSt, FrEnd, N + 1)
+else:
+  FrList = [FrSt]
+
+def constructPath(pathIn):
+  # Construct a path from a list of paths
+  path = pathIn[0]
+  for p in pathIn[1:]:
+    path = os.path.join(path, p)
+  return path
+
+for Fr in FrList:
+  commandList = []
+
+  currFrPath = os.path.join(baseDir, 'Fr{0}'.format(Fr))
+  
+  prevFr = Fr - FrInt
+  prevFrPath = os.path.join(baseDir, 'Fr{0}'.format(prevFr))
+
+  twoAgoFr = Fr - 2 * FrInt
+  twoAgoFrPath = os.path.join(baseDir, 'Fr{0}'.format(twoAgoFr))
+
+  # Load previous converged trim and draft if path exists
+  if os.path.exists(prevFrPath):
+    itDir = [it for it in os.listdir(prevFrPath) if fnmatch(it, '[0-9]*')]
+    if len(itDir) > 0:
+      itDir = kp.sortDirByNum(itDir)[0][-1]
+    else:
+      itDir = ''
+
+    if os.path.exists(twoAgoFrPath):
+      twoAgoItDir = [it for it in os.listdir(twoAgoFrPath) if fnmatch(it, '[0-9]*')]
+      if len(twoAgoItDir) > 0:
+        twoAgoItDir = kp.sortDirByNum(twoAgoItDir)[0][-1]
+    else:
+      twoAgoItDir = ''
+     
+    dictPathIn = []
+    dictPathIn.append([itDir, 'motion_default.txt'])
+    dictPathIn.append([itDir, 'motion_default.txt'])
+    dictPathIn.append([itDir, 'forces_bowSealLower.txt'])
+    dictPathIn.append([itDir, 'forces_sternSealLower.txt'])
+    dictPathIn.append(['configDict'])
+    dictPathIn.append([itDir, 'deformation_bowSealLower.txt'])
+    dictPathIn.append([itDir, 'deformation_sternSealLower.txt'])
+    dictPathIn.append([itDir, 'motion_bowSealBody.txt'])
+    dictPathIn.append([itDir, 'motion_bowSealBody.txt'])
+    dictPathIn.append([itDir, 'motion_sternSealBody.txt'])
+    dictPathIn.append([itDir, 'motion_sternSealBody.txt'])
+    dictPathIn.append(['configDict'])
+  
+    varNameIn = []
+    varNameIn.append('draft')
+    varNameIn.append('trim')
+    varNameIn.append('Length')
+    varNameIn.append('Length')
+    varNameIn.append('Fr')
+    varNameIn.append('angle')
+    varNameIn.append('angle')
+    varNameIn.append('draft')
+    varNameIn.append('trim')
+    varNameIn.append('draft')
+    varNameIn.append('trim')
+    varNameIn.append('timeStep')
+  
+    dictPathOut = []
+    dictPathOut.append('configDict')
+    dictPathOut.append('configDict')
+    dictPathOut.append('inputDict/bowSealLowerDict')
+    dictPathOut.append('inputDict/sternSealLowerDict')
+    dictPathOut.append('configDict')
+    dictPathOut.append('inputDict/bowSealLowerDict')
+    dictPathOut.append('inputDict/sternSealLowerDict')
+    dictPathOut.append('bodyDict/bowSealBody')
+    dictPathOut.append('bodyDict/bowSealBody')
+    dictPathOut.append('bodyDict/sternSealBody')
+    dictPathOut.append('bodyDict/sternSealBody')
+    dictPathOut.append('configDict')
+  
+    varNameOut = []
+    varNameOut.append('initialDraft')
+    varNameOut.append('initialTrim')
+    varNameOut.append('initialLength')
+    varNameOut.append('initialLength')
+    varNameOut.append('Fr')
+    varNameOut.append('initialAngle')
+    varNameOut.append('initialAngle')
+    varNameOut.append('initialDraft')
+    varNameOut.append('initialTrim')
+    varNameOut.append('initialDraft')
+    varNameOut.append('initialTrim')
+    varNameOut.append('timeStep')
+  
+    varValIn = np.ones(len(varNameIn)) * np.nan
+    for i, dictPath, varName in zip(range(len(dictPathIn)), dictPathIn, varNameIn):
+      varValIn[i] = kp.Dictionary(os.path.join(prevFrPath, constructPath(dictPath))).readOrDefault(varName, np.nan)
+      
+      # Use new Froude number value, not the one stored in the copied configDict
+      if varName == 'Fr':
+        varValIn[i] = Fr
+ 
+      if varName == 'timeStep':
+        varValIn[i] *= prevFr / Fr
+       
+      # For draft, trim, and wetted lengths extrapolate from two simulations ago if possible
+      if varName == 'draft' or varName == 'trim' or varName == 'Length':
+        if not twoAgoItDir == '':
+          twoAgoVal = kp.Dictionary(os.path.join(twoAgoFrPath, twoAgoItDir, dictPath[1])).readOrDefault(varName, np.nan)
+          if ~np.isnan(twoAgoVal):
+            dVar = varValIn[i] - twoAgoVal
+            maxDVar = 0.05 * np.abs(dVar)
+            maxDVar = np.max([maxDVar, 1e-6])
+
+            if varName == 'draft':
+              dVar += 5e-5
+#              dVar += 2.5e-3
+#              dVar += np.max([1.0e-3, 0.025 * np.abs(dVar)])
+
+            varValIn[i] += dVar
+            
+            if varName == 'Length':
+              varValIn[i] = np.max([varValIn[i], 0.1])
+              
+#            if varName == 'draft':
+#              commandList.append('setDictVal {0} maxDraftStep {1:10.8e}'.format(os.path.join(currFrPath, 'configDict'), maxDVar))
+#            if varName == 'trim':
+#              commandList.append('setDictVal {0} maxTrimStep {1:10.8e}'.format(os.path.join(currFrPath, 'configDict'), maxDVar))
+  
+    for varVal, dictPath, varName in zip(varValIn, dictPathOut, varNameOut):
+      if ~np.isnan(varVal):
+        commandList.append('setDictVal {0} {1} {2:10.8e}'.format(os.path.join(currFrPath, dictPath), varName, varVal))
+  
+  if not os.path.exists(currFrPath):
+    os.mkdir(currFrPath)
+
+  os.system('cp -r {0}/*Dict {1}'.format(prevFrPath, currFrPath))
+  
+  os.chdir(currFrPath)
+  commandList += runCommands
+
+  for command in commandList:
+    print command
+    os.system(command)
+  os.chdir(baseDir)

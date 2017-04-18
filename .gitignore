@@ -1,0 +1,28 @@
+# git-ls-files --others --exclude-from=.git/info/exclude
+# Lines that start with '#' are comments
+#
+
+# Editor and misc backup files - anywhere
+*~
+.*~
+*.swp
+
+# Compiled files
+*.pyc
+
+# Python virtualenv
+.env
+.env/*
+
+# Documentation and wiki
+wiki/
+doc/build/
+
+*.egg-info
+*.out
+
+old/
+
+#Pydev files
+.project
+.pydevproject

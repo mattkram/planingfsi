@@ -1,0 +1,66 @@
+#!/usr/bin/python
+"""PlaningFSI solves the general FSI problem of 2-D planing surfaces on a free
+surface, where each surface can be rigid or flexible. The substructures are
+part of a rigid body, which can be free in sinkage and trim.
+
+This script is called from the command line with options to plot or load
+results from file. It reads the fluid and solid body properties from dictionary
+files, assembles the problem, and runs it.
+"""
+import planingfsi.config as config
+import planingfsi.krampy as kp
+from planingfsi.fsi.fsisimulation import Simulation
+from planingfsi.fsi.fsiinterpolator import Interpolator
+
+import os
+import sys
+
+if os.environ.get('DISPLAY') is None:
+    import matplotlib as mpl
+    mpl.use('Agg')
+
+# Process command line arguments
+for arg in sys.argv[1:]:
+    if 'post' in arg:
+        print 'Running in post-processing mode'
+        config.plot_save = True
+        config.plot = True
+        config.results_from_file = True
+    if 'plotSave' in arg:
+        config.plot_save = True
+        config.plot = True
+    if 'new' in arg:
+        kp.rm_rf(kp.find_files(config.case_dir, '[0-9]*'))
+
+# Create simulation
+sim = Simulation()
+
+# Add all rigid bodies
+if os.path.exists(config.body_dict_dir):
+    for dict_name in kp.listdir_nohidden(config.body_dict_dir):
+        sim.solid.add_rigid_body(
+            os.path.join(config.body_dict_dir, dict_name))
+else:
+    sim.solid.add_rigid_body()
+
+# Add all substructures
+for dict_name in kp.listdir_nohidden(config.input_dict_dir):
+    dict_ = kp.Dictionary(os.path.join(config.input_dict_dir, dict_name))
+
+    substructure = sim.solid.add_substructure(dict_)
+
+    if dict_.read('hasPlaningSurface', False):
+        planing_surface = sim.fluid.add_planing_surface(dict_)
+        interpolator = Interpolator(substructure, planing_surface, dict_)
+        interpolator.set_solid_position_function(substructure.get_coordinates)
+        interpolator.set_fluid_pressure_function(
+            planing_surface.get_loads_in_range)
+
+# Add all pressure cushions
+if os.path.exists(config.cushion_dict_dir):
+    for dict_name in kp.listdir_nohidden(config.cushion_dict_dir):
+        sim.fluid.add_pressure_cushion(
+            os.path.join(config.cushion_dict_dir, dict_name))
+
+# Run simulation
+sim.run()
