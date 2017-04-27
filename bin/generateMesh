@@ -30,12 +30,12 @@ for arg in sys.argv[1:]:
         disp = True
 
 # Create mesh
-M = Mesh()
+mesh = Mesh()
 
 # Process mesh dictionary
 execfile(config.mesh_dict_dir)
 
 # Display, plot, and write mesh files
-M.display(disp=disp)
-M.plot(show=plotShow, save=plotSave)
-M.write()
+mesh.display(disp=disp)
+mesh.plot(show=plotShow, save=plotSave)
+mesh.write()
