@@ -1,0 +1,20 @@
+substructureName  : 'membrane'
+substructureType  : 'flexible'
+hasPlaningSurface : True
+
+Ps : 5000.0
+EA : 1e8
+
+# Fluid Parameters
+Nfl    :  20
+pointSpacing : 'linear'
+
+kuttaPressure : 0.0
+
+initialLength : 1.0
+minimumLength : 0.01
+structInterpType : 'cubic'
+structExtrap : True
+
+# Simulation Parameters
+sSepPctStart : 0.5
