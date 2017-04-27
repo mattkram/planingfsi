@@ -23,7 +23,3 @@ doc/source/api/
 *.out
 
 old/
-
-#Pydev files
-.project
-.pydevproject
