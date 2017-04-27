@@ -11,8 +11,8 @@
 *.pyc
 
 # Python virtualenv
-.env
-.env/*
+env
+env/*
 
 # Documentation and wiki
 wiki/
