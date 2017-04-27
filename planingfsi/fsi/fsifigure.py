@@ -39,17 +39,17 @@ class FSIFigure:
         xMin, xMax = kp.minMax([nd.x for struct in self.solid.substructure for nd in struct.node])
         yMin, yMax = kp.minMax([nd.y for struct in self.solid.substructure for nd in struct.node])
         
-        if config.plotXMin is not None:
-            xMin = config.plotXMin
+        if config.plot_xmin is not None:
+            xMin = config.plot_xmin
             config.extW = 0.0
-        if config.plotXMax is not None:
-            xMax = config.plotXMax
+        if config.plot_xmax is not None:
+            xMax = config.plot_xmax
             config.extE = 0.0
-        if config.plotYMin is not None:
-            yMin = config.plotYMin
+        if config.plot_ymin is not None:
+            yMin = config.plot_ymin
             config.extS = 0.0
-        if config.plotYMax is not None:
-            yMax = config.plotYMax
+        if config.plot_ymax is not None:
+            yMax = config.plot_ymax
             config.extN = 0.0
 
         plt.xlabel(r'$x$ [m]', fontsize=22)
@@ -98,7 +98,7 @@ class FSIFigure:
                 s.write()
 
     def save(self):
-        plt.savefig(os.path.join(config.fig_dir_name, 'frame{1:04d}.{0}'.format(config.figFormat, config.it)), format=config.figFormat)#, dpi=300)
+        plt.savefig(os.path.join(config.fig_dir_name, 'frame{1:04d}.{0}'.format(config.fig_format, config.it)), format=config.fig_format)#, dpi=300)
 
     def show(self):
         plt.show()

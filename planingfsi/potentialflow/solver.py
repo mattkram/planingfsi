@@ -251,7 +251,7 @@ class PotentialPlaningSolver(object):
                     [p.initial_length for p in self.planing_surfaces])
             else:
                 for i, p in enumerate(self.planing_surfaces):
-                    L = p.get_length()
+                    L = p.length
                     self.init_len[i] = p.initial_length
                     if ~np.isnan(L) and L - self.min_len[i] > 1e-6:
                         # and self.solver.it < self.solver.maxIt:
@@ -259,9 +259,9 @@ class PotentialPlaningSolver(object):
                     else:
                         self.init_len[i] = p.initial_length
 
-            dxMaxDec = config.wetted_length_max_step_pct_dec * \
+            dxMaxDec = config.wetted_length_solver_dict['max_step_pct_dec'] * \
                 (self.init_len - self.min_len)
-            dxMaxInc = config.wetted_length_max_step_pct_inc * \
+            dxMaxInc = config.wetted_length_solver_dict['max_step_pct_inc'] * \
                 (self.init_len - self.min_len)
 
             for i, p in enumerate(self.planing_surfaces):
@@ -269,20 +269,20 @@ class PotentialPlaningSolver(object):
                     self.init_len[i] = 0.0
 
             if self.solver is None:
-                self.solver = kp.RootFinderNew(self.get_residual,
+                self.solver = kp.RootFinder(self.get_residual,
                                                self.init_len * 1.0,
-                                               config.wetted_length_solver,
+                                               config.wetted_length_solver_dict['solver'],
                                                xMin=self.min_len,
                                                xMax=self.max_len,
-                                               errLim=config.wetted_length_tol,
+                                               errLim=config.wetted_length_solver_dict['tol'],
                                                dxMaxDec=dxMaxDec,
                                                dxMaxInc=dxMaxInc,
                                                firstStep=1e-6,
-                                               maxIt=config.wetted_length_max_it_0,
-                                               maxJacobianResetStep=config.wetted_length_max_jacobian_reset_step,
-                                               relax=config.wetted_length_relax)
+                                               maxIt=config.wetted_length_solver_dict['max_it_0'],
+                                               maxJacobianResetStep=config.wetted_length_solver_dict['max_jacobian_reset_step'],
+                                               relax=config.wetted_length_solver_dict['relax'])
             else:
-                self.solver.maxIt = config.wetted_length_max_it
+                self.solver.maxIt = config.wetted_length_solver_dict['max_it']
                 self.solver.reinitialize(self.init_len * 1.0)
                 self.solver.setMaxStep(dxMaxInc, dxMaxDec)
 
@@ -293,7 +293,7 @@ class PotentialPlaningSolver(object):
 
     def plot_residuals_over_range(self):
         """Plot residuals."""
-        self.storeLen = np.array([p.get_length()
+        self.storeLen = np.array([p.length
                                   for p in self.planing_surfaces])
 
         xx, yy = zip(*self.xHist)
@@ -419,7 +419,7 @@ class PotentialPlaningSolver(object):
 #                 else:
 #                     ptsR = np.array([patch.endPt[1], patch.endPt[1] + 0.01])
 #
-#                 xEnd = ptsL[-1] + 0.5 * patch.get_length()
+#                 xEnd = ptsL[-1] + 0.5 * patch.length
 #                 xFS.append(
 #                     kp.growPoints(ptsL[-2], ptsL[-1],
 #                                   xEnd, config.growthRate))

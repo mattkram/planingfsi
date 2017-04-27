@@ -157,7 +157,7 @@ class RigidBody:
         self.maxAcc = np.array([self.maxDraftAcc,  self.maxTrimAcc])
         self.relax = np.array([self.relaxDraft, self.relaxTrim])
         if self.freeInDraft or self.freeInTrim:
-            config.hasFreeStructure = True
+            config.has_free_structure = True
 
         self.v = np.zeros((self.dim))
         self.a = np.zeros((self.dim))
@@ -956,7 +956,7 @@ class FlexibleSubstructure(Substructure):
         self.K = None
         self.F = None
     #    self.U = None
-        config.hasFreeStructure = True
+        config.has_free_structure = True
 
     def get_residual(self):
         return np.max(np.abs(self.U))
@@ -1052,7 +1052,7 @@ class TorsionalSpringSubstructure(FlexibleSubstructure, RigidSubstructure):
             'minimumAngle', -float('Inf'))
         self.maxAngleStep = self.Dict.read(
             'maxAngleStep',  float('Inf'))
-        config.hasFreeStructure = True
+        config.has_free_structure = True
 
     def load_mesh(self):
         Substructure.load_mesh(self)
