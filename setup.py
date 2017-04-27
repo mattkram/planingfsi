@@ -14,4 +14,5 @@ setup(name='planingfsi',
       author_email='matthew.robert.kramer@gmail.com',
       license='MIT',
       packages=['planingfsi'],
-      scripts=['bin/planingFSI'])
+      scripts=['bin/planingFSI',
+               'bin/generateMesh'])
