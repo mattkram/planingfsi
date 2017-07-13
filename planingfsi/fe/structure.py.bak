@@ -47,7 +47,7 @@ class FEStructure:
             body = self.rigid_body[0]
         body.add_substructure(ss)
         ss.addParent(body)
-        print(("Adding Substructure {0} of type {1} to rigid body {2}".format(ss.name, ss.type, body.name)))
+        print("Adding Substructure {0} of type {1} to rigid body {2}".format(ss.name, ss.type, body.name))
 
         return ss
 
@@ -210,7 +210,7 @@ class RigidBody:
         self.substructure = []
         self.node = None
 
-        print(("Adding Rigid Body: {0}".format(self.name)))
+        print("Adding Rigid Body: {0}".format(self.name))
 
     def add_substructure(self, ss):
         self.substructure.append(ss)
@@ -260,7 +260,7 @@ class RigidBody:
     def update_substructure_positions(self):
         FlexibleSubstructure.update_all()
         for ss in self.substructure:
-            print(("Updating position for substructure: {0}".format(ss.name)))
+            print("Updating position for substructure: {0}".format(ss.name))
 #             if ss.type.lower() == 'flexible':
 #                 ss.getPtDispFEM()
 
@@ -515,19 +515,19 @@ class RigidBody:
         return np.abs(res * self.freeInTrim)
 
     def print_motion(self):
-        print(('Rigid Body Motion: {0}'.format(self.name)))
-        print(('  CofR: ({0}, {1})'.format(self.xCofR, self.yCofR)))
-        print(('  CofG: ({0}, {1})'.format(self.xCofG, self.yCofG)))
-        print(('  Draft:      {0:5.4e}'.format(self.draft)))
-        print(('  Trim Angle: {0:5.4e}'.format(self.trim)))
-        print(('  Lift Force: {0:5.4e}'.format(self.L)))
-        print(('  Drag Force: {0:5.4e}'.format(self.D)))
-        print(('  Moment:     {0:5.4e}'.format(self.M)))
-        print(('  Lift Force Air: {0:5.4e}'.format(self.La)))
-        print(('  Drag Force Air: {0:5.4e}'.format(self.Da)))
-        print(('  Moment Air:     {0:5.4e}'.format(self.Ma)))
-        print(('  Lift Res:   {0:5.4e}'.format(self.resL)))
-        print(('  Moment Res: {0:5.4e}'.format(self.resM)))
+        print('Rigid Body Motion: {0}'.format(self.name))
+        print('  CofR: ({0}, {1})'.format(self.xCofR, self.yCofR))
+        print('  CofG: ({0}, {1})'.format(self.xCofG, self.yCofG))
+        print('  Draft:      {0:5.4e}'.format(self.draft))
+        print('  Trim Angle: {0:5.4e}'.format(self.trim))
+        print('  Lift Force: {0:5.4e}'.format(self.L))
+        print('  Drag Force: {0:5.4e}'.format(self.D))
+        print('  Moment:     {0:5.4e}'.format(self.M))
+        print('  Lift Force Air: {0:5.4e}'.format(self.La))
+        print('  Drag Force Air: {0:5.4e}'.format(self.Da))
+        print('  Moment Air:     {0:5.4e}'.format(self.Ma))
+        print('  Lift Res:   {0:5.4e}'.format(self.resL))
+        print('  Moment Res: {0:5.4e}'.format(self.resM))
 
     def write_motion(self):
         kp.writeasdict(os.path.join(config.it_dir, 'motion_{0}.{1}'.format(self.name, config.data_format)),
@@ -1183,7 +1183,7 @@ class TorsionalSpringSubstructure(FlexibleSubstructure, RigidSubstructure):
                 fFl = [-pi * ni + taui * ti for pi,
                        taui, ni, ti in zip(pFl,  tau, n, t)]
                 f = fC + fFl
-                print(('Cushion Lift-to-Weight: {0}'.format(fC[1] / config.W)))
+                print('Cushion Lift-to-Weight: {0}'.format(fC[1] / config.W))
 
                 r = [np.array([pt[0] - config.xCofR, pt[1] - config.yCofR])
                      for pt in map(self.get_coordinates, s)]
@@ -1286,7 +1286,7 @@ class TorsionalSpringSubstructure(FlexibleSubstructure, RigidSubstructure):
         self.theta += dTheta
         self.residual = dTheta
         self.update_geometry()
-        print(("  Deformation for substructure {0}: {1}".format(self.name, self.theta)))
+        print("  Deformation for substructure {0}: {1}".format(self.name, self.theta))
 
     def get_residual(self):
         return self.residual

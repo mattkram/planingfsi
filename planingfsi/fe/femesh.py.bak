@@ -98,8 +98,8 @@ class Mesh:
     def display(self, **kwargs):
         if kwargs.get('disp', False):
             Shape.printAll()
-            print(('Line count:  {0}'.format(Line.count())))
-            print(('Point count: {0}'.format(Point.count())))
+            print('Line count:  {0}'.format(Line.count()))
+            print('Point count: {0}'.format(Point.count()))
 
     def plot(self, **kwargs):
         show = kwargs.get('show',False)
@@ -292,7 +292,7 @@ class Point(Shape):
         self.setPos(kp.rotateVec(self.getPos() - basePt, angle) + basePt)
 
     def display(self):
-        print(('{0} {1}: ID = {2}, Pos = {3}'.format(self.__class__.__name__, self.getIndex(), self.getID(), self.getPos())))
+        print('{0} {1}: ID = {2}, Pos = {3}'.format(self.__class__.__name__, self.getIndex(), self.getID(), self.getPos()))
 
     def plot(self):
         if self.ID == -1:
@@ -404,7 +404,7 @@ class Curve(Shape):
         return [pt.getID() for pt in self.pt]
       
     def display(self):
-        print(('{0} {1}: ID = {2}, Pt IDs = {3}'.format(self.__class__.__name__, self.getIndex(), self.getID(), self.getPtIDs())))
+        print('{0} {1}: ID = {2}, Pt IDs = {3}'.format(self.__class__.__name__, self.getIndex(), self.getID(), self.getPtIDs()))
 
     def plot(self):
         x, y = list(zip(*[pt.getPos() for pt in self.pt]))

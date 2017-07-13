@@ -122,7 +122,7 @@ class Element():
         if self.lineEl0 is not None and self.plotOn:
             basePt = [self.parent.parent.xCofR0, self.parent.parent.yCofR0]
             pos = [kp.rotatePt(pos, basePt, self.parent.parent.trim) - np.array([0, self.parent.parent.draft]) for pos in self.initPos]
-            x, y = list(zip(*[[posi[i] for i in range(2)] for posi in pos]))
+            x, y = zip(*[[posi[i] for i in range(2)] for posi in pos])
             self.lineEl0.set_data(x, y)
 
 
