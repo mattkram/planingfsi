@@ -13,6 +13,8 @@ import planingfsi.config as config
 import planingfsi.krampy as kp
 
 
+PLOT_INFINITY = 50.0
+
 def _get_aux_fg(lam):
     """Return f and g functions, which are dependent on the auxiliary
     sine and cosine functions. Combined into one function to reduce number of
@@ -436,9 +438,7 @@ class AftSemiInfinitePressureBand(PressureElement):
 
     def plot(self):
         """Plot pressure element shape."""
-        infinity = 50.0
-
-        _x_coords = self.x_coord + np.array([-infinity, 0])
+        _x_coords = self.x_coord + np.array([-PLOT_INFINITY, 0])
         super(self.__class__, self).plot(_x_coords, color='r')
 
 
@@ -479,6 +479,5 @@ class ForwardSemiInfinitePressureBand(PressureElement):
 
     def plot(self):
         """Plot pressure element shape."""
-        infinity = 50.0
-        _x_coords = self.x_coord + np.array([0, infinity])
+        _x_coords = self.x_coord + np.array([0, PLOT_INFINITY])
         super(self.__class__, self).plot(_x_coords, color='r')
