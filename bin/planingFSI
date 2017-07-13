@@ -22,7 +22,7 @@ if os.environ.get('DISPLAY') is None:
 # Process command line arguments
 for arg in sys.argv[1:]:
     if 'post' in arg:
-        print 'Running in post-processing mode'
+        print('Running in post-processing mode')
         config.plot_save = True
         config.plot = True
         config.results_from_file = True

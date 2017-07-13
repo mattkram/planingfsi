@@ -217,8 +217,8 @@ class PotentialPlaningSolver(object):
 
         res = np.array([p.get_residual() for p in self.planing_surfaces])
 
-        print(('      Lw:        ', Lw))
-        print(('      Func value:', res))
+        print('      Lw:        ', Lw)
+        print('      Func value:', res)
 
         return res
 

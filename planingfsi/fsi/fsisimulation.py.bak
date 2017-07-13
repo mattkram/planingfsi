@@ -153,8 +153,8 @@ class Simulation(object):
         config.resM = self.solid.rigid_body[0].get_res_moment()
 
         print('Rigid Body Residuals:')
-        print(('  Lift:   {0:0.4e}'.format(config.resL)))
-        print(('  Moment: {0:0.4e}\n'.format(config.resM)))
+        print('  Lift:   {0:0.4e}'.format(config.resL))
+        print('  Moment: {0:0.4e}\n'.format(config.resM))
 
         return np.array([config.resL, config.resM])
 
@@ -178,7 +178,7 @@ class Simulation(object):
             return self.solid.res
 
     def printStatus(self):
-        print(('Residual after iteration {1:>4d}: {0:5.3e}'.format(self.get_residual(), config.it)))
+        print('Residual after iteration {1:>4d}: {0:5.3e}'.format(self.get_residual(), config.it))
 
     def checkOutputInterval(self):
         return config.it >= config.maxIt or \

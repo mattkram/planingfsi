@@ -173,7 +173,7 @@ class TimeHistory:
         plt.setp(self.ax[axInd], **kwargs)
 
     def createLegend(self, axInd=0):
-        line, name = list(zip(*[(s.line, s.legEnt) for s in self.series if s.legEnt is not None]))
+        line, name = zip(*[(s.line, s.legEnt) for s in self.series if s.legEnt is not None])
         self.ax[axInd].legend(line, name, loc='lower left')
 
     def update(self, final=False):
@@ -209,7 +209,7 @@ class TimeHistory:
     def write(self):
         ff = open('{0}_timeHistories.txt'.format(self.name), 'w')
         x = self.series[0].x
-        y = list(zip(*[s.y for s in self.series]))
+        y = zip(*[s.y for s in self.series])
 
         for xi, yi in zip(x, y):
             ff.write('{0:4.0f}'.format(xi))
@@ -304,5 +304,5 @@ class CofRPlot:
         hvec = kp.rotateVec(np.array([0.5*l, 0.0]), self.body.trim)
         vvec = kp.rotateVec(np.array([0.0, 0.5*l]), self.body.trim)
         pts = [c-hvec,c+hvec, np.ones(2)*np.nan, c-vvec, c+vvec]
-        self.line.set_data(list(zip(*pts)))
+        self.line.set_data(zip(*pts))
         self.lineCofG.set_data(self.body.xCofG, self.body.yCofG)
