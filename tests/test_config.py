@@ -1,5 +1,7 @@
 import planingfsi.config as config
 
+print
+
 for key in config.__dict__:
-    print key
-    print config.__dict__[key]
+    if not key.startswith('_'):
+        print '{0} = {1}'.format(key, getattr(config, key))
