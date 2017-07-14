@@ -13,6 +13,7 @@
 # Python virtualenv
 .env
 .env/*
+env/**
 
 # Documentation and wiki
 wiki/
@@ -26,8 +27,6 @@ old/
 #Pydev files
 .project
 .pydevproject
-
-env/**
 
 tutorials/**/mesh
 tutorials/**/[0-9]*
