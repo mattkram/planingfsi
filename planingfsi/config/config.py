@@ -104,12 +104,12 @@ plot_ymax = read('plotYMax')
 lambda_min = read('lamMin')
 lambda_max = read('lamMax')
 
-xFSMin = read(
+x_fs_min = read(
     'xFSMin', default=plot_xmin if plot_xmin is not None else lambda_min * lam)
-xFSMax = read(
+x_fs_max = read(
     'xFSMax', default=plot_xmax if plot_xmax is not None else lambda_max * lam)
 
-growthRate = read('growthRate')
+growth_rate = read('growthRate')
 CofRGridLen = read('CofRGridLen')
 
 # Directories and file formats

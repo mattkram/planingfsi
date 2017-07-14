@@ -100,8 +100,8 @@ class Simulation(object):
             # Increment iteration count
             self.increment()
 
-        if config.plotSave and not config.figFormat == 'png':
-            config.figFormat = 'png'
+        if config.plotSave and not config.fig_format == 'png':
+            config.fig_format = 'png'
             self.figure.save()
 
         if config.writeTimeHistories:
