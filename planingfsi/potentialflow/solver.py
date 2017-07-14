@@ -28,15 +28,16 @@ class PotentialPlaningSolver(object):
 
     # Class method to handle singleton behavior
     __instance = None
-    def __new__(cls, val):
+    def __new__(cls):
         if cls.__instance is None:
             cls.__instance = object.__new__(cls)
             cls.__instance.init()
         return cls.__instance
     
     def init(self):
+        # Not __init__. This method gets called by __new__ on the first
+        # instance.
         self.X = None
-        self.xFS = None
         self.D = None
         self.Dw = None
         self.Dp = None
@@ -217,8 +218,8 @@ class PotentialPlaningSolver(object):
 
         res = np.array([p.get_residual() for p in self.planing_surfaces])
 
-        print(('      Lw:        ', Lw))
-        print(('      Func value:', res))
+        print('      Lw:        ', Lw)
+        print('      Func value:', res)
 
         return res
 
@@ -401,10 +402,10 @@ class PotentialPlaningSolver(object):
                     pts = surf._get_element_coords()
                     xFS.append(
                         kp.growPoints(pts[1], pts[0],
-                                      config.xFSMin, config.growthRate))
+                                      config.x_fs_min, config.growth_rate))
                     xFS.append(
                         kp.growPoints(pts[-2], pts[-1],
-                                      config.xFSMax, config.growthRate))
+                                      config.x_fs_max, config.growth_rate))
 
             # Add points from each planing surface
             fsList = [patch._get_element_coords()
@@ -414,7 +415,7 @@ class PotentialPlaningSolver(object):
                 xFS.append(np.hstack(fsList))
 
             # Add points from each pressure cushion
-            xFS.append(np.linspace(config.xFSMin, config.xFSMax, 100))
+            xFS.append(np.linspace(config.x_fs_min, config.x_fs_max, 100))
 #             for patch in self.pressure_cushions:
 #                 if patch.neighborDown is not None:
 #                     ptsL = patch.neighborDown._get_element_coords()
@@ -606,7 +607,7 @@ class PotentialPlaningSolver(object):
         self.calculate_free_surface_profile()
         if self.lineFS is not None:
             self.lineFS.set_data(self.xFS, self.zFS)
-        endPts = np.array([config.xFSMin, config.xFSMax])
+        endPts = np.array([config.x_fs_min, config.x_fs_max])
         if self.lineFSi is not None:
             self.lineFSi.set_data(endPts, config.hWL * np.ones_like(endPts))
         return None

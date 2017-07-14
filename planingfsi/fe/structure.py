@@ -849,8 +849,8 @@ class Substructure:
 
             m = [kp.cross2(ri, fi) for ri, fi in zip(r, f)]
 
-            self.Da -= kp.integrate(s, np.array(zip(*f)[0]))
-            self.La += kp.integrate(s, np.array(zip(*f)[1]))
+            self.Da -= kp.integrate(s, np.array(list(zip(*f))[0]))
+            self.La += kp.integrate(s, np.array(list(zip(*f))[1]))
             self.Ma += kp.integrate(s, np.array(m))
 
     def get_normal_vector(self, s):
