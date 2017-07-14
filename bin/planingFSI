@@ -1,4 +1,4 @@
-#!/usr/bin/python
+#!/usr/bin/env python
 """PlaningFSI solves the general FSI problem of 2-D planing surfaces on a free
 surface, where each surface can be rigid or flexible. The substructures are
 part of a rigid body, which can be free in sinkage and trim.
