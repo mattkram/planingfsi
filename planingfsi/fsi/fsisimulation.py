@@ -108,7 +108,6 @@ class Simulation(object):
             self.figure.writeTimeHistories()
 
         print("Execution complete")
-
         if config.plotShow:
             self.figure.show()
 

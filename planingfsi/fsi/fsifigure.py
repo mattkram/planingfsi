@@ -101,7 +101,7 @@ class FSIFigure:
         plt.savefig(os.path.join(config.fig_dir_name, 'frame{1:04d}.{0}'.format(config.fig_format, config.it)), format=config.fig_format)#, dpi=300)
 
     def show(self):
-        plt.show()
+        plt.show(block=True)
 
 
 class PlotSeries:
