@@ -7,14 +7,14 @@ Usage: import planingfsi.config as config
 import os
 
 import numpy as np
-import planingfsi.krampy as kp
+from planingfsi import io
 
 dict_name = 'configDict'
 
 print(('Loading {0}'.format(dict_name)))
 
-config_dict = kp.Dictionary('configDict')
-default_dict = kp.Dictionary(os.path.join(os.path.abspath(os.path.dirname(__file__)), 'defaultDict'))
+config_dict = io.Dictionary('configDict')
+default_dict = io.Dictionary(os.path.join(os.path.abspath(os.path.dirname(__file__)), 'defaultDict'))
 
 # Function to read value from dictionary or default dictionary
 def read(key, **kwargs):
