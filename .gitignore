@@ -28,3 +28,7 @@ old/
 .pydevproject
 
 env/**
+
+tutorials/**/mesh
+tutorials/**/[0-9]*
+tutorials/**/figures
