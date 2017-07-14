@@ -15,10 +15,6 @@ from planingfsi.fsi.fsiinterpolator import Interpolator
 import os
 import sys
 
-if os.environ.get('DISPLAY') is None:
-    import matplotlib as mpl
-    mpl.use('Agg')
-
 # Process command line arguments
 for arg in sys.argv[1:]:
     if 'post' in arg:
@@ -31,6 +27,16 @@ for arg in sys.argv[1:]:
         config.plot = True
     if 'new' in arg:
         kp.rm_rf(kp.find_files(config.case_dir, '[0-9]*'))
+
+# Use tk by default. Otherwise try Agg. Otherwise, disable plotting.
+try:
+    import matplotlib.pyplot
+except:
+    try:
+        import matplotlib as mpl
+        mpl.use('Agg')
+    except:
+        config.plot = False
 
 # Create simulation
 sim = Simulation()
