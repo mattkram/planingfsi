@@ -1,0 +1,45 @@
+baseDict : 'testDictBase'
+
+# Load run properties from dictionary
+floatVar : 1.0
+
+
+
+floatExp : 1e-6
+
+intSingleDigit : 2
+intMultipleDigits : 2999
+
+boolFalseUpper : False
+boolFalseLower : false
+boolTrueUpper : True
+boolTrueLower : true
+
+noneUpper : None
+nonelower : none
+
+envVar : $HOME
+
+valueWithUnit : 5.0 * unit.ft
+#xCofR     : xCofG
+#W         : m * g
+
+nanUnsigned : nan
+nanNegative : -nan
+nanPositive : +nan
+
+infUnsigned : inf
+infNegative : -inf
+infPositive : +inf
+
+"stringKey" : test
+listVar : [
+6.0, 
+6.6,,,] 
+
+listVar2 : [
+6.0, 
+6.6,,,] 
+
+dictVar : {'get': 'out'}
+
