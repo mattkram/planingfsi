@@ -198,8 +198,8 @@ it_dir = ''
 it = -1
 
 del os
-del kp
 del np
+del io
 del config_dict
 del default_dict
 del read

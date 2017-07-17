@@ -4,8 +4,7 @@ from fnmatch import fnmatch
 import numpy as np
 
 # import planingfsi.config as config
-import planingfsi.unit as unit
-
+from . import io
 
 #class Dictionary:
 #
@@ -607,7 +606,7 @@ def getFG(x):
 def ensureDict(Dict):
     """If argument is string, create a dictionary. Otherwise, return argument. Used to ensure a dictionary is used."""
     if isinstance(Dict, str):
-        Dict = Dictionary(Dict)
+        Dict = io.Dictionary(Dict)
     return Dict
 
 
