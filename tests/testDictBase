@@ -1,0 +1,5 @@
+# Load run properties from dictionary
+rho       : 998.2
+g         : 9.81
+Fr        : 1.0
+nu        : 1e-6
