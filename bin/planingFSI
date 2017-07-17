@@ -9,6 +9,7 @@ files, assembles the problem, and runs it.
 """
 import planingfsi.config as config
 import planingfsi.krampy as kp
+from planingfsi import io
 from planingfsi.fsi.fsisimulation import Simulation
 from planingfsi.fsi.fsiinterpolator import Interpolator
 
@@ -51,7 +52,7 @@ else:
 
 # Add all substructures
 for dict_name in kp.listdir_nohidden(config.input_dict_dir):
-    dict_ = kp.Dictionary(os.path.join(config.input_dict_dir, dict_name))
+    dict_ = io.Dictionary(os.path.join(config.input_dict_dir, dict_name))
 
     substructure = sim.solid.add_substructure(dict_)
 

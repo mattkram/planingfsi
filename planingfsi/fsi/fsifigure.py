@@ -54,6 +54,7 @@ class FSIFigure:
 
         plt.xlabel(r'$x$ [m]', fontsize=22)
         plt.ylabel(r'$y$ [m]', fontsize=22)
+        
         plt.xlim([xMin - (xMax - xMin) * config.extW, xMax + (xMax - xMin) * config.extE])
         plt.ylim([yMin - (yMax - yMin) * config.extS, yMax + (yMax - yMin) * config.extN])
         plt.gca().set_aspect('equal')

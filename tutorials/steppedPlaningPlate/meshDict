@@ -1,6 +1,6 @@
 # Create submeshes
 
-K = kp.Dictionary('configDict')
+K = io.Dictionary('configDict')
 AOA = K.read('AOA', 10.0)
 
 # Create points (ID, type, params)
