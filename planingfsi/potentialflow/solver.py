@@ -9,6 +9,7 @@ from scipy.optimize import fmin
 
 import planingfsi.config as config
 import planingfsi.krampy as kp
+from planingfsi import io
 
 from planingfsi.potentialflow.pressurepatch import PlaningSurface
 from planingfsi.potentialflow.pressurepatch import PressureCushion
@@ -83,40 +84,38 @@ class PotentialPlaningSolver(object):
         self.pressure_elements += [el for el in instance.pressure_elements]
         return None
 
-    def add_planing_surface(self, dict_name='', **kwargs):
+    def add_planing_surface(self, dict_, **kwargs):
         """Add planing surface to the calculation from a dictionary file name.
 
         Args
         ----
-        dict_name : str
-            The path to the dictionary file.
+        dict_ : planingfsi.io.Dictionary
+            The dictionary file.
 
         Returns
         -------
         PlaningSurface
             Instance created from dictionary.
         """
-        dict_ = kp.ensureDict(dict_name)
         kwargs['parent'] = self
         instance = PlaningSurface(dict_, **kwargs)
         self.planing_surfaces.append(instance)
         self.add_pressure_patch(instance)
         return instance
 
-    def add_pressure_cushion(self, dict_name='', **kwargs):
+    def add_pressure_cushion(self, dict_, **kwargs):
         """Add pressure cushion to the calculation from a dictionary file name.
 
         Args
         ----
-        dict_name : str
-            The path to the dictionary file.
+        dict_ : planingfsi.io.Dictionary
+            The dictionary file.
 
         Returns
         -------
         PressureCushion
             Instance created from dictionary.
         """
-        dict_ = kp.ensureDict(dict_name)
         kwargs['parent'] = self
         instance = PressureCushion(dict_, **kwargs)
         self.pressure_cushions.append(instance)

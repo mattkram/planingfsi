@@ -3,57 +3,6 @@ from fnmatch import fnmatch
 
 import numpy as np
 
-# import planingfsi.config as config
-from . import io
-
-#class Dictionary:
-#
-#    def __init__(self, name=''):
-#        self.dict_ = {}
-#        if os.path.exists(name):
-#            try:
-#                with open(name) as f:
-#                    for line in f:
-#                        if not line[0] == '#':
-#                            split = line.partition(':')
-#                            (key, val) = split[0].strip(), split[2].strip()
-#
-#                            # Process non-empty keys
-#                            if not len(key) == 0:
-#                                # Convert val to appropriate variable type from
-#                                # string
-#                                if val in ['nan', '-nan', '+nan']:
-#                                    self.dict_[key] = np.nan
-#                                elif val in ['inf', '-inf', '+inf']:
-#                                    self.dict_ = float(val)
-#                                else:
-#                                    exec(
-#                                        'self.dict_[\'{0}\'] = {1}'.format(key,
-#                                                                           val))
-#
-#            except IOError:
-#                raise Exception(
-#                    'Dictionary file {0} does not exist'.format(name))
-#        # If specified, read values from a base dictionary
-#        # All local values override the base dictionary values
-#        baseDictDir = self.read('baseDict', None)
-#        if baseDictDir is not None:
-#            baseDict = Dictionary(baseDictDir)
-#            for key in baseDict.dict_:
-#                self.dict_[key] = self.read(key, baseDict.dict_[key])
-#
-#    def readLoadOrDefault(self, key, default):
-#        val = self.read(key, default)
-#        if isinstance(val, str):
-#            exec('val = config.{0}'.format(val))
-#        return val
-#
-#    def read(self, key, default=None):
-#        if key in self.dict_:
-#            return self.dict_[key]
-#        else:
-#            return default
-
 
 class RootFinder:
 
@@ -601,13 +550,6 @@ def getFG(x):
         g += np.sum(F * ti)
 
     return f, g
-
-
-def ensureDict(Dict):
-    """If argument is string, create a dictionary. Otherwise, return argument. Used to ensure a dictionary is used."""
-    if isinstance(Dict, str):
-        Dict = io.Dictionary(Dict)
-    return Dict
 
 
 def rm_rf(dList):
