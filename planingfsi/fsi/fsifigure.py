@@ -14,7 +14,7 @@ class FSIFigure:
         self.fluid = fluid
         
         plt.figure(figsize=(16, 12))
-        if config.plotWatch:
+        if config.plotting.watch:
             plt.ion()
         self.geometryAx = plt.axes([0.05,0.6,0.9,0.35])
         
@@ -39,24 +39,24 @@ class FSIFigure:
         xMin, xMax = kp.minMax([nd.x for struct in self.solid.substructure for nd in struct.node])
         yMin, yMax = kp.minMax([nd.y for struct in self.solid.substructure for nd in struct.node])
         
-        if config.plot_xmin is not None:
-            xMin = config.plot_xmin
-            config.extW = 0.0
-        if config.plot_xmax is not None:
-            xMax = config.plot_xmax
-            config.extE = 0.0
-        if config.plot_ymin is not None:
-            yMin = config.plot_ymin
-            config.extS = 0.0
-        if config.plot_ymax is not None:
-            yMax = config.plot_ymax
-            config.extN = 0.0
+        if config.plotting.xmin is not None:
+            xMin = config.plotting.xmin
+            config.plotting.ext_w = 0.0
+        if config.plotting.xmax is not None:
+            xMax = config.plotting.xmax
+            config.plotting.ext_e = 0.0
+        if config.plotting.ymin is not None:
+            yMin = config.plotting.ymin
+            config.plotting.ext_s = 0.0
+        if config.plotting.ymax is not None:
+            yMax = config.plotting.ymax
+            config.plotting.ext_n = 0.0
 
         plt.xlabel(r'$x$ [m]', fontsize=22)
         plt.ylabel(r'$y$ [m]', fontsize=22)
         
-        plt.xlim([xMin - (xMax - xMin) * config.extW, xMax + (xMax - xMin) * config.extE])
-        plt.ylim([yMin - (yMax - yMin) * config.extS, yMax + (yMax - yMin) * config.extN])
+        plt.xlim([xMin - (xMax - xMin) * config.plotting.ext_w, xMax + (xMax - xMin) * config.plotting.ext_e])
+        plt.ylim([yMin - (yMax - yMin) * config.plotting.ext_s, yMax + (yMax - yMin) * config.plotting.ext_n])
         plt.gca().set_aspect('equal')
         self.TXT = plt.text(0.05, 0.95, '', ha='left', va='top', transform=plt.gca().transAxes)
 
@@ -83,14 +83,14 @@ class FSIFigure:
 
         # Update each lower subplot
         for s in self.subplot:
-            s.update(self.solid.res < config.maxRes and config.it > config.rampIt)
+            s.update(self.solid.res < config.max_residual and config.it > config.num_ramp_it)
 
         for l in self.lineCofR:
             l.update()
           
         plt.draw()
         
-        if config.plotSave:
+        if config.plotting.save:
             self.save()
 
     def writeTimeHistories(self):
@@ -99,7 +99,7 @@ class FSIFigure:
                 s.write()
 
     def save(self):
-        plt.savefig(os.path.join(config.fig_dir_name, 'frame{1:04d}.{0}'.format(config.fig_format, config.it)), format=config.fig_format)#, dpi=300)
+        plt.savefig(os.path.join(config.path.fig_dir_name, 'frame{1:04d}.{0}'.format(config.fig_format, config.it)), format=config.fig_format)#, dpi=300)
 
     def show(self):
         plt.show(block=True)
@@ -300,7 +300,7 @@ class CofRPlot:
         self.update()
 
     def update(self):
-        l = config.CofRGridLen
+        l = config.CofR_grid_len
         c = np.array([self.body.xCofR, self.body.yCofR])
         hvec = kp.rotateVec(np.array([0.5*l, 0.0]), self.body.trim)
         vvec = kp.rotateVec(np.array([0.0, 0.5*l]), self.body.trim)

@@ -3,8 +3,8 @@ import os
 import numpy as np
 from scipy.interpolate import interp1d
 
-import planingfsi.config as config
-import planingfsi.krampy as kp
+from planingfsi import config
+from planingfsi import krampy as kp
 
 from . import felib as fe
 
@@ -60,7 +60,7 @@ class FEStructure:
             bd.update_fluid_forces()
 
     def calculate_response(self):
-        if config.resultsFromFile:
+        if config.results_from_file:
             self.load_response()
         else:
             for bd in self.rigid_body:
@@ -70,7 +70,7 @@ class FEStructure:
     def get_residual(self):
         self.res = 0.0
         for bd in self.rigid_body:
-            if bd.freeInDraft or bd.freeInTrim:
+            if bd.free_in_draft or bd.free_in_trim:
                 self.res = np.max([np.abs(bd.resL), self.res])
                 self.res = np.max([np.abs(bd.resM), self.res])
             self.res = np.max([FlexibleSubstructure.res, self.res])
@@ -98,11 +98,11 @@ class FEStructure:
     def load_mesh(self):
         # Create all nodes
         x,  y = np.loadtxt(
-            os.path.join(config.mesh_dir, 'nodes.txt'), unpack=True)
+            os.path.join(config.path.mesh_dir, 'nodes.txt'), unpack=True)
         xf, yf = np.loadtxt(
-            os.path.join(config.mesh_dir, 'fixedDOF.txt'), unpack=True)
+            os.path.join(config.path.mesh_dir, 'fixedDOF.txt'), unpack=True)
         fx, fy = np.loadtxt(
-            os.path.join(config.mesh_dir, 'fixedLoad.txt'), unpack=True)
+            os.path.join(config.path.mesh_dir, 'fixedLoad.txt'), unpack=True)
 
         for xx, yy, xxf, yyf, ffx, ffy in zip(x, y, xf, yf, fx, fy):
             nd = fe.Node()
@@ -133,17 +133,16 @@ class RigidBody:
         self.name = self.Dict.read('bodyName', 'default')
         self.W = self.Dict.read(
             'W', self.Dict.read('loadPct', 1.0) * config.W)
-        self.W *= config.sealLoadPct
+        self.W *= config.seal_load_pct
         self.m = self.Dict.read('m', self.W / config.g)
         self.Iz = self.Dict.read('Iz', self.m * config.Lref**2 / 12)
         self.hasPlaningSurface = self.Dict.read(
             'hasPlaningSurface', False)
 
-        var = ['maxDraftStep', 'maxTrimStep', 'freeInDraft', 'freeInTrim', 'draftDamping', 'trimDamping', 'maxDraftAcc', 'maxTrimAcc',
-               'xCofG', 'yCofG', 'xCofR', 'yCofR', 'initialDraft', 'initialTrim', 'relaxDraft', 'relaxTrim', 'timeStep', 'numDamp']
+        var = ['max_draft_step', 'max_trim_step', 'free_in_draft', 'free_in_trim', 'draft_damping', 'trim_damping', 'max_draft_acc', 'max_trim_acc',
+               'xCofG', 'yCofG', 'xCofR', 'yCofR', 'initial_draft', 'initial_trim', 'relax_draft', 'relax_trim', 'time_step', 'num_damp']
         for v in var:
-            exec(
-                'self.{0} = self.Dict.read(\'{0}\', config.{0})'.format(v))
+            setattr(self, v, self.Dict.read(v, getattr(config,v)))
 
     #    self.xCofR = self.dict_.read('xCofR', self.xCofG)
     #    self.yCofR = self.dict_.read('yCofR', self.yCofG)
@@ -151,13 +150,13 @@ class RigidBody:
         self.xCofR0 = self.xCofR
         self.yCofR0 = self.yCofR
 
-        self.maxDisp = np.array([self.maxDraftStep, self.maxTrimStep])
-        self.freeDoF = np.array([self.freeInDraft,  self.freeInTrim])
-        self.Cdamp = np.array([self.draftDamping, self.trimDamping])
-        self.maxAcc = np.array([self.maxDraftAcc,  self.maxTrimAcc])
-        self.relax = np.array([self.relaxDraft, self.relaxTrim])
-        if self.freeInDraft or self.freeInTrim:
-            config.hasFreeStructure = True
+        self.maxDisp = np.array([self.max_draft_step, self.max_trim_step])
+        self.freeDoF = np.array([self.free_in_draft,  self.free_in_trim])
+        self.Cdamp = np.array([self.draft_damping, self.trim_damping])
+        self.maxAcc = np.array([self.max_draft_acc,  self.max_trim_acc])
+        self.relax = np.array([self.relax_draft, self.relax_trim])
+        if self.free_in_draft or self.free_in_trim:
+            config.has_free_structure = True
 
         self.v = np.zeros((self.dim))
         self.a = np.zeros((self.dim))
@@ -190,19 +189,19 @@ class RigidBody:
         # Assign displacement function depending on specified method
         self.getDisp = lambda: (0.0, 0.0)
         if any(self.freeDoF):
-            if config.motionMethod == 'Secant':
+            if config.motion_method == 'Secant':
                 self.getDisp = self.get_disp_secant
-            elif config.motionMethod == 'Broyden':
+            elif config.motion_method == 'Broyden':
                 self.getDisp = self.get_disp_broyden
-            elif config.motionMethod == 'BroydenNew':
+            elif config.motion_method == 'BroydenNew':
                 self.getDisp = self.get_disp_broyden_new
-            elif config.motionMethod == 'Physical':
+            elif config.motion_method == 'Physical':
                 self.getDisp = self.get_disp_physical
-            elif config.motionMethod == 'Newmark-Beta':
+            elif config.motion_method == 'Newmark-Beta':
                 self.getDisp = self.get_disp_newmark_beta
-            elif config.motionMethod == 'PhysicalNoMass':
+            elif config.motion_method == 'PhysicalNoMass':
                 self.getDisp = self.get_disp_physical_no_mass
-            elif config.motionMethod == 'Sep':
+            elif config.motion_method == 'Sep':
                 self.getDisp = self.getDispSep
                 self.trimSolver = None
                 self.draftSolver = None
@@ -223,7 +222,7 @@ class RigidBody:
                     self.node.append(nd)
 
     def initialize_position(self):
-        self.set_position(self.initialDraft, self.initialTrim)
+        self.set_position(self.initial_draft, self.initial_trim)
 
     def set_position(self, draft, trim):
         self.update_position(draft - self.draft, trim - self.trim)
@@ -286,17 +285,17 @@ class RigidBody:
         self.D *= 0.0
         self.L *= 0.0
         self.M *= 0.0
-        if config.cushionForceMethod.lower() == 'assumed':
+        if config.cushion_force_method.lower() == 'assumed':
             self.L += config.Pc * config.Lref * kp.cosd(config.trim)
 
     def get_disp_physical(self):
-        disp = self.limit_disp(self.timeStep * self.v)
+        disp = self.limit_disp(self.time_step * self.v)
 
         for i in range(self.dim):
             if np.abs(disp[i]) == np.abs(self.maxDisp[i]):
-                self.v[i] = disp[i] / self.timeStep
+                self.v[i] = disp[i] / self.time_step
 
-        self.v += self.timeStep * self.a
+        self.v += self.time_step * self.a
 
         self.a = np.array(
             [self.W - self.L, self.M - self.W * (self.xCofG - self.xCofR)])
@@ -304,7 +303,7 @@ class RigidBody:
         self.a -= self.Cdamp * self.v * config.ramp
         self.a /= np.array([self.m, self.Iz])
         self.a = np.min(np.vstack((np.abs(self.a), np.array(
-            [self.maxDraftAcc, self.maxTrimAcc]))), axis=0) * np.sign(self.a)
+            [self.max_draft_acc, self.max_trim_acc]))), axis=0) * np.sign(self.a)
 
     #    accLimPct = np.min(np.vstack((np.abs(self.a), self.maxAcc)), axis=0) * np.sign(self.a)
     #    for i in range(len(self.a)):
@@ -323,17 +322,17 @@ class RigidBody:
     #    self.a -= self.Cdamp * self.v * config.ramp
         self.a /= np.array([self.m, self.Iz])
         self.a = np.min(np.vstack((np.abs(self.a), np.array(
-            [self.maxDraftAcc, self.maxTrimAcc]))), axis=0) * np.sign(self.a)
+            [self.max_draft_acc, self.max_trim_acc]))), axis=0) * np.sign(self.a)
 
         dv = (1 - self.gamma) * self.aOld + self.gamma * self.a
-        dv *= self.timeStep
+        dv *= self.time_step
         dv *= (1 - self.numDamp)
         self.v += dv
 
         disp = 0.5 * (1 - 2 * self.beta) * self.aOld + self.beta * self.a
-        disp *= self.timeStep
+        disp *= self.time_step
         disp += self.vOld
-        disp *= self.timeStep
+        disp *= self.time_step
 
         self.aOld = self.a
         self.vOld = self.v
@@ -351,10 +350,10 @@ class RigidBody:
     #    F -= self.Cdamp * self.v
 
         if self.predictor:
-            disp = F / self.Cdamp * self.timeStep
+            disp = F / self.Cdamp * self.time_step
             self.predictor = False
         else:
-            disp = 0.5 * self.timeStep / self.Cdamp * (F - self.twoAgoF)
+            disp = 0.5 * self.time_step / self.Cdamp * (F - self.twoAgoF)
             self.predictor = True
 
         disp *= self.relax * config.ramp
@@ -363,7 +362,7 @@ class RigidBody:
     #    self.v = disp / self.timeStep
 
         self.twoAgoF = self.fOld
-        self.fOld = disp * self.Cdamp / self.timeStep
+        self.fOld = disp * self.Cdamp / self.time_step
 
         return disp
 
@@ -372,7 +371,7 @@ class RigidBody:
             self.resFun = lambda x: np.array(
                 [self.L - self.W, self.M - self.W * (config.xCofG - config.xCofR)])
             self.solver = kp.RootFinder(self.resFun, np.array(
-                [config.initialDraft, config.initialTrim]), 'secant', dxMax=self.maxDisp * self.freeDoF)
+                [config.initial_draft, config.initial_trim]), 'secant', dxMax=self.maxDisp * self.freeDoF)
 
         if not self.dispOld is None:
             self.solver.takeStep(self.dispOld)
@@ -400,10 +399,10 @@ class RigidBody:
 
         disp = np.zeros((self.dim))
         if self.Jit < self.dim:
-            disp[self.Jit] = config.motionJacobianFirstStep
+            disp[self.Jit] = config.motion_jacobian_first_step
 
         if self.Jit > 0:
-            disp[self.Jit - 1] = -config.motionJacobianFirstStep
+            disp[self.Jit - 1] = -config.motion_jacobian_first_step
         self.dispOld = disp
         if self.Jit >= self.dim:
             self.J = self.Jtmp * 1.0
@@ -501,7 +500,7 @@ class RigidBody:
             res = 1.0
         else:
             res = (self.L - self.W) / (config.pStag * config.Lref + 1e-6)
-        return np.abs(res * self.freeInDraft)
+        return np.abs(res * self.free_in_draft)
 
     def get_res_moment(self):
         if np.isnan(self.M):
@@ -512,7 +511,7 @@ class RigidBody:
             else:
                 res = (self.M - self.W * (self.xCofG - self.xCofR)) / \
                     (config.pStag * config.Lref**2 + 1e-6)
-        return np.abs(res * self.freeInTrim)
+        return np.abs(res * self.free_in_trim)
 
     def print_motion(self):
         print(('Rigid Body Motion: {0}'.format(self.name)))
@@ -624,7 +623,7 @@ class Substructure:
 
     def load_mesh(self):
         ndSt, ndEnd = np.loadtxt(
-            os.path.join(config.mesh_dir, 'elements_{0}.txt'.format(self.name)), unpack=True)
+            os.path.join(config.path.mesh_dir, 'elements_{0}.txt'.format(self.name)), unpack=True)
         if isinstance(ndSt, float):
             ndSt = [int(ndSt)]
             ndEnd = [int(ndEnd)]
@@ -727,7 +726,7 @@ class Substructure:
                 s, pFl, tau = self.interpolator.get_loads_in_range(
                     nodeS[0], nodeS[1])
                 # Limit pressure to be below stagnation pressure
-                if config.pressureLimiter:
+                if config.pressure_limiter:
                     pFl = np.min(
                         np.hstack((pFl, np.ones_like(pFl) * config.pStag)), axis=0)
 
@@ -809,11 +808,11 @@ class Substructure:
             el.setPressureAndShear(qp, qs)
 
             # Calculate external force and moment for rigid body calculation
-            if config.cushionForceMethod.lower() == 'integrated' or \
-               config.cushionForceMethod.lower() == 'assumed':
-                if config.cushionForceMethod.lower() == 'integrated':
+            if config.cushion_force_method.lower() == 'integrated' or \
+               config.cushion_force_method.lower() == 'assumed':
+                if config.cushion_force_method.lower() == 'integrated':
                     integrand = pExt
-                elif config.cushionForceMethod.lower() == 'assumed':
+                elif config.cushion_force_method.lower() == 'assumed':
                     integrand = pFl
 
                 n = list(map(self.get_normal_vector, s))
@@ -936,8 +935,8 @@ class FlexibleSubstructure(Substructure):
 
         cls.res = np.max(np.abs(Ug))
 
-        Ug *= config.relaxFEM
-        Ug *= np.min([config.maxFEMDisp / np.max(Ug), 1.0])
+        Ug *= config.relax_FEM
+        Ug *= np.min([config.max_FEM_disp / np.max(Ug), 1.0])
 
         for nd in fe.Node.All():
             nd.moveCoordinates(Ug[nd.dof[0], 0], Ug[nd.dof[1], 0])
@@ -956,7 +955,7 @@ class FlexibleSubstructure(Substructure):
         self.K = None
         self.F = None
     #    self.U = None
-        config.hasFreeStructure = True
+        config.has_free_structure = True
 
     def get_residual(self):
         return np.max(np.abs(self.U))
@@ -1044,15 +1043,13 @@ class TorsionalSpringSubstructure(FlexibleSubstructure, RigidSubstructure):
         self.theta = 0.0
         self.Mt = 0.0
         self.MOld = None
-        self.relax = self.Dict.read('relaxAng', config.relaxRB)
+        self.relax = self.Dict.read('relaxAng', config.relax_rigid_body)
         self.attachPct = self.Dict.read('attachPct', 0.0)
         self.attachedNode = None
         self.attachedEl = None
-        self.minimumAngle = self.Dict.read(
-            'minimumAngle', -float('Inf'))
-        self.maxAngleStep = self.Dict.read(
-            'maxAngleStep',  float('Inf'))
-        config.hasFreeStructure = True
+        self.minimumAngle = self.Dict.read('minimumAngle', -float('Inf'))
+        self.max_angle_step = self.Dict.read('maxAngleStep',  float('Inf'))
+        config.has_free_structure = True
 
     def load_mesh(self):
         Substructure.load_mesh(self)
@@ -1113,7 +1110,7 @@ class TorsionalSpringSubstructure(FlexibleSubstructure, RigidSubstructure):
                     nodeS[0], nodeS[1])
 
                 # Limit pressure to be below stagnation pressure
-                if config.pressureLimiter:
+                if config.pressure_limiter:
                     pFl = np.min(
                         np.hstack((pFl, np.ones_like(pFl) * config.pStag)), axis=0)
 
@@ -1168,11 +1165,11 @@ class TorsionalSpringSubstructure(FlexibleSubstructure, RigidSubstructure):
             pTot = pExt - pInt
 
             # Calculate external force and moment for rigid body calculation
-            if config.cushionForceMethod.lower() == 'integrated' or \
-               config.cushionForceMethod.lower() == 'assumed':
-                if config.cushionForceMethod.lower() == 'integrated':
+            if config.cushion_force_method.lower() == 'integrated' or \
+               config.cushion_force_method.lower() == 'assumed':
+                if config.cushion_force_method.lower() == 'integrated':
                     integrand = pExt
-                elif config.cushionForceMethod.lower() == 'assumed':
+                elif config.cushion_force_method.lower() == 'assumed':
                     integrand = pFl
 
                 n = list(map(self.get_normal_vector, s))
@@ -1264,7 +1261,7 @@ class TorsionalSpringSubstructure(FlexibleSubstructure, RigidSubstructure):
             theta /= self.spring_constant
 
         dTheta = (theta - self.theta) * self.relax
-        dTheta = np.min([np.abs(dTheta), self.maxAngleStep]) * np.sign(dTheta)
+        dTheta = np.min([np.abs(dTheta), self.max_angle_step]) * np.sign(dTheta)
 
         self.set_angle(self.theta + dTheta)
 

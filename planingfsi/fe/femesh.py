@@ -125,15 +125,15 @@ class Mesh:
                 plt.show()
 
     def write(self):
-        kp.createIfNotExist(config.mesh_dir)
+        kp.createIfNotExist(config.path.mesh_dir)
         x, y = list(zip(*[pt.getPos() for pt in Point.All()]))
-        kp.writeaslist(os.path.join(config.mesh_dir, 'nodes.txt'), ['x', x], ['y', y])
+        kp.writeaslist(os.path.join(config.path.mesh_dir, 'nodes.txt'), ['x', x], ['y', y])
 
         x, y = list(zip(*[pt.getFixedDOF() for pt in Point.All()]))
-        kp.writeaslist(os.path.join(config.mesh_dir, 'fixedDOF.txt'), ['x', x], ['y', y], headerFormat='>1', dataFormat='>1')
+        kp.writeaslist(os.path.join(config.path.mesh_dir, 'fixedDOF.txt'), ['x', x], ['y', y], headerFormat='>1', dataFormat='>1')
 
         x, y = list(zip(*[pt.getFixedLoad() for pt in Point.All()]))
-        kp.writeaslist(os.path.join(config.mesh_dir, 'fixedLoad.txt'), ['x', x], ['y', y], headerFormat='>6', dataFormat='6.4e')
+        kp.writeaslist(os.path.join(config.path.mesh_dir, 'fixedLoad.txt'), ['x', x], ['y', y], headerFormat='>6', dataFormat='6.4e')
 
         for sm in self.submesh:
             sm.write()
@@ -172,7 +172,7 @@ class Submesh(Mesh):
     def write(self):
         if len(self.line) > 0:
             ptL, ptR = list(zip(*[[pt.getIndex() for pt in l._get_element_coords()] for l in self.line]))
-            kp.writeaslist(os.path.join(config.mesh_dir, 'elements_{0}.txt'.format(self.name)), ['ptL', ptL], ['ptR', ptR], headerFormat='<4', dataFormat='>4')
+            kp.writeaslist(os.path.join(config.path.mesh_dir, 'elements_{0}.txt'.format(self.name)), ['ptL', ptL], ['ptR', ptR], headerFormat='<4', dataFormat='>4')
 
 
 class Shape:

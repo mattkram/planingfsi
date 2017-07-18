@@ -20,14 +20,14 @@ import sys
 for arg in sys.argv[1:]:
     if 'post' in arg:
         print('Running in post-processing mode')
-        config.plot_save = True
-        config.plot = True
+        config.plotting.save = True
+        config.plotting.plot_any = True
         config.results_from_file = True
     if 'plotSave' in arg:
-        config.plot_save = True
-        config.plot = True
+        config.plotting.save = True
+        config.plotting.plot_any = True
     if 'new' in arg:
-        kp.rm_rf(kp.find_files(config.case_dir, '[0-9]*'))
+        kp.rm_rf(kp.find_files(config.path.case_dir, '[0-9]*'))
 
 # Use tk by default. Otherwise try Agg. Otherwise, disable plotting.
 try:
@@ -37,22 +37,22 @@ except:
         import matplotlib as mpl
         mpl.use('Agg')
     except:
-        config.plot = False
+        config.plotting.plot_any = False
 
 # Create simulation
 sim = Simulation()
 
 # Add all rigid bodies
-if os.path.exists(config.body_dict_dir):
-    for dict_name in kp.listdir_nohidden(config.body_dict_dir):
+if os.path.exists(config.path.body_dict_dir):
+    for dict_name in kp.listdir_nohidden(config.path.body_dict_dir):
         sim.solid.add_rigid_body(
-            os.path.join(config.body_dict_dir, dict_name))
+            os.path.join(config.path.body_dict_dir, dict_name))
 else:
     sim.solid.add_rigid_body()
 
 # Add all substructures
-for dict_name in kp.listdir_nohidden(config.input_dict_dir):
-    dict_ = io.Dictionary(os.path.join(config.input_dict_dir, dict_name))
+for dict_name in kp.listdir_nohidden(config.path.input_dict_dir):
+    dict_ = io.Dictionary(os.path.join(config.path.input_dict_dir, dict_name))
 
     substructure = sim.solid.add_substructure(dict_)
 
@@ -64,10 +64,10 @@ for dict_name in kp.listdir_nohidden(config.input_dict_dir):
             planing_surface.get_loads_in_range)
 
 # Add all pressure cushions
-if os.path.exists(config.cushion_dict_dir):
-    for dict_name in kp.listdir_nohidden(config.cushion_dict_dir):
+if os.path.exists(config.path.cushion_dict_dir):
+    for dict_name in kp.listdir_nohidden(config.path.cushion_dict_dir):
         sim.fluid.add_pressure_cushion(
-            os.path.join(config.cushion_dict_dir, dict_name))
+            os.path.join(config.path.cushion_dict_dir, dict_name))
 
 # Run simulation
 sim.run()
