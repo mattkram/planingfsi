@@ -3,30 +3,41 @@ import math
 import unittest
 
 
+debug = False
+
 class DictionaryTest(unittest.TestCase):
 
-    def setUp(self):
-        self.dict_ = io.Dictionary('testDict')
-#        for key, val in self.dict_.items():
-#            print('{0}: {1}'.format(key, val), type(val))
-#            if isinstance(val, dict):
-#                for keyj, valj in val.items():
-#                    print('{0} = {1}'.format(keyj, valj), type(valj))
+    @classmethod
+    def setUpClass(cls):
+        cls.dict_ = io.Dictionary('testDict')
+        if debug:
+            for key, val in cls.dict_.items():
+                print('{0}: {1}'.format(key, val), type(val))
+                if isinstance(val, dict):
+                    for keyj, valj in val.items():
+                        print('{0} = {1}'.format(keyj, valj), type(valj))
 
     def assertEqualInstance(self, key, target_val, type_):
         dict_val = self.dict_.read(key)
         self.assertIsInstance(dict_val, type_)
         self.assertEqual(target_val, dict_val)
     
+    def assertDict(self, dict_, type_):
+        for key, val in dict_.items():
+            with self.subTest(key=key):
+                self.assertEqualInstance(key, val, type_)
+
     def test_read_bool(self):
-        self.assertEqualInstance('boolFalseUpper', False, bool)
-        self.assertEqualInstance('boolFalseLower', False, bool)
-        self.assertEqualInstance('boolTrueUpper', True, bool)
-        self.assertEqualInstance('boolTrueLower', True, bool)
+        dict_ = {'boolTrueUpper': True,
+                 'boolTrueLower': True,
+                 'boolFalseUpper': False,
+                 'boolFalseLower': False}
+        self.assertDict(dict_, bool)
 
     def test_read_int(self):
-        self.assertEqualInstance('intSingleDigit', 2, int)
-        self.assertEqualInstance('intMultipleDigits', 2999, int)
+        dict_ = {'intMultipleDigits': 2999,
+                 'intSingleDigit': 2}
+        self.assertDict(dict_, int)
 
     def test_read_nan(self):
         for key in ['nanUnsigned', 'nanNegative', 'nanPositive']:
@@ -36,13 +47,14 @@ class DictionaryTest(unittest.TestCase):
 
     def test_read_infs(self):
         INF = float('inf')
-        self.assertEqualInstance('infUnsigned', INF, float)
-        self.assertEqualInstance('infPositive', INF, float)
-        self.assertEqualInstance('infNegative', -INF, float)
+        dict_ = {'infUnsigned': INF,
+                 'infPositive': INF,
+                 'infNegative': -INF}
+        self.assertDict(dict_, float)
     
     def test_read_none(self):
-        self.assertIsNone(self.dict_.read('noneUpper'))
-        self.assertIsNone(self.dict_.read('noneLower'))
+        for upper_lower in ['Upper', 'Lower']:
+            self.assertIsNone(self.dict_.read('none{0}'.format(upper_lower)))
 
 if __name__ == '__main__':
     unittest.main()
