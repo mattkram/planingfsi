@@ -11,9 +11,9 @@ from planingfsi import io
 
 dict_name = 'configDict'
 
-print(('Loading {0}'.format(dict_name)))
+print('Loading {0}'.format(dict_name))
 
-config_dict = io.Dictionary('configDict')
+config_dict = io.Dictionary(dict_name)
 default_dict = io.Dictionary(os.path.join(os.path.abspath(os.path.dirname(__file__)), 'defaultDict'))
 
 # Function to read value from dictionary or default dictionary
@@ -22,6 +22,9 @@ def read(key, **kwargs):
         return config_dict.read(key, default_dict.read(key, None))
     else:
         return config_dict.read(key, kwargs.get('default'))
+
+class Subconfig(object):
+    pass
 
 # Load run properties from dictionary
 rho = read('rho')
@@ -44,7 +47,7 @@ W = read('W', default=m * g)
 Lref = read('Lref', default=read('Lc', default=1.0))  # read Lc for backwards-compatibility
 
 dim = read('dim')
-shearCalc = read('shearCalc')
+shear_calc = read('shearCalc')
 
 # Calculate U or Fr depending on which was specified in the file
 if U is not None:
@@ -86,85 +89,88 @@ elif pType == 'hydrostatic':
     pScale = rho * g * read('pScaleHead')
 else:
     pScale = read('pScale', default=1.0)
-
-pScale = read('pScalePct') / pScale
-pressureLimiter = read('pressureLimiter')
-
-# Load plot extents
-extE = read('extE')
-extW = read('extW')
-extN = read('extN')
-extS = read('extS')
-
-plot_xmin = read('plotXMin')
-plot_xmax = read('plotXMax')
-plot_ymin = read('plotYMin')
-plot_ymax = read('plotYMax')
-
-lambda_min = read('lamMin')
-lambda_max = read('lamMax')
-
-x_fs_min = read(
-    'xFSMin', default=plot_xmin if plot_xmin is not None else lambda_min * lam)
-x_fs_max = read(
-    'xFSMax', default=plot_xmax if plot_xmax is not None else lambda_max * lam)
-
+    
 growth_rate = read('growthRate')
-CofRGridLen = read('CofRGridLen')
+CofR_grid_len = read('CofRGridLen')
 
 # Directories and file formats
-case_dir = read('caseDir')
+path = Subconfig()
+path.case_dir = read('caseDir')
 data_format = read('dataFormat')
 fig_format = read('figFormat')
-fig_dir_name = read('figDirName')
-body_dict_dir = read('bodyDictDir')
-input_dict_dir = read('inputDictDir')
-cushion_dict_dir = read(
+path.fig_dir_name = read('figDirName')
+path.body_dict_dir = read('bodyDictDir')
+path.input_dict_dir = read('inputDictDir')
+path.cushion_dict_dir = read(
     'pressureCushionDictDir', default=read('cushionDictDir'))
-mesh_dir = read('meshDir')
-mesh_dict_dir = read('meshDictDir')
+path.mesh_dir = read('meshDir')
+path.mesh_dict_dir = read('meshDictDir')
+
+pScale = read('pScalePct') / pScale
+pressure_limiter = read('pressureLimiter')
+
+plotting = Subconfig()
+
+# Load plot extents
+plotting.ext_e = read('extE')
+plotting.ext_w = read('extW')
+plotting.ext_n = read('extN')
+plotting.ext_s = read('extS')
+
+plotting.xmin = read('plotXMin')
+plotting.xmax = read('plotXMax')
+plotting.ymin = read('plotYMin')
+plotting.ymax = read('plotYMax')
+
+plotting.lambda_min = read('lamMin')
+plotting.lambda_max = read('lamMax')
+
+plotting.x_fs_min = read(
+    'xFSMin', default=plotting.xmin if plotting.xmin is not None else plotting.lambda_min * lam)
+plotting.x_fs_max = read(
+    'xFSMax', default=plotting.xmax if plotting.xmax is not None else plotting.lambda_max * lam)
 
 # Whether to save, show, or watch plots
-plotSave = read('plotSave')
-plot_pressure = read('plot_pressure')
-plotShow = read('plotShow')
-plotWatch = read('plotWatch') or plotShow
-plot = plotShow or plotSave or plotWatch or plot_pressure
+plotting.save = read('plotSave')
+plotting.show_pressure = read('plotPressure')
+plotting.show = read('plotShow')
+plotting.watch = read('plotWatch') or plotting.show
+plotting.plot_any = plotting.show or plotting.save or plotting.watch or plotting.show_pressure
 
 # File IO settings
-writeInterval = read('writeInterval')
-writeTimeHistories = read('writeTimeHistories')
-resultsFromFile = read('resultsFromFile')
+write_interval = read('writeInterval')
+write_time_histories = read('writeTimeHistories')
+results_from_file = read('resultsFromFile')
 
 # Rigid body motion parameters
-timeStep = read('timeStep')
-relaxRB = read('rigidBodyRelax')
-motionMethod = read('motionMethod')
-motionJacobianFirstStep = read('motionJacobianFirstStep')
+time_step = read('timeStep')
+relax_rigid_body = read('rigidBodyRelax')
+motion_method = read('motionMethod')
+motion_jacobian_first_step = read('motionJacobianFirstStep')
 
-bowSealTipLoad = read('bowSealTipLoad')
-tipConstraintHt = read('tipConstraintHt')
+bow_seal_tip_load = read('bowSealTipLoad')
+tip_constraint_ht = read('tipConstraintHt')
 
-sealLoadPct = read('sealLoadPct')
-cushionForceMethod = read('cushionForceMethod')
+seal_load_pct = read('sealLoadPct')
+cushion_force_method = read('cushionForceMethod')
 
-initialDraft = read('initialDraft')
-initialTrim = read('initialTrim')
+initial_draft = read('initialDraft')
+initial_trim = read('initialTrim')
 
-maxDraftStep = read('maxDraftStep')
-maxTrimStep = read('maxTrimStep')
+max_draft_step = read('maxDraftStep')
+max_trim_step = read('maxTrimStep')
 
-maxDraftAcc = read('maxDraftAcc')
-maxTrimAcc = read('maxTrimAcc')
+max_draft_acc = read('maxDraftAcc')
+max_trim_acc = read('maxTrimAcc')
 
-freeInDraft = read('freeInDraft')
-freeInTrim = read('freeInTrim')
+free_in_draft = read('freeInDraft')
+free_in_trim = read('freeInTrim')
 
-draftDamping = read('draftDamping')
-trimDamping = read('trimDamping')
+draft_damping = read('draftDamping')
+trim_damping = read('trimDamping')
 
-relaxDraft = read('draftRelax', default=relaxRB)
-relaxTrim = read('trimRelax', default=relaxRB)
+relax_draft = read('draftRelax', default=relax_rigid_body)
+relax_trim = read('trimRelax', default=relax_rigid_body)
 
 # Parameters for wetted length solver
 wetted_length_solver = read('wettedLengthSolver')
@@ -180,15 +186,15 @@ wetted_length_max_step_pct_dec = read(
 wetted_length_max_jacobian_reset_step = read(
     'wettedLengthMaxJacobianResetStep')
 
-maxIt = read('maxIt')
-rampIt = read('rampIt')
-relaxI = read('relaxI')
-relaxF = read('relaxF')
-maxRes = read('tolerance')
+max_it = read('maxIt')
+num_ramp_it = read('rampIt')
+relax_initial = read('relaxI')
+relax_final = read('relaxF')
+max_residual = read('tolerance')
 pretension = read('pretension')
-relaxFEM = read('FEMRelax')
-maxFEMDisp = read('maxFEMDisp')
-numDamp = read('numDamp')
+relax_FEM = read('FEMRelax')
+max_FEM_disp = read('maxFEMDisp')
+num_damp = read('numDamp')
 
 # Initialized constants
 ramp = 1.0

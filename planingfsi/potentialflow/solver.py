@@ -13,7 +13,7 @@ import planingfsi.krampy as kp
 from planingfsi.potentialflow.pressurepatch import PlaningSurface
 from planingfsi.potentialflow.pressurepatch import PressureCushion
 
-if config.plot:
+if config.plotting.plot_any:
     import matplotlib.pyplot as plt
 
 
@@ -228,7 +228,7 @@ class PotentialPlaningSolver(object):
 
         Will load results from file if specified.
         """
-        if config.resultsFromFile:
+        if config.results_from_file:
             self.load_response()
         else:
             self.calculate_response_unknown_wetted_length()
@@ -350,7 +350,7 @@ class PotentialPlaningSolver(object):
     def calculate_pressure_and_shear_profile(self):
         """Calculate pressure and shear stress profiles over plate surface."""
         if self.X is None:
-            if config.shearCalc:
+            if config.shear_calc:
                 for p in self.planing_surfaces:
                     p._calculate_shear_stress()
 
@@ -389,7 +389,7 @@ class PotentialPlaningSolver(object):
 
             # Calculate center of pressure
             self.xBar = kp.integrate(self.X, self.p * self.X) / self.L
-            if config.plot_pressure:
+            if config.plotting.show_pressure:
                 self.plot_pressure()
 
     def calculate_free_surface_profile(self):
@@ -402,10 +402,10 @@ class PotentialPlaningSolver(object):
                     pts = surf._get_element_coords()
                     xFS.append(
                         kp.growPoints(pts[1], pts[0],
-                                      config.x_fs_min, config.growth_rate))
+                                      config.plotting.x_fs_min, config.growth_rate))
                     xFS.append(
                         kp.growPoints(pts[-2], pts[-1],
-                                      config.x_fs_max, config.growth_rate))
+                                      config.plotting.x_fs_max, config.growth_rate))
 
             # Add points from each planing surface
             fsList = [patch._get_element_coords()
@@ -415,7 +415,7 @@ class PotentialPlaningSolver(object):
                 xFS.append(np.hstack(fsList))
 
             # Add points from each pressure cushion
-            xFS.append(np.linspace(config.x_fs_min, config.x_fs_max, 100))
+            xFS.append(np.linspace(config.plotting.x_fs_min, config.plotting.x_fs_max, 100))
 #             for patch in self.pressure_cushions:
 #                 if patch.neighborDown is not None:
 #                     ptsL = patch.neighborDown._get_element_coords()
@@ -607,7 +607,7 @@ class PotentialPlaningSolver(object):
         self.calculate_free_surface_profile()
         if self.lineFS is not None:
             self.lineFS.set_data(self.xFS, self.zFS)
-        endPts = np.array([config.x_fs_min, config.x_fs_max])
+        endPts = np.array([config.plotting.x_fs_min, config.plotting.x_fs_max])
         if self.lineFSi is not None:
             self.lineFSi.set_data(endPts, config.hWL * np.ones_like(endPts))
         return None
