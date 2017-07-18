@@ -423,10 +423,10 @@ class RigidBody(object):
 
             self.x = np.array(
                 [f for f, freeDoF in zip([self.draft, self.trim], self.freeDoF) if freeDoF])
-            self.solver = kp.RootFinderNew(self.resFun,
-                                           self.x,
-                                           'broyden',
-                                           dxMax=maxDisp)
+            self.solver = kp.RootFinder(self.resFun,
+                                        self.x,
+                                        'broyden',
+                                        dxMax=maxDisp)
 
         if not self.dispOld is None:
             self.solver.takeStep(self.dispOld)

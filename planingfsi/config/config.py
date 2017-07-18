@@ -13,7 +13,10 @@ dict_name = 'configDict'
 
 print(('Loading {0}'.format(dict_name)))
 
-config_dict = io.Dictionary('configDict')
+if os.path.exists(dict_name):
+    config_dict = io.Dictionary(dict_name)
+else:
+    config_dict = io.Dictionary()
 
 config_module_path = os.path.abspath(os.path.dirname(__file__))
 default_dict = io.Dictionary(os.path.join(config_module_path, 'defaultConfigDict'))
