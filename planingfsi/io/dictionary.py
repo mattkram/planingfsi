@@ -20,15 +20,31 @@ class Pattern(object):
 
 class Dictionary(dict):
 
-    def __init__(self, fromFile=None, fromString=None, from_dict=None):
+    def __init__(self, constructFrom=None):
+        if constructFrom is None:
+            super().__init__()
+            return
+        
+        if isinstance(constructFrom, dict):
+            load_method = self.loadFromDict
+        elif isinstance(constructFrom, str):
+            if constructFrom.strip().startswith('{'):
+                load_method = self.loadFromString
+            else:
+                load_method = self.loadFromFile
+        else:
+            raise ValueError('Argument to Dictionary must be string, dict, or None')
+        
+        load_method(constructFrom)
+
         # Keep reference to Dict for backwards compatibility
 #        self.Dict = self
-        if fromFile is not None and os.path.exists(fromFile):
-            self.loadFromFile(fromFile)
-        elif fromString is not None:
-            self.loadFromString(fromString)
-        elif from_dict is not None:
-            self.loadFromDict(from_dict)
+#        if fromFile is not None and os.path.exists(fromFile):
+#            self.loadFromFile(fromFile)
+#        elif fromString is not None:
+#            self.loadFromString(fromString)
+#        elif from_dict is not None:
+#            self.loadFromDict(from_dict)
         
         # If specified, read values from a base dictionary
         # All local values override the base dictionary values

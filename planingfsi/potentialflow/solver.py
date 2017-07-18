@@ -216,9 +216,13 @@ class PotentialPlaningSolver(object):
         self.calculate_pressure()
 
         res = np.array([p.get_residual() for p in self.planing_surfaces])
+        
+        def array_to_string(array):
+            return ', '.join(['{0:+0.4e}'.format(a) for a in array]).join('[]')
 
-        print('      Lw:        ', Lw)
-        print('      Func value:', res)
+        print('      Lw:      ', array_to_string(Lw))
+        print('      Residual:', array_to_string(res))
+        print()
 
         return res
 
@@ -276,18 +280,18 @@ class PotentialPlaningSolver(object):
                     self.init_len[i] = 0.0
 
             if self.solver is None:
-                self.solver = kp.RootFinderNew(self.get_residual,
-                                               self.init_len * 1.0,
-                                               config.wetted_length_solver,
-                                               xMin=self.min_len,
-                                               xMax=self.max_len,
-                                               errLim=config.wetted_length_tol,
-                                               dxMaxDec=dxMaxDec,
-                                               dxMaxInc=dxMaxInc,
-                                               firstStep=1e-6,
-                                               maxIt=config.wetted_length_max_it_0,
-                                               maxJacobianResetStep=config.wetted_length_max_jacobian_reset_step,
-                                               relax=config.wetted_length_relax)
+                self.solver = kp.RootFinder(self.get_residual,
+                                            self.init_len * 1.0,
+                                            config.wetted_length_solver,
+                                            xMin=self.min_len,
+                                            xMax=self.max_len,
+                                            errLim=config.wetted_length_tol,
+                                            dxMaxDec=dxMaxDec,
+                                            dxMaxInc=dxMaxInc,
+                                            firstStep=1e-6,
+                                            maxIt=config.wetted_length_max_it_0,
+                                            maxJacobianResetStep=config.wetted_length_max_jacobian_reset_step,
+                                            relax=config.wetted_length_relax)
             else:
                 self.solver.maxIt = config.wetted_length_max_it
                 self.solver.reinitialize(self.init_len * 1.0)

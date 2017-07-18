@@ -4,9 +4,6 @@ from scipy.interpolate import interp1d
 import planingfsi.config as config
 import planingfsi.krampy as kp
 
-if config.plot:
-    import matplotlib.pyplot as plt
-
 
 class Node():
     obj = []
