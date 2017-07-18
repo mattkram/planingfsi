@@ -14,14 +14,13 @@ dict_name = 'configDict'
 print(('Loading {0}'.format(dict_name)))
 
 config_dict = io.Dictionary('configDict')
-default_dict = io.Dictionary(os.path.join(os.path.abspath(os.path.dirname(__file__)), 'defaultDict'))
+
+config_module_path = os.path.abspath(os.path.dirname(__file__))
+default_dict = io.Dictionary(os.path.join(config_module_path, 'defaultConfigDict'))
 
 # Function to read value from dictionary or default dictionary
-def read(key, **kwargs):
-    if 'default' not in kwargs:
-        return config_dict.read(key, default_dict.read(key, None))
-    else:
-        return config_dict.read(key, kwargs.get('default'))
+def read(key, default=None):
+    return config_dict.read(key, default_dict.read(key, default))
 
 # Load run properties from dictionary
 rho = read('rho')
