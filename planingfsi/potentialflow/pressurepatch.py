@@ -207,8 +207,6 @@ class PressureCushion(PressurePatch):
         self.index = PressureCushion.count
         PressureCushion.count += 1
 
-        dict_ = kp.ensureDict(dict_)
-
         self.patch_name = dict_.read(
             'pressureCushionName', 'pressureCushion{0}'.format(self.index))
 
@@ -346,8 +344,6 @@ class PlaningSurface(PressurePatch):
         self.index = PlaningSurface.count
         PlaningSurface.count += 1
         PlaningSurface.all.append(self)
-
-        dict_ = kp.ensureDict(dict_)
 
         self.patch_name = dict_.read('substructureName', '')
         Nfl = dict_.read('Nfl', 0)
