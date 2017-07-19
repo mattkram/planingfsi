@@ -43,9 +43,9 @@ except:
 sim = Simulation()
 
 # Add all rigid bodies
-if os.path.exists(config.body_dict_dir):
-    for dict_name in kp.listdir_nohidden(config.body_dict_dir):
-        dict_ = io.Dictionary(os.path.join(config.body_dict_dir, dict_name))
+if os.path.exists(config.path.body_dict_dir):
+    for dict_name in kp.listdir_nohidden(config.path.body_dict_dir):
+        dict_ = io.Dictionary(os.path.join(config.path.body_dict_dir, dict_name))
         sim.solid.add_rigid_body(dict_)
 else:
     sim.solid.add_rigid_body()
