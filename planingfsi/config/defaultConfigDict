@@ -1,0 +1,119 @@
+# Load run properties from dictionary
+rho       : 998.2
+g         : 9.81
+Fr        : 1.0
+nu        : 1e-6
+hWL       : 0.0
+xCofG     : 0.0
+yCofG     : 0.0
+#xCofR     : xCofG
+#yCofR     : yCofG
+m         : 1.0
+#W         : m * g
+Lref      : 1.0
+#Lc        : Lref
+dim       : 2
+shearCalc : False
+Ps        : 0.0
+#PsBar     : None
+Pc        : 0.0
+#PcBar     : None
+ 
+## Set pressure scale for plotting purposes 
+pScaleType : 'stagnation'
+pScaleHead : 1.0
+pScalePct  : 0.1
+pressureLimiter : False
+
+# Load plot extents
+extE : 0.1
+extW : 0.1
+extN : 0.1
+extS : 0.1
+
+plotXMin : None
+plotXMax : None
+plotYMin : None
+plotYMax : None
+
+lamMin : -1.0
+lamMax :  1.0
+
+#xFSMin : plotXMin
+#xFSMax : plotXMax
+
+growthRate  : 1.1
+CofRGridLen : 0.5
+
+# Directories and file formats
+caseDir        : '.'
+dataFormat     : 'txt'
+figFormat      : 'eps'
+figDirName     : 'figures'
+bodyDictDir    : 'bodyDict'
+inputDictDir   : 'inputDict'
+cushionDictDir : 'cushionDict'
+meshDir        : 'mesh'
+meshDictDir    : 'meshDict'
+
+# Whether to save, show, or watch plots
+plotSave     : False
+plotPressure : False
+plotShow     : False
+plotWatch    : False
+ 
+# File IO settings
+writeInterval      : 1
+writeTimeHistories : False
+resultsFromFile    : False
+
+# Rigid body motion parameters
+timeStep     : 1e-3
+relaxRB      : 1.0
+motionMethod : 'Physical'
+motionJacobianFirstStep : 1e-6
+ 
+bowSealTipLoad  : 0.0
+tipConstraintHt : None
+
+sealLoadPct        : 1.0
+cushionForceMethod : 'Fixed'
+
+initialDraft : 0.0
+initialTrim  : 0.0
+
+maxDraftStep : 1e-3
+maxTrimStep  : 1e-3
+
+maxDraftAcc  : 1000.0
+maxTrimAcc   : 1000.0
+ 
+freeInDraft  : False
+freeInTrim   : False
+
+draftDamping : 1000.0
+trimDamping  : 500.0
+
+#relaxDraft   : relaxRB
+#relaxTrim    : relaxRB
+ 
+# Parameters for wetted length solver 
+wettedLengthSolver               : 'Secant'
+wettedLengthTol                  : 1e-6
+wettedLengthRelax                : 1.0
+wettedLengthMaxIt                : 20
+wettedLengthMaxIt0               : 100
+wettedLengthMaxStepPct           : 0.2
+#wettedLengthMaxStepPctInc        : wettedLengthMaxStepPct
+#wettedLengthMaxStepPctDec        : wettedLengthMaxStepPct
+wettedLengthMaxJacobianResetStep : 100
+
+maxIt      : 1
+rampIt     : 0
+relaxI     : 0.01
+relaxF     : 0.5
+maxRes     : 1e-6
+pretension : 0.1
+relaxFEM   : 1.0
+maxFEMDisp : 1.0
+numDamp    : 0.0
