@@ -218,7 +218,7 @@ class PotentialPlaningSolver(object):
         res = np.array([p.get_residual() for p in self.planing_surfaces])
         
         def array_to_string(array):
-            return ', '.join(['{0:+0.4e}'.format(a) for a in array]).join('[]')
+            return ', '.join(['{0:11.4e}'.format(a) for a in array]).join('[]')
 
         print('      Lw:      ', array_to_string(Lw))
         print('      Residual:', array_to_string(res))
