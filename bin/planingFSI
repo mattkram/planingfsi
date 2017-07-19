@@ -43,10 +43,10 @@ except:
 sim = Simulation()
 
 # Add all rigid bodies
-if os.path.exists(config.path.body_dict_dir):
-    for dict_name in kp.listdir_nohidden(config.path.body_dict_dir):
-        sim.solid.add_rigid_body(
-            os.path.join(config.path.body_dict_dir, dict_name))
+if os.path.exists(config.body_dict_dir):
+    for dict_name in kp.listdir_nohidden(config.body_dict_dir):
+        dict_ = io.Dictionary(os.path.join(config.body_dict_dir, dict_name))
+        sim.solid.add_rigid_body(dict_)
 else:
     sim.solid.add_rigid_body()
 
@@ -64,10 +64,10 @@ for dict_name in kp.listdir_nohidden(config.path.input_dict_dir):
             planing_surface.get_loads_in_range)
 
 # Add all pressure cushions
-if os.path.exists(config.path.cushion_dict_dir):
-    for dict_name in kp.listdir_nohidden(config.path.cushion_dict_dir):
-        sim.fluid.add_pressure_cushion(
-            os.path.join(config.path.cushion_dict_dir, dict_name))
+if os.path.exists(config.cushion_dict_dir):
+    for dict_name in kp.listdir_nohidden(config.cushion_dict_dir):
+        dict_ = io.Dictionary(os.path.join(config.cushion_dict_dir, dict_name))
+        sim.fluid.add_pressure_cushion(dict_)
 
 # Run simulation
 sim.run()

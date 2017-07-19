@@ -6,7 +6,7 @@ AOA = K.read('AOA', 10.0)
 # Create points (ID, type, params)
 M.addPoint(1, 'rel', [ 0, 180, 0.1])
 M.addPoint(2, 'rel', [ 0,   0, 1.0])
-M.addPoint(3, 'rel', [ 1,  90, 0.01])
+M.addPoint(3, 'rel', [ 1,  90, 0.015])
 M.addPoint(4, 'rel', [ 3, 180, 0.9])
 
 M.rotatePoints(0, AOA, [1,2,3,4])
