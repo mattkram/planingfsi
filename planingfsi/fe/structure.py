@@ -592,13 +592,13 @@ class Substructure:
         self.type = self.Dict.read('substructureType', 'rigid')
         self.interpolator = None
 
-        self.Ps = self.Dict.readLoadOrDefault('Ps', 0.0)
+        self.Ps = self.Dict.read_load_or_default('Ps', 0.0)
         self.PsMethod = self.Dict.read('PsMethod', 'constant')
 
-        self.Psx = self.Dict.readLoadOrDefault('overPressurePct', 1.0)
+        self.Psx = self.Dict.read_load_or_default('overPressurePct', 1.0)
         self.cushionPressureType = self.Dict.read(
             'cushionPressureType', None)
-        self.tipLoad = self.Dict.readLoadOrDefault('tipLoad', 0.0)
+        self.tipLoad = self.Dict.read_load_or_default('tipLoad', 0.0)
         self.tipConstraintHt = self.Dict.read('tipConstraintHt', None)
         self.structInterpType = self.Dict.read(
             'structInterpType', 'linear')

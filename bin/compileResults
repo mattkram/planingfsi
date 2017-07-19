@@ -55,7 +55,7 @@ for Fri, caseDiri, itDiri in zip(Fr, caseDir, itDir):
     path = os.path.join(baseDir, caseDiri, itDiri, s[0])
     if os.path.exists(path):
       K = kp.Dictionary(path)
-      val = K.readOrDefault(s[1], np.nan)
+      val = K.read_or_default(s[1], np.nan)
     else:
       val = np.nan
     ff.write(' {0:12.6e}'.format(val))

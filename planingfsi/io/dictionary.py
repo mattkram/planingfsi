@@ -2,8 +2,6 @@ import os
 import re
 import json
 
-import numpy
-
 from planingfsi import unit
 
 class Pattern(object):
@@ -17,7 +15,8 @@ class Pattern(object):
         Any number, including int, float, or exponential patterns.
         Will only match if entire string is number.
     LITERAL : SRE_Pattern
-        Any normal chars or path delimiters (/\.) surrounded by single- or double-quotes
+        Any normal chars or path delimiters (/\.) surrounded by single- or
+        double-quotes
     BOOL : SRE_Pattern
         Case-insensitive boolean values, True or False
     NONE : SRE_Pattern
@@ -43,7 +42,6 @@ class Pattern(object):
     WORD = re.compile(r'[-+\w]+')
     ENV = re.compile(r'\$(\w+)')
     NANINF = re.compile(r'[+-]?(nan|inf)', re.IGNORECASE)
-    ALL = (DELIMITER, NUMBER, LITERAL, BOOL, WORD)
 
 
 class Dictionary(dict):
@@ -110,7 +108,7 @@ class Dictionary(dict):
             # Use values in base_dict if they don't exist in this Dictionary
             for key, val in base_dict.items():
                 if not key in self:
-                    self.update(key, val)
+                    self.update({key: val})
 
     def load_from_file(self, filename):
         """Load Dictionary information from a text file.
@@ -123,8 +121,8 @@ class Dictionary(dict):
 
         # Convert file format to appropriate string, then load dict from the string
         dict_list = []
-        with open(filename) as f:
-            for line in f:                
+        with open(filename) as ff:
+            for line in ff:
                 # Remove comment strings, everything after # discarded
                 line = line.split('#')[0].strip()
                 if line != '':
@@ -133,46 +131,47 @@ class Dictionary(dict):
         dict_string = ','.join(dict_list)
         self.load_from_string(dict_string)
 
-    def load_from_string(self, inString):
-        """Sequentially process runs in run list in either serial or parallel.
+    def load_from_string(self, in_string):
+        """Load Dictionary information from a string.
         
-        Parameters
-        ----------
-        runList : list of BatchRunContainer, optional
-            Optionally append a list of runs to the existing run list.
-        
+        Convert the string to a json-compatible string, then pass to
+        load_from_json.
+
+        Arguments
+        ---------
+        in_string : str
+            String to parse.
         """
-        # Convert a string to a json-compatible string
-        
+
         # Surround string with curly brackets if it's not already
-        if not inString.startswith('{'):
-            inString = inString.join('{}')
+        if not in_string.startswith('{'):
+            in_string = in_string.join('{}')
          
         # Replace multiple consecutive commas with one
-        inString = re.sub(',,+', ',', inString) 
-        
-        def repl(m):
-            return m.group(1)
+        in_string = re.sub(',,+', ',', in_string)
         
         # Replace [, or {, or ,] or ,} with bracket only
-        inString = re.sub(r'([\{\[]),', repl, inString)
-        inString = re.sub(r',([\]\}])', repl, inString)
+        def repl(m):
+            return m.group(1)
+        in_string = re.sub(r'([\{\[]),', repl, in_string)
+        in_string = re.sub(r',([\]\}])', repl, in_string)
         
-        inString = inString.replace('}{', '},{')
+        in_string = in_string.replace('}{', '},{')
 
-        # Replace environment variables with their value
+        # Replace environment variables with their value & surround by quotes
         def repl(m):
             return os.environ[m.group(1)].join('""')
-        inString = Pattern.ENV.sub(repl, inString)
+        in_string = Pattern.ENV.sub(repl, in_string)
 
-        # Split inString into a list of delimiters and sub-strings
-        inList = []
-        while(len(inString) > 0):
-            inString = inString.strip()
-            match = Pattern.DELIMITER.search(inString)
+        # Split in_string into a list of delimiters and sub-strings
+        in_list = []
+        while(len(in_string) > 0):
+            in_string = in_string.strip()
+            match = Pattern.DELIMITER.search(in_string)
             if match:
+                # Process any words before the delimiter
                 if match.start() > 0:
-                    word = inString[:match.start()].strip()
+                    word = in_string[:match.start()].strip()
                     if Pattern.LITERAL.match(word):
                         # Surround literals by escaped double-quotes
                         word = word[1:-1].join(('\\"', '\\"')).join('""')
@@ -185,27 +184,46 @@ class Dictionary(dict):
                         # Surround words by double-quotes
                         word = word.join('""')
                     else:
+                        # Surround by literal double-quotes, and regular ones
                         word = word.join(('\\"', '\\"')).join('""')
 
-                    inList.append(word)
+                    in_list.append(word)
 
-                inList.append(match.group(0))
-                inString = inString[match.end():]
-            else:
+                in_list.append(match.group(0))
+                in_string = in_string[match.end():]
+            else: # No more delimiters
                 break
-        json_string = ''.join(inList)       
+        json_string = ''.join(in_list)       
         self.load_from_json(json_string)
 
-    def load_from_json(self, string):
+    def load_from_json(self, json_string):
+        """Load Dictionary information from a json-formatted string.
+        
+        The string is first loaded by the json module as a dict, then passed to load_from_dict.
+
+        Arguments
+        ---------
+        json_string : str
+            String to parse.
+        """
         try:
-            dict_ = json.loads(string)
+            dict_ = json.loads(json_string)
         except:
-            raise ValueError('Error converting string to json: {0}'.format(string))
+            raise ValueError('Error converting string to json: {0}'.format(json_string))
         
         self.load_from_dict(dict_)
 
     def load_from_dict(self, dict_):
-        # Copy items from json dictionary to self, with some special processing
+        """Load Dictionary information from a standard dict.
+        
+        The values are copied to this Dictionary and parsed, with special
+        handling of certain variables.
+
+        Arguments
+        ---------
+        dict_ : dict
+            Dictionary to copy.
+        """
         for key, val in dict_.items():
             if isinstance(val, str):
                 # Process NaN and infinity
@@ -224,7 +242,6 @@ class Dictionary(dict):
                         val = eval(val)
                     except: 
                         ValueError('Cannot process the value {0}: {1}'.format(key, val))
-
             elif isinstance(val, dict):
                 val = Dictionary(val)
            
@@ -232,29 +249,48 @@ class Dictionary(dict):
             if Pattern.LITERAL.match(key):
                 key = key[1:-1]
 
-            self.update(key, val)
+            self.update({key: val})
+      
+    def read(self, key, default=None, type_=None):
+        """Load value from dictionary.
 
-    def removeQuotes(self, string):
-        # Remove string quotes if they are included
-        if ((string.startswith("'") and string.endswith("'")) or
-            (string.startswith('"') and string.endswith('"'))):
-            return string[1:-1]
-        else:      
-            return string
-      
-    def update(self, key, value):
-        self[key] = value
-      
-    def read(self, key, default=None, dataType=None):
-        val = self.readOrDefault(key, default)
-        if dataType is not None:
-            val = dataType(val)
+        Arguments
+        ---------
+        key : str
+            Dictionary key.
+        default : optional, default=None
+            Default value if key not in Dictionary.
+        type_ : optional, default=No conversion
+            Type to convert dictionary value to.
+        """
+        val = self.read_or_default(key, default)
+        if type_ is not None:
+            val = type_(val)
         return val
 
-    def readOrDefault(self, key, default):
+    def read_or_default(self, key, default):
+        """Load value from dictionary, or return default if not found.
+
+        Arguments
+        ---------
+        key : str
+            Dictionary key.
+        default : 
+            Default value if key not in Dictionary.
+        """
         return self.get(key, default)
 
-    def readLoadOrDefault(self, key, default):
+    def read_load_or_default(self, key, default):
+        """Load value from dictionary. If value is a string, will load
+        attribute of string name from config.
+
+        Arguments
+        ---------
+        key : str
+            Dictionary key.
+        default : 
+            Default value if key not in Dictionary.
+        """
         val = self.read(key, default)
         if isinstance(val, str):
             # Here because if in preamble there is
@@ -262,19 +298,3 @@ class Dictionary(dict):
             from planingfsi import config
             val = getattr(config, val)
         return val
-
-    def readAsList(self, key, dataType=str):
-        # Read key as list. Will convert string to list with items of datatype specified if needed.
-        string = self.read(key)
-        if isinstance(string, basestring):
-            string = string.replace('[','').replace(']','')
-            
-            return [dataType(self.removeQuotes(v.strip())) for v in string.split(',')]
-        else:
-            return string
-
-    def readAsNumpyArray(self, key):
-        return numpy.array(self.readAsList(key, float))
-
-    def readAsArray(self, *args):
-        return self.readAsNumpyArray(*args)
