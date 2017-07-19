@@ -1,3 +1,22 @@
+"""A module holding a class to extend the built-in dictionary.
+
+The Dictionary class is a subclass of the built-in dict type, and contains
+methods for loading and instantiating the dictionary from text files.
+
+Dictionary file import relies on converting the input file to json format,
+then creating a dict object from the json string and performing some smart
+type conversion for dictionary keys and values. The input dictionary should
+be similar in format to a json dictionary, with the following allowable
+modifications:
+- Comma delimiters are not necessary between lines, as they will be automatically added
+- The file does not need to begin and end with curly brackets
+- Strings do not need to be surrounded by quotes, although they may be to
+  force import as a string
+
+The load methods us regular expression patterns defined in the Pattern class
+to parse the tokens in the file. Patterns for numbers, words, None, NaN, Inf,
+and environment variables exist.
+"""
 import os
 import re
 import json
