@@ -214,7 +214,7 @@ class PressureCushion(PressurePatch):
         # PressurePatch
         self.cushion_type = dict_.read('cushionType', '')
         self.cushion_pressure = kwargs.get(
-            'Pc', dict_.readLoadOrDefault('cushionPressure', 0.0))
+            'Pc', dict_.read_load_or_default('cushionPressure', 0.0))
 
         self.neighbor_up = PlaningSurface.find_by_name(
             dict_.read('upstreamPlaningSurface', ''))
@@ -251,7 +251,7 @@ class PressureCushion(PressurePatch):
                         for __ in range(Nfl)]
 
             self.end_pts = [
-                dict_.readLoadOrDefault(key, 0.0) for key in
+                dict_.read_load_or_default(key, 0.0) for key in
                 ['downstreamLoc', 'upstreamLoc']]
 
             self.pressure_elements += [
@@ -355,10 +355,10 @@ class PlaningSurface(PressurePatch):
 
         self.spring_constant = dict_.read('springConstant', 1e4)
         self.kutta_pressure = kwargs.get(
-            'kuttaPressure', dict_.readLoadOrDefault('kuttaPressure', 0.0))
+            'kuttaPressure', dict_.read_load_or_default('kuttaPressure', 0.0))
         self._upstream_pressure = kwargs.get(
             'upstreamPressure',
-            dict_.readLoadOrDefault('upstreamPressure', 0.0))
+            dict_.read_load_or_default('upstreamPressure', 0.0))
 
         self.is_initialized = False
         self.is_active = True

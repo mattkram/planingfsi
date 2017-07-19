@@ -124,7 +124,7 @@ for Fr in FrList:
   
     varValIn = np.ones(len(varNameIn)) * np.nan
     for i, dictPath, varName in zip(range(len(dictPathIn)), dictPathIn, varNameIn):
-      varValIn[i] = kp.Dictionary(os.path.join(prevFrPath, constructPath(dictPath))).readOrDefault(varName, np.nan)
+      varValIn[i] = kp.Dictionary(os.path.join(prevFrPath, constructPath(dictPath))).read_or_default(varName, np.nan)
       
       # Use new Froude number value, not the one stored in the copied configDict
       if varName == 'Fr':
@@ -136,7 +136,7 @@ for Fr in FrList:
       # For draft, trim, and wetted lengths extrapolate from two simulations ago if possible
       if varName == 'draft' or varName == 'trim' or varName == 'Length':
         if not twoAgoItDir == '':
-          twoAgoVal = kp.Dictionary(os.path.join(twoAgoFrPath, twoAgoItDir, dictPath[1])).readOrDefault(varName, np.nan)
+          twoAgoVal = kp.Dictionary(os.path.join(twoAgoFrPath, twoAgoItDir, dictPath[1])).read_or_default(varName, np.nan)
           if ~np.isnan(twoAgoVal):
             dVar = varValIn[i] - twoAgoVal
             maxDVar = 0.05 * np.abs(dVar)
