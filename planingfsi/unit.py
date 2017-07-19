@@ -5,7 +5,7 @@ Usage:
     value = 15.0 * unit.ft
 """
 
-import numpy as np
+import math
 
 # Convert length to m
 m = 1.0
@@ -28,4 +28,4 @@ lb = 9.81 * lbm
 lbf = 1.0 * lb
 
 rad = 1.0
-deg = np.pi / 180.0
+deg = math.pi / 180.0

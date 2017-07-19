@@ -5,6 +5,7 @@ from scipy.interpolate import interp1d
 
 from planingfsi import config
 from planingfsi import krampy as kp
+from planingfsi import io
 
 from . import felib as fe
 
@@ -20,27 +21,29 @@ class FEStructure:
         self.node = []
         self.res = 1.0
 
-    def add_rigid_body(self, Dict=''):
-        rigid_body = RigidBody(kp.ensureDict(Dict))
+    def add_rigid_body(self, dict_=None):
+        if dict_ is None:
+            dict_ = io.Dictionary()
+        rigid_body = RigidBody(dict_)
         self.rigid_body.append(rigid_body)
         return rigid_body
 
-    def add_substructure(self, Dict=''):
-        Dict = kp.ensureDict(Dict)
-
-        ssType = Dict.read('substructureType', 'rigid')
+    def add_substructure(self, dict_=None):
+        if dict_ is None:
+            dict_ = io.Dictionary()
+        ssType = dict_.read('substructureType', 'rigid')
         if ssType.lower() == 'flexible' or ssType.lower() == 'truss':
-            ss = FlexibleSubstructure(Dict)
+            ss = FlexibleSubstructure(dict_)
             FlexibleSubstructure.obj.append(ss)
         elif ssType.lower() == 'torsionalspring':
-            ss = TorsionalSpringSubstructure(Dict)
+            ss = TorsionalSpringSubstructure(dict_)
         else:
-            ss = RigidSubstructure(Dict)
+            ss = RigidSubstructure(dict_)
         self.substructure.append(ss)
 
         # Find parent body and add substructure to it
         body = [b for b in self.rigid_body if b.name ==
-                Dict.read('bodyName', 'default')]
+                dict_.read('bodyName', 'default')]
         if len(body) > 0:
             body = body[0]
         else:
@@ -122,27 +125,27 @@ class FEStructure:
             ss.set_attachments()
 
 
-class RigidBody:
+class RigidBody(object):
 
     def __init__(self, dict_):
-        self.Dict = dict_
+        self.dict_ = dict_
         self.dim = 2
         self.draft = 0.0
         self.trim = 0.0
 
-        self.name = self.Dict.read('bodyName', 'default')
-        self.W = self.Dict.read(
-            'W', self.Dict.read('loadPct', 1.0) * config.W)
-        self.W *= config.seal_load_pct
-        self.m = self.Dict.read('m', self.W / config.g)
-        self.Iz = self.Dict.read('Iz', self.m * config.Lref**2 / 12)
-        self.hasPlaningSurface = self.Dict.read(
+        self.name = self.dict_.read('bodyName', 'default')
+        self.W = self.dict_.read(
+            'W', self.dict_.read('loadPct', 1.0) * config.W)
+        self.W *= config.sealLoadPct
+        self.m = self.dict_.read('m', self.W / config.g)
+        self.Iz = self.dict_.read('Iz', self.m * config.Lref**2 / 12)
+        self.hasPlaningSurface = self.dict_.read(
             'hasPlaningSurface', False)
 
         var = ['max_draft_step', 'max_trim_step', 'free_in_draft', 'free_in_trim', 'draft_damping', 'trim_damping', 'max_draft_acc', 'max_trim_acc',
                'xCofG', 'yCofG', 'xCofR', 'yCofR', 'initial_draft', 'initial_trim', 'relax_draft', 'relax_trim', 'time_step', 'num_damp']
         for v in var:
-            setattr(self, v, self.Dict.read(v, getattr(config,v)))
+            setattr(self, v, self.dict_.read(v, getattr(config, v)))
 
     #    self.xCofR = self.dict_.read('xCofR', self.xCofG)
     #    self.yCofR = self.dict_.read('yCofR', self.yCofG)
@@ -163,8 +166,8 @@ class RigidBody:
         self.vOld = np.zeros((self.dim))
         self.aOld = np.zeros((self.dim))
 
-        self.beta = self.Dict.read('beta',  0.25)
-        self.gamma = self.Dict.read('gamma', 0.5)
+        self.beta = self.dict_.read('beta',  0.25)
+        self.gamma = self.dict_.read('gamma', 0.5)
 
         self.D = 0.0
         self.L = 0.0
@@ -420,10 +423,10 @@ class RigidBody:
 
             self.x = np.array(
                 [f for f, freeDoF in zip([self.draft, self.trim], self.freeDoF) if freeDoF])
-            self.solver = kp.RootFinderNew(self.resFun,
-                                           self.x,
-                                           'broyden',
-                                           dxMax=maxDisp)
+            self.solver = kp.RootFinder(self.resFun,
+                                        self.x,
+                                        'broyden',
+                                        dxMax=maxDisp)
 
         if not self.dispOld is None:
             self.solver.takeStep(self.dispOld)
@@ -549,7 +552,7 @@ class RigidBody:
                 ss.writeDeformation()
 
     def load_motion(self):
-        K = kp.Dictionary(os.path.join(
+        K = kp.dict_ionary(os.path.join(
             config.it_dir, 'motion_{0}.{1}'.format(self.name, config.data_format)))
         self.xCofR = K.read('xCofR',     np.nan)
         self.yCofR = K.read('yCofR',     np.nan)
@@ -945,6 +948,7 @@ class FlexibleSubstructure(Substructure):
             ss.update_geometry()
 
     def __init__(self, dict_):
+        
         #    FlexibleSubstructure.obj.append(self)
 
         Substructure.__init__(self, dict_)

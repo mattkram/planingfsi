@@ -7,55 +7,141 @@ import numpy
 from planingfsi import unit
 
 class Pattern(object):
+    """A small helper object for storing Regex patterns.
+    
+    Class Attributes
+    ----------------
+    DELIMITER : SRE_Pattern
+        Any single character of the following set (in parens): (:,{}[])
+    NUMBER : SRE_Pattern
+        Any number, including int, float, or exponential patterns.
+        Will only match if entire string is number.
+    LITERAL : SRE_Pattern
+        Any normal chars or path delimiters (/\.) surrounded by single- or double-quotes
+    BOOL : SRE_Pattern
+        Case-insensitive boolean values, True or False
+    NONE : SRE_Pattern
+        Case-insensitive None
+    WORD : SRE_Pattern
+        A continuous string of normal chars, including plus and minus signs
+    ENV : SRE_Pattern
+        A continuous string of normal chars preceded by a dollar sign, $
+    NANINF : SRE_Pattern
+        Case-insensitive NaN or Inf, optionally with sign
+
+    Usage
+    -----
+    Pattern.NUMBER.match('1.455e+10') will return a re.MatchObject
+
+    """
+    
     DELIMITER = re.compile(r'[:,\{\}\[\]]')
     NUMBER = re.compile(r'\A[-+]?(\d+(\.\d*)?|\.\d+)([eE][-+]?\d+)?\Z')
     LITERAL = re.compile(r'(\"[\w\\\/\.]*\")|(\'[\w\\\/\.]*\')')
-    BOOL = re.compile(r'(True|true|False|false)')
-    NONE = re.compile(r'(None|none)')
+    BOOL = re.compile(r'(True|False)', re.IGNORECASE)
+    NONE = re.compile(r'(None)', re.IGNORECASE)
     WORD = re.compile(r'[-+\w]+')
     ENV = re.compile(r'\$(\w+)')
-    NANINF = re.compile(r'[+-]?(nan|inf)')
+    NANINF = re.compile(r'[+-]?(nan|inf)', re.IGNORECASE)
     ALL = (DELIMITER, NUMBER, LITERAL, BOOL, WORD)
 
 
 class Dictionary(dict):
+    """An file-based extension of the standard dict object
+    
+    Dictionaries can be easily read from files, which may also depend themselves
+    on recursive loading of sub-Dictionaries.
+    
+    Parameters
+    ----------
+    construct_from : str, dict, or None, optional, default=None
+        If a dict is provided, the values are copied into this instance.
 
-    def __init__(self, fromFile=None, fromString=None, from_dict=None):
-        # Keep reference to Dict for backwards compatibility
-#        self.Dict = self
-        if fromFile is not None and os.path.exists(fromFile):
-            self.loadFromFile(fromFile)
-        elif fromString is not None:
-            self.loadFromString(fromString)
-        elif from_dict is not None:
-            self.loadFromDict(from_dict)
+        If a string is provided which starts with a curly bracket "{", the 
+        string is parsed via the load_from_string method, which aims to be
+        "smart" in cleaning the string into json format and subsequently 
+        loading it as a dictionary.
+
+        If the string does not begin with a curly bracket, it is taken to be
+        a filename, which is in-turn loaded as a string and passed to the
+        load_from_string method.
+
+        If no value or None is provided, a blank dictionary is instantiated.
+    
+    """
+
+    def __init__(self, construct_from=None):
+        source_file = None
+
+        # If no argument, just call default dict constructor
+        if construct_from is None:
+            super().__init__()
+            return
         
+        # Call appropriate function to load dictionary values
+        if isinstance(construct_from, dict):
+            self.load_from_dict(construct_from)
+        elif isinstance(construct_from, str):
+            if construct_from.strip().startswith('{'):
+                self.load_from_string(construct_from)
+            else:
+                source_file = construct_from
+                self.load_from_file(construct_from)
+
+        else:
+            raise ValueError('Argument to Dictionary must be string, dict, or None')
+
         # If specified, read values from a base dictionary
         # All local values override the base dictionary values
-        baseDictDir = self.read('baseDict', default=None)
-        if baseDictDir is not None:
-            # Allow for loading dictionary from different directory by tracing relative references from original file directory
-            if baseDictDir.startswith('..'):
-                baseDictDir = os.path.join(os.path.dirname(fromFile), baseDictDir)
-            baseDict = Dictionary(baseDictDir)
-            for key, val in baseDict.items():
+        base_dict_dir = self.read('baseDict', default=None)
+        if base_dict_dir is not None:
+            # Allow for loading dictionary from different directory by tracing
+            # relative references from original file directory
+            if base_dict_dir.startswith('..'):
+                if source_file is not None:
+                    # Begin from the directory the source_file lies in
+                    dir_name = os.path.dirname(source_file)
+                else:
+                    # Otherwise, use the current directory
+                    dir_name = '.'
+                base_dict_dir = os.path.join(dir_name, base_dict_dir)
+            base_dict = Dictionary(base_dict_dir)
+
+            # Use values in base_dict if they don't exist in this Dictionary
+            for key, val in base_dict.items():
                 if not key in self:
                     self.update(key, val)
 
-    def loadFromFile(self, filename):
+    def load_from_file(self, filename):
+        """Load Dictionary information from a text file.
+
+        Arguments
+        ---------
+        filename : str
+            Name or path of file to load.
+        """
+
         # Convert file format to appropriate string, then load dict from the string
-        dictList = []
+        dict_list = []
         with open(filename) as f:
             for line in f:                
                 # Remove comment strings, everything after # discarded
                 line = line.split('#')[0].strip()
                 if line != '':
-                    dictList.append(line)
+                    dict_list.append(line)
         
-        dictStr = ','.join(dictList)
-        self.loadFromString(dictStr)
+        dict_string = ','.join(dict_list)
+        self.load_from_string(dict_string)
 
-    def loadFromString(self, inString):
+    def load_from_string(self, inString):
+        """Sequentially process runs in run list in either serial or parallel.
+        
+        Parameters
+        ----------
+        runList : list of BatchRunContainer, optional
+            Optionally append a list of runs to the existing run list.
+        
+        """
         # Convert a string to a json-compatible string
         
         # Surround string with curly brackets if it's not already
@@ -107,18 +193,18 @@ class Dictionary(dict):
                 inString = inString[match.end():]
             else:
                 break
-        jsonString = ''.join(inList)       
-        self.loadFromJson(jsonString)
+        json_string = ''.join(inList)       
+        self.load_from_json(json_string)
 
-    def loadFromJson(self, string):
+    def load_from_json(self, string):
         try:
             dict_ = json.loads(string)
         except:
-            raise ValueError( 'Error converting string to json: {0}'.format(string))
+            raise ValueError('Error converting string to json: {0}'.format(string))
         
-        self.loadFromDict(dict_)
+        self.load_from_dict(dict_)
 
-    def loadFromDict(self, dict_):
+    def load_from_dict(self, dict_):
         # Copy items from json dictionary to self, with some special processing
         for key, val in dict_.items():
             if isinstance(val, str):
@@ -140,7 +226,7 @@ class Dictionary(dict):
                         ValueError('Cannot process the value {0}: {1}'.format(key, val))
 
             elif isinstance(val, dict):
-                val = Dictionary(from_dict=val)
+                val = Dictionary(val)
            
             # Remove quotes from key
             if Pattern.LITERAL.match(key):
