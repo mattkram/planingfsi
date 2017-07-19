@@ -31,3 +31,6 @@ old/
 tutorials/**/mesh
 tutorials/**/[0-9]*
 tutorials/**/figures
+
+*.wpr
+*.wpu
