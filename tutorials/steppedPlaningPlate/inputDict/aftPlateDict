@@ -8,7 +8,7 @@ pointSpacing : 'linear'
 
 kuttaPressure : 0.0
 
-initialLength : 1.0
+initialLength : 0.48
 minimumLength : 0.01
 structInterpType : 'cubic'
 structExtrap : True
