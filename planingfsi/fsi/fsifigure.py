@@ -79,11 +79,11 @@ class FSIFigure:
         self.fluid.plot_free_surface()
         self.TXT.set_text((r'Iteration {0}' + '\n' + \
                            r'$Fr={1:>8.3f}$' + '\n' + \
-                           r'$\bar{{P_c}}={2:>8.3f}$').format(config.it, config.Fr, config.PcBar))
+                           r'$\bar{{P_c}}={2:>8.3f}$').format(config.it, config.flow.froude_num, config.body.PcBar))
 
         # Update each lower subplot
         for s in self.subplot:
-            s.update(self.solid.res < config.max_residual and config.it > config.num_ramp_it)
+            s.update(self.solid.res < config.solver.max_residual and config.it > config.solver.num_ramp_it)
 
         for l in self.lineCofR:
             l.update()
@@ -99,7 +99,7 @@ class FSIFigure:
                 s.write()
 
     def save(self):
-        plt.savefig(os.path.join(config.path.fig_dir_name, 'frame{1:04d}.{0}'.format(config.fig_format, config.it)), format=config.fig_format)#, dpi=300)
+        plt.savefig(os.path.join(config.path.fig_dir_name, 'frame{1:04d}.{0}'.format(config.plotting.fig_format, config.it)), format=config.plotting.fig_format)#, dpi=300)
 
     def show(self):
         plt.show(block=True)
@@ -249,9 +249,9 @@ class ForceSubplot(TimeHistory):
         TimeHistory.__init__(self, pos, body.name)
 
         itFunc   = lambda : config.it
-        liftFunc = lambda : body.L /  body.W
-        dragFunc = lambda : body.D /  body.W
-        momFunc  = lambda : body.M / (body.W * config.Lref)
+        liftFunc = lambda : body.L /  body.weight
+        dragFunc = lambda : body.D /  body.weight
+        momFunc  = lambda : body.M / (body.weight * config.body.reference_length)
 
         self.addSeries(PlotSeries(itFunc, liftFunc, sty='r-', type='history+curr', legEnt='Lift',   ignoreFirst=True))
         self.addSeries(PlotSeries(itFunc, dragFunc, sty='b-', type='history+curr', legEnt='Drag',   ignoreFirst=True))
@@ -300,7 +300,7 @@ class CofRPlot:
         self.update()
 
     def update(self):
-        l = config.CofR_grid_len
+        l = config.plotting.CofR_grid_len
         c = np.array([self.body.xCofR, self.body.yCofR])
         hvec = kp.rotateVec(np.array([0.5*l, 0.0]), self.body.trim)
         vvec = kp.rotateVec(np.array([0.0, 0.5*l]), self.body.trim)

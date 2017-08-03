@@ -22,7 +22,7 @@ for arg in sys.argv[1:]:
         print('Running in post-processing mode')
         config.plotting.save = True
         config.plotting.plot_any = True
-        config.results_from_file = True
+        config.io.results_from_file = True
     if 'plotSave' in arg:
         config.plotting.save = True
         config.plotting.plot_any = True

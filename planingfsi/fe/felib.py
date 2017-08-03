@@ -30,9 +30,9 @@ class Node():
 
         self.x = 0.0
         self.y = 0.0
-        self.dof = [self.nodeNum * config.dim + i for i in [0, 1]]
-        self.fixedDOF = [True] * config.dim
-        self.fixedLoad = np.zeros(config.dim)
+        self.dof = [self.nodeNum * config.flow.num_dim + i for i in [0, 1]]
+        self.fixedDOF = [True] * config.flow.num_dim
+        self.fixedLoad = np.zeros(config.flow.num_dim)
         self.lineXY = None
 
     def setCoordinates(self, x, y):
@@ -61,7 +61,7 @@ class Element():
         self.fluidS = []
         self.fluidP = []
         self.node   = [None] * 2
-        self.dof    = [0] * config.dim
+        self.dof    = [0] * config.flow.num_dim
         self.length = 0.0
         self.initial_length = None
         self.qp     = np.zeros((2))

@@ -48,7 +48,7 @@ class Simulation(object):
         config.path.fig_dir_name = os.path.join(
             config.path.case_dir, config.path.fig_dir_name)
 
-        if self.checkOutputInterval() and not config.results_from_file:
+        if self.checkOutputInterval() and not config.io.results_from_file:
             kp.createIfNotExist(config.path.case_dir)
             kp.createIfNotExist(config.it_dir)
 
@@ -65,7 +65,7 @@ class Simulation(object):
         config.it = 0
         self.solid.load_mesh()
 
-        if config.results_from_file:
+        if config.io.results_from_file:
             self.createDirs()
             self.applyRamp()
             self.itDirs = kp.sortDirByNum(kp.find_files('[0-9]*'))[1]
@@ -78,9 +78,9 @@ class Simulation(object):
         self.updateFluidResponse()
 
         # Iterate between solid and fluid solvers until equilibrium
-        while config.it <= config.num_ramp_it \
-            or (self.get_residual() >= config.max_residual and
-                config.it <= config.max_it):
+        while config.it <= config.solver.num_ramp_it \
+            or (self.get_residual() >= config.solver.max_residual and
+                config.it <= config.solver.max_it):
 
             # Calculate response
             if config.has_free_structure:
@@ -100,11 +100,11 @@ class Simulation(object):
             # Increment iteration count
             self.increment()
 
-        if config.plotting.save and not config.fig_format == 'png':
-            config.fig_format = 'png'
+        if config.plotting.save and not config.plotting.fig_format == 'png':
+            config.plotting.fig_format = 'png'
             self.figure.save()
 
-        if config.write_time_histories:
+        if config.io.write_time_histories:
             self.figure.writeTimeHistories()
 
         print("Execution complete")
@@ -112,7 +112,7 @@ class Simulation(object):
             self.figure.show()
 
     def increment(self):
-        if config.results_from_file:
+        if config.io.results_from_file:
             oldInd = np.nonzero(config.it == self.itDirs)[0][0]
             if not oldInd == len(self.itDirs) - 1:
                 config.it = int(self.itDirs[oldInd + 1])
@@ -139,7 +139,7 @@ class Simulation(object):
 
         # Update iteration number depending on whether loading existing or
         # simply incrementing by 1
-        if config.results_from_file:
+        if config.io.results_from_file:
             if it < len(self.itDirs) - 1:
                 config.it = int(self.itDirs[it + 1])
             else:
@@ -158,19 +158,19 @@ class Simulation(object):
         return np.array([config.resL, config.resM])
 
     def applyRamp(self):
-        if config.results_from_file:
+        if config.io.results_from_file:
             self.loadResults()
         else:
-            if config.num_ramp_it == 0:
+            if config.solver.num_ramp_it == 0:
                 ramp = 1.0
             else:
-                ramp = np.min((config.it / float(config.num_ramp_it), 1.0))
+                ramp = np.min((config.it / float(config.solver.num_ramp_it), 1.0))
 
             config.ramp = ramp
-            config.relax_FEM = (1 - ramp) * config.relax_initial + ramp * config.relax_final
+            config.relax_FEM = (1 - ramp) * config.solver.relax_initial + ramp * config.solver.relax_final
 
     def get_residual(self):
-        if config.results_from_file:
+        if config.io.results_from_file:
             return 1.0
             return kp.Dictionary(os.path.join(config.it_dir, 'overallQuantities.txt')).read('Residual', 0.0)
         else:
@@ -180,12 +180,12 @@ class Simulation(object):
         print(('Residual after iteration {1:>4d}: {0:5.3e}'.format(self.get_residual(), config.it)))
 
     def checkOutputInterval(self):
-        return config.it >= config.max_it or \
-            self.get_residual() < config.max_residual or \
-            np.mod(config.it, config.write_interval) == 0
+        return config.it >= config.solver.max_it or \
+            self.get_residual() < config.solver.max_residual or \
+            np.mod(config.it, config.io.write_interval) == 0
 
     def write_results(self):
-        if self.checkOutputInterval() and not config.results_from_file:
+        if self.checkOutputInterval() and not config.io.results_from_file:
             kp.writeasdict(os.path.join(config.it_dir, 'overallQuantities.txt'), [
                            'Ramp', config.ramp], ['Residual', self.solid.res])
 
