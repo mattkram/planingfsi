@@ -1,105 +1,118 @@
 """This module is used to store the global configuration. Values are stored
-after reading the configDit file, and values can be accessed by other
+after reading the configDict file, and values can be accessed by other
 packages and modules by importing the config module.
 
-Usage: import planingfsi.config as config
+Usage: from planingfsi import config
+
+The global attributes can then be simply accessed via config.attribute_name
+
 """
 import os
+import math
 
-import numpy as np
-from planingfsi import io
+import planingfsi.io
 
 dict_name = 'configDict'
 
 print('Loading {0}'.format(dict_name))
 
 if os.path.exists(dict_name):
-    config_dict = io.Dictionary(dict_name)
+    config_dict = planingfsi.io.Dictionary(dict_name)
 else:
-    config_dict = io.Dictionary()
+    config_dict = planingfsi.io.Dictionary()
 
 config_module_path = os.path.abspath(os.path.dirname(__file__))
-default_dict = io.Dictionary(os.path.join(config_module_path, 'defaultConfigDict'))
+default_dict = planingfsi.io.Dictionary(os.path.join(config_module_path, 'defaultConfigDict'))
 
 # Function to read value from dictionary or default dictionary
 def read(key, default=None):
     return config_dict.read(key, default_dict.read(key, default))
 
 class Subconfig(object):
+    """An empty class used simply for dividing the configuration into
+    different sections. Also useful in helping define the namespace scopes.
+    """
     pass
 
+# Create subconfigs, used for sorting
+flow = Subconfig() # Flow-related variables
+body = Subconfig() # Related to rigid body
+path = Subconfig() # File paths, extensions, etc.
+plotting = Subconfig() # Related to plotting
+io = Subconfig()
+solver = Subconfig()
+
 # Load run properties from dictionary
-rho = read('rho')
-g = read('g')
-nu = read('nu')
-hWL = read('hWL')
+flow.density = read('rho')
+flow.gravity = read('g')
+flow.kinematic_viscosity = read('nu')
+flow.waterline_height = read('hWL')
 
-U = read('U')
-Fr = read('Fr')
+flow.flow_speed = read('U')
+flow.froude_num = read('Fr')
 
-xCofG = read('xCofG')
-yCofG = read('yCofG')
+body.xCofG = read('xCofG')
+body.yCofG = read('yCofG')
 
-xCofR = read('xCofR', default=xCofG)
-yCofR = read('yCofR', default=yCofG)
+body.xCofR = read('xCofR', default=body.xCofG)
+body.yCofR = read('yCofR', default=body.yCofG)
 
-m = read('m')
-W = read('W', default=m * g)
+body.mass = read('m')
+body.weight = read('W', default=body.mass * flow.gravity)
 
-Lref = read('Lref', default=read('Lc', default=1.0))  # read Lc for backwards-compatibility
+body.reference_length = read('Lref', default=read('Lc', default=1.0))  # read Lc for backwards-compatibility
 
-dim = read('dim')
-shear_calc = read('shearCalc')
+flow.num_dim = read('dim')
+flow.include_friction = read('shearCalc')
 
 # Calculate U or Fr depending on which was specified in the file
-if U is not None:
-    Fr = U * (g * Lref) ** -0.5
-elif Fr is not None:
-    U = Fr * (g * Lref) ** 0.5
+if flow.flow_speed is not None:
+    flow.froude_num = flow.flow_speed / math.sqrt(flow.gravity * body.reference_length)
+elif flow.froude_num is not None:
+    flow.flow_speed = flow.froude_num * math.sqrt(flow.gravity * body.reference_length)
 else:
     raise NameError(
         'Must specify either U or Fr in {0}'.format(dict_name))
 
-pStag = 0.5 * rho * U**2
-k0 = g / U**2
-lam = 2 * np.pi / k0
+flow.stagnation_pressure = 0.5 * flow.density * flow.flow_speed**2
+flow.k0 = flow.gravity / flow.flow_speed**2
+flow.lam = 2 * math.pi / flow.k0
 
 # Calculate Pc or Pcbar depending on which was specified in the file
-Pc = read('Pc')
-PcBar = read('PcBar')
-if PcBar is not None:
-    Pc = PcBar * W / Lref
+body.Pc = read('Pc')
+body.PcBar = read('PcBar')
+if body.PcBar is not None:
+    body.Pc = body.PcBar * body.weight / body.reference_length
 else:
-    PcBar = Pc * Lref / W
+    body.PcBar = body.Pc * body.reference_length / body.weight
 
-Ps = read('Ps')
-PsBar = read('PsBar')
-if PsBar is not None:
-    Ps = PsBar * Pc
-elif Pc == 0.0:
-    PsBar = 0.0
+body.Ps = read('Ps')
+body.PsBar = read('PsBar')
+if body.PsBar is not None:
+    body.Ps = body.PsBar * body.Pc
+elif body.Pc == 0.0:
+    body.PsBar = 0.0
 else:
-    PsBar = Ps / Pc
+    body.PsBar = body.Ps / body.Pc
 
 # Set pressure scale for plotting purposes
-pType = read('pScaleType')
-if pType == 'stagnation':
-    pScale = pStag
-elif pType == 'cushion':
-    pScale = Pc if Pc > 0.0 else 1.0
-elif pType == 'hydrostatic':
-    pScale = rho * g * read('pScaleHead')
+plotting.pType = read('pScaleType')
+if plotting.pType == 'stagnation':
+    plotting.pScale = flow.stagnation_pressure
+elif plotting.pType == 'cushion':
+    plotting.pScale = body.Pc if body.Pc > 0.0 else 1.0
+elif plotting.pType == 'hydrostatic':
+    plotting.pScale = flow.density * flow.gravity * read('pScaleHead')
 else:
-    pScale = read('pScale', default=1.0)
+    plotting.pScale = read('pScale', default=1.0)
     
-growth_rate = read('growthRate')
-CofR_grid_len = read('CofRGridLen')
+plotting.growth_rate = read('growthRate')
+plotting.CofR_grid_len = read('CofRGridLen')
 
 # Directories and file formats
-path = Subconfig()
 path.case_dir = read('caseDir')
-data_format = read('dataFormat')
-fig_format = read('figFormat')
+io.data_format = read('dataFormat')
+plotting.fig_format = read('figFormat')
 path.fig_dir_name = read('figDirName')
 path.body_dict_dir = read('bodyDictDir')
 path.input_dict_dir = read('inputDictDir')
@@ -108,10 +121,8 @@ path.cushion_dict_dir = read(
 path.mesh_dir = read('meshDir')
 path.mesh_dict_dir = read('meshDictDir')
 
-pScale = read('pScalePct') / pScale
-pressure_limiter = read('pressureLimiter')
-
-plotting = Subconfig()
+plotting.pScale = read('pScalePct') / plotting.pScale
+plotting.pressure_limiter = read('pressureLimiter')
 
 # Load plot extents
 plotting.ext_e = read('extE')
@@ -128,9 +139,9 @@ plotting.lambda_min = read('lamMin')
 plotting.lambda_max = read('lamMax')
 
 plotting.x_fs_min = read(
-    'xFSMin', default=plotting.xmin if plotting.xmin is not None else plotting.lambda_min * lam)
+    'xFSMin', default=plotting.xmin if plotting.xmin is not None else plotting.lambda_min * flow.lam)
 plotting.x_fs_max = read(
-    'xFSMax', default=plotting.xmax if plotting.xmax is not None else plotting.lambda_max * lam)
+    'xFSMax', default=plotting.xmax if plotting.xmax is not None else plotting.lambda_max * flow.lam)
 
 # Whether to save, show, or watch plots
 plotting.save = read('plotSave')
@@ -140,63 +151,63 @@ plotting.watch = read('plotWatch') or plotting.show
 plotting.plot_any = plotting.show or plotting.save or plotting.watch or plotting.show_pressure
 
 # File IO settings
-write_interval = read('writeInterval')
-write_time_histories = read('writeTimeHistories')
-results_from_file = read('resultsFromFile')
+io.write_interval = read('writeInterval')
+io.write_time_histories = read('writeTimeHistories')
+io.results_from_file = read('resultsFromFile')
 
 # Rigid body motion parameters
-time_step = read('timeStep')
-relax_rigid_body = read('rigidBodyRelax')
-motion_method = read('motionMethod')
-motion_jacobian_first_step = read('motionJacobianFirstStep')
+body.time_step = read('timeStep')
+body.relax_rigid_body = read('rigidBodyRelax')
+body.motion_method = read('motionMethod')
+body.motion_jacobian_first_step = read('motionJacobianFirstStep')
 
-bow_seal_tip_load = read('bowSealTipLoad')
-tip_constraint_ht = read('tipConstraintHt')
+body.bow_seal_tip_load = read('bowSealTipLoad')
+body.tip_constraint_ht = read('tipConstraintHt')
 
-seal_load_pct = read('sealLoadPct')
-cushion_force_method = read('cushionForceMethod')
+body.seal_load_pct = read('sealLoadPct')
+body.cushion_force_method = read('cushionForceMethod')
 
-initial_draft = read('initialDraft')
-initial_trim = read('initialTrim')
+body.initial_draft = read('initialDraft')
+body.initial_trim = read('initialTrim')
 
-max_draft_step = read('maxDraftStep')
-max_trim_step = read('maxTrimStep')
+body.max_draft_step = read('maxDraftStep')
+body.max_trim_step = read('maxTrimStep')
 
-max_draft_acc = read('maxDraftAcc')
-max_trim_acc = read('maxTrimAcc')
+body.max_draft_acc = read('maxDraftAcc')
+body.max_trim_acc = read('maxTrimAcc')
 
-free_in_draft = read('freeInDraft')
-free_in_trim = read('freeInTrim')
+body.free_in_draft = read('freeInDraft')
+body.free_in_trim = read('freeInTrim')
 
-draft_damping = read('draftDamping')
-trim_damping = read('trimDamping')
+body.draft_damping = read('draftDamping')
+body.trim_damping = read('trimDamping')
 
-relax_draft = read('draftRelax', default=relax_rigid_body)
-relax_trim = read('trimRelax', default=relax_rigid_body)
+body.relax_draft = read('draftRelax', default=body.relax_rigid_body)
+body.relax_trim = read('trimRelax', default=body.relax_rigid_body)
 
 # Parameters for wetted length solver
-wetted_length_solver = read('wettedLengthSolver')
-wetted_length_tol = read('wettedLengthTol')
-wetted_length_relax = read('wettedLengthRelax')
-wetted_length_max_it = read('wettedLengthMaxIt')
-wetted_length_max_it_0 = read('wettedLengthMaxIt0')
-wetted_length_max_step_pct = read('wettedLengthMaxStepPct')
-wetted_length_max_step_pct_inc = read(
-    'wettedLengthMaxStepPctInc', default=wetted_length_max_step_pct)
-wetted_length_max_step_pct_dec = read(
-    'wettedLengthMaxStepPctDec', default=wetted_length_max_step_pct)
-wetted_length_max_jacobian_reset_step = read(
+solver.wetted_length_solver = read('wettedLengthSolver')
+solver.wetted_length_tol = read('wettedLengthTol')
+solver.wetted_length_relax = read('wettedLengthRelax')
+solver.wetted_length_max_it = read('wettedLengthMaxIt')
+solver.wetted_length_max_it_0 = read('wettedLengthMaxIt0')
+solver.wetted_length_max_step_pct = read('wettedLengthMaxStepPct')
+solver.wetted_length_max_step_pct_inc = read(
+    'wettedLengthMaxStepPctInc', default=solver.wetted_length_max_step_pct)
+solver.wetted_length_max_step_pct_dec = read(
+    'wettedLengthMaxStepPctDec', default=solver.wetted_length_max_step_pct)
+solver.wetted_length_max_jacobian_reset_step = read(
     'wettedLengthMaxJacobianResetStep')
 
-max_it = read('maxIt')
-num_ramp_it = read('rampIt')
-relax_initial = read('relaxI')
-relax_final = read('relaxF')
-max_residual = read('tolerance')
-pretension = read('pretension')
-relax_FEM = read('FEMRelax')
-max_FEM_disp = read('maxFEMDisp')
-num_damp = read('numDamp')
+solver.max_it = read('maxIt')
+solver.num_ramp_it = read('rampIt')
+solver.relax_initial = read('relaxI')
+solver.relax_final = read('relaxF')
+solver.max_residual = read('tolerance')
+solver.pretension = read('pretension')
+solver.relax_FEM = read('FEMRelax')
+solver.max_FEM_disp = read('maxFEMDisp')
+solver.num_damp = read('numDamp')
 
 # Initialized constants
 ramp = 1.0
@@ -206,8 +217,7 @@ it_dir = ''
 it = -1
 
 del os
-del np
-del io
+del math
 del config_dict
 del default_dict
 del read

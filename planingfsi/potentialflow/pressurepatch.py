@@ -128,11 +128,11 @@ class PressurePatch(object):
         -------
         None
         """
-        xo = -10.1 * config.lam
+        xo = -10.1 * config.flow.lam
         xTrough, = fmin(self.get_free_surface_height, xo, disp=False)
         xCrest, = fmin(
             lambda x: -self.get_free_surface_height(x), xo, disp=False)
-        self.Dw = (0.0625 * config.rho * config.g *
+        self.Dw = (0.0625 * config.flow.density * config.flow.gravity *
                    (self.get_free_surface_height(xCrest) -
                     self.get_free_surface_height(xTrough))**2)
 
@@ -152,7 +152,7 @@ class PressurePatch(object):
         """Write forces to file."""
         kp.writeasdict(os.path.join(config.it_dir, 'forces_{0}.{1}'.format(
             self.patch_name,
-            config.data_format)),
+            config.io.data_format)),
             ['Drag', self.D],
             ['WaveDrag', self.Dw],
             ['PressDrag', self.Dp],
@@ -168,7 +168,7 @@ class PressurePatch(object):
         """Load forces from file."""
         K = kp.Dictionary(os.path.join(
             config.it_dir, 'forces_{0}.{1}'.format(self.patch_name,
-                                                   config.data_format)))
+                                                   config.io.data_format)))
         self.D = K.read('Drag', 0.0)
         self.Dw = K.read('WaveDrag', 0.0)
         self.Dp = K.read('PressDrag', 0.0)
@@ -449,7 +449,7 @@ class PlaningSurface(PressurePatch):
         if self.length <= 0.0:
             return 0.0
         else:
-            return self.pressure_elements[0].pressure / config.pStag
+            return self.pressure_elements[0].pressure / config.flow.stagnation_pressure
 
     def calculate_forces(self):
         # TODO: Re-factor, this is messy."
@@ -477,7 +477,7 @@ class PlaningSurface(PressurePatch):
             self.D = self.Dp + self.Df
             self.L = self.Lp + self.Lf
             self.M = kp.integrate(
-                self.x, self.p * kp.cosd(AOA) * (self.x - config.xCofR))
+                self.x, self.p * kp.cosd(AOA) * (self.x - config.body.xCofR))
         else:
             self.Dp = 0.0
             self.Df = 0.0
@@ -520,15 +520,15 @@ class PlaningSurface(PressurePatch):
         disp = zs - self.parent.get_free_surface_height(xs)
         Fs = -self.spring_constant * disp
         self.L += Fs
-        self.M += Fs * (xs - config.xCofR)
+        self.M += Fs * (xs - config.body.xCofR)
 
     def _calculate_shear_stress(self):
         def shear_stress_func(xx):
             if xx == 0.0:
                 return 0.0
             else:
-                Rex = config.U * xx / config.nu
-                return 0.332 * config.rho * config.U**2 * Rex**-0.5
+                Rex = config.flow.flow_speed * xx / config.flow.kinematic_viscosity
+                return 0.332 * config.flow.density * config.flow.flow_speed**2 * Rex**-0.5
 
         x = self._get_element_coords()[0:-1]
         s = np.array([self.interpolator.getSFixedX(xx) for xx in x])

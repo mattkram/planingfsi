@@ -167,7 +167,7 @@ class PotentialPlaningSolver(object):
                       for x in X for el in unknownEl])
 
         # height of each unknown element above waterline
-        Z = np.array([el.z_coord for el in unknownEl]) - config.hWL
+        Z = np.array([el.z_coord for el in unknownEl]) - config.flow.waterline_height
 
         # subtract contribution from source elements
         Z -= np.array([np.sum([el.get_influence(x) for el in sourceEl])
@@ -231,7 +231,7 @@ class PotentialPlaningSolver(object):
 
         Will load results from file if specified.
         """
-        if config.results_from_file:
+        if config.io.results_from_file:
             self.load_response()
         else:
             self.calculate_response_unknown_wetted_length()
@@ -270,9 +270,9 @@ class PotentialPlaningSolver(object):
                     else:
                         self.init_len[i] = p.initial_length
 
-            dxMaxDec = config.wetted_length_max_step_pct_dec * \
+            dxMaxDec = config.solver.wetted_length_max_step_pct_dec * \
                 (self.init_len - self.min_len)
-            dxMaxInc = config.wetted_length_max_step_pct_inc * \
+            dxMaxInc = config.solver.wetted_length_max_step_pct_inc * \
                 (self.init_len - self.min_len)
 
             for i, p in enumerate(self.planing_surfaces):
@@ -282,18 +282,18 @@ class PotentialPlaningSolver(object):
             if self.solver is None:
                 self.solver = kp.RootFinder(self.get_residual,
                                             self.init_len * 1.0,
-                                            config.wetted_length_solver,
+                                            config.solver.wetted_length_solver,
                                             xMin=self.min_len,
                                             xMax=self.max_len,
-                                            errLim=config.wetted_length_tol,
+                                            errLim=config.solver.wetted_length_tol,
                                             dxMaxDec=dxMaxDec,
                                             dxMaxInc=dxMaxInc,
                                             firstStep=1e-6,
-                                            maxIt=config.wetted_length_max_it_0,
-                                            maxJacobianResetStep=config.wetted_length_max_jacobian_reset_step,
-                                            relax=config.wetted_length_relax)
+                                            maxIt=config.solver.wetted_length_max_it_0,
+                                            maxJacobianResetStep=config.solver.wetted_length_max_jacobian_reset_step,
+                                            relax=config.solver.wetted_length_relax)
             else:
-                self.solver.maxIt = config.wetted_length_max_it
+                self.solver.maxIt = config.solver.wetted_length_max_it
                 self.solver.reinitialize(self.init_len * 1.0)
                 self.solver.setMaxStep(dxMaxInc, dxMaxDec)
 
@@ -353,7 +353,7 @@ class PotentialPlaningSolver(object):
     def calculate_pressure_and_shear_profile(self):
         """Calculate pressure and shear stress profiles over plate surface."""
         if self.X is None:
-            if config.shear_calc:
+            if config.flow.include_friction:
                 for p in self.planing_surfaces:
                     p._calculate_shear_stress()
 
@@ -384,11 +384,11 @@ class PotentialPlaningSolver(object):
                                         for p in self.pressure_patches]))
 
             f = self.get_free_surface_height
-            xo = -10.1 * config.lam
+            xo = -10.1 * config.flow.lam
             xTrough, = fmin(f, xo, disp=False)
             xCrest, = fmin(lambda x: -f(x), xo, disp=False)
-            self.Dw = 0.0625 * config.rho * \
-                config.g * (f(xCrest) - f(xTrough))**2
+            self.Dw = 0.0625 * config.flow.density * \
+                config.flow.gravity * (f(xCrest) - f(xTrough))**2
 
             # Calculate center of pressure
             self.xBar = kp.integrate(self.X, self.p * self.X) / self.L
@@ -405,10 +405,10 @@ class PotentialPlaningSolver(object):
                     pts = surf._get_element_coords()
                     xFS.append(
                         kp.growPoints(pts[1], pts[0],
-                                      config.plotting.x_fs_min, config.growth_rate))
+                                      config.plotting.x_fs_min, config.plotting.growth_rate))
                     xFS.append(
                         kp.growPoints(pts[-2], pts[-1],
-                                      config.plotting.x_fs_max, config.growth_rate))
+                                      config.plotting.x_fs_max, config.plotting.growth_rate))
 
             # Add points from each planing surface
             fsList = [patch._get_element_coords()
@@ -498,7 +498,7 @@ class PotentialPlaningSolver(object):
         if len(self.pressure_elements) > 0:
             kp.writeaslist(
                 join(config.it_dir,
-                     'pressureAndShear.{0}'.format(config.data_format)),
+                     'pressureAndShear.{0}'.format(config.io.data_format)),
                 ['x [m]', self.X],
                 ['p [Pa]', self.p],
                 ['shear_stress [Pa]', self.shear_stress])
@@ -507,7 +507,7 @@ class PotentialPlaningSolver(object):
         """Write free-surface profile to file."""
         if len(self.pressure_elements) > 0:
             kp.writeaslist(join(config.it_dir,
-                                'freeSurface.{0}'.format(config.data_format)),
+                                'freeSurface.{0}'.format(config.io.data_format)),
                            ['x [m]', self.xFS],
                            ['y [m]', self.zFS])
 
@@ -515,7 +515,7 @@ class PotentialPlaningSolver(object):
         """Write forces to file."""
         if len(self.pressure_elements) > 0:
             kp.writeasdict(join(config.it_dir,
-                                'forces_total.{0}'.format(config.data_format)),
+                                'forces_total.{0}'.format(config.io.data_format)),
                            ['Drag', self.D],
                            ['WaveDrag', self.Dw],
                            ['PressDrag', self.Dp],
@@ -538,7 +538,7 @@ class PotentialPlaningSolver(object):
         """Load pressure and shear stress from file."""
         self.x, self.p, self.shear_stress = np.loadtxt(
             join(config.it_dir,
-                 'pressureAndShear.{0}'.format(config.data_format)),
+                 'pressureAndShear.{0}'.format(config.io.data_format)),
             unpack=True)
         for el in [el for patch in self.planing_surfaces
                    for el in patch.pressure_elements]:
@@ -555,7 +555,7 @@ class PotentialPlaningSolver(object):
         try:
             Data = np.loadtxt(
                 join(config.it_dir,
-                     'freeSurface.{0}'.format(config.data_format)))
+                     'freeSurface.{0}'.format(config.io.data_format)))
             self.xFS = Data[:, 0]
             self.zFS = Data[:, 1]
         except IOError:
@@ -566,7 +566,7 @@ class PotentialPlaningSolver(object):
         """Load forces from file."""
         K = kp.Dictionary(
             join(config.it_dir,
-                 'forces_total.{0}'.format(config.data_format)))
+                 'forces_total.{0}'.format(config.io.data_format)))
         self.D = K.read('Drag', 0.0)
         self.Dw = K.read('WaveDrag', 0.0)
         self.Dp = K.read('PressDrag', 0.0)
@@ -594,11 +594,11 @@ class PotentialPlaningSolver(object):
         # Scale y axis by stagnation pressure
         for line in plt.gca().lines:
             x, y = line.get_data()
-            line.set_data(x / config.Lref * 2, y / config.pStag)
+            line.set_data(x / config.body.reference_length * 2, y / config.flow.stagnation_pressure)
 
         plt.xlim([-1.0, 1.0])
     #    plt.xlim(kp.minMax(self.X / config.Lref * 2))
-        plt.ylim([0.0, np.min([1.0, 1.2 * np.max(self.p / config.pStag)])])
+        plt.ylim([0.0, np.min([1.0, 1.2 * np.max(self.p / config.flow.stagnation_pressure)])])
         plt.savefig('pressureElements.{0}'.format(
             config.figFormat), format=config.figFormat)
         plt.figure(1)
@@ -612,5 +612,5 @@ class PotentialPlaningSolver(object):
             self.lineFS.set_data(self.xFS, self.zFS)
         endPts = np.array([config.plotting.x_fs_min, config.plotting.x_fs_max])
         if self.lineFSi is not None:
-            self.lineFSi.set_data(endPts, config.hWL * np.ones_like(endPts))
+            self.lineFSi.set_data(endPts, config.flow.waterline_height * np.ones_like(endPts))
         return None

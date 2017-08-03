@@ -60,7 +60,7 @@ class Interpolator():
             self.sImm = self.sImmPctStart * self.solid.get_arc_length()
 
         self.sImm = kp.fzero(
-            lambda s: self.get_coordinates(s)[1] - config.hWL, self.sImm)
+            lambda s: self.get_coordinates(s)[1] - config.flow.waterline_height, self.sImm)
 
         return self.get_coordinates(self.sImm)[0]
 
