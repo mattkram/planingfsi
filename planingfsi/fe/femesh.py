@@ -9,95 +9,95 @@ import planingfsi.krampy as kp
 class Mesh:
   
     @classmethod
-    def getPtByID(cls, ID):
-        return Point.findByID(ID)
+    def get_pt_by_id(cls, ID):
+        return Point.find_by_id(ID)
 
     def __init__(self):
         self.submesh = []
-        self.addPoint(0, 'dir', [0,0])
+        self.add_point(0, 'dir', [0,0])
 
-    def addSubmesh(self, name=''):
+    def add_submesh(self, name=''):
         submesh = Submesh(name)
         self.submesh.append(submesh)
         return submesh
         
-    def addPoint(self, ID, method, position, **kwargs):
+    def add_point(self, ID, method, position, **kwargs):
         P = Point()
-        P.setID(ID)
+        P.set_id(ID)
 
-        if   method == 'dir':
-            P.setPos(np.array(position))
+        if method == 'dir':
+            P.set_position(np.array(position))
         elif method == 'rel':
-            basePtID, ang, R = position
-            P.setPos(Point.findByID(basePtID).getPos() + R * kp.ang2vecd(ang))
+            base_pt_id, ang, R = position
+            P.set_position(Point.find_by_id(base_pt_id).get_position() + R * kp.ang2vecd(ang))
         elif method == 'con':
-            basePtID, dim, val = position
+            base_pt_id, dim, val = position
             ang = kwargs.get('angle', 0 if dim == 'x' else 90)
 
-            basePt = Point.findByID(basePtID).getPos()
+            base_pt = Point.find_by_id(base_pt_id).get_position()
             if   dim == 'x':
-                P.setPos(np.array([val, basePt[1] + (val-basePt[0])*kp.tand(ang)]))
+                P.set_position(np.array([val, base_pt[1] + (val-base_pt[0])*kp.tand(ang)]))
             elif dim == 'y':
-                P.setPos(np.array([basePt[0] + (val-basePt[1])/kp.tand(ang), val]))
+                P.set_position(np.array([base_pt[0] + (val-base_pt[1])/kp.tand(ang), val]))
             else:
                 print('Incorrect dimension specification')
         elif method == 'pct':
-            basePtID, endPtID, pct = position
-            basePt = Point.findByID(basePtID).getPos()
-            endPt  = Point.findByID(endPtID).getPos()
-            P.setPos((1 - pct) * basePt + pct * endPt)
+            base_pt_id, end_pt_id, pct = position
+            base_pt = Point.find_by_id(base_pt_id).get_position()
+            end_pt  = Point.find_by_id(end_pt_id).get_position()
+            P.set_position((1 - pct) * base_pt + pct * end_pt)
         else:
             raise NameError('Incorrect position specification method for point, ID: {0}'.format(ID))
 
         return P
 
-    def addPointAlongCurve(self, ID, curve, pct):
+    def add_point_along_curve(self, ID, curve, pct):
         P = Point()
-        P.setID(ID)
-        P.setPos(map(curve.getShapeFunc(), [pct])[0])
+        P.set_id(ID)
+        P.set_position(map(curve.get_shape_func(), [pct])[0])
         return P
 
-    def addLoad(self, ptID, F):
-        Point.findByID(ptID).addFixedLoad(F)
+    def add_load(self, pt_id, F):
+        Point.find_by_id(pt_id).add_fixed_load(F)
 
-    def fixAllPoints(self):
+    def fix_all_points(self):
         for pt in Point.All():
-            pt.setFixedDOF('x','y')
+            pt.set_fixed_dof('x','y')
 
-    def fixPoints(self, ptIDList):
-        for pt in [Point.findByID(ptID) for ptID in ptIDList]:
-            pt.setFixedDOF('x','y')
+    def fix_points(self, pt_id_list):
+        for pt in [Point.find_by_id(pt_id) for pt_id in pt_id_list]:
+            pt.set_fixed_dof('x','y')
 
-    def rotatePoints(self, basePtID, angle, ptIDList):
-        for pt in [Point.findByID(ptID) for ptID in ptIDList]:
-            pt.rotate(basePtID, angle)
+    def rotate_points(self, base_pt_id, angle, pt_id_list):
+        for pt in [Point.find_by_id(pt_id) for pt_id in pt_id_list]:
+            pt.rotate(base_pt_id, angle)
 
-    def rotateAllPoints(self, basePtID, angle):
+    def rotate_all_points(self, base_pt_id, angle):
         for pt in Point.All():
-            pt.rotate(basePtID, angle)
+            pt.rotate(base_pt_id, angle)
 
-    def movePoints(self, dx, dy, ptIDList):
-        for pt in [Point.findByID(ptID) for ptID in ptIDList]:
+    def move_points(self, dx, dy, pt_id_list):
+        for pt in [Point.find_by_id(pt_id) for pt_id in pt_id_list]:
             pt.move(dx, dy)
     
-    def moveAllPoints(self, dx, dy):
+    def move_all_points(self, dx, dy):
         for pt in Point.All():
             pt.move(dx, dy)
     
-    def scaleAllPoints(self, sf, basePtID=0):
-        basePt = Point.findByID(basePtID).getPos()
+    def scale_all_points(self, sf, base_pt_id=0):
+        base_pt = Point.find_by_id(base_pt_id).get_position()
         for pt in Point.All():
-            pt.setPos((pt.getPos() - basePt) * sf + basePt)
+            pt.set_position((pt.get_position() - base_pt) * sf + base_pt)
 
-    def getDiff(self, pt0, pt1):
-        return Point.findByID(pt1).getPos() - Point.findByID(pt0).getPos()
+    def get_diff(self, pt0, pt1):
+        return Point.find_by_id(pt1).get_position() - Point.find_by_id(pt0).get_position()
 
     def get_length(self, pt0, pt1):
-        return np.linalg.norm(self.getDiff(pt0, pt1))
+        return np.linalg.norm(self.get_diff(pt0, pt1))
 
     def display(self, **kwargs):
         if kwargs.get('disp', False):
-            Shape.printAll()
+            Shape.print_all()
             print(('Line count:  {0}'.format(Line.count())))
             print(('Point count: {0}'.format(Point.count())))
 
@@ -111,7 +111,7 @@ class Mesh:
             plt.xlabel(r'$x$', size=18)
             plt.ylabel(r'$y$', size=18)
             
-            Shape.plotAll()
+            Shape.plot_all()
             
             lims = plt.gca().get_xlim()
             ext = (lims[1] - lims[0]) * 0.1
@@ -119,20 +119,20 @@ class Mesh:
         
             # Process optional arguments and save or show figure
             if save:
-                savedFileName = kwargs.get('fileName','meshLayout')
-                plt.savefig(savedFileName + '.eps', format='eps')
+                saved_file_name = kwargs.get('fileName','meshLayout')
+                plt.savefig(saved_file_name + '.eps', format='eps')
             if show:
                 plt.show()
 
     def write(self):
         kp.createIfNotExist(config.path.mesh_dir)
-        x, y = list(zip(*[pt.getPos() for pt in Point.All()]))
+        x, y = list(zip(*[pt.get_position() for pt in Point.All()]))
         kp.writeaslist(os.path.join(config.path.mesh_dir, 'nodes.txt'), ['x', x], ['y', y])
 
-        x, y = list(zip(*[pt.getFixedDOF() for pt in Point.All()]))
+        x, y = list(zip(*[pt.get_fixed_dof() for pt in Point.All()]))
         kp.writeaslist(os.path.join(config.path.mesh_dir, 'fixedDOF.txt'), ['x', x], ['y', y], headerFormat='>1', dataFormat='>1')
 
-        x, y = list(zip(*[pt.getFixedLoad() for pt in Point.All()]))
+        x, y = list(zip(*[pt.get_fixed_load() for pt in Point.All()]))
         kp.writeaslist(os.path.join(config.path.mesh_dir, 'fixedLoad.txt'), ['x', x], ['y', y], headerFormat='>6', dataFormat='6.4e')
 
         for sm in self.submesh:
@@ -146,32 +146,32 @@ class Submesh(Mesh):
         self.name = name
         self.line = []
       
-    def addCurve(self, ptID1, ptID2, **kwargs):
-        arcLen = kwargs.get('arcLen', None)
+    def add_curve(self, pt_id1, pt_id2, **kwargs):
+        arc_length = kwargs.get('arcLen', None)
         radius = kwargs.get('radius', None)
 
         C = Curve(kwargs.get('Nel', 1))
-        C.setID(kwargs.get('ID', -1))
-        C.setEndPtsByID(ptID1, ptID2)
+        C.set_id(kwargs.get('ID', -1))
+        C.set_end_pts_by_id(pt_id1, pt_id2)
         
-        if arcLen is not None:
-            C.setArcLen(arcLen)
+        if arc_length is not None:
+            C.set_arc_length(arc_length)
         elif radius is not None:
-            C.setRadius(radius)
+            C.set_radius(radius)
         else:
-            C.setArcLen(0.0)
+            C.set_arc_length(0.0)
 
-        C.distributePoints()
+        C.distribute_points()
         for pt in C.pt:
-            pt.setUsed()
+            pt.set_used()
 
-        self.line += [l for l in C.getLines()]
+        self.line += [l for l in C.get_lines()]
 
         return C
 
     def write(self):
         if len(self.line) > 0:
-            ptL, ptR = list(zip(*[[pt.getIndex() for pt in l._get_element_coords()] for l in self.line]))
+            ptL, ptR = list(zip(*[[pt.get_index() for pt in l._get_element_coords()] for l in self.line]))
             kp.writeaslist(os.path.join(config.path.mesh_dir, 'elements_{0}.txt'.format(self.name)), ['ptL', ptL], ['ptR', ptR], headerFormat='<4', dataFormat='>4')
 
 
@@ -187,17 +187,17 @@ class Shape:
         return len(cls.All())
     
     @classmethod
-    def plotAll(cls):
+    def plot_all(cls):
         for o in cls.obj:
             o.plot()
          
     @classmethod
-    def printAll(cls):
+    def print_all(cls):
         for o in cls.obj:
             o.display()
                
     @classmethod
-    def findByID(cls, ID):
+    def find_by_id(cls, ID):
         if ID == -1:
             return None
         else:
@@ -208,23 +208,23 @@ class Shape:
                 return obj[0]
 
     def __init__(self):
-        self.setIndex(Shape.count())
+        self.set_index(Shape.count())
         self.ID = -1
         Shape.obj.append(self)
        
-    def setID(self, ID):
-        existing = self.__class__.findByID(ID)
+    def set_id(self, ID):
+        existing = self.__class__.find_by_id(ID)
         if existing is not None:
-            existing.setID(-1)
+            existing.set_id(-1)
         self.ID = ID
 
-    def setIndex(self, ind):
+    def set_index(self, ind):
         self.ind = ind
 
-    def getID(self):
+    def get_id(self):
         return self.ID
 
-    def getIndex(self):
+    def get_index(self):
         return self.ind
 
     def plot(self):
@@ -236,63 +236,63 @@ class Point(Shape):
 
     def __init__(self):
         Shape.__init__(self)
-        self.setIndex(Point.count())
+        self.set_index(Point.count())
         Point.obj.append(self)
         
         self.pos = np.zeros(2)
-        self.fixDOF = [True] * 2
-        self.fixedLoad = np.zeros(2)
-        self.used = False
+        self.is_dof_fixed = [True] * 2
+        self.fixed_load = np.zeros(2)
+        self.is_used = False
     
-    def setUsed(self, used=True):
-        self.used = True
-        self.setFreeDOF('x', 'y')
+    def set_used(self, used=True):
+        self.is_used = True
+        self.set_free_dof('x', 'y')
    
-    def getFixedLoad(self):
-        return self.fixedLoad
+    def get_fixed_load(self):
+        return self.fixed_load
 
-    def addFixedLoad(self, F):
+    def add_fixed_load(self, F):
         for i in range(2):
-            self.fixedLoad[i] += F[i]
+            self.fixed_load[i] += F[i]
 
-    def setFreeDOF(self, *args):
+    def set_free_dof(self, *args):
         for arg in args:
             if arg == 'x':
-                self.fixDOF[0] = False
+                self.is_dof_fixed[0] = False
             if arg == 'y':
-                self.fixDOF[1] = False
+                self.is_dof_fixed[1] = False
     
-    def setFixedDOF(self, *args):
+    def set_fixed_dof(self, *args):
         for arg in args:
             if arg == 'x':
-                self.fixDOF[0] = True
+                self.is_dof_fixed[0] = True
             if arg == 'y':
-                self.fixDOF[1] = True
+                self.is_dof_fixed[1] = True
     
-    def getFixedDOF(self):
-        return self.fixDOF
+    def get_fixed_dof(self):
+        return self.is_dof_fixed
 
     def move(self, dx, dy):
-        self.setPos(self.getPos() + np.array([dx, dy]))
+        self.set_position(self.get_position() + np.array([dx, dy]))
 
-    def setPos(self, pos):
+    def set_position(self, pos):
         self.pos = pos
 
-    def getPos(self):
+    def get_position(self):
         return self.pos
 
-    def getXPos(self):
+    def get_x_pos(self):
         return self.pos[0]
 
-    def getYPos(self):
+    def get_y_pos(self):
         return self.pos[1]
 
-    def rotate(self, basePtID, angle):
-        basePt = Point.findByID(basePtID).getPos()
-        self.setPos(kp.rotateVec(self.getPos() - basePt, angle) + basePt)
+    def rotate(self, base_pt_id, angle):
+        base_pt = Point.find_by_id(base_pt_id).get_position()
+        self.set_position(kp.rotateVec(self.get_position() - base_pt, angle) + base_pt)
 
     def display(self):
-        print(('{0} {1}: ID = {2}, Pos = {3}'.format(self.__class__.__name__, self.getIndex(), self.getID(), self.getPos())))
+        print(('{0} {1}: ID = {2}, Pos = {3}'.format(self.__class__.__name__, self.get_index(), self.get_id(), self.get_position())))
 
     def plot(self):
         if self.ID == -1:
@@ -307,59 +307,59 @@ class Curve(Shape):
 
     def __init__(self, Nel=1):
         Shape.__init__(self)
-        self.setIndex(Curve.count())
+        self.set_index(Curve.count())
         Curve.obj.append(self)
         self.pt    = []
         self.line  = []
         self._end_pts = []
         self.Nel   = Nel
-        self.plotSty = 'm--'
+        self.plot_sty = 'm--'
 
-    def setEndPtsByID(self, ptID1, ptID2):
-        self.setEndPts([Point.findByID(pid) for pid in [ptID1, ptID2]])
+    def set_end_pts_by_id(self, pt_id1, pt_id2):
+        self.set_end_pts([Point.find_by_id(pid) for pid in [pt_id1, pt_id2]])
 
-    def getShapeFunc(self):
-        xy = [pt.getPos() for pt in self._end_pts]
+    def get_shape_func(self):
+        xy = [pt.get_position() for pt in self._end_pts]
         if self.radius == 0.0:
             return lambda s: xy[0] * (1 - s) + xy[1] * s
         else:
             x, y = list(zip(*xy))
             gam = np.arctan2(y[1] - y[0], x[1] - x[0])
-            alf = self.arcLen / (2 * self.radius)
-            return lambda s: self._end_pts[0].getPos() + 2*self.radius*np.sin(s*alf) * kp.ang2vec(gam + (s-1)*alf)
+            alf = self.arc_length / (2 * self.radius)
+            return lambda s: self._end_pts[0].get_position() + 2*self.radius*np.sin(s*alf) * kp.ang2vec(gam + (s-1)*alf)
     
-    def setRadius(self, R):
+    def set_radius(self, R):
         self.radius = R
-        self.calculateChord()
-        self.calculateArcLength()
+        self.calculate_chord()
+        self.calculate_arc_length()
        
-    def setArcLen(self, arcLen):
-        self.calculateChord()
-        if self.chord >= arcLen:
-            self.arcLen = 0.0
-            self.setRadius(0.0)
+    def set_arc_length(self, arc_length):
+        self.calculate_chord()
+        if self.chord >= arc_length:
+            self.arc_length = 0.0
+            self.set_radius(0.0)
         else:
-            self.arcLen = arcLen
-            self.calculateRadius()
+            self.arc_length = arc_length
+            self.calculate_radius()
 
-    def calculateRadius(self):
-        self.radius = 1 / self.calculateCurvature()
+    def calculate_radius(self):
+        self.radius = 1 / self.calculate_curvature()
 
-    def calculateChord(self):
-        x, y = list(zip(*[pt.getPos() for pt in self._end_pts]))
+    def calculate_chord(self):
+        x, y = list(zip(*[pt.get_position() for pt in self._end_pts]))
         self.chord = ((x[1] - x[0])**2 + (y[1] - y[0])**2)**0.5
 
-    def calculateArcLength(self):
+    def calculate_arc_length(self):
         if self.radius == 0:
-            self.arcLen = self.chord
+            self.arc_length = self.chord
         else:
             f = lambda s: self.chord / (2 * self.radius) - np.sin(s / (2 * self.radius))
         
             # Keep increasing guess until fsolve finds the first non-zero root
-            self.arcLen = kp.fzero(f, self.chord+1e-6)
+            self.arc_length = kp.fzero(f, self.chord+1e-6)
 
-    def calculateCurvature(self):
-        f = lambda x: x * self.chord / 2 - np.sin(x * self.arcLen / 2)
+    def calculate_curvature(self):
+        f = lambda x: x * self.chord / 2 - np.sin(x * self.arc_length / 2)
 
         # Keep increasing guess until fsolve finds the first non-zero root
         kap  = 0.0
@@ -370,45 +370,45 @@ class Curve(Shape):
 
         return kap
 
-    def distributePoints(self):
+    def distribute_points(self):
         self.pt.append(self._end_pts[0])
         if not self.Nel == 1:
             # Distribute N points along a parametric curve defined by f(s), s in [0,1]
             s = np.linspace(0.0, 1.0, self.Nel + 1)[1:-1]
-            for xy in map(self.getShapeFunc(), s):
+            for xy in map(self.get_shape_func(), s):
                 P = Point()
                 self.pt.append(P)
-                P.setPos(xy)
+                P.set_position(xy)
         self.pt.append(self._end_pts[1])
-        self.generateLines()
+        self.generate_lines()
 
-    def generateLines(self):
+    def generate_lines(self):
         for ptSt, ptEnd in zip(self.pt[:-1], self.pt[1:]):
             L = Line()
-            L.setEndPts([ptSt, ptEnd])
+            L.set_end_pts([ptSt, ptEnd])
             self.line.append(L)
     
-    def getLines(self):
+    def get_lines(self):
         return self.line
        
-    def setPts(self, pt):
+    def set_pts(self, pt):
         self.pt = pt
     
-    def setEndPts(self, endPt):
-        self._end_pts = endPt
+    def set_end_pts(self, end_pt):
+        self._end_pts = end_pt
     
     def _get_element_coords(self):
         return self.pt
       
     def getPtIDs(self):
-        return [pt.getID() for pt in self.pt]
+        return [pt.get_id() for pt in self.pt]
       
     def display(self):
-        print(('{0} {1}: ID = {2}, Pt IDs = {3}'.format(self.__class__.__name__, self.getIndex(), self.getID(), self.getPtIDs())))
+        print(('{0} {1}: ID = {2}, Pt IDs = {3}'.format(self.__class__.__name__, self.get_index(), self.get_id(), self.getPtIDs())))
 
     def plot(self):
-        x, y = list(zip(*[pt.getPos() for pt in self.pt]))
-        plt.plot(x, y, self.plotSty)
+        x, y = list(zip(*[pt.get_position() for pt in self.pt]))
+        plt.plot(x, y, self.plot_sty)
 
 
 class Line(Curve):
@@ -416,10 +416,10 @@ class Line(Curve):
 
     def __init__(self):
         Curve.__init__(self)
-        self.setIndex(Line.count())
+        self.set_index(Line.count())
         Line.obj.append(self)
-        self.plotSty = 'b-'
+        self.plot_sty = 'b-'
 
-    def setEndPts(self, endPt):
-        Curve.setEndPts(self, endPt)
-        self.setPts(endPt)
+    def set_end_pts(self, endPt):
+        Curve.set_end_pts(self, endPt)
+        self.set_pts(endPt)

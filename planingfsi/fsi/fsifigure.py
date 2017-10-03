@@ -19,14 +19,14 @@ class FSIFigure:
         self.geometryAx = plt.axes([0.05,0.6,0.9,0.35])
         
         for nd in self.solid.node:
-            nd.lineXY, = plt.plot([], [], 'ro')
+            nd.line_x_yline_xy, = plt.plot([], [], 'ro')
        
         self.fluid.lineFS,  = plt.plot([], [], 'b-')
         self.fluid.lineFSi, = plt.plot([], [], 'b--')
 
         for struct in self.solid.substructure:
-            struct.lineAirP,   = plt.plot([], [], 'g-')
-            struct.lineFluidP, = plt.plot([], [], 'r-')
+            struct.line_air_pressure,   = plt.plot([], [], 'g-')
+            struct.line_fluid_pressure, = plt.plot([], [], 'r-')
             for el in struct.el:
                 el.lineEl0, = plt.plot([], [], 'k--')
                 el.lineEl,  = plt.plot([], [], 'k-', linewidth=2)

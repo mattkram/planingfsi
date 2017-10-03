@@ -14,8 +14,8 @@ class PressurePatch(object):
     """Abstract base class representing a patch of pressure elements on the
     free surface.
 
-    Args
-    ----
+    Attributes
+    ----------
     pressure_elements : list
         List of pressure elements.
 

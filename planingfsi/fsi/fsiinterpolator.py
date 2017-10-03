@@ -44,7 +44,7 @@ class Interpolator():
     def get_coordinates(self, s):
         return self.solidPositionFunction(s)
 
-    def getMinMaxS(self):
+    def get_min_max_s(self):
         pts = self.fluid._get_element_coords()
         return [self.getSFixedX(x) for x in [pts[0], pts[-1]]]
 
