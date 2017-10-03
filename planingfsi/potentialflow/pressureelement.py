@@ -134,12 +134,12 @@ class PressureElement(object):
         Pressure patch that this element belongs to.
     """
 
-    all = []
+    #all = []
 
     def __init__(self, x_coord=np.nan, z_coord=np.nan, pressure=np.nan,
                  shear_stress=0.0, width=np.nan, is_source=False,
                  is_on_body=False, parent=None):
-        PressureElement.all.append(self)
+        #PressureElement.all.append(self)
 
         # TODO: Replace x_coord with coord pointer to Coordinate object,
         # (e.g. self.coords.x).
@@ -242,7 +242,7 @@ class AftHalfTriangularPressureElement(PressureElement):
 
     def __init__(self, **kwargs):
         kwargs['is_on_body'] = kwargs.get('is_on_body', True)
-        super(self.__class__, self).__init__(**kwargs)
+        super().__init__(**kwargs)
 
     @PressureElement.width.setter
     def width(self, width):
@@ -275,7 +275,7 @@ class AftHalfTriangularPressureElement(PressureElement):
     def plot(self):
         """Plot pressure element shape."""
         _x_coords = self.x_coord - np.array([self.width, 0])
-        super(self.__class__, self).plot(_x_coords, color='g')
+        super().plot(_x_coords, color='g')
 
 
 class ForwardHalfTriangularPressureElement(PressureElement):
@@ -292,7 +292,7 @@ class ForwardHalfTriangularPressureElement(PressureElement):
 
     def __init__(self, **kwargs):
         kwargs['is_on_body'] = kwargs.get('is_on_body', True)
-        super(self.__class__, self).__init__(**kwargs)
+        super().__init__(**kwargs)
 
     @PressureElement.width.setter
     def width(self, width):
@@ -332,7 +332,7 @@ class ForwardHalfTriangularPressureElement(PressureElement):
     def plot(self):
         """Plot pressure element shape."""
         _x_coords = self.x_coord + np.array([0, self.width])
-        super(self.__class__, self).plot(_x_coords, color='b')
+        super().plot(_x_coords, color='b')
 
 
 class CompleteTriangularPressureElement(PressureElement):
@@ -350,7 +350,7 @@ class CompleteTriangularPressureElement(PressureElement):
     def __init__(self, **kwargs):
         kwargs['is_on_body'] = kwargs.get('is_on_body', True)
         kwargs['width'] = kwargs.get('width', np.zeros(2))
-        super(self.__class__, self).__init__(**kwargs)
+        super().__init__(**kwargs)
 
     @PressureElement.width.setter
     def width(self, width):
@@ -401,7 +401,7 @@ class CompleteTriangularPressureElement(PressureElement):
         """Plot pressure element shape."""
         _x_coords = self.x_coord + \
             np.array([-self._width[0], 0.0, self._width[1]])
-        super(self.__class__, self).plot(_x_coords, color='r')
+        super().plot(_x_coords, color='r')
 
 
 class AftSemiInfinitePressureBand(PressureElement):
@@ -439,7 +439,7 @@ class AftSemiInfinitePressureBand(PressureElement):
     def plot(self):
         """Plot pressure element shape."""
         _x_coords = self.x_coord + np.array([-PLOT_INFINITY, 0])
-        super(self.__class__, self).plot(_x_coords, color='r')
+        super().plot(_x_coords, color='r')
 
 
 class ForwardSemiInfinitePressureBand(PressureElement):
@@ -480,4 +480,4 @@ class ForwardSemiInfinitePressureBand(PressureElement):
     def plot(self):
         """Plot pressure element shape."""
         _x_coords = self.x_coord + np.array([0, PLOT_INFINITY])
-        super(self.__class__, self).plot(_x_coords, color='r')
+        super().plot(_x_coords, color='r')

@@ -148,14 +148,14 @@ class Simulation(object):
         else:
             config.it += 1
 
-        config.resL = self.solid.rigid_body[0].get_res_l()
-        config.resM = self.solid.rigid_body[0].get_res_moment()
+        config.res_l = self.solid.rigid_body[0].get_res_l()
+        config.res_m = self.solid.rigid_body[0].get_res_moment()
 
         print('Rigid Body Residuals:')
-        print(('  Lift:   {0:0.4e}'.format(config.resL)))
-        print(('  Moment: {0:0.4e}\n'.format(config.resM)))
+        print(('  Lift:   {0:0.4e}'.format(config.res_l)))
+        print(('  Moment: {0:0.4e}\n'.format(config.res_m)))
 
-        return np.array([config.resL, config.resM])
+        return np.array([config.res_l, config.res_m])
 
     def applyRamp(self):
         if config.io.results_from_file:
