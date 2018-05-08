@@ -23,9 +23,10 @@ import json
 
 from planingfsi import unit
 
+
 class Pattern(object):
     """A small helper object for storing Regex patterns.
-    
+
     Class Attributes
     ----------------
     DELIMITER : SRE_Pattern
@@ -52,7 +53,7 @@ class Pattern(object):
     Pattern.NUMBER.match('1.455e+10') will return a re.MatchObject
 
     """
-    
+
     DELIMITER = re.compile(r'[:,\{\}\[\]]')
     NUMBER = re.compile(r'\A[-+]?(\d+(\.\d*)?|\.\d+)([eE][-+]?\d+)?\Z')
     LITERAL = re.compile(r'(\"[\w\\\/\.]*\")|(\'[\w\\\/\.]*\')')
@@ -65,18 +66,18 @@ class Pattern(object):
 
 class Dictionary(dict):
     """An file-based extension of the standard dict object
-    
+
     Dictionaries can be easily read from files, which may also depend themselves
     on recursive loading of sub-Dictionaries.
-    
+
     Parameters
     ----------
     construct_from : str, dict, or None, optional, default=None
         If a dict is provided, the values are copied into this instance.
 
-        If a string is provided which starts with a curly bracket "{", the 
+        If a string is provided which starts with a curly bracket "{", the
         string is parsed via the load_from_string method, which aims to be
-        "smart" in cleaning the string into json format and subsequently 
+        "smart" in cleaning the string into json format and subsequently
         loading it as a dictionary.
 
         If the string does not begin with a curly bracket, it is taken to be
@@ -84,7 +85,7 @@ class Dictionary(dict):
         load_from_string method.
 
         If no value or None is provided, a blank dictionary is instantiated.
-    
+
     """
 
     def __init__(self, construct_from=None):
@@ -94,7 +95,7 @@ class Dictionary(dict):
         if construct_from is None:
             super().__init__()
             return
-        
+
         # Call appropriate function to load dictionary values
         if isinstance(construct_from, dict):
             self.load_from_dict(construct_from)
@@ -114,7 +115,7 @@ class Dictionary(dict):
         if base_dict_dir is not None:
             # Allow for loading dictionary from different directory by tracing
             # relative references from original file directory
-            if base_dict_dir.startswith('..'):
+            if base_dict_dir.startswith('.'):
                 if source_file is not None:
                     # Begin from the directory the source_file lies in
                     dir_name = os.path.dirname(source_file)
@@ -146,13 +147,13 @@ class Dictionary(dict):
                 line = line.split('#')[0].strip()
                 if line != '':
                     dict_list.append(line)
-        
+
         dict_string = ','.join(dict_list)
         self.load_from_string(dict_string)
 
     def load_from_string(self, in_string):
         """Load Dictionary information from a string.
-        
+
         Convert the string to a json-compatible string, then pass to
         load_from_json.
 
@@ -165,16 +166,16 @@ class Dictionary(dict):
         # Surround string with curly brackets if it's not already
         if not in_string.startswith('{'):
             in_string = in_string.join('{}')
-         
+
         # Replace multiple consecutive commas with one
         in_string = re.sub(',,+', ',', in_string)
-        
+
         # Replace [, or {, or ,] or ,} with bracket only
         def repl(m):
             return m.group(1)
         in_string = re.sub(r'([\{\[]),', repl, in_string)
         in_string = re.sub(r',([\]\}])', repl, in_string)
-        
+
         in_string = in_string.replace('}{', '},{')
 
         # Replace environment variables with their value & surround by quotes
@@ -212,12 +213,12 @@ class Dictionary(dict):
                 in_string = in_string[match.end():]
             else: # No more delimiters
                 break
-        json_string = ''.join(in_list)       
+        json_string = ''.join(in_list)
         self.load_from_json(json_string)
 
     def load_from_json(self, json_string):
         """Load Dictionary information from a json-formatted string.
-        
+
         The string is first loaded by the json module as a dict, then passed to load_from_dict.
 
         Arguments
@@ -229,12 +230,12 @@ class Dictionary(dict):
             dict_ = json.loads(json_string)
         except:
             raise ValueError('Error converting string to json: {0}'.format(json_string))
-        
+
         self.load_from_dict(dict_)
 
     def load_from_dict(self, dict_):
         """Load Dictionary information from a standard dict.
-        
+
         The values are copied to this Dictionary and parsed, with special
         handling of certain variables.
 
@@ -259,17 +260,17 @@ class Dictionary(dict):
                 elif 'unit.' in val:
                     try:
                         val = eval(val)
-                    except: 
+                    except:
                         ValueError('Cannot process the value {0}: {1}'.format(key, val))
             elif isinstance(val, dict):
                 val = Dictionary(val)
-           
+
             # Remove quotes from key
             if Pattern.LITERAL.match(key):
                 key = key[1:-1]
 
             self.update({key: val})
-      
+
     def read(self, key, default=None, type_=None):
         """Load value from dictionary.
 
@@ -294,7 +295,7 @@ class Dictionary(dict):
         ---------
         key : str
             Dictionary key.
-        default : 
+        default :
             Default value if key not in Dictionary.
         """
         return self.get(key, default)
@@ -307,7 +308,7 @@ class Dictionary(dict):
         ---------
         key : str
             Dictionary key.
-        default : 
+        default :
             Default value if key not in Dictionary.
         """
         val = self.read(key, default)

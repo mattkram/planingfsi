@@ -1,4 +1,4 @@
-baseDict : 'testDictBase'
+baseDict : './testDictBase'
 
 # Load run properties from dictionary
 floatVar : 1.0
@@ -34,12 +34,12 @@ infPositive : +inf
 
 "stringKey" : test
 listVar : [
-6.0, 
-6.6,,,] 
+6.0,
+6.6,,,]
 
 listVar2 : [
-6.0, 
-6.6,,,] 
+6.0,
+6.6,,,]
 
 dictVar : {'get': 'out'}
 
