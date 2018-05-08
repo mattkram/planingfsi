@@ -1,6 +1,8 @@
 ## The following requirements were added by pip freeze:
+coverage==4.5.1
 cycler==0.10.0
 matplotlib==2.0.2
+nose2==0.7.4
 numpy==1.13.1
 pyparsing==2.2.0
 python-dateutil==2.6.1
