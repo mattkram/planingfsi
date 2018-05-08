@@ -36,19 +36,19 @@ class Simulation(object):
 #     def setSolidPositionFunc(self, func):
 #         self.solidPositionFunc = func
 
-    def updateFluidResponse(self):
+    def update_fluid_response(self):
         self.fluid.calculate_response()
         self.solid.update_fluid_forces()
 
-    def updateSolidResponse(self):
+    def update_solid_response(self):
         self.solid.calculate_response()
 
-    def createDirs(self):
+    def create_dirs(self):
         config.it_dir = os.path.join(config.path.case_dir, '{0}'.format(config.it))
         config.path.fig_dir_name = os.path.join(
             config.path.case_dir, config.path.fig_dir_name)
 
-        if self.checkOutputInterval() and not config.io.results_from_file:
+        if self.check_output_interval() and not config.io.results_from_file:
             kp.createIfNotExist(config.path.case_dir)
             kp.createIfNotExist(config.it_dir)
 
@@ -66,16 +66,16 @@ class Simulation(object):
         self.solid.load_mesh()
 
         if config.io.results_from_file:
-            self.createDirs()
-            self.applyRamp()
-            self.itDirs = kp.sortDirByNum(kp.find_files('[0-9]*'))[1]
+            self.create_dirs()
+            self.apply_ramp()
+            self.it_dirs = kp.sortDirByNum(kp.find_files('[0-9]*'))[1]
 
         if config.plotting.plot_any:
             self.figure = FSIFigure(self.solid, self.fluid)
 
         # Initialize body at specified trim and draft
         self.solid.initialize_rigid_bodies()
-        self.updateFluidResponse()
+        self.update_fluid_response()
 
         # Iterate between solid and fluid solvers until equilibrium
         while config.it <= config.solver.num_ramp_it \
@@ -84,18 +84,18 @@ class Simulation(object):
 
             # Calculate response
             if config.has_free_structure:
-                self.applyRamp()
-                self.updateSolidResponse()
-                self.updateFluidResponse()
+                self.apply_ramp()
+                self.update_solid_response()
+                self.update_fluid_response()
                 self.solid.get_residual()
             else:
                 self.solid.res = 0.0
 
             # Write, print, and plot results
-            self.createDirs()
+            self.create_dirs()
             self.write_results()
-            self.printStatus()
-            self.updateFigure()
+            self.print_status()
+            self.update_figure()
 
             # Increment iteration count
             self.increment()
@@ -105,7 +105,7 @@ class Simulation(object):
             self.figure.save()
 
         if config.io.write_time_histories:
-            self.figure.writeTimeHistories()
+            self.figure.write_time_histories()
 
         print("Execution complete")
         if config.plotting.show:
@@ -113,35 +113,35 @@ class Simulation(object):
 
     def increment(self):
         if config.io.results_from_file:
-            oldInd = np.nonzero(config.it == self.itDirs)[0][0]
-            if not oldInd == len(self.itDirs) - 1:
-                config.it = int(self.itDirs[oldInd + 1])
+            old_ind = np.nonzero(config.it == self.it_dirs)[0][0]
+            if not old_ind == len(self.it_dirs) - 1:
+                config.it = int(self.it_dirs[old_ind + 1])
             else:
                 config.it = config.max_it + 1
-            self.createDirs()
+            self.create_dirs()
         else:
             config.it += 1
 
-    def updateFigure(self):
+    def update_figure(self):
         if config.plotting.plot_any:
             self.figure.update()
 
-    def getBodyRes(self, x):
-        self.solid.getPtDispRB(x[0], x[1])
-        self.solid.updateNodalPositions()
-        self.updateFluidResponse()
+    def get_body_res(self, x):
+        self.solid.get_pt_disp_rb(x[0], x[1])
+        self.solid.update_nodal_positions()
+        self.update_fluid_response()
 
         # Write, print, and plot results
-        self.createDirs()
+        self.create_dirs()
         self.write_results()
-        self.printStatus()
-        self.updateFigure()
+        self.print_status()
+        self.update_figure()
 
         # Update iteration number depending on whether loading existing or
         # simply incrementing by 1
         if config.io.results_from_file:
-            if it < len(self.itDirs) - 1:
-                config.it = int(self.itDirs[it + 1])
+            if config.it < len(self.it_dirs) - 1:
+                config.it = int(self.it_dirs[config.it + 1])
             else:
                 config.it = config.max_it
             it += 1
@@ -157,7 +157,7 @@ class Simulation(object):
 
         return np.array([config.res_l, config.res_m])
 
-    def applyRamp(self):
+    def apply_ramp(self):
         if config.io.results_from_file:
             self.loadResults()
         else:
@@ -176,23 +176,23 @@ class Simulation(object):
         else:
             return self.solid.res
 
-    def printStatus(self):
-        print(('Residual after iteration {1:>4d}: {0:5.3e}'.format(self.get_residual(), config.it)))
+    def print_status(self):
+        print('Residual after iteration {1:>4d}: {0:5.3e}'.format(self.get_residual(), config.it))
 
-    def checkOutputInterval(self):
+    def check_output_interval(self):
         return config.it >= config.solver.max_it or \
             self.get_residual() < config.solver.max_residual or \
             np.mod(config.it, config.io.write_interval) == 0
 
     def write_results(self):
-        if self.checkOutputInterval() and not config.io.results_from_file:
+        if self.check_output_interval() and not config.io.results_from_file:
             kp.writeasdict(os.path.join(config.it_dir, 'overallQuantities.txt'), [
                            'Ramp', config.ramp], ['Residual', self.solid.res])
 
             self.fluid.write_results()
             self.solid.write_results()
 
-    def loadResults(self):
+    def load_results(self):
         K = kp.Dictionary(os.path.join(config.it_dir, 'overallQuantities.txt'))
         config.ramp = K.read('Ramp', 0.0)
         self.solid.res = K.read('Residual', 0.0)
