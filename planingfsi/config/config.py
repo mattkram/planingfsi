@@ -24,15 +24,18 @@ else:
 config_module_path = os.path.abspath(os.path.dirname(__file__))
 default_dict = planingfsi.io.Dictionary(os.path.join(config_module_path, 'defaultConfigDict'))
 
+
 # Function to read value from dictionary or default dictionary
 def read(key, default=None):
     return config_dict.read(key, default_dict.read(key, default))
+
 
 class Subconfig(object):
     """An empty class used simply for dividing the configuration into
     different sections. Also useful in helping define the namespace scopes.
     """
     pass
+
 
 # Create subconfigs, used for sorting
 flow = Subconfig() # Flow-related variables
@@ -105,7 +108,7 @@ elif plotting.pType == 'hydrostatic':
     plotting.pScale = flow.density * flow.gravity * read('pScaleHead')
 else:
     plotting.pScale = read('pScale', default=1.0)
-    
+
 plotting.growth_rate = read('growthRate')
 plotting.CofR_grid_len = read('CofRGridLen')
 
