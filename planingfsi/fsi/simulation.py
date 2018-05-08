@@ -8,7 +8,7 @@ import planingfsi.krampy as kp
 from planingfsi.potentialflow.solver import PotentialPlaningSolver
 from planingfsi.fe.structure import FEStructure
 
-from .fsifigure import FSIFigure
+from .figure import FSIFigure
 
 
 class Simulation(object):

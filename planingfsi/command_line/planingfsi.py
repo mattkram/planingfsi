@@ -6,15 +6,16 @@ part of a rigid body, which can be free in sinkage and trim.
 This script is called from the command line with options to plot or load
 results from file. It reads the fluid and solid body properties from dictionary
 files, assembles the problem, and runs it.
-"""
-import planingfsi.config as config
-import planingfsi.krampy as kp
-from planingfsi import io
-from planingfsi.fsi.fsisimulation import Simulation
-from planingfsi.fsi.fsiinterpolator import Interpolator
 
+"""
 import os
 import sys
+
+from planingfsi import io
+from planingfsi import config
+from planingfsi import krampy
+from planingfsi.fsi.simulation import Simulation
+from planingfsi.fsi.interpolator import Interpolator
 
 
 def main():
@@ -29,7 +30,7 @@ def main():
             config.plotting.save = True
             config.plotting.plot_any = True
         if 'new' in arg:
-            kp.rm_rf(kp.find_files(config.path.case_dir, '[0-9]*'))
+            krampy.rm_rf(krampy.find_files(config.path.case_dir, '[0-9]*'))
 
     # Use tk by default. Otherwise try Agg. Otherwise, disable plotting.
     try:
@@ -46,14 +47,14 @@ def main():
 
     # Add all rigid bodies
     if os.path.exists(config.path.body_dict_dir):
-        for dict_name in kp.listdir_nohidden(config.path.body_dict_dir):
+        for dict_name in krampy.listdir_nohidden(config.path.body_dict_dir):
             dict_ = io.Dictionary(os.path.join(config.path.body_dict_dir, dict_name))
             sim.solid.add_rigid_body(dict_)
     else:
         sim.solid.add_rigid_body()
 
     # Add all substructures
-    for dict_name in kp.listdir_nohidden(config.path.input_dict_dir):
+    for dict_name in krampy.listdir_nohidden(config.path.input_dict_dir):
         dict_ = io.Dictionary(os.path.join(config.path.input_dict_dir, dict_name))
 
         substructure = sim.solid.add_substructure(dict_)
@@ -67,7 +68,7 @@ def main():
 
     # Add all pressure cushions
     if os.path.exists(config.path.cushion_dict_dir):
-        for dict_name in kp.listdir_nohidden(config.path.cushion_dict_dir):
+        for dict_name in krampy.listdir_nohidden(config.path.cushion_dict_dir):
             dict_ = io.Dictionary(os.path.join(config.path.cushion_dict_dir, dict_name))
             sim.fluid.add_pressure_cushion(dict_)
 
