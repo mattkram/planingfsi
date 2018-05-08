@@ -18,6 +18,7 @@ setup(name='planingfsi',
       packages=['planingfsi'],
       entry_points={
           'console_scripts': [
-              'planingFSI=planingfsi.command_line.planingfsi:main'
+              'planingFSI=planingfsi.command_line.planingfsi:main',
+              'generateMesh=planingfsi.command_line.mesh:main'
           ]
       })
