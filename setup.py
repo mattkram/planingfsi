@@ -16,4 +16,8 @@ setup(name='planingfsi',
       author_email='matthew.robert.kramer@gmail.com',
       license='MIT',
       packages=['planingfsi'],
-      scripts=['bin/planingFSI'])
+      entry_points={
+          'console_scripts': [
+              'planingFSI=planingfsi.command_line.planingfsi:main'
+          ]
+      })
