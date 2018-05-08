@@ -1,16 +1,21 @@
-from planingfsi import io
 import math
+import os.path
 import unittest
 
+import context
 
-debug = False
+from planingfsi import io
+
+
+DEBUG = False
+
 
 class DictionaryTest(unittest.TestCase):
 
     @classmethod
     def setUpClass(cls):
-        cls.dict_ = io.Dictionary('testDict')
-        if debug:
+        cls.dict_ = io.Dictionary(os.path.join(context.TEST_DIR, 'testDict'))
+        if DEBUG:
             for key, val in cls.dict_.items():
                 print('{0}: {1}'.format(key, val), type(val))
                 if isinstance(val, dict):
@@ -21,7 +26,7 @@ class DictionaryTest(unittest.TestCase):
         dict_val = self.dict_.read(key)
         self.assertIsInstance(dict_val, type_)
         self.assertEqual(target_val, dict_val)
-    
+
     def assertDict(self, dict_, type_):
         for key, val in dict_.items():
             with self.subTest(key=key):
@@ -51,7 +56,7 @@ class DictionaryTest(unittest.TestCase):
                  'infPositive': INF,
                  'infNegative': -INF}
         self.assertDict(dict_, float)
-    
+
     def test_read_none(self):
         for upper_lower in ['Upper', 'Lower']:
             self.assertIsNone(self.dict_.read('none{0}'.format(upper_lower)))
