@@ -1,5 +1,7 @@
 from setuptools import setup
 
+import planingfsi
+
 
 def readme():
     with open('README.md') as f:
@@ -7,8 +9,8 @@ def readme():
 
 
 setup(name='planingfsi',
-      version='0.1',
-      description='FSI for planing surfaces',
+      version=planingfsi.__version__,
+      description='FSI for large-deformation planing surfaces',
       long_description=readme(),
       author='Matthew Kramer',
       author_email='matthew.robert.kramer@gmail.com',
