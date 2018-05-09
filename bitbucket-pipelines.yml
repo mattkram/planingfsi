@@ -10,6 +10,7 @@ pipelines:
     - step:
         caches:
           - pip
+        deployment: test
         script:
           - pip install -r requirements.txt
           - nose2
