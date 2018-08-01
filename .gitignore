@@ -36,3 +36,4 @@ tutorials/**/figures
 
 *.wpr
 *.wpu
+/.pytest_cache/
