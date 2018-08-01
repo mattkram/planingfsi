@@ -4,6 +4,7 @@ import unittest
 
 import context
 
+import planingfsi.io
 from planingfsi import io
 
 
@@ -14,7 +15,7 @@ class DictionaryTest(unittest.TestCase):
 
     @classmethod
     def setUpClass(cls):
-        cls.dict_ = io.Dictionary(os.path.join(context.TEST_DIR, 'testDict'))
+        cls.dict_ = planingfsi.io.Dictionary(os.path.join(context.TEST_DIR, 'testDict'))
         if DEBUG:
             for key, val in cls.dict_.items():
                 print('{0}: {1}'.format(key, val), type(val))

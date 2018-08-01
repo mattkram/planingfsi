@@ -3,6 +3,7 @@ import os
 import numpy as np
 from scipy.interpolate import interp1d
 
+import planingfsi.io
 from planingfsi import config
 from planingfsi import krampy as kp
 from planingfsi import io
@@ -23,14 +24,14 @@ class FEStructure:
 
     def add_rigid_body(self, dict_=None):
         if dict_ is None:
-            dict_ = io.Dictionary()
+            dict_ = planingfsi.io.Dictionary()
         rigid_body = RigidBody(dict_)
         self.rigid_body.append(rigid_body)
         return rigid_body
 
     def add_substructure(self, dict_=None):
         if dict_ is None:
-            dict_ = io.Dictionary()
+            dict_ = planingfsi.io.Dictionary()
         ss_type = dict_.read('substructureType', 'rigid')
         if ss_type.lower() == 'flexible' or ss_type.lower() == 'truss':
             ss = FlexibleSubstructure(dict_)
@@ -150,7 +151,7 @@ class RigidBody(object):
             elif hasattr(config.body, v):
                 setattr(self, v, getattr(config.body, v))
             elif hasattr(config.solver, v):
-                setattr(self, v, getattr(config.solver, v))                
+                setattr(self, v, getattr(config.solver, v))
             elif hasattr(config, v):
                 setattr(self, v, getattr(config, v))
             else:
@@ -958,7 +959,7 @@ class FlexibleSubstructure(Substructure):
             ss.update_geometry()
 
     def __init__(self, dict_):
-        
+
         #    FlexibleSubstructure.obj.append(self)
 
         Substructure.__init__(self, dict_)
