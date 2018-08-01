@@ -10,10 +10,7 @@ import os
 import click
 import matplotlib
 
-from planingfsi import config as config, logger
-from planingfsi import krampy
-from planingfsi.fe.femesh import Mesh
-from planingfsi.fsi.simulation import Simulation
+from . import config
 
 # Use tk by default. Otherwise try Agg. Otherwise, disable plotting.
 _fallback_engine = 'Agg'
@@ -28,12 +25,17 @@ else:
         except ImportError:
             config.plotting.plot_any = False
 
+from planingfsi import logger
+from planingfsi import krampy
+from planingfsi.fe.femesh import Mesh
+from planingfsi.fsi.simulation import Simulation
 
-@click.group()
+
+@click.group(name='planingfsi', help='Run the PlaningFSI program')
 @click.option('post_mode', '--post', is_flag=True)
 @click.option('--plot_save', is_flag=True)
 @click.option('new_case', '--new', is_flag=True)
-def planingfsi(post_mode, plot_save, new_case):
+def run_planingfsi(post_mode, plot_save, new_case):
     if post_mode:
         logger.info('Running in post-processing mode')
         config.plotting.save = True
@@ -50,7 +52,7 @@ def planingfsi(post_mode, plot_save, new_case):
     simulation.run()
 
 
-@planingfsi.command(name='mesh')
+@run_planingfsi.command(name='mesh')
 @click.argument('mesh_dict', required=False)
 @click.option('plot_show', '--show', is_flag=True)
 @click.option('plot_save', '--save', is_flag=True)
