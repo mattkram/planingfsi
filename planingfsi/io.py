@@ -16,12 +16,11 @@ modifications:
 The load methods us regular expression patterns defined in the Pattern class
 to parse the tokens in the file. Patterns for numbers, words, None, NaN, Inf,
 and environment variables exist.
+
 """
+import json
 import os
 import re
-import json
-
-from planingfsi import unit
 
 
 class Pattern(object):
@@ -173,6 +172,7 @@ class Dictionary(dict):
         # Replace [, or {, or ,] or ,} with bracket only
         def repl(m):
             return m.group(1)
+
         in_string = re.sub(r'([\{\[]),', repl, in_string)
         in_string = re.sub(r',([\]\}])', repl, in_string)
 
@@ -181,11 +181,12 @@ class Dictionary(dict):
         # Replace environment variables with their value & surround by quotes
         def repl(m):
             return os.environ[m.group(1)].join('""')
+
         in_string = Pattern.ENV.sub(repl, in_string)
 
         # Split in_string into a list of delimiters and sub-strings
         in_list = []
-        while(len(in_string) > 0):
+        while (len(in_string) > 0):
             in_string = in_string.strip()
             match = Pattern.DELIMITER.search(in_string)
             if match:
@@ -211,7 +212,7 @@ class Dictionary(dict):
 
                 in_list.append(match.group(0))
                 in_string = in_string[match.end():]
-            else: # No more delimiters
+            else:  # No more delimiters
                 break
         json_string = ''.join(in_list)
         self.load_from_json(json_string)
