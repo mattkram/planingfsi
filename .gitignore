@@ -36,4 +36,8 @@ tutorials/**/figures
 
 *.wpr
 *.wpu
-/.pytest_cache/
+
+# Test output
+.pytest_cache/
+html_cov/
+.coverage
