@@ -1,12 +1,20 @@
-from planingfsi.command_line.planingfsi import planingfsi
-
-
+import pytest
 from click.testing import CliRunner
 
+from planingfsi.cli import planingfsi, generate_mesh
 
-def test_run_main_cli():
-    runner = CliRunner()
 
+@pytest.fixture
+def runner():
+    return CliRunner()
+
+
+def test_run_main_cli(runner):
     results = runner.invoke(planingfsi)
 
-    print(results)
+    assert results.exit_code == 0
+
+
+def test_run_mesh_cli(runner):
+    results = runner.invoke(generate_mesh)
+    assert results.exit_code == 0
