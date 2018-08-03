@@ -5,7 +5,7 @@ from pathlib import Path
 import pytest
 from click.testing import CliRunner
 
-from planingfsi.io import Dictionary
+from krampy.iotools import Dictionary
 
 PROJECT_DIR = Path(__file__) / '..' / '..'
 sys.path.insert(0, PROJECT_DIR)
