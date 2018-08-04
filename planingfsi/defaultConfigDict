@@ -1,9 +1,9 @@
 # Load run properties from dictionary
-rho       : 998.2
-g         : 9.81
-Fr        : 1.0
-nu        : 1e-6
-hWL       : 0.0
+#rho       : 998.2
+#g         : 9.81
+#Fr        : 1.0
+#nu        : 1e-6
+#hWL       : 0.0
 xCofG     : 0.0
 yCofG     : 0.0
 #xCofR     : xCofG
@@ -18,8 +18,8 @@ Ps        : 0.0
 #PsBar     : None
 Pc        : 0.0
 #PcBar     : None
- 
-## Set pressure scale for plotting purposes 
+
+## Set pressure scale for plotting purposes
 pScaleType : 'stagnation'
 pScaleHead : 1.0
 pScalePct  : 0.1
@@ -61,7 +61,7 @@ plotSave     : False
 plotPressure : False
 plotShow     : False
 plotWatch    : False
- 
+
 # File IO settings
 writeInterval      : 1
 writeTimeHistories : False
@@ -72,7 +72,7 @@ timeStep     : 1e-3
 relaxRB      : 1.0
 motionMethod : 'Physical'
 motionJacobianFirstStep : 1e-6
- 
+
 bowSealTipLoad  : 0.0
 tipConstraintHt : None
 
@@ -87,7 +87,7 @@ maxTrimStep  : 1e-3
 
 maxDraftAcc  : 1000.0
 maxTrimAcc   : 1000.0
- 
+
 freeInDraft  : False
 freeInTrim   : False
 
@@ -96,8 +96,8 @@ trimDamping  : 500.0
 
 #relaxDraft   : relaxRB
 #relaxTrim    : relaxRB
- 
-# Parameters for wetted length solver 
+
+# Parameters for wetted length solver
 wettedLengthSolver               : 'Secant'
 wettedLengthTol                  : 1e-6
 wettedLengthRelax                : 1.0

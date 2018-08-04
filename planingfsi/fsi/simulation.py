@@ -18,18 +18,18 @@ class Simulation(object):
 
     Attributes
     ----------
-    solid : FEStructure
+    solid_solver : FEStructure
         Solid solver.
 
-    fluid : PotentialPlaningSolver
+    fluid_solver : PotentialPlaningSolver
         Fluid solver.
     """
 
     def __init__(self):
 
         # Create solid and fluid solver objects
-        self.solid = FEStructure()
-        self.fluid = PotentialPlaningSolver()
+        self.solid_solver = FEStructure()
+        self.fluid_solver = PotentialPlaningSolver()
 
     #     def setFluidPressureFunc(self, func):
     #         self.fluidPressureFunc = func
@@ -38,11 +38,11 @@ class Simulation(object):
     #         self.solidPositionFunc = func
 
     def update_fluid_response(self):
-        self.fluid.calculate_response()
-        self.solid.update_fluid_forces()
+        self.fluid_solver.calculate_response()
+        self.solid_solver.update_fluid_forces()
 
     def update_solid_response(self):
-        self.solid.calculate_response()
+        self.solid_solver.calculate_response()
 
     def create_dirs(self):
         config.it_dir = os.path.join(config.path.case_dir, '{0}'.format(config.it))
@@ -64,18 +64,18 @@ class Simulation(object):
         if os.path.exists(config.path.body_dict_dir):
             for dict_name in krampy.listdir_nohidden(config.path.body_dict_dir):
                 dict_ = planingfsi.io.Dictionary(os.path.join(config.path.body_dict_dir, dict_name))
-                self.solid.add_rigid_body(dict_)
+                self.solid_solver.add_rigid_body(dict_)
         else:
-            self.solid.add_rigid_body()
+            self.solid_solver.add_rigid_body()
 
         # Add all substructures
         for dict_name in krampy.listdir_nohidden(config.path.input_dict_dir):
             dict_ = planingfsi.io.Dictionary(os.path.join(config.path.input_dict_dir, dict_name))
 
-            substructure = self.solid.add_substructure(dict_)
+            substructure = self.solid_solver.add_substructure(dict_)
 
             if dict_.read('hasPlaningSurface', False):
-                planing_surface = self.fluid.add_planing_surface(dict_)
+                planing_surface = self.fluid_solver.add_planing_surface(dict_)
                 interpolator = Interpolator(substructure, planing_surface, dict_)
                 interpolator.set_solid_position_function(substructure.get_coordinates)
                 interpolator.set_fluid_pressure_function(
@@ -85,14 +85,14 @@ class Simulation(object):
         if os.path.exists(config.path.cushion_dict_dir):
             for dict_name in krampy.listdir_nohidden(config.path.cushion_dict_dir):
                 dict_ = planingfsi.io.Dictionary(os.path.join(config.path.cushion_dict_dir, dict_name))
-                self.fluid.add_pressure_cushion(dict_)
+                self.fluid_solver.add_pressure_cushion(dict_)
 
     def run(self):
         """Run the fluid-structure interaction simulation by iterating
         between the fluid and solid solvers.
         """
         config.it = 0
-        self.solid.load_mesh()
+        self.solid_solver.load_mesh()
 
         if config.io.results_from_file:
             self.create_dirs()
@@ -100,10 +100,10 @@ class Simulation(object):
             self.it_dirs = kp.sortDirByNum(kp.find_files('[0-9]*'))[1]
 
         if config.plotting.plot_any:
-            self.figure = FSIFigure(self.solid, self.fluid)
+            self.figure = FSIFigure(self.solid_solver, self.fluid_solver)
 
         # Initialize body at specified trim and draft
-        self.solid.initialize_rigid_bodies()
+        self.solid_solver.initialize_rigid_bodies()
         self.update_fluid_response()
 
         # Iterate between solid and fluid solvers until equilibrium
@@ -116,9 +116,9 @@ class Simulation(object):
                 self.apply_ramp()
                 self.update_solid_response()
                 self.update_fluid_response()
-                self.solid.get_residual()
+                self.solid_solver.get_residual()
             else:
-                self.solid.res = 0.0
+                self.solid_solver.res = 0.0
 
             # Write, print, and plot results
             self.create_dirs()
@@ -156,8 +156,8 @@ class Simulation(object):
             self.figure.update()
 
     def get_body_res(self, x):
-        self.solid.get_pt_disp_rb(x[0], x[1])
-        self.solid.update_nodal_positions()
+        self.solid_solver.get_pt_disp_rb(x[0], x[1])
+        self.solid_solver.update_nodal_positions()
         self.update_fluid_response()
 
         # Write, print, and plot results
@@ -177,8 +177,8 @@ class Simulation(object):
         else:
             config.it += 1
 
-        config.res_l = self.solid.rigid_body[0].get_res_l()
-        config.res_m = self.solid.rigid_body[0].get_res_moment()
+        config.res_l = self.solid_solver.rigid_body[0].get_res_l()
+        config.res_m = self.solid_solver.rigid_body[0].get_res_moment()
 
         print('Rigid Body Residuals:')
         print(('  Lift:   {0:0.4e}'.format(config.res_l)))
@@ -205,7 +205,7 @@ class Simulation(object):
             return kp.Dictionary(os.path.join(config.it_dir, 'overallQuantities.txt')).read(
                 'Residual', 0.0)
         else:
-            return self.solid.res
+            return self.solid_solver.res
 
     def print_status(self):
         print('Residual after iteration {1:>4d}: {0:5.3e}'.format(self.get_residual(), config.it))
@@ -218,12 +218,12 @@ class Simulation(object):
     def write_results(self):
         if self.check_output_interval() and not config.io.results_from_file:
             kp.writeasdict(os.path.join(config.it_dir, 'overallQuantities.txt'), [
-                'Ramp', config.ramp], ['Residual', self.solid.res])
+                'Ramp', config.ramp], ['Residual', self.solid_solver.res])
 
-            self.fluid.write_results()
-            self.solid.write_results()
+            self.fluid_solver.write_results()
+            self.solid_solver.write_results()
 
     def load_results(self):
         K = kp.Dictionary(os.path.join(config.it_dir, 'overallQuantities.txt'))
         config.ramp = K.read('Ramp', 0.0)
-        self.solid.res = K.read('Residual', 0.0)
+        self.solid_solver.res = K.read('Residual', 0.0)
