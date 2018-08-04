@@ -94,32 +94,49 @@ class ConfigItem(object):
 
 
 class FlowConfig(SubConfig):
-    density = ConfigItem(alt_key='rho')
-    gravity = ConfigItem(alt_key='g')
-    kinematic_viscosity = ConfigItem(alt_key='nu')
-    waterline_height = ConfigItem(alt_key='hWL')
+    density = ConfigItem(alt_key='rho', default=998.2)
+    gravity = ConfigItem(alt_key='g', default=9.81)
+    kinematic_viscosity = ConfigItem(alt_key='nu', default=1e-6)
+    waterline_height = ConfigItem(alt_key='hWL', default=0.0)
+    num_dim = ConfigItem(alt_key='dim', default=2)
+    include_friction = ConfigItem(alt_key='shearCalc', default=False)
+
     _froude_num = ConfigItem(alt_key='Fr', default=None)
-    _flow_speed = ConfigItem(alt_key='U')
-    num_dim = ConfigItem(alt_key='dim')
-    include_friction = ConfigItem(alt_key='shearCalc')
-    reference_length = 1.0
+    _flow_speed = ConfigItem(alt_key='U', default=None)
 
     @property
-    def froude_num(self):
-        if self._froude_num is not None:
-            return self._froude_num
-        if self._flow_speed is None:
-            raise ValueError('Must specify either U or Fr in {0}'.format(DICT_NAME))
+    def reference_length(self):
         global body
-        return self._flow_speed / math.sqrt(self.gravity * self.reference_length)
-
-    @froude_num.setter
-    def froude_num(self, value):
-        self._froude_num = value
+        return body.reference_length
 
     @property
     def flow_speed(self):
-        return self.froude_num * math.sqrt(self.gravity * self.reference_length)
+        """The flow speed is the native variable to store free-stream velocity. However, if Froude
+        number is set from input file, that should override the flow speed input.
+
+        """
+        if self._froude_num is not None:
+            if self._flow_speed is not None:
+                raise ValueError('Only one flow speed variable (either Froude number or flow '
+                                 'speed) must be set in {0}'.format(DICT_NAME))
+            self.froude_num = self._froude_num
+        elif self._flow_speed is None:
+            raise ValueError('Must specify either U or Fr in {0}'.format(DICT_NAME))
+        return self._flow_speed
+
+    @flow_speed.setter
+    def flow_speed(self, value):
+        """Set the raw flow speed variable and ensure raw Froude number is not also set."""
+        self._flow_speed = value
+        self._froude_num = None
+
+    @property
+    def froude_num(self):
+        return self.flow_speed / math.sqrt(self.gravity * self.reference_length)
+
+    @froude_num.setter
+    def froude_num(self, value):
+        self.flow_speed = value * math.sqrt(self.gravity * self.reference_length)
 
     @property
     def stagnation_pressure(self):
@@ -379,7 +396,6 @@ solver = SolverConfig()
 
 # Initialized constants
 ramp = 1.0
-
 has_free_structure = False
 it_dir = ''
 it = -1
