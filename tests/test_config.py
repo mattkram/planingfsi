@@ -14,8 +14,6 @@ def test_flow_defaults():
     assert flow.waterline_height == 0.0
     assert flow.num_dim == 2
     assert not flow.include_friction
-    assert flow._froude_num is None
-    assert flow._flow_speed is None
 
 
 def test_flow_speed_calculations():
