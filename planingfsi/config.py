@@ -10,7 +10,7 @@ The global attributes can then be simply accessed via config.attribute_name
 import math
 from pathlib import Path
 
-from krampy.iotools import Dictionary
+from krampy.iotools import load_dict_from_file
 
 from planingfsi import logger
 
@@ -71,9 +71,10 @@ class SubConfig(object):
 
     def __init__(self):
         if Path(DICT_NAME).exists():
-            self.load_from_dict(Dictionary(DICT_NAME))
+            self.load_from_dict(DICT_NAME)
 
-    def load_from_dict(self, dict_):
+    def load_from_dict(self, dict_name):
+        dict_ = load_dict_from_file(dict_name)
         for key, config_item in self.__class__.__dict__.items():
             if isinstance(config_item, ConfigItem):
                 value = config_item.get_from_dict(dict_)
@@ -384,6 +385,12 @@ plotting = PlotConfig()
 path = PathConfig()
 io = IOConfig()
 solver = SolverConfig()
+
+
+def load_from_file(filename):
+    for c in [flow, body, plotting, path, io, solver]:
+        c.load_from_dict(filename)
+
 
 # Initialized constants
 ramp = 1.0
