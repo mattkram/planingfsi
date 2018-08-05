@@ -3,9 +3,9 @@ import os
 import numpy as np
 
 import planingfsi.config as config
-import planingfsi.io
-import planingfsi.krampy as kp
-from planingfsi import krampy, io
+# import planingfsi.io
+# import planingfsi.krampy as kp
+# from planingfsi import krampy, io
 from planingfsi.fe.structure import FEStructure
 from planingfsi.fsi.interpolator import Interpolator
 from planingfsi.potentialflow.solver import PotentialPlaningSolver

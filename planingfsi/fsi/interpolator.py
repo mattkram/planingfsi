@@ -2,7 +2,7 @@ import numpy as np
 from scipy.optimize import fmin
 
 import planingfsi.config as config
-import planingfsi.krampy as kp
+# import planingfsi.krampy as kp
 
 
 class Interpolator():

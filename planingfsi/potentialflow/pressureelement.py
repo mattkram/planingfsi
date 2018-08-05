@@ -11,7 +11,7 @@ except ImportError:
     pass
 
 import planingfsi.config as config
-import planingfsi.krampy as kp
+# import planingfsi.krampy as kp
 
 
 _PLOT_INFINITY = 50.0

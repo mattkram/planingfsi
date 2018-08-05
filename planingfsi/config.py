@@ -23,8 +23,8 @@ if Path(DICT_NAME).exists():
 else:
     config_dict = Dictionary()
 
-config_module_path = Path(__file__) / '..'
-default_dict = Dictionary(str(config_module_path / 'defaultConfigDict'))
+config_module_path = Path(__file__).parent
+default_dict = Dictionary(from_file=str(config_module_path / 'defaultConfigDict'))
 
 
 # Function to read value from dictionary or default dictionary

@@ -6,7 +6,7 @@ from scipy.interpolate import interp1d
 from scipy.optimize import fmin
 
 import planingfsi.config as config
-import planingfsi.krampy as kp
+# import planingfsi.krampy as kp
 import planingfsi.potentialflow.pressureelement as pe
 
 

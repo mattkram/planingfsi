@@ -3,10 +3,10 @@ import os
 import numpy as np
 from scipy.interpolate import interp1d
 
-import planingfsi.io
+# import planingfsi.io
 from planingfsi import config
-from planingfsi import krampy as kp
-from planingfsi import io
+# from planingfsi import krampy as kp
+# from planingfsi import io
 
 from . import felib as fe
 

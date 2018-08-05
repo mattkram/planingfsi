@@ -8,8 +8,8 @@ import numpy as np
 from scipy.optimize import fmin
 
 import planingfsi.config as config
-import planingfsi.krampy as kp
-from planingfsi import io
+# import planingfsi.krampy as kp
+# from planingfsi import io
 
 from planingfsi.potentialflow.pressurepatch import PlaningSurface
 from planingfsi.potentialflow.pressurepatch import PressureCushion
@@ -34,7 +34,7 @@ class PotentialPlaningSolver(object):
             cls.__instance = object.__new__(cls)
             cls.__instance.init()
         return cls.__instance
-    
+
     def init(self):
         # Not __init__. This method gets called by __new__ on the first
         # instance.
@@ -216,7 +216,7 @@ class PotentialPlaningSolver(object):
         self.calculate_pressure()
 
         res = np.array([p.get_residual() for p in self.planing_surfaces])
-        
+
         def array_to_string(array):
             return ', '.join(['{0:11.4e}'.format(a) for a in array]).join('[]')
 
