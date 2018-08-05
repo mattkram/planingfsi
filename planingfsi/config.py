@@ -37,11 +37,15 @@ class ConfigItem(object):
         self.type_ = type_
 
     def __get__(self, instance, owner):
+        """Retrieve the value from the instance dictionary. If it doesn't exist, return the default."""
         if self.name in instance.__dict__:
             return instance.__dict__[self.name]
         return self.default
 
     def __set__(self, instance, value):
+        """When the value is set, try to convert it and then store it in the instance dictionary."""
+        if value is not None and self.type_ is not None:
+            value = self.type_(value)
         instance.__dict__[self.name] = value
 
     def __set_name__(self, _, name):
@@ -49,6 +53,7 @@ class ConfigItem(object):
 
     @property
     def keys(self):
+        """A list of keys to look for when reading in the value."""
         return [self.name] + self.alt_keys
 
     def get_from_dict(self, dict_):
@@ -61,7 +66,7 @@ class ConfigItem(object):
             value = dict_.get(key)
             if value is not None:
                 return value
-        return self.default
+        raise KeyError('None of the following keys "{}" found in dictionary.'.format(self.keys))
 
 
 class SubConfig(object):
@@ -73,12 +78,25 @@ class SubConfig(object):
         if Path(DICT_NAME).exists():
             self.load_from_dict(DICT_NAME)
 
-    def load_from_dict(self, dict_name):
+    def load_from_dict(self, dict_name: str):
+        """Load the configuration from a dictionary file.
+
+        Parameters
+        ----------
+        dict_name
+            The path to the dictionary file.
+
+        """
         dict_ = load_dict_from_file(dict_name)
+        config_items = {key: item for key, item in self.__class__.__dict__.items()}
         for key, config_item in self.__class__.__dict__.items():
             if isinstance(config_item, ConfigItem):
-                value = config_item.get_from_dict(dict_)
-                setattr(self, key, value)
+                try:
+                    value = config_item.get_from_dict(dict_)
+                except KeyError:
+                    pass
+                else:
+                    setattr(self, config_item.name, value)
 
 
 class FlowConfig(SubConfig):
