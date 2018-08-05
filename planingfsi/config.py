@@ -16,7 +16,7 @@ from planingfsi import logger
 
 DICT_NAME = 'configDict'
 
-logger.info('Loading {0}'.format(DICT_NAME))
+logger.info('Loading values from {0}'.format(DICT_NAME))
 
 
 class ConfigItem(object):
