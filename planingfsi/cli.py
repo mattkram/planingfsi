@@ -26,7 +26,7 @@ else:
             config.plotting.plot_any = False
 
 from planingfsi import logger
-from planingfsi import krampy_old as krampy
+from krampy import krampy_old as krampy
 from planingfsi.fe.femesh import Mesh
 from planingfsi.fsi.simulation import Simulation
 
