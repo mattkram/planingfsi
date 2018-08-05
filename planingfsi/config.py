@@ -94,7 +94,6 @@ class FlowConfig(SubConfig):
 
     @property
     def reference_length(self):
-        global body
         return body.reference_length
 
     @property
@@ -191,14 +190,12 @@ class BodyConfig(SubConfig):
     def relax_draft(self):
         if self._relax_draft is not None:
             return self._relax_draft
-        global body
         return body.relax_rigid_body
 
     @property
     def relax_trim(self):
         if self._relax_trim is not None:
             return self._relax_trim
-        global body
         return body.relax_rigid_body
 
     @property
@@ -243,12 +240,10 @@ class BodyConfig(SubConfig):
     def weight(self):
         if self._weight is not None:
             return self._weight
-        global flow
         return self.mass * flow.gravity
 
     @weight.setter
     def weight(self, value):
-        global flow
         self.mass = value / flow.gravity
 
 
@@ -300,7 +295,6 @@ class PlotConfig(SubConfig):
             return self._x_fs_min
         if self.xmin is not None:
             return self.xmin
-        global flow
         return self.lambda_min * flow.lam
 
     @property
@@ -309,13 +303,10 @@ class PlotConfig(SubConfig):
             return self._x_fs_max
         if self.xmax is not None:
             return self.xmax
-        global flow
         return self.lambda_max * flow.lam
 
     @property
     def pScale(self):
-        global flow
-        global body
         if plotting.pType == 'stagnation':
             return flow.stagnation_pressure
         elif plotting.pType == 'cushion':
