@@ -13,4 +13,4 @@ pipelines:
         deployment: test
         script:
           - pip install -r requirements.txt
-          - nose2
+          - pytest
