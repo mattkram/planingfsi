@@ -27,28 +27,6 @@ config_module_path = Path(__file__).parent
 default_dict = Dictionary(from_file=str(config_module_path / 'defaultConfigDict'))
 
 
-# Function to read value from dictionary or default dictionary
-def read(key, default=None):
-    return config_dict.get(key, default_dict.get(key, default))
-
-
-class SubConfig(object):
-    """An empty class used simply for dividing the configuration into
-    different sections. Also useful in helping define the namespace scopes.
-    """
-
-    def __init__(self):
-        self.load_from_dict()
-
-    def load_from_dict(self):
-        for key, config_item in self.__class__.__dict__.items():
-            if isinstance(config_item, ConfigItem):
-                value = config_item.get_from_dict(config_dict)
-                if value is None:
-                    value = config_item.get_from_dict(default_dict)
-                setattr(self, key, value)
-
-
 class ConfigItem(object):
     """A descriptor to represent a configuration item.
 
@@ -91,6 +69,23 @@ class ConfigItem(object):
             if value is not None:
                 return value
         return self.default
+
+
+class SubConfig(object):
+    """An empty class used simply for dividing the configuration into
+    different sections. Also useful in helping define the namespace scopes.
+    """
+
+    def __init__(self):
+        self.load_from_dict()
+
+    def load_from_dict(self):
+        for key, config_item in self.__class__.__dict__.items():
+            if isinstance(config_item, ConfigItem):
+                value = config_item.get_from_dict(config_dict)
+                if value is None:
+                    value = config_item.get_from_dict(default_dict)
+                setattr(self, key, value)
 
 
 class FlowConfig(SubConfig):
