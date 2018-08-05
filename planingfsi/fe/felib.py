@@ -2,12 +2,12 @@ import numpy as np
 from scipy.interpolate import interp1d
 
 import planingfsi.config as config
-import planingfsi.krampy as kp
+# import planingfsi.krampy as kp
 
 
 class Node():
     obj = []
-    
+
     @classmethod
     def get_index(cls, ind):
         return cls.obj[ind]
@@ -92,7 +92,7 @@ class Element():
         self.dof = [dof for nd in self.node for dof in nd.dof]
         self.update_geometry()
         self.init_pos = [np.array(nd.get_coordinates()) for nd in self.node]
-    
+
     def set_parent(self, parent):
         self.parent = parent
 
@@ -112,7 +112,7 @@ class Element():
     def plot(self):
         if self.lineEl is not None and self.plot_on:
             self.lineEl.set_data([nd.x for nd in self.node], [nd.y for nd in self.node])
-        
+
         if self.lineEl0 is not None and self.plot_on:
             basePt = [self.parent.parent.xCofR0, self.parent.parent.yCofR0]
             pos = [kp.rotatePt(pos, basePt, self.parent.parent.trim) - np.array([0, self.parent.parent.draft]) for pos in self.init_pos]
@@ -148,7 +148,7 @@ class TrussElement(Element):
         FNL = np.array([[ 1],
                         [ 0],
                         [-1],
-                        [ 0]]) * self.axial_force 
+                        [ 0]]) * self.axial_force
 
         # Add linear and nonlinear components
         K = KL + KNL
@@ -157,7 +157,7 @@ class TrussElement(Element):
         # Rotate stiffness and force matrices into global coordinates
         C = kp.cosd(self.gamma)
         S = kp.sind(self.gamma)
-        
+
         TM = np.array([[ C, S,  0, 0],
                        [-S, C,  0, 0],
                        [ 0, 0,  C, S],
@@ -165,7 +165,7 @@ class TrussElement(Element):
 
         K = np.dot(np.dot(TM.T, K), TM)
         F = np.dot(TM.T, F)
-        
+
         return K, F
 
     def update_geometry(self):

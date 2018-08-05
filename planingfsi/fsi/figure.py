@@ -4,7 +4,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 import planingfsi.config as config
-import planingfsi.krampy as kp
+# import planingfsi.krampy as kp
 
 
 class FSIFigure:
@@ -12,15 +12,15 @@ class FSIFigure:
     def __init__(self, solid, fluid):
         self.solid = solid
         self.fluid = fluid
-        
+
         plt.figure(figsize=(16, 12))
         if config.plotting.watch:
             plt.ion()
         self.geometryAx = plt.axes([0.05,0.6,0.9,0.35])
-        
+
         for nd in self.solid.node:
             nd.line_x_yline_xy, = plt.plot([], [], 'ro')
-       
+
         self.fluid.lineFS,  = plt.plot([], [], 'b-')
         self.fluid.lineFSi, = plt.plot([], [], 'b--')
 
@@ -38,7 +38,7 @@ class FSIFigure:
 
         xMin, xMax = kp.minMax([nd.x for struct in self.solid.substructure for nd in struct.node])
         yMin, yMax = kp.minMax([nd.y for struct in self.solid.substructure for nd in struct.node])
-        
+
         if config.plotting.xmin is not None:
             xMin = config.plotting.xmin
             config.plotting.ext_w = 0.0
@@ -54,14 +54,14 @@ class FSIFigure:
 
         plt.xlabel(r'$x$ [m]', fontsize=22)
         plt.ylabel(r'$y$ [m]', fontsize=22)
-        
+
         plt.xlim([xMin - (xMax - xMin) * config.plotting.ext_w, xMax + (xMax - xMin) * config.plotting.ext_e])
         plt.ylim([yMin - (yMax - yMin) * config.plotting.ext_s, yMax + (yMax - yMin) * config.plotting.ext_n])
         plt.gca().set_aspect('equal')
         self.TXT = plt.text(0.05, 0.95, '', ha='left', va='top', transform=plt.gca().transAxes)
 
         self.subplot = []
-       
+
         bd = [bd for bd in self.solid.rigid_body]
 
         if len(bd) > 0:
@@ -87,9 +87,9 @@ class FSIFigure:
 
         for l in self.lineCofR:
             l.update()
-          
+
         plt.draw()
-        
+
         if config.plotting.save:
             self.save()
 
@@ -111,7 +111,7 @@ class PlotSeries:
         self.x = []
         self.y = []
         self.additionalSeries = []
-        
+
         self.getX = xFunc
         self.getY = yFunc
 
@@ -119,11 +119,11 @@ class PlotSeries:
         self.ax          = kwargs.get('ax', plt.gca())
         self.legEnt      = kwargs.get('legEnt', None)
         self.ignoreFirst = kwargs.get('ignoreFirst', False)
-            
+
         self.line, = self.ax.plot([], [], kwargs.get('sty', 'k-'))
 
         if self.seriesType == 'history+curr':
-            self.additionalSeries.append(PlotSeries(xFunc, yFunc, ax=self.ax, type='point', sty=kwargs.get('currSty','ro'))) 
+            self.additionalSeries.append(PlotSeries(xFunc, yFunc, ax=self.ax, type='point', sty=kwargs.get('currSty','ro')))
 
     def update(self, final=False):
         if self.seriesType == 'point':
@@ -140,7 +140,7 @@ class PlotSeries:
             else:
                 self.x.append(self.getX())
                 self.y.append(self.getY())
-        
+
         self.line.set_data(self.x, self.y)
 
         for s in self.additionalSeries:
@@ -169,7 +169,7 @@ class TimeHistory:
     def addSeries(self, series):
         self.series.append(series)
         return series
-    
+
     def setProperties(self, axInd=0, **kwargs):
         plt.setp(self.ax[axInd], **kwargs)
 
@@ -193,12 +193,12 @@ class TimeHistory:
                     y = y[np.ix_(~np.isnan(y))]
                 except:
                     y = []
-                
+
                 if not np.shape(y)[0] == 0:
                     yMinL = np.min(y) - 0.02
                     yMaxL = np.max(y) + 0.02
                     if i == 0 or np.isnan(yMin):
-                        yMin, yMax = yMinL, yMaxL  
+                        yMin, yMax = yMinL, yMaxL
                     else:
                         yMin = np.min([yMin, yMinL])
                         yMax = np.max([yMax, yMaxL])
@@ -217,7 +217,7 @@ class TimeHistory:
             for yii in yi:
                 ff.write(' {0:8.6e}'.format(yii))
             ff.write('\n')
-          
+
         ff.close()
 
 
@@ -225,17 +225,17 @@ class MotionSubplot(TimeHistory):
 
     def __init__(self, pos, body):
         TimeHistory.__init__(self, pos, body.name)
-         
+
         itFunc   = lambda : config.it
         drftFunc = lambda : body.draft
         trimFunc = lambda : body.trim
 
         self.addYAxes()
-        
-        # Add plot series to appropriate axis 
+
+        # Add plot series to appropriate axis
         self.addSeries(PlotSeries(itFunc, drftFunc, ax=self.ax[0], sty='b-', type='history+curr', legEnt='Draft'))
         self.addSeries(PlotSeries(itFunc, trimFunc, ax=self.ax[1], sty='r-', type='history+curr', legEnt='Trim'))
-        
+
         self.setProperties(title=r'Motion History: {0}'.format(body.name), \
                            xlabel=r'Iteration', \
                            ylabel=r'$d$ [m]')
@@ -256,7 +256,7 @@ class ForceSubplot(TimeHistory):
         self.addSeries(PlotSeries(itFunc, liftFunc, sty='r-', type='history+curr', legEnt='Lift',   ignoreFirst=True))
         self.addSeries(PlotSeries(itFunc, dragFunc, sty='b-', type='history+curr', legEnt='Drag',   ignoreFirst=True))
         self.addSeries(PlotSeries(itFunc, momFunc,  sty='g-', type='history+curr', legEnt='Moment', ignoreFirst=True))
-        
+
         self.setProperties(title=r'Force & Moment History: {0}'.format(body.name), \
     #                       xlabel=r'Iteration', \
                            ylabel=r'$\mathcal{D}/W$, $\mathcal{L}/W$, $\mathcal{M}/WL_c$')
@@ -274,9 +274,9 @@ class ResidualSubplot(TimeHistory):
         for bd, coli in zip(solid.rigid_body, col):
             self.addSeries(PlotSeries(itFunc, bd.get_res_lift, sty='{0}-'.format(coli), type='history+curr', legEnt='ResL: {0}'.format(bd.name), ignoreFirst=True))
             self.addSeries(PlotSeries(itFunc, bd.get_res_moment, sty='{0}--'.format(coli), type='history+curr', legEnt='ResM: {0}'.format(bd.name), ignoreFirst=True))
-        
+
         self.addSeries(PlotSeries(itFunc, lambda : np.abs(solid.res), sty='k-', type='history+curr', legEnt='Total', ignoreFirst=True))
-        
+
         self.setProperties(title=r'Residual History', yscale='log')
         self.createLegend()
 

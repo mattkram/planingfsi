@@ -7,7 +7,7 @@ from click.testing import CliRunner
 
 from krampy.iotools import Dictionary
 
-PROJECT_DIR = Path(__file__) / '..' / '..'
+PROJECT_DIR = Path(__file__).parents[1]
 sys.path.insert(0, PROJECT_DIR)
 
 
@@ -29,7 +29,7 @@ def input_dir(test_dir):
 @pytest.fixture()
 def test_dict(input_dir):
     os.environ['HOME'] = 'Dummy'
-    dict_ = Dictionary(str(input_dir / 'testDict'))
+    dict_ = Dictionary(from_file=str(input_dir / 'testDict'))
     return dict_
 
 
