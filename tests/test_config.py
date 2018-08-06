@@ -3,10 +3,28 @@ import math
 import pytest
 
 from planingfsi import config
+from planingfsi.config import SubConfig, ConfigItem
 
 
-def test_config_item():
-    pass
+@pytest.fixture()
+def config_class():
+    class TestClass(SubConfig):
+        float_attr = ConfigItem(default=0.0)
+        int_attr = ConfigItem(type_=int)
+    return TestClass()
+
+
+def test_config_init(config_class):
+    assert config_class is not None
+    assert config_class.float_attr == 0.0
+    assert config_class.int_attr is None
+    assert isinstance(config_class.float_attr, float)
+
+
+def test_config_type_conversion(config_class):
+    config_class.int_attr = 55.0
+    assert config_class.int_attr == 55
+    assert isinstance(config_class.int_attr, int)
 
 
 def test_flow_defaults():
