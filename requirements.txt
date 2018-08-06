@@ -7,3 +7,4 @@ six
 pytest
 pytest-cov
 click
+-e git://bitbucket.org/mattkram/krampy.git#egg=krampy
