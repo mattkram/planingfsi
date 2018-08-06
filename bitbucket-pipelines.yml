@@ -10,8 +10,7 @@ pipelines:
     - step:
         caches:
           - pip
-        deployment:
-          - test
+        deployment: test
         script:
           - pip install -r requirements.txt
           - pip install .
