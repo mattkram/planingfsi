@@ -3,9 +3,8 @@ from setuptools import setup
 import planingfsi
 
 
-def readme():
-    with open('README.md') as f:
-        return f.read()
+with open('README.md') as fh:
+    long_description = fh.read()
 
 
 requirements = [
@@ -26,7 +25,9 @@ setup(
     name='planingfsi',
     version=planingfsi.__version__,
     description='FSI for large-deformation planing surfaces',
-    long_description=readme(),
+    long_description=long_description,
+    long_description_content_type="text/markdown",
+    url="https://bitbucket.org/mattkram/planingfsi",
     author='Matthew Kramer',
     author_email='matthew.robert.kramer@gmail.com',
     license='MIT',
