@@ -1,5 +1,14 @@
 # RigidBodyFSI #
 
+[![image](https://img.shields.io/pypi/v/planingfsi.svg)](https://pypi.org/project/planingfsi/)
+[![image](https://img.shields.io/pypi/l/planingfsi.svg)](https://pypi.org/project/planingfsi/)
+
+## Cautionary Note
+
+I am currently working on releasing this package as open source.
+Since this is my first open-source release, the next few releases on PyPi should not be used for production.
+I will release version 1.0.0 once I feel that I have sufficiently cleaned up and documented the code. 
+
 ## Summary ##
 
 This document has been prepared as an informal instruction manual for the code that I wrote for my Ph.D. The program is currently called "rigidBodyFSI" because it is constructed as a means of calculating the steady-state response of 2-d marine structures subject to planing flow with consideration for Fluid-Strucuture Interaction (FSI) as well as rigid body motion.
