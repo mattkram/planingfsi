@@ -12,6 +12,7 @@ pipelines:
           - pip
         deployment: test
         script:
+          - pip install --upgrade pip
           - pip install -r requirements.txt
           - pip install .
           - python setup.py test
