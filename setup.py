@@ -1,7 +1,13 @@
-from setuptools import setup
+import os
+from setuptools import setup, find_packages
 
-import planingfsi
 
+here = os.path.dirname(__file__)
+
+about = {}
+
+with open(os.path.join(here, 'src', 'planingfsi', '__version__.py')) as f:
+    exec(f.read(), about)
 
 def readme():
     with open('README.md') as f:
@@ -24,13 +30,14 @@ test_requirements = [
 
 setup(
     name='planingfsi',
-    version=planingfsi.__version__,
+    version=about['__version__'],
     description='FSI for large-deformation planing surfaces',
     long_description=readme(),
     author='Matthew Kramer',
     author_email='matthew.robert.kramer@gmail.com',
     license='MIT',
-    packages=['planingfsi'],
+    packages=find_packages(where="src"),
+    package_dir={"": "src"},
     setup_requires=requirements,
     tests_require=test_requirements,
     entry_points={
