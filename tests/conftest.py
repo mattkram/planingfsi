@@ -8,7 +8,7 @@ from click.testing import CliRunner
 from krampy.iotools import Dictionary
 
 PROJECT_DIR = Path(__file__).parents[1]
-sys.path.insert(0, PROJECT_DIR)
+#sys.path.insert(0, PROJECT_DIR)
 
 
 @pytest.fixture()
