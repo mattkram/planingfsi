@@ -1,0 +1,18 @@
+# Create submeshes
+
+K = io.Dictionary('configDict')
+AOA = K.read('AOA', 10.0)
+
+# Create points (ID, type, params)
+M.add_point(1, 'rel', [ 0, 180, 0.1])
+M.add_point(2, 'rel', [ 0,   0, 1.0])
+M.add_point(3, 'rel', [ 1,  90, 0.015])
+M.add_point(4, 'rel', [ 3, 180, 0.9])
+
+M.rotate_points(0, AOA, [1,2,3,4])
+
+M1 = M.add_submesh('fwdPlate')
+M1.add_curve(1, 2, Nel=10)
+
+M2 = M.add_submesh('aftPlate')
+M2.add_curve(4, 3, Nel=10)
