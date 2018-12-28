@@ -14,5 +14,5 @@ pipelines:
         script:
           - pip install --upgrade pip
           - pip install poetry
-          - poetry install --dev
-          - pytest --cov planingfsi
+          - poetry install
+          - poetry run pytest --cov planingfsi
