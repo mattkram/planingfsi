@@ -44,7 +44,7 @@ for Fr in FrList:
   commandList = []
 
   currFrPath = os.path.join(baseDir, 'Fr{0}'.format(Fr))
-  
+
   prevFr = Fr - FrInt
   prevFrPath = os.path.join(baseDir, 'Fr{0}'.format(prevFr))
 
@@ -65,7 +65,7 @@ for Fr in FrList:
         twoAgoItDir = kp.sortDirByNum(twoAgoItDir)[0][-1]
     else:
       twoAgoItDir = ''
-     
+
     dictPathIn = []
     dictPathIn.append([itDir, 'motion_default.txt'])
     dictPathIn.append([itDir, 'motion_default.txt'])
@@ -79,7 +79,7 @@ for Fr in FrList:
     dictPathIn.append([itDir, 'motion_sternSealBody.txt'])
     dictPathIn.append([itDir, 'motion_sternSealBody.txt'])
     dictPathIn.append(['configDict'])
-  
+
     varNameIn = []
     varNameIn.append('draft')
     varNameIn.append('trim')
@@ -93,7 +93,7 @@ for Fr in FrList:
     varNameIn.append('draft')
     varNameIn.append('trim')
     varNameIn.append('timeStep')
-  
+
     dictPathOut = []
     dictPathOut.append('configDict')
     dictPathOut.append('configDict')
@@ -107,7 +107,7 @@ for Fr in FrList:
     dictPathOut.append('bodyDict/sternSealBody')
     dictPathOut.append('bodyDict/sternSealBody')
     dictPathOut.append('configDict')
-  
+
     varNameOut = []
     varNameOut.append('initialDraft')
     varNameOut.append('initialTrim')
@@ -121,22 +121,22 @@ for Fr in FrList:
     varNameOut.append('initialDraft')
     varNameOut.append('initialTrim')
     varNameOut.append('timeStep')
-  
+
     varValIn = np.ones(len(varNameIn)) * np.nan
     for i, dictPath, varName in zip(range(len(dictPathIn)), dictPathIn, varNameIn):
-      varValIn[i] = kp.Dictionary(os.path.join(prevFrPath, constructPath(dictPath))).readOrDefault(varName, np.nan)
-      
+      varValIn[i] = kp.Dictionary(os.path.join(prevFrPath, constructPath(dictPath))).read_or_default(varName, np.nan)
+
       # Use new Froude number value, not the one stored in the copied configDict
       if varName == 'Fr':
         varValIn[i] = Fr
- 
+
       if varName == 'timeStep':
         varValIn[i] *= prevFr / Fr
-       
+
       # For draft, trim, and wetted lengths extrapolate from two simulations ago if possible
       if varName == 'draft' or varName == 'trim' or varName == 'Length':
         if not twoAgoItDir == '':
-          twoAgoVal = kp.Dictionary(os.path.join(twoAgoFrPath, twoAgoItDir, dictPath[1])).readOrDefault(varName, np.nan)
+          twoAgoVal = kp.Dictionary(os.path.join(twoAgoFrPath, twoAgoItDir, dictPath[1])).read_or_default(varName, np.nan)
           if ~np.isnan(twoAgoVal):
             dVar = varValIn[i] - twoAgoVal
             maxDVar = 0.05 * np.abs(dVar)
@@ -148,24 +148,24 @@ for Fr in FrList:
 #              dVar += np.max([1.0e-3, 0.025 * np.abs(dVar)])
 
             varValIn[i] += dVar
-            
+
             if varName == 'Length':
               varValIn[i] = np.max([varValIn[i], 0.1])
-              
+
 #            if varName == 'draft':
 #              commandList.append('setDictVal {0} maxDraftStep {1:10.8e}'.format(os.path.join(currFrPath, 'configDict'), maxDVar))
 #            if varName == 'trim':
 #              commandList.append('setDictVal {0} maxTrimStep {1:10.8e}'.format(os.path.join(currFrPath, 'configDict'), maxDVar))
-  
+
     for varVal, dictPath, varName in zip(varValIn, dictPathOut, varNameOut):
       if ~np.isnan(varVal):
         commandList.append('setDictVal {0} {1} {2:10.8e}'.format(os.path.join(currFrPath, dictPath), varName, varVal))
-  
+
   if not os.path.exists(currFrPath):
     os.mkdir(currFrPath)
 
   os.system('cp -r {0}/*Dict {1}'.format(prevFrPath, currFrPath))
-  
+
   os.chdir(currFrPath)
   commandList += runCommands
 

@@ -1,0 +1,17 @@
+substructureName  : 'fwdPlate'
+substructureType  : 'rigid'
+hasPlaningSurface : True
+
+# Fluid Parameters
+Nfl    :  20
+pointSpacing : 'linear'
+
+kuttaPressure : 0.0
+
+initialLength : 0.72
+minimumLength : 0.01
+structInterpType : 'cubic'
+structExtrap : True
+
+# Simulation Parameters
+sSepPctStart : 0.5

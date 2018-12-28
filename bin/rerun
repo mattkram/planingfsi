@@ -49,8 +49,8 @@ varNameIn.append('trim')
 
 varValIn = np.ones(len(varNameIn)) * np.nan
 for i, dictPath, varName in zip(range(len(dictPathIn)), dictPathIn, varNameIn):
-  varValIn[i] = kp.Dictionary(os.path.join(baseDir, dictPath)).readOrDefault(varName, np.nan)
-  
+  varValIn[i] = kp.Dictionary(os.path.join(baseDir, dictPath)).read_or_default(varName, np.nan)
+
 #  if varName == 'draft':
 #    varValIn[i] += 1e-6
 

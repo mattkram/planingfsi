@@ -6,20 +6,35 @@
 *~
 .*~
 *.swp
+.idea
 
 # Compiled files
 *.pyc
 
 # Python virtualenv
-env
-env/*
+.env
+.env/*
+env/**
+/venv/
 
 # Documentation and wiki
 wiki/
 doc/build/
-doc/source/api/
 
+# Build artifacts
 *.egg-info
+.eggs/
+dist/
 *.out
 
 old/
+
+# Tutorial output
+tutorials/**/mesh
+tutorials/**/[0-9]*
+tutorials/**/figures
+
+# Test output
+.pytest_cache/
+html_cov/
+.coverage
