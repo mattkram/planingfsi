@@ -24,16 +24,50 @@ scipy = "^1.2"
 six = "^1.12"
 click = "^7.0"
 pytest-runner = "^4.2"
+krampy = {git = "git@bitbucket.org:mattkram/krampy.git"}
+#planingfsi = {path = "./src/planingfsi"}
 
 [tool.poetry.dev-dependencies]
 pytest = "^4.0"
 pytest-cov = "^2.6"
 coverage = "^4.5"
 black = {version = "^18.3-alpha.0",allows-prereleases = true}
+tox = "^3.6"
 
 [tool.poetry.scripts]
 planingFSI = "planingfsi:command_line.planingfsi.main"
 generateMesh = "planingfsi:command_line.mesh.main"
+
+#[tool.tox]
+#legacy_tox_ini = """
+#[tox]
+#isolated_build = true
+#envlist = py36, py37
+#[testenv]
+#setenv =
+#    PYTHONPATH = {toxinidir}
+#deps =
+#    pytest
+#    pytest-cov
+#commands =
+#    pytest --cov=planingfsi
+#    codecov
+#    pydocstyle --ignore=D301,D212,D203 wily
+#"""
+
+#[tool.black]
+#line-length = 88
+#py36 = true
+#include = '\.pyi?$'
+#exclude = '''
+#/(
+#    \.git
+#  | \.tox
+#  | \.venv
+#  | build
+#  | dist
+#)/
+#'''
 
 [build-system]
 requires = ["poetry>=0.12"]
