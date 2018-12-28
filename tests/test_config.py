@@ -11,6 +11,7 @@ def config_class():
     class TestClass(SubConfig):
         float_attr = ConfigItem(default=0.0)
         int_attr = ConfigItem(type_=int)
+
     return TestClass()
 
 
@@ -40,7 +41,6 @@ def test_flow_defaults():
     assert flow._flow_speed is None
 
 
-
 def test_flow_speed_requires_value():
     """If Froude number and flow speed are both unset, access should raise ValueError."""
     flow = config.flow
@@ -58,7 +58,9 @@ def test_set_flow_speed():
     flow._froude_num = None
     flow._flow_speed = 1.0
     assert flow.flow_speed == 1.0
-    assert flow.froude_num == pytest.approx(flow.flow_speed / math.sqrt(flow.gravity * flow.reference_length))
+    assert flow.froude_num == pytest.approx(
+        flow.flow_speed / math.sqrt(flow.gravity * flow.reference_length)
+    )
 
 
 def test_set_froude_number():
@@ -66,7 +68,9 @@ def test_set_froude_number():
     flow = config.flow
     flow._froude_num = 1.0
     flow._flow_speed = None
-    assert flow.flow_speed == pytest.approx(flow.froude_num * math.sqrt(flow.gravity * flow.reference_length))
+    assert flow.flow_speed == pytest.approx(
+        flow.froude_num * math.sqrt(flow.gravity * flow.reference_length)
+    )
     assert flow.froude_num == 1.0
 
 

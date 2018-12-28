@@ -1,9 +1,0 @@
-#!/bin/bash
-
-DIR=$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )
-
-export PLANINGFSIPATH=${DIR%/*}
-export PYTHONPATH=$PLANINGFSIPATH:$PYTHONPATH
-export PATH=$PLANINGFSIPATH/bin:$PATH
-
-echo "PLANINGFSIPATH: "$PLANINGFSIPATH

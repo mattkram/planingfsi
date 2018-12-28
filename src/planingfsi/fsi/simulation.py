@@ -3,6 +3,7 @@ import os
 import numpy as np
 
 import planingfsi.config as config
+
 # import planingfsi.io
 # import planingfsi.krampy as kp
 # from planingfsi import krampy, io
@@ -45,9 +46,10 @@ class Simulation(object):
         self.solid_solver.calculate_response()
 
     def create_dirs(self):
-        config.it_dir = os.path.join(config.path.case_dir, '{0}'.format(config.it))
+        config.it_dir = os.path.join(config.path.case_dir, "{0}".format(config.it))
         config.path.fig_dir_name = os.path.join(
-            config.path.case_dir, config.path.fig_dir_name)
+            config.path.case_dir, config.path.fig_dir_name
+        )
 
         if self.check_output_interval() and not config.io.results_from_file:
             kp.createIfNotExist(config.path.case_dir)
@@ -63,28 +65,35 @@ class Simulation(object):
         # Add all rigid bodies
         if os.path.exists(config.path.body_dict_dir):
             for dict_name in krampy.listdir_nohidden(config.path.body_dict_dir):
-                dict_ = planingfsi.io.Dictionary(os.path.join(config.path.body_dict_dir, dict_name))
+                dict_ = planingfsi.io.Dictionary(
+                    os.path.join(config.path.body_dict_dir, dict_name)
+                )
                 self.solid_solver.add_rigid_body(dict_)
         else:
             self.solid_solver.add_rigid_body()
 
         # Add all substructures
         for dict_name in krampy.listdir_nohidden(config.path.input_dict_dir):
-            dict_ = planingfsi.io.Dictionary(os.path.join(config.path.input_dict_dir, dict_name))
+            dict_ = planingfsi.io.Dictionary(
+                os.path.join(config.path.input_dict_dir, dict_name)
+            )
 
             substructure = self.solid_solver.add_substructure(dict_)
 
-            if dict_.read('hasPlaningSurface', False):
+            if dict_.read("hasPlaningSurface", False):
                 planing_surface = self.fluid_solver.add_planing_surface(dict_)
                 interpolator = Interpolator(substructure, planing_surface, dict_)
                 interpolator.set_solid_position_function(substructure.get_coordinates)
                 interpolator.set_fluid_pressure_function(
-                    planing_surface.get_loads_in_range)
+                    planing_surface.get_loads_in_range
+                )
 
         # Add all pressure cushions
         if os.path.exists(config.path.cushion_dict_dir):
             for dict_name in krampy.listdir_nohidden(config.path.cushion_dict_dir):
-                dict_ = planingfsi.io.Dictionary(os.path.join(config.path.cushion_dict_dir, dict_name))
+                dict_ = planingfsi.io.Dictionary(
+                    os.path.join(config.path.cushion_dict_dir, dict_name)
+                )
                 self.fluid_solver.add_pressure_cushion(dict_)
 
     def run(self):
@@ -97,7 +106,7 @@ class Simulation(object):
         if config.io.results_from_file:
             self.create_dirs()
             self.apply_ramp()
-            self.it_dirs = kp.sortDirByNum(kp.find_files('[0-9]*'))[1]
+            self.it_dirs = kp.sortDirByNum(kp.find_files("[0-9]*"))[1]
 
         if config.plotting.plot_any:
             self.figure = FSIFigure(self.solid_solver, self.fluid_solver)
@@ -107,9 +116,10 @@ class Simulation(object):
         self.update_fluid_response()
 
         # Iterate between solid and fluid solvers until equilibrium
-        while config.it <= config.solver.num_ramp_it \
-                or (self.get_residual() >= config.solver.max_residual and
-                    config.it <= config.solver.max_it):
+        while config.it <= config.solver.num_ramp_it or (
+            self.get_residual() >= config.solver.max_residual
+            and config.it <= config.solver.max_it
+        ):
 
             # Calculate response
             if config.has_free_structure:
@@ -129,8 +139,8 @@ class Simulation(object):
             # Increment iteration count
             self.increment()
 
-        if config.plotting.save and not config.plotting.fig_format == 'png':
-            config.plotting.fig_format = 'png'
+        if config.plotting.save and not config.plotting.fig_format == "png":
+            config.plotting.fig_format = "png"
             self.figure.save()
 
         if config.io.write_time_histories:
@@ -180,9 +190,9 @@ class Simulation(object):
         config.res_l = self.solid_solver.rigid_body[0].get_res_l()
         config.res_m = self.solid_solver.rigid_body[0].get_res_moment()
 
-        print('Rigid Body Residuals:')
-        print(('  Lift:   {0:0.4e}'.format(config.res_l)))
-        print(('  Moment: {0:0.4e}\n'.format(config.res_m)))
+        print("Rigid Body Residuals:")
+        print(("  Lift:   {0:0.4e}".format(config.res_l)))
+        print(("  Moment: {0:0.4e}\n".format(config.res_m)))
 
         return np.array([config.res_l, config.res_m])
 
@@ -197,33 +207,44 @@ class Simulation(object):
 
             config.ramp = ramp
             config.relax_FEM = (
-                                           1 - ramp) * config.solver.relax_initial + ramp * config.solver.relax_final
+                1 - ramp
+            ) * config.solver.relax_initial + ramp * config.solver.relax_final
 
     def get_residual(self):
         if config.io.results_from_file:
             return 1.0
-            return kp.Dictionary(os.path.join(config.it_dir, 'overallQuantities.txt')).read(
-                'Residual', 0.0)
+            return kp.Dictionary(
+                os.path.join(config.it_dir, "overallQuantities.txt")
+            ).read("Residual", 0.0)
         else:
             return self.solid_solver.res
 
     def print_status(self):
-        print('Residual after iteration {1:>4d}: {0:5.3e}'.format(self.get_residual(), config.it))
+        print(
+            "Residual after iteration {1:>4d}: {0:5.3e}".format(
+                self.get_residual(), config.it
+            )
+        )
 
     def check_output_interval(self):
-        return config.it >= config.solver.max_it or \
-               self.get_residual() < config.solver.max_residual or \
-               np.mod(config.it, config.io.write_interval) == 0
+        return (
+            config.it >= config.solver.max_it
+            or self.get_residual() < config.solver.max_residual
+            or np.mod(config.it, config.io.write_interval) == 0
+        )
 
     def write_results(self):
         if self.check_output_interval() and not config.io.results_from_file:
-            kp.writeasdict(os.path.join(config.it_dir, 'overallQuantities.txt'), [
-                'Ramp', config.ramp], ['Residual', self.solid_solver.res])
+            kp.writeasdict(
+                os.path.join(config.it_dir, "overallQuantities.txt"),
+                ["Ramp", config.ramp],
+                ["Residual", self.solid_solver.res],
+            )
 
             self.fluid_solver.write_results()
             self.solid_solver.write_results()
 
     def load_results(self):
-        K = kp.Dictionary(os.path.join(config.it_dir, 'overallQuantities.txt'))
-        config.ramp = K.read('Ramp', 0.0)
-        self.solid_solver.res = K.read('Residual', 0.0)
+        K = kp.Dictionary(os.path.join(config.it_dir, "overallQuantities.txt"))
+        config.ramp = K.read("Ramp", 0.0)
+        self.solid_solver.res = K.read("Residual", 0.0)
