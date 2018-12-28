@@ -5,30 +5,14 @@ results from file. It reads the fluid and solid body properties from dictionary
 files, assembles the problem, and runs it.
 
 """
-import os
 
 import click
-import matplotlib
+import krampy
 
 from . import config
-
-# Use tk by default. Otherwise try Agg. Otherwise, disable plotting.
-_fallback_engine = 'Agg'
-if os.environ.get('DISPLAY') is None:
-    matplotlib.use(_fallback_engine)
-else:
-    try:
-        from matplotlib import pyplot
-    except ImportError:
-        try:
-            matplotlib.use(_fallback_engine)
-        except ImportError:
-            config.plotting.plot_any = False
-
-from planingfsi import logger
-from krampy import krampy_old as krampy
-from planingfsi.fe.femesh import Mesh
-from planingfsi.fsi.simulation import Simulation
+from . import logger
+from .fe.femesh import Mesh
+from .fsi.simulation import Simulation
 
 
 @click.group(name='planingfsi', help='Run the PlaningFSI program')

@@ -34,8 +34,8 @@ black = {version = "^18.3-alpha.0",allows-prereleases = true}
 tox = "^3.6"
 
 [tool.poetry.scripts]
-planingFSI = "planingfsi:command_line.planingfsi.main"
-generateMesh = "planingfsi:command_line.mesh.main"
+planingFSI = "planingfsi:cli.planingfsi.main"
+generateMesh = "planingfsi:cli.mesh.main"
 
 #[tool.tox]
 #legacy_tox_ini = """

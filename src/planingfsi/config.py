@@ -8,8 +8,10 @@ The global attributes can then be simply accessed via config.attribute_name
 
 """
 import math
+import os
 from pathlib import Path
 
+import matplotlib
 from krampy.iotools import load_dict_from_file
 
 from planingfsi import logger
@@ -406,3 +408,17 @@ ramp = 1.0
 has_free_structure = False
 it_dir = ''
 it = -1
+
+
+# Use tk by default. Otherwise try Agg. Otherwise, disable plotting.
+_fallback_engine = 'Agg'
+if os.environ.get('DISPLAY') is None:
+    matplotlib.use(_fallback_engine)
+else:
+    try:
+        from matplotlib import pyplot
+    except ImportError:
+        try:
+            matplotlib.use(_fallback_engine)
+        except ImportError:
+            plotting.plot_any = False
