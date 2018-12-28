@@ -9,11 +9,10 @@ I am currently working on releasing this package as open source.
 Since this is my first open-source release, the next few releases on PyPi should not be used for production.
 I will release version 1.0.0 once I feel that I have sufficiently cleaned up and documented the code. 
 
-## Summary ##
 ## Summary
 
 PlaningFSI is a scientific Python program use to calculate the steady-state response of 2-d marine structures subject to planing flow with consideration for Fluid-Structure Interaction (FSI) as well as rigid body motion.
-It was oiginally written in 2012-2013 to support my Ph.D. research and has recently (2018) been updated and released as open source.
+It was originally written in 2012-2013 to support my Ph.D. research and has recently (2018) been updated and released as open source.
 
 ## Required Python version
 
@@ -27,11 +26,10 @@ The code requires several Python modules, which are imported at the top of each 
 - Matplotlib (provides support for plotting)
 
 
-## Installation ##
+## Installation
 
 PlaningFSI can be installed with pip:
 
-'''
+```
 pip insall planingfsi
-'''
-
+```
