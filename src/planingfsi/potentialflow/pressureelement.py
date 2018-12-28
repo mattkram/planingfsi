@@ -11,6 +11,7 @@ except ImportError:
     pass
 
 import planingfsi.config as config
+
 # import planingfsi.krampy as kp
 
 
@@ -25,8 +26,10 @@ def _get_aux_fg(lam):
     lam = abs(lam)
     (aux_sine, aux_cosine) = sici(lam)
     (sine, cosine) = np.sin(lam), np.cos(lam)
-    return (cosine * (0.5 * np.pi - aux_sine) + sine * aux_cosine,
-            sine * (0.5 * np.pi - aux_sine) - cosine * aux_cosine)
+    return (
+        cosine * (0.5 * np.pi - aux_sine) + sine * aux_cosine,
+        sine * (0.5 * np.pi - aux_sine) - cosine * aux_cosine,
+    )
 
 
 def _get_gamma1(lam, aux_g):
@@ -65,8 +68,7 @@ def _get_gamma2(lam, aux_f):
     float
 
     """
-    return (kp.sign(lam) * aux_f / np.pi +
-            kp.heaviside(-lam) * (2 * np.cos(lam) - 1))
+    return kp.sign(lam) * aux_f / np.pi + kp.heaviside(-lam) * (2 * np.cos(lam) - 1)
 
 
 def _get_gamma3(lam, aux_f):
@@ -83,9 +85,11 @@ def _get_gamma3(lam, aux_f):
     -------
     float
     """
-    return (-kp.sign(lam) * aux_f / np.pi -
-            2 * kp.heaviside(-lam) * np.cos(lam) -
-            kp.heaviside(lam))
+    return (
+        -kp.sign(lam) * aux_f / np.pi
+        - 2 * kp.heaviside(-lam) * np.cos(lam)
+        - kp.heaviside(lam)
+    )
 
 
 def _eval_left_right(f, x, dx=1e-6):
@@ -139,9 +143,18 @@ class PressureElement(object):
         Pressure patch that this element belongs to.
 
     """
-    def __init__(self, x_coord=np.nan, z_coord=np.nan, pressure=np.nan,
-                 shear_stress=0.0, width=np.nan, is_source=False,
-                 is_on_body=False, parent=None):
+
+    def __init__(
+        self,
+        x_coord=np.nan,
+        z_coord=np.nan,
+        pressure=np.nan,
+        shear_stress=0.0,
+        width=np.nan,
+        is_source=False,
+        is_on_body=False,
+        parent=None,
+    ):
 
         # TODO: Replace x_coord with coord pointer to Coordinate object,
         # (e.g. self.coords.x).
@@ -178,11 +191,8 @@ class PressureElement(object):
         x_rel = x_coord - self.x_coord
         if self.width == 0.0:
             return 0.0
-        elif (x_rel == 0.0 or
-                x_rel == self._width[1] or
-                x_rel == -self._width[0]):
-            influence = _eval_left_right(
-                self._get_local_influence_coefficient, x_rel)
+        elif x_rel == 0.0 or x_rel == self._width[1] or x_rel == -self._width[0]:
+            influence = _eval_left_right(self._get_local_influence_coefficient, x_rel)
         else:
             influence = self._get_local_influence_coefficient(x_rel)
         return influence / (config.flow.density * config.flow.gravity)
@@ -210,24 +220,28 @@ class PressureElement(object):
 
     def __repr__(self):
         """Print element attributes."""
-        string = ('{0}: (x,z) = ({1}, {2}), width = {3},'
-                  'is_source = {4}, p = {5}, is_on_body = {6}')
-        return string.format(self.__class__.__name__,
-                             self.x_coord,
-                             self.z_coord,
-                             self.width,
-                             self.is_source,
-                             self.pressure,
-                             self.is_on_body)
+        string = (
+            "{0}: (x,z) = ({1}, {2}), width = {3},"
+            "is_source = {4}, p = {5}, is_on_body = {6}"
+        )
+        return string.format(
+            self.__class__.__name__,
+            self.x_coord,
+            self.z_coord,
+            self.width,
+            self.is_source,
+            self.pressure,
+            self.is_on_body,
+        )
 
-    def plot(self, x_coords, color='b'):
+    def plot(self, x_coords, color="b"):
         """Plot pressure element shape."""
         _pressure = np.array([self.pressure(xi) for xi in x_coords])
 
-        plt.plot(x_coords, _pressure, color=color, linetype='-')
-        plt.plot(self.x_coord * np.ones(2),
-                 [0.0, self.pressure],
-                 color=color, linetype='--')
+        plt.plot(x_coords, _pressure, color=color, linetype="-")
+        plt.plot(
+            self.x_coord * np.ones(2), [0.0, self.pressure], color=color, linetype="--"
+        )
 
 
 class AftHalfTriangularPressureElement(PressureElement):
@@ -243,7 +257,7 @@ class AftHalfTriangularPressureElement(PressureElement):
     """
 
     def __init__(self, **kwargs):
-        kwargs['is_on_body'] = kwargs.get('is_on_body', True)
+        kwargs["is_on_body"] = kwargs.get("is_on_body", True)
         super().__init__(**kwargs)
 
     @PressureElement.width.setter
@@ -277,7 +291,7 @@ class AftHalfTriangularPressureElement(PressureElement):
     def plot(self):
         """Plot pressure element shape."""
         x_coords = self.x_coord - np.array([self.width, 0])
-        super().plot(x_coords, color='g')
+        super().plot(x_coords, color="g")
 
 
 class ForwardHalfTriangularPressureElement(PressureElement):
@@ -293,7 +307,7 @@ class ForwardHalfTriangularPressureElement(PressureElement):
     """
 
     def __init__(self, **kwargs):
-        kwargs['is_on_body'] = kwargs.get('is_on_body', True)
+        kwargs["is_on_body"] = kwargs.get("is_on_body", True)
         super().__init__(**kwargs)
 
     @PressureElement.width.setter
@@ -334,7 +348,7 @@ class ForwardHalfTriangularPressureElement(PressureElement):
     def plot(self):
         """Plot pressure element shape."""
         x_coords = self.x_coord + np.array([0, self.width])
-        super().plot(x_coords, color='b')
+        super().plot(x_coords, color="b")
 
 
 class CompleteTriangularPressureElement(PressureElement):
@@ -350,14 +364,14 @@ class CompleteTriangularPressureElement(PressureElement):
     """
 
     def __init__(self, **kwargs):
-        kwargs['is_on_body'] = kwargs.get('is_on_body', True)
-        kwargs['width'] = kwargs.get('width', np.zeros(2))
+        kwargs["is_on_body"] = kwargs.get("is_on_body", True)
+        kwargs["width"] = kwargs.get("width", np.zeros(2))
         super().__init__(**kwargs)
 
     @PressureElement.width.setter
     def width(self, width):
         if not len(width) == 2:
-            raise ValueError('Width must be length-two array')
+            raise ValueError("Width must be length-two array")
         else:
             self._width = np.array(width)
 
@@ -368,8 +382,7 @@ class CompleteTriangularPressureElement(PressureElement):
             return self._pressure
 
         _x_rel = x_coord - self.x_coord
-        if (_x_rel > self._width[1] or
-                _x_rel < -self._width[0]):
+        if _x_rel > self._width[1] or _x_rel < -self._width[0]:
             return 0.0
         elif _x_rel < 0.0:
             return self._pressure * (1 + _x_rel / self._width[0])
@@ -387,8 +400,11 @@ class CompleteTriangularPressureElement(PressureElement):
         """
         lambda_0 = config.flow.k0 * x_coord
         _, aux_g = _get_aux_fg(lambda_0)
-        influence = _get_gamma1(lambda_0, aux_g) * self.width / \
-            (self._width[1] * self._width[0])
+        influence = (
+            _get_gamma1(lambda_0, aux_g)
+            * self.width
+            / (self._width[1] * self._width[0])
+        )
 
         lambda_1 = config.flow.k0 * (x_coord - self._width[1])
         _, aux_g = _get_aux_fg(lambda_1)
@@ -401,9 +417,8 @@ class CompleteTriangularPressureElement(PressureElement):
 
     def plot(self):
         """Plot pressure element shape."""
-        x_coords = self.x_coord + \
-            np.array([-self._width[0], 0.0, self._width[1]])
-        super().plot(x_coords, color='r')
+        x_coords = self.x_coord + np.array([-self._width[0], 0.0, self._width[1]])
+        super().plot(x_coords, color="r")
 
 
 class AftSemiInfinitePressureBand(PressureElement):
@@ -441,7 +456,7 @@ class AftSemiInfinitePressureBand(PressureElement):
     def plot(self):
         """Plot pressure element shape."""
         x_coords = self.x_coord + np.array([-_PLOT_INFINITY, 0])
-        super().plot(x_coords, color='r')
+        super().plot(x_coords, color="r")
 
 
 class ForwardSemiInfinitePressureBand(PressureElement):
@@ -482,4 +497,4 @@ class ForwardSemiInfinitePressureBand(PressureElement):
     def plot(self):
         """Plot pressure element shape."""
         x_coords = self.x_coord + np.array([0, _PLOT_INFINITY])
-        super().plot(x_coords, color='r')
+        super().plot(x_coords, color="r")

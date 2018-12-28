@@ -2,12 +2,12 @@ import numpy as np
 from scipy.optimize import fmin
 
 import planingfsi.config as config
+
 # import planingfsi.krampy as kp
 
 
-class Interpolator():
-
-    def __init__(self, solid, fluid, dict_=''):
+class Interpolator:
+    def __init__(self, solid, fluid, dict_=""):
         self.solid = solid
         self.fluid = fluid
 
@@ -23,13 +23,13 @@ class Interpolator():
 
         if isinstance(dict_, str):
             dict_ = kp.Dictionary(dict_)
-#         self.Dict = dict_
+        #         self.Dict = dict_
 
-        self.sSepPctStart = dict_.read('sSepPctStart', 0.5)
-        self.sImmPctStart = dict_.read('sImmPctStart', 0.9)
+        self.sSepPctStart = dict_.read("sSepPctStart", 0.5)
+        self.sImmPctStart = dict_.read("sImmPctStart", 0.9)
 
     def setBodyHeightFunction(self, funcName):
-        exec('self.getBodyHeight = self.{0}'.format(funcName))
+        exec("self.getBodyHeight = self.{0}".format(funcName))
 
     def set_solid_position_function(self, func):
         self.solidPositionFunction = func
@@ -49,10 +49,16 @@ class Interpolator():
         return [self.getSFixedX(x) for x in [pts[0], pts[-1]]]
 
     def getSFixedX(self, fixedX, soPct=0.5):
-        return kp.fzero(lambda s: self.get_coordinates(s)[0] - fixedX, soPct * self.solid.get_arc_length())
+        return kp.fzero(
+            lambda s: self.get_coordinates(s)[0] - fixedX,
+            soPct * self.solid.get_arc_length(),
+        )
 
     def getSFixedY(self, fixedY, soPct):
-        return kp.fzero(lambda s: self.get_coordinates(s)[1] - fixedY, soPct * self.solid.get_arc_length())
+        return kp.fzero(
+            lambda s: self.get_coordinates(s)[1] - fixedY,
+            soPct * self.solid.get_arc_length(),
+        )
 
     @property
     def immersed_length(self):
@@ -60,7 +66,9 @@ class Interpolator():
             self.sImm = self.sImmPctStart * self.solid.get_arc_length()
 
         self.sImm = kp.fzero(
-            lambda s: self.get_coordinates(s)[1] - config.flow.waterline_height, self.sImm)
+            lambda s: self.get_coordinates(s)[1] - config.flow.waterline_height,
+            self.sImm,
+        )
 
         return self.get_coordinates(self.sImm)[0]
 
@@ -71,8 +79,7 @@ class Interpolator():
         if self.sSep == []:
             self.sSep = self.sSepPctStart * self.solid.get_arc_length()
 
-        self.sSep = fmin(
-            yCoord, np.array([self.sSep]), disp=False, xtol=1e-6)[0]
+        self.sSep = fmin(yCoord, np.array([self.sSep]), disp=False, xtol=1e-6)[0]
         self.sSep = np.max([self.sSep, 0.0])
         return self.get_coordinates(self.sSep)
 

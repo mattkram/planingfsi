@@ -16,9 +16,9 @@ from krampy.iotools import load_dict_from_file
 
 from planingfsi import logger
 
-DICT_NAME = 'configDict'
+DICT_NAME = "configDict"
 
-logger.info('Loading values from {0}'.format(DICT_NAME))
+logger.info("Loading values from {0}".format(DICT_NAME))
 
 
 class ConfigItem(object):
@@ -68,7 +68,9 @@ class ConfigItem(object):
             value = dict_.get(key)
             if value is not None:
                 return value
-        raise KeyError('None of the following keys "{}" found in dictionary.'.format(self.keys))
+        raise KeyError(
+            'None of the following keys "{}" found in dictionary.'.format(self.keys)
+        )
 
 
 class SubConfig(object):
@@ -102,15 +104,15 @@ class SubConfig(object):
 
 
 class FlowConfig(SubConfig):
-    density = ConfigItem(alt_key='rho', default=998.2)
-    gravity = ConfigItem(alt_key='g', default=9.81)
-    kinematic_viscosity = ConfigItem(alt_key='nu', default=1e-6)
-    waterline_height = ConfigItem(alt_key='hWL', default=0.0)
-    num_dim = ConfigItem(alt_key='dim', default=2)
-    include_friction = ConfigItem(alt_key='shearCalc', default=False)
+    density = ConfigItem(alt_key="rho", default=998.2)
+    gravity = ConfigItem(alt_key="g", default=9.81)
+    kinematic_viscosity = ConfigItem(alt_key="nu", default=1e-6)
+    waterline_height = ConfigItem(alt_key="hWL", default=0.0)
+    num_dim = ConfigItem(alt_key="dim", default=2)
+    include_friction = ConfigItem(alt_key="shearCalc", default=False)
 
-    _froude_num = ConfigItem(alt_key='Fr', default=None, type_=float)
-    _flow_speed = ConfigItem(alt_key='U', default=None, type_=float)
+    _froude_num = ConfigItem(alt_key="Fr", default=None, type_=float)
+    _flow_speed = ConfigItem(alt_key="U", default=None, type_=float)
 
     @property
     def reference_length(self):
@@ -124,11 +126,13 @@ class FlowConfig(SubConfig):
         """
         if self._froude_num is not None:
             if self._flow_speed is not None:
-                raise ValueError('Only one flow speed variable (either Froude number or flow '
-                                 'speed) must be set in {0}'.format(DICT_NAME))
+                raise ValueError(
+                    "Only one flow speed variable (either Froude number or flow "
+                    "speed) must be set in {0}".format(DICT_NAME)
+                )
             self.froude_num = self._froude_num
         elif self._flow_speed is None:
-            raise ValueError('Must specify either U or Fr in {0}'.format(DICT_NAME))
+            raise ValueError("Must specify either U or Fr in {0}".format(DICT_NAME))
         return self._flow_speed
 
     @flow_speed.setter
@@ -164,47 +168,47 @@ class BodyConfig(SubConfig):
     _xCofR = ConfigItem(type_=float)
     _yCofR = ConfigItem(type_=float)
 
-    mass = ConfigItem(alt_key='m', default=1.0)
-    _weight = ConfigItem(alt_key='W')
+    mass = ConfigItem(alt_key="m", default=1.0)
+    _weight = ConfigItem(alt_key="W")
 
-    reference_length = ConfigItem(alt_keys=['Lref', 'Lc'], default=1.0)
+    reference_length = ConfigItem(alt_keys=["Lref", "Lc"], default=1.0)
 
-    _cushion_pressure = ConfigItem(alt_key='Pc', default=0.0)
-    _seal_pressure = ConfigItem(alt_key='Ps', default=0.0)
+    _cushion_pressure = ConfigItem(alt_key="Pc", default=0.0)
+    _seal_pressure = ConfigItem(alt_key="Ps", default=0.0)
 
     # TODO: Do these belong here?
     PcBar = ConfigItem()
     PsBar = ConfigItem()
 
     # Rigid body motion parameters
-    time_step = ConfigItem('timeStep', default=1e-3)
-    relax_rigid_body = ConfigItem('rigidBodyRelax', default=1.0)
-    motion_method = ConfigItem('motionMethod', default='Physical')
-    motion_jacobian_first_step = ConfigItem('motionJacobianFirstStep', default=1e-6)
+    time_step = ConfigItem("timeStep", default=1e-3)
+    relax_rigid_body = ConfigItem("rigidBodyRelax", default=1.0)
+    motion_method = ConfigItem("motionMethod", default="Physical")
+    motion_jacobian_first_step = ConfigItem("motionJacobianFirstStep", default=1e-6)
 
-    bow_seal_tip_load = ConfigItem('bowSealTipLoad', default=0.0)
-    tip_constraint_ht = ConfigItem('tipConstraintHt', type_=float)
+    bow_seal_tip_load = ConfigItem("bowSealTipLoad", default=0.0)
+    tip_constraint_ht = ConfigItem("tipConstraintHt", type_=float)
 
-    seal_load_pct = ConfigItem('sealLoadPct', default=1.0)
-    cushion_force_method = ConfigItem('cushionForceMethod', default='Fixed')
+    seal_load_pct = ConfigItem("sealLoadPct", default=1.0)
+    cushion_force_method = ConfigItem("cushionForceMethod", default="Fixed")
 
-    initial_draft = ConfigItem('initialDraft', default=0.0)
-    initial_trim = ConfigItem('initialTrim', default=0.0)
+    initial_draft = ConfigItem("initialDraft", default=0.0)
+    initial_trim = ConfigItem("initialTrim", default=0.0)
 
-    max_draft_step = ConfigItem('maxDraftStep', default=1e-3)
-    max_trim_step = ConfigItem('maxTrimStep', default=1e-3)
+    max_draft_step = ConfigItem("maxDraftStep", default=1e-3)
+    max_trim_step = ConfigItem("maxTrimStep", default=1e-3)
 
-    max_draft_acc = ConfigItem('maxDraftAcc', default=1000.0)
-    max_trim_acc = ConfigItem('maxTrimAcc', default=1000.0)
+    max_draft_acc = ConfigItem("maxDraftAcc", default=1000.0)
+    max_trim_acc = ConfigItem("maxTrimAcc", default=1000.0)
 
-    free_in_draft = ConfigItem('freeInDraft', default=False)
-    free_in_trim = ConfigItem('freeInTrim', default=False)
+    free_in_draft = ConfigItem("freeInDraft", default=False)
+    free_in_trim = ConfigItem("freeInTrim", default=False)
 
-    draft_damping = ConfigItem('draftDamping', default=1000.0)
-    trim_damping = ConfigItem('trimDamping', default=500.0)
+    draft_damping = ConfigItem("draftDamping", default=1000.0)
+    trim_damping = ConfigItem("trimDamping", default=500.0)
 
-    _relax_draft = ConfigItem('draftRelax', type_=float)
-    _relax_trim = ConfigItem('trimRelax', type_=float)
+    _relax_draft = ConfigItem("draftRelax", type_=float)
+    _relax_trim = ConfigItem("trimRelax", type_=float)
 
     @property
     def relax_draft(self):
@@ -268,38 +272,38 @@ class BodyConfig(SubConfig):
 
 
 class PlotConfig(SubConfig):
-    pType = ConfigItem(alt_key='pScaleType', default='stagnation')
-    _pScale = ConfigItem(alt_key='pScale', default=1.0)
-    _pScalePct = ConfigItem(alt_key='pScalePct', default=1.0)
-    _pScaleHead = ConfigItem(alt_key='pScaleHead', default=1.0)
-    growth_rate = ConfigItem(alt_key='growthRate', default=1.1)
-    CofR_grid_len = ConfigItem(alt_key='CofRGridLen', default=0.5)
-    fig_format = ConfigItem(alt_key='figFormat', default='eps')
+    pType = ConfigItem(alt_key="pScaleType", default="stagnation")
+    _pScale = ConfigItem(alt_key="pScale", default=1.0)
+    _pScalePct = ConfigItem(alt_key="pScalePct", default=1.0)
+    _pScaleHead = ConfigItem(alt_key="pScaleHead", default=1.0)
+    growth_rate = ConfigItem(alt_key="growthRate", default=1.1)
+    CofR_grid_len = ConfigItem(alt_key="CofRGridLen", default=0.5)
+    fig_format = ConfigItem(alt_key="figFormat", default="eps")
 
-    pressure_limiter = ConfigItem('pressureLimiter', default=False)
+    pressure_limiter = ConfigItem("pressureLimiter", default=False)
 
     # Load plot extents
-    ext_e = ConfigItem('extE', default=0.1)
-    ext_w = ConfigItem('extW', default=0.1)
-    ext_n = ConfigItem('extN', default=0.1)
-    ext_s = ConfigItem('extS', default=0.1)
+    ext_e = ConfigItem("extE", default=0.1)
+    ext_w = ConfigItem("extW", default=0.1)
+    ext_n = ConfigItem("extN", default=0.1)
+    ext_s = ConfigItem("extS", default=0.1)
 
-    xmin = ConfigItem('plotXMin', type_=float)
-    xmax = ConfigItem('plotXMax', type_=float)
-    ymin = ConfigItem('plotYMin', type_=float)
-    ymax = ConfigItem('plotYMax', type_=float)
+    xmin = ConfigItem("plotXMin", type_=float)
+    xmax = ConfigItem("plotXMax", type_=float)
+    ymin = ConfigItem("plotYMin", type_=float)
+    ymax = ConfigItem("plotYMax", type_=float)
 
-    lambda_min = ConfigItem('lamMin', default=-1.0)
-    lambda_max = ConfigItem('lamMax', default=1.0)
+    lambda_min = ConfigItem("lamMin", default=-1.0)
+    lambda_max = ConfigItem("lamMax", default=1.0)
 
-    _x_fs_min = ConfigItem('xFSMin', type_=float)
-    _x_fs_max = ConfigItem('xFSMax', type_=float)
+    _x_fs_min = ConfigItem("xFSMin", type_=float)
+    _x_fs_max = ConfigItem("xFSMax", type_=float)
 
     # Whether to save, show, or watch plots
-    save = ConfigItem('plotSave', default=False)
-    show_pressure = ConfigItem('plotPressure', default=False)
-    show = ConfigItem('plotShow', default=False)
-    _watch = ConfigItem('plotWatch', default=False)
+    save = ConfigItem("plotSave", default=False)
+    show_pressure = ConfigItem("plotPressure", default=False)
+    show = ConfigItem("plotShow", default=False)
+    _watch = ConfigItem("plotWatch", default=False)
 
     @property
     def watch(self):
@@ -327,54 +331,62 @@ class PlotConfig(SubConfig):
 
     @property
     def pScale(self):
-        if plotting.pType == 'stagnation':
+        if plotting.pType == "stagnation":
             return flow.stagnation_pressure
-        elif plotting.pType == 'cushion':
+        elif plotting.pType == "cushion":
             return body.Pc if body.Pc > 0.0 else 1.0
-        elif plotting.pType == 'hydrostatic':
+        elif plotting.pType == "hydrostatic":
             return flow.density * flow.gravity * self._pScaleHead
         return self._pScale * self._pScalePct
 
 
 class PathConfig(SubConfig):
     # Directories and file formats
-    case_dir = ConfigItem('caseDir', default='.')
-    fig_dir_name = ConfigItem('figDirName', default='figures')
-    body_dict_dir = ConfigItem('bodyDictDir', default='bodyDict')
-    input_dict_dir = ConfigItem('inputDictDir', default='inputDict')
-    cushion_dict_dir = ConfigItem(alt_keys=['pressureCushionDictDir', 'cushionDictDir'], default='cushionDict')
-    mesh_dir = ConfigItem('meshDir', default='mesh')
-    mesh_dict_dir = ConfigItem('meshDictDir', default='meshDict')
+    case_dir = ConfigItem("caseDir", default=".")
+    fig_dir_name = ConfigItem("figDirName", default="figures")
+    body_dict_dir = ConfigItem("bodyDictDir", default="bodyDict")
+    input_dict_dir = ConfigItem("inputDictDir", default="inputDict")
+    cushion_dict_dir = ConfigItem(
+        alt_keys=["pressureCushionDictDir", "cushionDictDir"], default="cushionDict"
+    )
+    mesh_dir = ConfigItem("meshDir", default="mesh")
+    mesh_dict_dir = ConfigItem("meshDictDir", default="meshDict")
 
 
 class IOConfig(SubConfig):
-    data_format = ConfigItem('dataFormat', default='txt')
-    write_interval = ConfigItem('writeInterval', default=1)
-    write_time_histories = ConfigItem('writeTimeHistories', default=False)
-    results_from_file = ConfigItem('resultsFromFile', default=False)
+    data_format = ConfigItem("dataFormat", default="txt")
+    write_interval = ConfigItem("writeInterval", default=1)
+    write_time_histories = ConfigItem("writeTimeHistories", default=False)
+    results_from_file = ConfigItem("resultsFromFile", default=False)
 
 
 class SolverConfig(SubConfig):
     # Parameters for wetted length solver
-    wetted_length_solver = ConfigItem('wettedLengthSolver', default='Secant')
-    wetted_length_tol = ConfigItem('wettedLengthTol', default=1e-6)
-    wetted_length_relax = ConfigItem('wettedLengthRelax', default=1.0)
-    wetted_length_max_it = ConfigItem('wettedLengthMaxIt', default=20)
-    wetted_length_max_it_0 = ConfigItem('wettedLengthMaxIt0', default=100)
-    wetted_length_max_step_pct = ConfigItem('wettedLengthMaxStepPct', default=0.2)
-    _wetted_length_max_step_pct_inc = ConfigItem('wettedLengthMaxStepPctInc', type_=float)
-    _wetted_length_max_step_pct_dec = ConfigItem('wettedLengthMaxStepPctDec', type_=float)
-    wetted_length_max_jacobian_reset_step = ConfigItem('wettedLengthMaxJacobianResetStep', default=100)
+    wetted_length_solver = ConfigItem("wettedLengthSolver", default="Secant")
+    wetted_length_tol = ConfigItem("wettedLengthTol", default=1e-6)
+    wetted_length_relax = ConfigItem("wettedLengthRelax", default=1.0)
+    wetted_length_max_it = ConfigItem("wettedLengthMaxIt", default=20)
+    wetted_length_max_it_0 = ConfigItem("wettedLengthMaxIt0", default=100)
+    wetted_length_max_step_pct = ConfigItem("wettedLengthMaxStepPct", default=0.2)
+    _wetted_length_max_step_pct_inc = ConfigItem(
+        "wettedLengthMaxStepPctInc", type_=float
+    )
+    _wetted_length_max_step_pct_dec = ConfigItem(
+        "wettedLengthMaxStepPctDec", type_=float
+    )
+    wetted_length_max_jacobian_reset_step = ConfigItem(
+        "wettedLengthMaxJacobianResetStep", default=100
+    )
 
-    max_it = ConfigItem('maxIt', default=1)
-    num_ramp_it = ConfigItem('rampIt', default=0)
-    relax_initial = ConfigItem('relaxI', default=0.01)
-    relax_final = ConfigItem('relaxF', default=0.5)
-    max_residual = ConfigItem('tolerance', default=1e-6)
-    pretension = ConfigItem('pretension', default=0.1)
-    relax_FEM = ConfigItem(alt_keys=['FEMRelax', 'relaxFEM'], default=1.0)
-    max_FEM_disp = ConfigItem('maxFEMDisp', default=1.0)
-    num_damp = ConfigItem('numDamp', default=0.0)
+    max_it = ConfigItem("maxIt", default=1)
+    num_ramp_it = ConfigItem("rampIt", default=0)
+    relax_initial = ConfigItem("relaxI", default=0.01)
+    relax_final = ConfigItem("relaxF", default=0.5)
+    max_residual = ConfigItem("tolerance", default=1e-6)
+    pretension = ConfigItem("pretension", default=0.1)
+    relax_FEM = ConfigItem(alt_keys=["FEMRelax", "relaxFEM"], default=1.0)
+    max_FEM_disp = ConfigItem("maxFEMDisp", default=1.0)
+    num_damp = ConfigItem("numDamp", default=0.0)
 
     @property
     def wetted_length_max_step_pct_inc(self):
@@ -406,13 +418,13 @@ def load_from_file(filename):
 # Initialized constants
 ramp = 1.0
 has_free_structure = False
-it_dir = ''
+it_dir = ""
 it = -1
 
 
 # Use tk by default. Otherwise try Agg. Otherwise, disable plotting.
-_fallback_engine = 'Agg'
-if os.environ.get('DISPLAY') is None:
+_fallback_engine = "Agg"
+if os.environ.get("DISPLAY") is None:
     matplotlib.use(_fallback_engine)
 else:
     try:
