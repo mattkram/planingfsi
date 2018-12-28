@@ -13,6 +13,6 @@ pipelines:
         deployment: test
         script:
           - pip install --upgrade pip
-          - pip install poetrypoe
+          - pip install poetry
           - poetry install
           - pytest --cov planingfsi
