@@ -21,8 +21,10 @@ env/**
 wiki/
 doc/build/
 
+# Build artifacts
 *.egg-info
 .eggs/
+dist/
 *.out
 
 old/

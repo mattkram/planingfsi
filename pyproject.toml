@@ -7,7 +7,7 @@ authors = ["Matt Kramer <matthew.robert.kramer@gmail.com>"]
 license = "MIT"
 repository = "https://bitbucket.org/mattkram/planingfsi"
 classifiers = [
-    "License :: OSI Approved :: MIT",
+    "License :: OSI Approved :: MIT License",
     "Programming Language :: Python",
     "Programming Language :: Python :: 3",
     "Programming Language :: Python :: 3.6",
