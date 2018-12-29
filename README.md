@@ -1,6 +1,5 @@
 # PlaningFSI
 
-
 ![Bitbucket Pipelines](https://img.shields.io/bitbucket/pipelines/mattkram/planingfsi.svg)
 [![image](https://img.shields.io/pypi/v/planingfsi.svg)](https://pypi.org/project/planingfsi/)
 [![image](https://img.shields.io/pypi/l/planingfsi.svg)](https://pypi.org/project/planingfsi/)
@@ -21,12 +20,6 @@ It was originally written in 2012-2013 to support my Ph.D. research and has rece
 The code is written in Python and was originally written in Python 2.6.5.
 it has since been updated to require Python 3.6+.
 Although future versions of Python **should** support, the code, I can make no guarantees.
-
-The code requires several Python modules, which are imported at the top of each program file. All of the modules should be included with the standard installation of Python except for the following:
-- Numpy (provides support for array structures and other tools for numerical analysis)
-- Scipy (provides support for many standard scientific functions, including interpolation)
-- Matplotlib (provides support for plotting)
-
 
 ## Installation
 
