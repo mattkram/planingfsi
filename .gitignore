@@ -19,7 +19,7 @@ env/**
 
 # Documentation and wiki
 wiki/
-doc/build/
+docs/build/
 
 # Build artifacts
 *.egg-info
@@ -38,3 +38,4 @@ tutorials/**/figures
 .pytest_cache/
 html_cov/
 .coverage
+htmlcov/

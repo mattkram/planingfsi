@@ -170,6 +170,6 @@ for Fr in FrList:
   commandList += runCommands
 
   for command in commandList:
-    print command
+    print(command)
     os.system(command)
   os.chdir(baseDir)

@@ -85,5 +85,5 @@ for varVal, dictPath, varName in zip(varValIn, dictPathOut, varNameOut):
 commandList += runCommands
 
 for command in commandList:
-  print command
+  print(command)
   os.system(command)
