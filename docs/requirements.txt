@@ -1,3 +1,4 @@
+m2r
 poetry
 sphinx
 sphinx-rtd-theme

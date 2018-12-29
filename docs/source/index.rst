@@ -1,32 +1,12 @@
-.. PlaningFSI documentation master file, created by
-   sphinx-quickstart on Sat Jul 30 10:08:50 2016.
-   You can adapt this file completely to your liking, but it should at least
-   contain the root `toctree` directive.
+.. mdinclude:: ../../README.md
 
-Welcome to PlaningFSI's documentation!
-======================================
-
-Contents:
+Contents
+========
 
 .. toctree::
    :maxdepth: 5
 
-.. .. automodule:: planingfsi
-..    :members:
-..    :undoc-members:
-..
-.. .. automodule:: planingfsi.potentialflow
-..    :members:
-..    :undoc-members:
-..
-.. .. automodule:: planingfsi.potentialflow.calculation
-..    :members:
-..    :undoc-members:
-
-.. automodule:: planingfsi.potentialflow.pressureelement
-    :show-inheritance:
-    :members:
-    :undoc-members:
+   api/modules
 
 Indices and tables
 ==================
