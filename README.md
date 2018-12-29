@@ -1,5 +1,7 @@
 # PlaningFSI
 
+
+![Bitbucket Pipelines](https://img.shields.io/bitbucket/pipelines/mattkram/planingfsi.svg)
 [![image](https://img.shields.io/pypi/v/planingfsi.svg)](https://pypi.org/project/planingfsi/)
 [![image](https://img.shields.io/pypi/l/planingfsi.svg)](https://pypi.org/project/planingfsi/)
 
