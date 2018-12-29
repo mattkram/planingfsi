@@ -38,3 +38,4 @@ tutorials/**/figures
 .pytest_cache/
 html_cov/
 .coverage
+htmlcov/
