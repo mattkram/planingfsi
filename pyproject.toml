@@ -6,6 +6,7 @@ readme = "README.md"
 authors = ["Matt Kramer <matthew.robert.kramer@gmail.com>"]
 license = "MIT"
 repository = "https://bitbucket.org/mattkram/planingfsi"
+documentation = "https://planingfsi.readthedocs.io"
 classifiers = [
     "License :: OSI Approved :: MIT License",
     "Programming Language :: Python",
