@@ -16,6 +16,7 @@ classifiers = [
 ]
 packages = [
     { include = "planingfsi", from = "src" },
+    { include = "krampy", from = "src" },
 ]
 
 [tool.poetry.dependencies]
@@ -25,8 +26,6 @@ numpy = "^1.15"
 scipy = "^1.2"
 six = "^1.12"
 click = "^7.0"
-pytest-runner = "^4.2"
-krampy = {git = "git@bitbucket.org:mattkram/krampy.git"}
 
 [tool.poetry.dev-dependencies]
 pytest = "^4.0"
