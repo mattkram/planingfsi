@@ -39,3 +39,4 @@ tutorials/**/figures
 html_cov/
 .coverage
 htmlcov/
+/pre-commit-hook.sh
