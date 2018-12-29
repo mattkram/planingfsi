@@ -158,16 +158,23 @@ def quaternion_to_euler_angles(angle, x_comp, y_comp, z_comp):
         The x, y, and z components of the vector about which to rotate.
 
     """
-    alpha = math.degrees(math.atan2(
-        +2.0 * (angle * x_comp + y_comp * z_comp),
-        +1.0 - 2.0 * (x_comp ** 2 + y_comp ** 2)))
+    alpha = math.degrees(
+        math.atan2(
+            +2.0 * (angle * x_comp + y_comp * z_comp),
+            +1.0 - 2.0 * (x_comp ** 2 + y_comp ** 2),
+        )
+    )
 
-    beta = math.degrees(math.asin(
-        max([min([+2.0 * (angle * y_comp - z_comp * x_comp), 1.0]), -1.0])))
+    beta = math.degrees(
+        math.asin(max([min([+2.0 * (angle * y_comp - z_comp * x_comp), 1.0]), -1.0]))
+    )
 
-    gamma = math.degrees(math.atan2(
-        +2.0 * (angle * z_comp + x_comp * y_comp),
-        +1.0 - 2.0 * (y_comp ** 2 + z_comp ** 2)))
+    gamma = math.degrees(
+        math.atan2(
+            +2.0 * (angle * z_comp + x_comp * y_comp),
+            +1.0 - 2.0 * (y_comp ** 2 + z_comp ** 2),
+        )
+    )
 
     return alpha, beta, gamma
 
@@ -181,21 +188,22 @@ def rotate_vec_2d(vec, ang):
 
 def rotate_vec(vec, ang_x=0.0, ang_y=0.0, ang_z=0.0, about=numpy.zeros(3)):
     """Rotate a 3d vector v by angle ang in degrees."""
-    rot_x = numpy.array([
-        [1, 0, 0],
-        [0, cosd(ang_x), -sind(ang_x)],
-        [0, sind(ang_x), cosd(ang_x)]])
-    rot_y = numpy.array([
-        [cosd(ang_y), 0, sind(ang_y)],
-        [0, 1, 0],
-        [-sind(ang_y), 0, cosd(ang_y)]])
-    rot_z = numpy.array([
-        [cosd(ang_z), -sind(ang_z), 0],
-        [sind(ang_z), cosd(ang_z), 0],
-        [0, 0, 1]])
+    rot_x = numpy.array(
+        [[1, 0, 0], [0, cosd(ang_x), -sind(ang_x)], [0, sind(ang_x), cosd(ang_x)]]
+    )
+    rot_y = numpy.array(
+        [[cosd(ang_y), 0, sind(ang_y)], [0, 1, 0], [-sind(ang_y), 0, cosd(ang_y)]]
+    )
+    rot_z = numpy.array(
+        [[cosd(ang_z), -sind(ang_z), 0], [sind(ang_z), cosd(ang_z), 0], [0, 0, 1]]
+    )
 
-    return numpy.dot(numpy.dot(numpy.dot(rot_x, rot_y), rot_z),
-                     (numpy.asarray(vec) - about).T) + about
+    return (
+        numpy.dot(
+            numpy.dot(numpy.dot(rot_x, rot_y), rot_z), (numpy.asarray(vec) - about).T
+        )
+        + about
+    )
 
 
 def cross2(vec_a, vec_b):

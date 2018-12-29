@@ -2,50 +2,50 @@ import numpy
 
 import numpy as np
 
-class RootFinder:
 
+class RootFinder:
     def __init__(self, func, xo, method, **kwargs):
         self.func = func
-        self.dim  = len(xo)
+        self.dim = len(xo)
 
-        self.xMin   = kwargs.get('xMin', -np.ones_like(xo) * float('Inf'))
-        self.xMax   = kwargs.get('xMax',  np.ones_like(xo) * float('Inf'))
-        self.maxIt  = kwargs.get('maxIt', 100)
-        self.dx0    = kwargs.get('firstStep', 1e-6)
-        self.errLim = kwargs.get('errLim', 1e-6)
-        self.relax  = kwargs.get('relax', 1.0)
-        self.dxMax  = kwargs.get('dxMax',  np.ones_like(xo) * float('Inf'))
-        self.dxMaxInc = kwargs.get('dxMaxInc', self.dxMax)
-        self.dxMaxDec = kwargs.get('dxMaxDec', self.dxMax)
+        self.xMin = kwargs.get("xMin", -np.ones_like(xo) * float("Inf"))
+        self.xMax = kwargs.get("xMax", np.ones_like(xo) * float("Inf"))
+        self.maxIt = kwargs.get("maxIt", 100)
+        self.dx0 = kwargs.get("firstStep", 1e-6)
+        self.errLim = kwargs.get("errLim", 1e-6)
+        self.relax = kwargs.get("relax", 1.0)
+        self.dxMax = kwargs.get("dxMax", np.ones_like(xo) * float("Inf"))
+        self.dxMaxInc = kwargs.get("dxMaxInc", self.dxMax)
+        self.dxMaxDec = kwargs.get("dxMaxDec", self.dxMax)
 
-        self.relax = kwargs.get('relax', 1.0)
-        self.derivativeMethod = kwargs.get('derivativeMethod', 'right')
-        self.err  = 1.0
-        self.it   = 0
-        self.J    = None
+        self.relax = kwargs.get("relax", 1.0)
+        self.derivativeMethod = kwargs.get("derivativeMethod", "right")
+        self.err = 1.0
+        self.it = 0
+        self.J = None
         self.xOld = None
         self.fOld = None
-        self.maxJacobianResetStep = kwargs.get('maxJacobianResetStep', 5)
+        self.maxJacobianResetStep = kwargs.get("maxJacobianResetStep", 5)
         self.converged = False
 
         # Calculate function value at initial point
         self.x = xo
 
         # Convert to numpy arrays
-        for v in ['x', 'xMin', 'xMax', 'dxMax', 'dxMaxInc', 'dxMaxDec']:
-            exec('self.{0} = np.array([a for a in self.{0}])'.format(v))
+        for v in ["x", "xMin", "xMax", "dxMax", "dxMaxInc", "dxMaxDec"]:
+            exec("self.{0} = np.array([a for a in self.{0}])".format(v))
 
         self.evalF()
 
-        if method.lower() == 'broyden':
+        if method.lower() == "broyden":
             self.getStep = self.getStepBroyden
         else:
             self.getStep = self.getStepSecant
 
     def reinitialize(self, xo):
-        self.err  = 1.0
-        self.it   = 0
-        self.J    = None
+        self.err = 1.0
+        self.it = 0
+        self.J = None
 
         # Calculate function value at initial point
         self.x = xo
@@ -74,7 +74,7 @@ class RootFinder:
         dxLimPct = np.ones_like(dx)
         for i in range(len(dxLimPct)):
             if dx[i] > 0:
-                dxLimPct[i] = np.min([dx[i],  self.dxMaxInc[i]]) / dx[i]
+                dxLimPct[i] = np.min([dx[i], self.dxMaxInc[i]]) / dx[i]
             elif dx[i] < 0:
                 dxLimPct[i] = np.max([dx[i], -self.dxMaxDec[i]]) / dx[i]
 
@@ -125,7 +125,7 @@ class RootFinder:
             self.dx = np.zeros_like(self.x)
             self.dx[i] = self.dx0
             self.takeStep()
-            self.J[:,i] = self.df / self.dx[i]
+            self.J[:, i] = self.df / self.dx[i]
             self.f = fo
             self.x = xo
 
@@ -138,13 +138,16 @@ class RootFinder:
         dx = np.reshape(self.dx, (self.dim, 1))
         df = np.reshape(self.df, (self.dim, 1))
 
-        self.J += np.dot(df - np.dot(self.J, dx), dx.T) / np.linalg.norm(dx)**2
+        self.J += np.dot(df - np.dot(self.J, dx), dx.T) / np.linalg.norm(dx) ** 2
         dx *= 0.0
-        dof = [not x <= xMin and not x >= xMax for x, xMin, xMax in zip(self.x, self.xMin, self.xMax)]
+        dof = [
+            not x <= xMin and not x >= xMax
+            for x, xMin, xMax in zip(self.x, self.xMin, self.xMax)
+        ]
         if any(dof):
             A = -self.J
-            b =  self.f.reshape(self.dim, 1)
-            dx[np.ix_(dof)] = np.linalg.solve(A[np.ix_(dof,dof)], b[np.ix_(dof)])
+            b = self.f.reshape(self.dim, 1)
+            dx[np.ix_(dof)] = np.linalg.solve(A[np.ix_(dof, dof)], b[np.ix_(dof)])
 
         if any(np.abs(self.f) - np.abs(self.fOld) > 0.0):
             self.step += 1
@@ -170,67 +173,69 @@ class RootFinder:
 
 
 class RootFinderNew(RootFinder):
+    def takeStep(self, dx=None):
+        if not dx is None:
+            self.dx = dx
+        self.storePrevStep()
+        self.x += self.dx
+        self.evalF()
+        self.it += 1
 
-  def takeStep(self, dx=None):
-    if not dx is None:
-      self.dx = dx
-    self.storePrevStep()
-    self.x += self.dx
-    self.evalF()
-    self.it += 1
+    def resetJacobian(self):
+        fo = self.f * 1.0
+        xo = self.x * 1.0
 
-  def resetJacobian(self):
-    fo = self.f * 1.0
-    xo = self.x * 1.0
+        self.J = np.zeros((self.dim, self.dim))
+        for i in range(self.dim):
+            self.dx = np.zeros_like(self.x)
+            self.dx[i] = self.dx0
+            self.takeStep()
+            self.J[:, i] = self.df / self.dx[i]
+            self.f = fo
+            self.x = xo
 
-    self.J = np.zeros((self.dim, self.dim))
-    for i in range(self.dim):
-      self.dx = np.zeros_like(self.x)
-      self.dx[i] = self.dx0
-      self.takeStep()
-      self.J[:,i] = self.df / self.dx[i]
-      self.f = fo
-      self.x = xo
+        self.step = 0
 
-    self.step = 0
+    def getStepBroyden(self):
+        if self.it == 0 or self.J is None:
+            self.resetJacobian()
 
-  def getStepBroyden(self):
-    if self.it == 0 or self.J is None:
-      self.resetJacobian()
+        dx = np.reshape(self.dx, (self.dim, 1))
+        df = np.reshape(self.df, (self.dim, 1))
 
-    dx = np.reshape(self.dx, (self.dim, 1))
-    df = np.reshape(self.df, (self.dim, 1))
+        self.J += np.dot(df - np.dot(self.J, dx), dx.T) / np.linalg.norm(dx) ** 2
 
-    self.J += np.dot(df - np.dot(self.J, dx), dx.T) / np.linalg.norm(dx)**2
+        dx *= 0.0
+        dof = [
+            not x <= xMin and not x >= xMax
+            for x, xMin, xMax in zip(self.x, self.xMin, self.xMax)
+        ]
+        if any(dof):
+            A = -self.J
+            b = self.f.reshape(self.dim, 1)
+            dx[np.ix_(dof)] = np.linalg.solve(A[np.ix_(dof, dof)], b[np.ix_(dof)])
 
-    dx *= 0.0
-    dof = [not x <= xMin and not x >= xMax for x, xMin, xMax in zip(self.x, self.xMin, self.xMax)]
-    if any(dof):
-      A = -self.J
-      b =  self.f.reshape(self.dim, 1)
-      dx[np.ix_(dof)] = np.linalg.solve(A[np.ix_(dof,dof)], b[np.ix_(dof)])
+        if any(np.abs(self.f) - np.abs(self.fOld) > 0.0):
+            self.step += 1
 
-    if any(np.abs(self.f) - np.abs(self.fOld) > 0.0):
-      self.step += 1
+        if self.step >= self.maxJacobianResetStep:
+            dx = np.ones_like(dx) * self.dx0
+            self.J = None
 
-    if self.step >= self.maxJacobianResetStep:
-      dx = np.ones_like(dx) * self.dx0
-      self.J = None
+        self.dx = dx.reshape(self.dim)
 
-    self.dx = dx.reshape(self.dim)
+        return self.dx
 
-    return self.dx
+    def solve(self):
+        while self.err >= self.errLim and self.it < self.maxIt:
+            self.getStep()
+            self.limitStep()
+            self.takeStep()
+            self.evalErr()
 
-  def solve(self):
-    while self.err >= self.errLim and self.it < self.maxIt:
-      self.getStep()
-      self.limitStep()
-      self.takeStep()
-      self.evalErr()
+        self.converged = self.err < self.errLim and not any(self.x <= self.xMin)
 
-    self.converged = self.err < self.errLim and not any(self.x <= self.xMin)
-
-    return self.x
+        return self.x
 
 
 def fzero(func, x_init, **kwargs):
@@ -257,11 +262,11 @@ def fzero(func, x_init, **kwargs):
         Maximum value for x-variable (default=+Inf)
 
     """
-    max_it = kwargs.get('maxIt', 100)
-    first_step = kwargs.get('first_step', 1e-6)
-    err_lim = kwargs.get('err_lim', 1e-6)
-    x_min = kwargs.get('xmin', -float('Inf'))
-    x_max = kwargs.get('xmax', float('Inf'))
+    max_it = kwargs.get("maxIt", 100)
+    first_step = kwargs.get("first_step", 1e-6)
+    err_lim = kwargs.get("err_lim", 1e-6)
+    x_min = kwargs.get("xmin", -float("Inf"))
+    x_max = kwargs.get("xmax", float("Inf"))
 
     error = 1.0
     it_num = 0
@@ -276,6 +281,7 @@ def fzero(func, x_init, **kwargs):
         error = numpy.abs(x_new - x_old)
         it_num += 1
     return x_new
+
 
 # def fzero(f, xo, **kwargs):
 #     '''
@@ -362,4 +368,3 @@ def fzero(func, x_init, **kwargs):
 #             it += 1
 #
 #         return f((X[2] + X[0]) / 2)
-

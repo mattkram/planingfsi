@@ -69,5 +69,9 @@ class Stopwatch(object):
         minutes, seconds = divmod(self.get_elapsed_seconds(), 60)
         hours, minutes = divmod(minutes, 60)
 
-        print_func('\nExecution completed in %d hours, %d minutes, %d seconds',
-                   hours, minutes, seconds)
+        print_func(
+            "\nExecution completed in %d hours, %d minutes, %d seconds",
+            hours,
+            minutes,
+            seconds,
+        )

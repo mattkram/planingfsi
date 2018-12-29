@@ -33,27 +33,27 @@ def slugify(value):
         https://stackoverflow.com/questions/295135/turn-a-string-into-a-valid-filename.
 
     """
-    value = re.sub(r'[^\w\s\.-]', '', value).strip()
-    value = re.sub(r'[-\s]+', '-', value)
+    value = re.sub(r"[^\w\s\.-]", "", value).strip()
+    value = re.sub(r"[-\s]+", "-", value)
     return value
 
 
 def camel_to_snake(camel_string):
     """Convert a CamelCase string to snake_string format."""
-    first_cap_re = re.compile(r'(.)([A-Z][a-z]+)')
-    all_cap_re = re.compile(r'([a-z0-9])([A-Z])')
-    sub_1 = first_cap_re.sub(r'\1_\2', camel_string)
-    return all_cap_re.sub(r'\1_\2', sub_1).lower()
+    first_cap_re = re.compile(r"(.)([A-Z][a-z]+)")
+    all_cap_re = re.compile(r"([a-z0-9])([A-Z])")
+    sub_1 = first_cap_re.sub(r"\1_\2", camel_string)
+    return all_cap_re.sub(r"\1_\2", sub_1).lower()
 
 
 def force_extension(filename, ext):
     """Force a file extension to be replaced in fileName"""
     # Remove existing extension
-    split = filename.split('.')
+    split = filename.split(".")
     if len(split) > 1:
-        filename = '.'.join(split[:-1])
+        filename = ".".join(split[:-1])
 
-    return ''.join((filename, ext))
+    return "".join((filename, ext))
 
 
 def match(match_list, search_str, startindex=0, ignore=None, **kwargs):
@@ -62,9 +62,9 @@ def match(match_list, search_str, startindex=0, ignore=None, **kwargs):
         if fnmatch(str(val), search_str) and i >= startindex:
             if val is not None and not val == ignore:
                 return i
-    if 'default' in kwargs:
-        return kwargs.get('default')
-    raise ValueError('Search string {0} not found'.format(search_str))
+    if "default" in kwargs:
+        return kwargs.get("default")
+    raise ValueError("Search string {0} not found".format(search_str))
 
 
 def index_match(index_list, match_list, search_str, **kwargs):
@@ -87,9 +87,8 @@ def index_match(index_list, match_list, search_str, **kwargs):
     """
     index = match(match_list, search_str, **kwargs)
     if not isinstance(index, int):
-        return kwargs.get('default')
+        return kwargs.get("default")
     return index_list[index]
-
 
 
 # def str2bool(str):

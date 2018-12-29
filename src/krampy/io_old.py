@@ -53,14 +53,14 @@ class Pattern(object):
 
     """
 
-    DELIMITER = re.compile(r'[:,\{\}\[\]]')
-    NUMBER = re.compile(r'\A[-+]?(\d+(\.\d*)?|\.\d+)([eE][-+]?\d+)?\Z')
-    LITERAL = re.compile(r'(\"[\w\\\/\.]*\")|(\'[\w\\\/\.]*\')')
-    BOOL = re.compile(r'(True|False)', re.IGNORECASE)
-    NONE = re.compile(r'(None)', re.IGNORECASE)
-    WORD = re.compile(r'[-+\w]+')
-    ENV = re.compile(r'\$(\w+)')
-    NANINF = re.compile(r'[+-]?(nan|inf)', re.IGNORECASE)
+    DELIMITER = re.compile(r"[:,\{\}\[\]]")
+    NUMBER = re.compile(r"\A[-+]?(\d+(\.\d*)?|\.\d+)([eE][-+]?\d+)?\Z")
+    LITERAL = re.compile(r"(\"[\w\\\/\.]*\")|(\'[\w\\\/\.]*\')")
+    BOOL = re.compile(r"(True|False)", re.IGNORECASE)
+    NONE = re.compile(r"(None)", re.IGNORECASE)
+    WORD = re.compile(r"[-+\w]+")
+    ENV = re.compile(r"\$(\w+)")
+    NANINF = re.compile(r"[+-]?(nan|inf)", re.IGNORECASE)
 
 
 class Dictionary(dict):
@@ -99,28 +99,28 @@ class Dictionary(dict):
         if isinstance(construct_from, dict):
             self.load_from_dict(construct_from)
         elif isinstance(construct_from, str):
-            if construct_from.strip().startswith('{'):
+            if construct_from.strip().startswith("{"):
                 self.load_from_string(construct_from)
             else:
                 source_file = construct_from
                 self.load_from_file(construct_from)
 
         else:
-            raise ValueError('Argument to Dictionary must be string, dict, or None')
+            raise ValueError("Argument to Dictionary must be string, dict, or None")
 
         # If specified, read values from a base dictionary
         # All local values override the base dictionary values
-        base_dict_dir = self.read('baseDict', default=None)
+        base_dict_dir = self.read("baseDict", default=None)
         if base_dict_dir is not None:
             # Allow for loading dictionary from different directory by tracing
             # relative references from original file directory
-            if base_dict_dir.startswith('.'):
+            if base_dict_dir.startswith("."):
                 if source_file is not None:
                     # Begin from the directory the source_file lies in
                     dir_name = os.path.dirname(source_file)
                 else:
                     # Otherwise, use the current directory
-                    dir_name = '.'
+                    dir_name = "."
                 base_dict_dir = os.path.join(dir_name, base_dict_dir)
             base_dict = Dictionary(base_dict_dir)
 
@@ -143,11 +143,11 @@ class Dictionary(dict):
         with open(filename) as ff:
             for line in ff:
                 # Remove comment strings, everything after # discarded
-                line = line.split('#')[0].strip()
-                if line != '':
+                line = line.split("#")[0].strip()
+                if line != "":
                     dict_list.append(line)
 
-        dict_string = ','.join(dict_list)
+        dict_string = ",".join(dict_list)
         self.load_from_string(dict_string)
 
     def load_from_string(self, in_string):
@@ -163,20 +163,20 @@ class Dictionary(dict):
         """
 
         # Surround string with curly brackets if it's not already
-        if not in_string.startswith('{'):
-            in_string = in_string.join('{}')
+        if not in_string.startswith("{"):
+            in_string = in_string.join("{}")
 
         # Replace multiple consecutive commas with one
-        in_string = re.sub(',,+', ',', in_string)
+        in_string = re.sub(",,+", ",", in_string)
 
         # Replace [, or {, or ,] or ,} with bracket only
         def repl(m):
             return m.group(1)
 
-        in_string = re.sub(r'([\{\[]),', repl, in_string)
-        in_string = re.sub(r',([\]\}])', repl, in_string)
+        in_string = re.sub(r"([\{\[]),", repl, in_string)
+        in_string = re.sub(r",([\]\}])", repl, in_string)
 
-        in_string = in_string.replace('}{', '},{')
+        in_string = in_string.replace("}{", "},{")
 
         # Replace environment variables with their value & surround by quotes
         def repl(m):
@@ -186,13 +186,13 @@ class Dictionary(dict):
 
         # Split in_string into a list of delimiters and sub-strings
         in_list = []
-        while (len(in_string) > 0):
+        while len(in_string) > 0:
             in_string = in_string.strip()
             match = Pattern.DELIMITER.search(in_string)
             if match:
                 # Process any words before the delimiter
                 if match.start() > 0:
-                    word = in_string[:match.start()].strip()
+                    word = in_string[: match.start()].strip()
                     if Pattern.LITERAL.match(word):
                         # Surround literals by escaped double-quotes
                         word = word[1:-1].join(('\\"', '\\"')).join('""')
@@ -211,10 +211,10 @@ class Dictionary(dict):
                     in_list.append(word)
 
                 in_list.append(match.group(0))
-                in_string = in_string[match.end():]
+                in_string = in_string[match.end() :]
             else:  # No more delimiters
                 break
-        json_string = ''.join(in_list)
+        json_string = "".join(in_list)
         self.load_from_json(json_string)
 
     def load_from_json(self, json_string):
@@ -230,7 +230,7 @@ class Dictionary(dict):
         try:
             dict_ = json.loads(json_string)
         except:
-            raise ValueError('Error converting string to json: {0}'.format(json_string))
+            raise ValueError("Error converting string to json: {0}".format(json_string))
 
         self.load_from_dict(dict_)
 
@@ -258,11 +258,11 @@ class Dictionary(dict):
                     # Convert None string to None
                     val = None
                 # Evaluate if unit. is in the string
-                elif 'unit.' in val:
+                elif "unit." in val:
                     try:
                         val = eval(val)
                     except:
-                        ValueError('Cannot process the value {0}: {1}'.format(key, val))
+                        ValueError("Cannot process the value {0}: {1}".format(key, val))
             elif isinstance(val, dict):
                 val = Dictionary(val)
 
@@ -317,5 +317,6 @@ class Dictionary(dict):
             # Here because if in preamble there is
             # a circular import
             from planingfsi import config
+
             val = getattr(config, val)
         return val

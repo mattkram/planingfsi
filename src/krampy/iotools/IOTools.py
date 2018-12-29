@@ -7,8 +7,8 @@ import xlutils.copy as xlcp
 
 import krampy as kp
 
-class OutputWorkbook:
 
+class OutputWorkbook:
     def __init__(self, name, unitDict=None):
         self.name = name
         if os.path.exists(name):
@@ -34,23 +34,22 @@ class OutputWorkbook:
                 if i == 0:
                     newFileName = self.name
                 else:
-                    newFileName = '{0}_{1}.xls'.format(self.name.replace('.xls',''), i)
+                    newFileName = "{0}_{1}.xls".format(self.name.replace(".xls", ""), i)
 
                 try:
                     self.xlObj.save(newFileName)
-                    print('Output workbook saved to {0}'.format(newFileName))
+                    print("Output workbook saved to {0}".format(newFileName))
                     return None
                 except:
                     i += 0
         except:
-            raise NameError('Cannot find an appropriate output file path.')
+            raise NameError("Cannot find an appropriate output file path.")
 
 
 class OutputWorksheet:
-
     def __init__(self, parent, name, unitDict=None):
         if not unitDict:
-            unitDict = {'nd' : '-'}
+            unitDict = {"nd": "-"}
 
         self.name = name
         # If sheet already exists, load it, otherwise create it
@@ -59,7 +58,7 @@ class OutputWorksheet:
             self.xlObj = parent.xlObj.get_sheet(ind)
             for i in range(parent.sheetNumCells[ind][0]):
                 for j in range(parent.sheetNumCells[ind][1]):
-                    self.xlObj.write(i, j, '')
+                    self.xlObj.write(i, j, "")
         else:
             self.xlObj = parent.xlObj.add_sheet(self.name)
         self.activeRow = 0
@@ -71,9 +70,9 @@ class OutputWorksheet:
             unit = header[1]
         else:
             name = header
-            unit = 'nd'
+            unit = "nd"
 
-        return '{0} [{1}]'.format(name, self.unitDict.get(unit, unit))
+        return "{0} [{1}]".format(name, self.unitDict.get(unit, unit))
 
     def writeHeaders(self, *args):
         self.writeHeader(*args)
@@ -85,7 +84,7 @@ class OutputWorksheet:
         # Write values to the next row
         activeCol = 0
         for value in values:
-            if not hasattr(value, '__iter__'):
+            if not hasattr(value, "__iter__"):
                 value = [value]
             for valuei in value:
                 self.xlObj.write(self.activeRow, activeCol, valuei)
@@ -97,15 +96,14 @@ class OutputWorksheet:
 
 
 class OutputCSV:
-
     def __init__(self, name, unitDict=None):
         self.name = name
-        self.fObj = open(name, 'wb')
-        self.writer = csv.writer(self.fObj, delimiter=',')
+        self.fObj = open(name, "wb")
+        self.writer = csv.writer(self.fObj, delimiter=",")
         self.activeRow = 0
 
         if not unitDict:
-            self.unitDict = {'nd' : '-'}
+            self.unitDict = {"nd": "-"}
         else:
             self.unitDict = unitDict
 
@@ -128,9 +126,9 @@ class OutputCSV:
             unit = header[1]
         else:
             name = header
-            unit = 'nd'
+            unit = "nd"
 
-        return '{0} [{1}]'.format(name, self.unitDict.get(unit, unit))
+        return "{0} [{1}]".format(name, self.unitDict.get(unit, unit))
 
     def writeHeaders(self, *args):
         self.writeHeader(*args)
@@ -143,7 +141,7 @@ class OutputCSV:
         # Stacks each value as if they were lists combined
         writeList = []
         for value in values:
-            if hasattr(value, '__iter__'):
+            if hasattr(value, "__iter__"):
                 writeList += [v for v in value]
             else:
                 writeList += [value]
@@ -153,17 +151,17 @@ class OutputCSV:
 class CombinedOut:
     def __init__(self, *files):
         self.files = files
+
     def write(self, obj):
         for f in self.files:
             f.write(obj)
 
 
 class LogFile:
-
     def __init__(self, *fileNames, **kwargs):
-        dirName = kwargs.get('dirName', '.')
+        dirName = kwargs.get("dirName", ".")
         kp.mkdir_p(dirName)
-        self.files = [open(os.path.join(dirName, ff), 'w') for ff in fileNames]
+        self.files = [open(os.path.join(dirName, ff), "w") for ff in fileNames]
         sys.stdout = CombinedOut(sys.stdout, *self.files)
         sys.stderr = CombinedOut(sys.stderr, *self.files)
 
@@ -171,36 +169,40 @@ class LogFile:
         for ff in self.files:
             ff.close()
 
-class TimestampedLogFile(LogFile):
 
+class TimestampedLogFile(LogFile):
     def __init__(self, baseName, startTime, **kwargs):
-        timeString = startTime.replace(microsecond=0).isoformat().replace(':','-')
-        LogFile.__init__(self, '{0}_{1}.dat'.format(baseName, timeString), **kwargs)
+        timeString = startTime.replace(microsecond=0).isoformat().replace(":", "-")
+        LogFile.__init__(self, "{0}_{1}.dat".format(baseName, timeString), **kwargs)
 
 
 def writeRowToFile(f, *values):
     # Write values to the next row
     activeCol = 0
     for i, value in enumerate(values):
-        if not hasattr(value, '__iter__'):
+        if not hasattr(value, "__iter__"):
             value = [value]
         for j, valuei in enumerate(value):
             if i > 0 or j > 0:
-                f.write(', ')
-            f.write('{0}'.format(valuei))
+                f.write(", ")
+            f.write("{0}".format(valuei))
             activeCol += 1
-    f.write('\n')
+    f.write("\n")
+
 
 def getLineCSV(f):
-    return [float(s.replace(' ', '')) for s in f.readline().split(',')]
+    return [float(s.replace(" ", "")) for s in f.readline().split(",")]
+
 
 def _getOutCell(outSheet, rowIndex, colIndex):
-    ''' HACK: Extract the internal xlwt cell representation. '''
+    """ HACK: Extract the internal xlwt cell representation. """
     row = outSheet._Worksheet__rows.get(rowIndex)
-    if not row: return None
+    if not row:
+        return None
 
     cell = row._Row__cells.get(colIndex)
     return cell
+
 
 def setOutCell(outSheet, row, col, value):
     """ Change cell value without changing formatting. """
@@ -213,22 +215,28 @@ def setOutCell(outSheet, row, col, value):
         if newCell:
             newCell.xf_idx = previousCell.xf_idx
 
+
 # Thread-safe printing
-def safePrint(s=''):
+def safePrint(s=""):
     print("{0}\n".format(s))
+
 
 # Print functions for various sections, etc.
 HEADER_WIDTH = 100
 TEXT_WIDTH = HEADER_WIDTH - 6
-def printHeaderLine(s=''):
+
+
+def printHeaderLine(s=""):
     if len(s) > TEXT_WIDTH:
         printHeaderLine(s[:TEXT_WIDTH])
         printHeaderLine(s[TEXT_WIDTH:])
     else:
-        safePrint('|| {0:{1}s} ||'.format(s, TEXT_WIDTH))
+        safePrint("|| {0:{1}s} ||".format(s, TEXT_WIDTH))
+
 
 def printSpacerLine():
-    safePrint('='*HEADER_WIDTH)
+    safePrint("=" * HEADER_WIDTH)
+
 
 def printSubsection(s):
     safePrint()
@@ -237,12 +245,13 @@ def printSubsection(s):
     printSpacerLine()
     safePrint()
 
+
 def printHeader(*args):
-    '''
+    """
       Print header. Each argument will be printed on its own line. A value of None
       provided will be printed as a blank line. A spacer line is printed before and
       after the provided arguments.
-    '''
+    """
     printSpacerLine()
     for arg in args:
         if arg is not None:
@@ -251,15 +260,17 @@ def printHeader(*args):
             printHeaderLine()
     printSpacerLine()
 
+
 # Function to convert a list to a string (for printing)
-def list2str(l, formatString=''):
-    s =  '['
+def list2str(l, formatString=""):
+    s = "["
     for i, li in enumerate(l):
-        s += '{0:{1}}'.format(li, formatString)
+        s += "{0:{1}}".format(li, formatString)
         if i < len(l) - 1:
-            s += ', '
-    s += ']'
+            s += ", "
+    s += "]"
     return s
+
 
 # def selectFile(*filetypes, **kwargs):
 #     from Tkinter import Tk
