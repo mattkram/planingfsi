@@ -18,10 +18,9 @@
 #
 import os
 import sys
-sys.path.insert(0, os.path.abspath(os.path.join(__file__, '..', '..', '..')))
-sys.path.insert(0, os.path.join('/', 'System', 'Library', 'Frameworks',
-                                'Python.framework','Versions', '2.7',
-                                'Extras', 'lib', 'python'))
+
+here = os.path.dirname(__file__)
+sys.path.insert(0, os.path.abspath(os.path.join(here, '..', '..', "src")))
 
 import planingfsi
 
