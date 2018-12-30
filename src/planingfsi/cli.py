@@ -5,9 +5,11 @@ results from file. It reads the fluid and solid body properties from dictionary
 files, assembles the problem, and runs it.
 
 """
+import os
+import shutil
+from glob import glob
 
 import click
-import krampy
 
 from . import config
 from . import logger
@@ -29,7 +31,8 @@ def run_planingfsi(post_mode, plot_save, new_case):
         config.plotting.save = True
         config.plotting.plot_any = True
     if new_case:
-        krampy.rm_rf(krampy.find_files(config.path.case_dir, "[0-9]*"))
+        for time_dir in glob(os.path.join(config.path.case_dir, "[0-9]*")):
+            shutil.rmtree(time_dir)
 
     simulation = Simulation()
     simulation.load_input_files()
