@@ -25,9 +25,19 @@ def main():
 
 
 @main.command("run")
-@click.option("post_mode", "--post", is_flag=True)
-@click.option("--plot_save", is_flag=True)
-@click.option("new_case", "--new", is_flag=True)
+@click.option(
+    "post_mode",
+    "--post",
+    is_flag=True,
+    help="Run in post-processing mode, loading results from file and generating figures.",
+)
+@click.option("plot_save", "--plot", is_flag=True, help="Save the plots to figures.")
+@click.option(
+    "new_case",
+    "--new",
+    is_flag=True,
+    help="Force generate new case, deleting old results first.",
+)
 def run(post_mode, plot_save, new_case):
     """Run the planingFSI solver."""
     if post_mode:
@@ -54,6 +64,7 @@ def run(post_mode, plot_save, new_case):
 @click.option("plot_save", "--save", is_flag=True)
 @click.option("--verbose", is_flag=True)
 def generate_mesh(mesh_dict, plot_show, plot_save, verbose):
+    """Generate the initial mesh."""
     if not mesh_dict:
         config.path.mesh_dict_dir = mesh_dict
 
