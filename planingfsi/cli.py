@@ -20,15 +20,16 @@ from .fsi.simulation import Simulation
 
 
 @click.group(help="Run the PlaningFSI program")
-def cli():
+def main():
     pass
 
 
-@cli.command("run")
+@main.command("run")
 @click.option("post_mode", "--post", is_flag=True)
 @click.option("--plot_save", is_flag=True)
 @click.option("new_case", "--new", is_flag=True)
 def run(post_mode, plot_save, new_case):
+    """Run the planingFSI solver."""
     if post_mode:
         logger.info("Running in post-processing mode")
         config.plotting.save = True
@@ -47,7 +48,7 @@ def run(post_mode, plot_save, new_case):
     simulation.run()
 
 
-@cli.command(name="mesh")
+@main.command(name="mesh")
 @click.argument("mesh_dict", required=False)
 @click.option("plot_show", "--show", is_flag=True)
 @click.option("plot_save", "--save", is_flag=True)
