@@ -8,13 +8,11 @@ The global attributes can then be simply accessed via config.attribute_name
 
 """
 import math
-import os
 from pathlib import Path
-
-import matplotlib
+from typing import Optional
 
 from . import logger
-from planingfsi.dictionary import load_dict_from_file
+from .dictionary import load_dict_from_file
 
 DICT_NAME = "configDict"
 
@@ -22,11 +20,7 @@ logger.info("Loading values from {0}".format(DICT_NAME))
 
 
 class ConfigItem(object):
-    """A descriptor to represent a configuration item.
-
-    Attributes are loaded from a dictionary with fancy default handling.
-
-    """
+    """A configuration item with type conversion, multiple key support, and default value."""
 
     def __init__(self, alt_key=None, alt_keys=None, default=None, type_=None):
         self.name = None
@@ -36,13 +30,14 @@ class ConfigItem(object):
         if alt_keys:
             self.alt_keys.extend(alt_keys)
         self.default = default
-        self.type_ = type_
+        self.type_ = type_ if type_ else type(default)
 
     def __get__(self, instance, owner):
         """Retrieve the value from the instance dictionary. If it doesn't exist, return the default."""
-        if self.name in instance.__dict__:
+        try:
             return instance.__dict__[self.name]
-        return self.default
+        except KeyError:
+            return self.default
 
     def __set__(self, instance, value):
         """When the value is set, try to convert it and then store it in the instance dictionary."""
@@ -51,14 +46,15 @@ class ConfigItem(object):
         instance.__dict__[self.name] = value
 
     def __set_name__(self, _, name):
+        """Store the name when instantiating a new ConfigItem."""
         self.name = name
 
     @property
     def keys(self):
-        """A list of keys to look for when reading in the value."""
+        """A list of keys to look for when reading in the value from a dictionary."""
         return [self.name] + self.alt_keys
 
-    def get_from_dict(self, dict_):
+    def load_value_from_dict(self, dict_):
         """Try to read all keys from the dictionary until a non-None value is found.
 
         Returns the default value if no appropriate value is found in the dictionary.
@@ -68,9 +64,7 @@ class ConfigItem(object):
             value = dict_.get(key)
             if value is not None:
                 return value
-        raise KeyError(
-            'None of the following keys "{}" found in dictionary.'.format(self.keys)
-        )
+        raise KeyError(f'None of the following keys "{self.keys}" found in dictionary.')
 
 
 class SubConfig(object):
@@ -80,30 +74,39 @@ class SubConfig(object):
 
     def __init__(self):
         if Path(DICT_NAME).exists():
-            self.load_from_dict(DICT_NAME)
+            self.load_from_dict_file(DICT_NAME)
 
-    def load_from_dict(self, dict_name: str):
+    def load_from_dict_file(self, dict_name: str):
         """Load the configuration from a dictionary file.
 
-        Parameters
-        ----------
-        dict_name
-            The path to the dictionary file.
+        Args:
+            dict_name: The path to the dictionary file.
 
         """
         dict_ = load_dict_from_file(dict_name)
-        config_items = {key: item for key, item in self.__class__.__dict__.items()}
-        for key, config_item in self.__class__.__dict__.items():
-            if isinstance(config_item, ConfigItem):
+        for key, item in self.__class__.__dict__.items():
+            if isinstance(item, ConfigItem):
                 try:
-                    value = config_item.get_from_dict(dict_)
+                    value = item.load_value_from_dict(dict_)
                 except KeyError:
                     pass
                 else:
-                    setattr(self, config_item.name, value)
+                    setattr(self, item.name, value)
 
 
 class FlowConfig(SubConfig):
+    """Configuration related to the fluid dynamics problem.
+
+    Class Attributes:
+        density (float): Mass density of the fluid.
+        gravity (float): Acceleration due to gravity.
+        kinematic_viscosity (float): Kinematic viscosity of the fluid.
+        waterline_height (float): Height of the waterline above the reference.
+        num_dim (int): Number of dimensions.
+        include_friction (bool): If True, include a flat-plate estimation for the frictional drag component.
+
+    """
+
     density = ConfigItem(alt_key="rho", default=998.2)
     gravity = ConfigItem(alt_key="g", default=9.81)
     kinematic_viscosity = ConfigItem(alt_key="nu", default=1e-6)
@@ -119,46 +122,57 @@ class FlowConfig(SubConfig):
         return body.reference_length
 
     @property
+    def froude_num(self):
+        """float: The Froude number is the non-dimensional speed."""
+        return self.flow_speed / math.sqrt(self.gravity * self.reference_length)
+
+    @froude_num.setter
+    def froude_num(self, value):
+        # noinspection PyAttributeOutsideInit
+        self.flow_speed = value * math.sqrt(self.gravity * self.reference_length)
+        self._froude_num = (
+            None
+        )  # Only store _froude_num on reading, then use _flow_speed
+
+    @property
     def flow_speed(self):
-        """The flow speed is the native variable to store free-stream velocity. However, if Froude
+        """float: The flow speed is the native variable to store free-stream velocity. However, if Froude
         number is set from input file, that should override the flow speed input.
 
         """
+        if self._froude_num is not None and self._flow_speed is not None:
+            raise ValueError(
+                "Only one flow speed variable (either Froude number or flow speed) "
+                f"must be set in {DICT_NAME}"
+            )
+
         if self._froude_num is not None:
-            if self._flow_speed is not None:
-                raise ValueError(
-                    "Only one flow speed variable (either Froude number or flow "
-                    "speed) must be set in {0}".format(DICT_NAME)
-                )
+            # Set the self._flow_speed via self.froud_num property
+            # noinspection PyAttributeOutsideInit
             self.froude_num = self._froude_num
-        elif self._flow_speed is None:
-            raise ValueError("Must specify either U or Fr in {0}".format(DICT_NAME))
+
+        if self._flow_speed is None:
+            raise ValueError(f"Must specify either U or Fr in {DICT_NAME}")
         return self._flow_speed
 
     @flow_speed.setter
     def flow_speed(self, value):
         """Set the raw flow speed variable and ensure raw Froude number is not also set."""
         self._flow_speed = value
-        self._froude_num = None
-
-    @property
-    def froude_num(self):
-        return self.flow_speed / math.sqrt(self.gravity * self.reference_length)
-
-    @froude_num.setter
-    def froude_num(self, value):
-        self.flow_speed = value * math.sqrt(self.gravity * self.reference_length)
 
     @property
     def stagnation_pressure(self):
+        """float: The pressure at the stagnation point."""
         return 0.5 * self.density * self.flow_speed ** 2
 
     @property
     def k0(self):
+        """float: A wave number used internally in the potential-flow solver."""
         return self.gravity / self.flow_speed ** 2
 
     @property
     def lam(self):
+        """float: A wavelength used internally in the potential-flow solver."""
         return 2 * math.pi / self.k0
 
 
@@ -175,10 +189,6 @@ class BodyConfig(SubConfig):
 
     _cushion_pressure = ConfigItem(alt_key="Pc", default=0.0)
     _seal_pressure = ConfigItem(alt_key="Ps", default=0.0)
-
-    # TODO: Do these belong here?
-    PcBar = ConfigItem()
-    PsBar = ConfigItem()
 
     # Rigid body motion parameters
     time_step = ConfigItem("timeStep", default=1e-3)
@@ -410,9 +420,15 @@ io = IOConfig()
 solver = SolverConfig()
 
 
-def load_from_file(filename):
+def load_from_dict_file(filename: str):
+    """Load all SubConfig's from a dictionary file.
+
+    Args:
+        filename: Path to the dictionary file.
+
+    """
     for c in [flow, body, plotting, path, io, solver]:
-        c.load_from_dict(filename)
+        c.load_from_dict_file(filename)
 
 
 # Initialized constants
@@ -420,16 +436,3 @@ ramp = 1.0
 has_free_structure = False
 it_dir = ""
 it = -1
-
-# Use tk by default. Otherwise try Agg. Otherwise, disable plotting.
-_fallback_engine = "Agg"
-if os.environ.get("DISPLAY") is None:
-    matplotlib.use(_fallback_engine)
-else:
-    try:
-        from matplotlib import pyplot
-    except ImportError:
-        try:
-            matplotlib.use(_fallback_engine)
-        except ImportError:
-            plotting.plot_any = False

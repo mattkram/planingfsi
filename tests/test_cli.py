@@ -1,10 +1,10 @@
 import pytest
 
-from planingfsi.cli import run_planingfsi, generate_mesh
+from planingfsi.cli import run, generate_mesh
 
 
 def test_run_planingfsi(runner):
-    results = runner.invoke(run_planingfsi)
+    results = runner.invoke(run)
     assert results.exit_code == 0
 
 
