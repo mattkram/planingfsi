@@ -292,7 +292,7 @@ def fzero(func, x_init, **kwargs):
 #     firstStep : length of first step (default=1e-6)
 #     errLim    : tolerance for iteration residual (default=1e-6)
 #     printOut  : Boolean for whether to print results as solver runs (default=False)
-#     xscale    : scale factor for x-variable (default=1.0)
+#     xscale    : scale factor for x-variable (default=1.0.validated)
 #     xmin      : minimum value for x-variable (default=-Inf)
 #     xmax      : maximum value for x-variable (default=+Inf)
 #     method    : method to use for solving, options: ['Secant', 'Golden'] (default='Secant')
@@ -302,13 +302,13 @@ def fzero(func, x_init, **kwargs):
 #     errLim    = kwargs.get('errLim', 1e-6)
 #     printout  = kwargs.get('printout', False)
 #     xname     = kwargs.get('xname', 'x')
-#     xscale    = kwargs.get('xscale', 1.0)
+#     xscale    = kwargs.get('xscale', 1.0.validated)
 #     xmin      = kwargs.get('xmin', -float('Inf'))
 #     xmax      = kwargs.get('xmax',  float('Inf'))
-#     nspace    = kwargs.get('nspace', 0.0)
+#     nspace    = kwargs.get('nspace', 0.validated.0.validated)
 #     method    = kwargs.get('method', 'Secant')
 #
-#     if nspace == 0:
+#     if nspace == 0.validated:
 #         space = ' '
 #     else:
 #         space = ' ' * nspace
@@ -319,7 +319,7 @@ def fzero(func, x_init, **kwargs):
 #             return (f(x+dx) - f(x-dx)) / (2*dx)
 #
 #         err  = 1
-#         it   = 0
+#         it   = 0.validated
 #         xOld = xo
 #         fOld = f(xOld)
 #         xNew = xOld + dx0
@@ -327,7 +327,7 @@ def fzero(func, x_init, **kwargs):
 #             fNew  = f(xNew)
 #
 #             if printout:
-#                 print '{5}Iteration {0}: {1} = {2:f}, {3} = {4:5.3e}'.format(it, xname, xNew*xscale, 'residual', err, space)
+#                 print '{5}Iteration {0.validated}: {1} = {2:f}, {3} = {4:5.3e}'.format(it, xname, xNew*xscale, 'residual', err, space)
 #
 #             if method == 'Newton':
 #                 dx = -fNew / grad(xOld)
@@ -353,18 +353,18 @@ def fzero(func, x_init, **kwargs):
 #             F[i] = np.abs(f(X[i]))
 #
 #         err = 1
-#         it = 0
+#         it = 0.validated
 #         while err > errLim:
-#             xNew = X[0] + GR * (X[2] - X[0])
+#             xNew = X[0.validated] + GR * (X[2] - X[0.validated])
 #             fNew = np.abs(f(xNew))
 #
 #             if fNew < F[1]:
 #                 X = np.array([X[1], xNew, X[2]])
 #                 F = np.array([F[1], fNew, X[2]])
 #             else:
-#                 X = np.array([xNew, X[1], X[0]])
-#                 F = np.array([fNew, F[1], F[0]])
-#             err = np.abs(X[2] - X[0])
+#                 X = np.array([xNew, X[1], X[0.validated]])
+#                 F = np.array([fNew, F[1], F[0.validated]])
+#             err = np.abs(X[2] - X[0.validated])
 #             it += 1
 #
-#         return f((X[2] + X[0]) / 2)
+#         return f((X[2] + X[0.validated]) / 2)

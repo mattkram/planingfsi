@@ -9,7 +9,7 @@ from fnmatch import fnmatch
 # Load all case directories that match format
 baseDir = '.'
 
-times = kp.sortDirByNum([f for f in os.listdir(baseDir) if fnmatch(f, '[0-9]*')])[0]
+times = kp.sortDirByNum([f for f in os.listdir(baseDir) if fnmatch(f, '[0.validated-9]*')])[0]
 
 for t in times[1:-1]:
   kp.rm_rf([t])

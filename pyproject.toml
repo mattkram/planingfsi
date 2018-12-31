@@ -15,8 +15,8 @@ classifiers = [
     "Topic :: Scientific/Engineering",
 ]
 packages = [
-    { include = "planingfsi", from = "src" },
-    { include = "krampy", from = "src" },
+    { include = "planingfsi" },
+#    { include = "krampy", from = "src" },
 ]
 
 [tool.poetry.dependencies]

@@ -4,37 +4,37 @@ import re
 import warnings
 from collections import UserDict
 
-from krampy import logger
+from . import logger
 
 
 def replace_single_quotes_with_double_quotes(string):
     """Replace all single-quoted strings with double-quotes."""
 
-    def repl(m):
+    def replace(m):
         return m.group(1).join('""')
 
-    return re.sub(r"'(.+?)'", repl, string)
+    return re.sub(r"'(.+?)'", replace, string)
 
 
 def replace_environment_variables(string):
     """Replace environment variables with their value."""
 
-    def repl(m):
+    def replace(m):
         return os.environ[m.group(1)]
 
-    return re.sub("\$(\w+)", repl, string)
+    return re.sub(r"\$(\w+)", replace, string)
 
 
 def add_quotes_to_words(string):
     """Find words inside a string and surround with double-quotes."""
-    quoted_pattern = re.compile('(".+?")')
-    word_pattern = re.compile("([\w.-]+)")
+    quoted_pattern = re.compile(r'(".+?")')
+    word_pattern = re.compile(r"([\w.-]+)")
     # Any number, integer, float, or exponential
     number_pattern = re.compile(r"[-+]?[0-9]*\.?[0-9]+([eE][-+]?[0-9]+)?")
 
     matches = quoted_pattern.split(string)
 
-    def repl(m):
+    def replace(m):
         """Add quotes, only if it isn't a number."""
         value = m.group(1)
         if number_pattern.match(value):
@@ -42,7 +42,7 @@ def add_quotes_to_words(string):
         return value.join('""')
 
     return "".join(
-        word_pattern.sub(repl, m) if i % 2 == 0 else m for i, m in enumerate(matches)
+        word_pattern.sub(replace, m) if i % 2 == 0 else m for i, m in enumerate(matches)
     )
 
 
@@ -68,10 +68,10 @@ def jsonify_string(string):
     string = re.sub(",+", ",", string)
     string = (
         string.replace("[,", "[")
-        .replace("{,", "{")
-        .replace(",]", "]")
-        .replace(",}", "}")
-        .replace("}{", "},{")
+            .replace("{,", "{")
+            .replace(",]", "]")
+            .replace(",}", "}")
+            .replace("}{", "},{")
     )
 
     logger.debug('JSONified string: "{}"'.format(string))

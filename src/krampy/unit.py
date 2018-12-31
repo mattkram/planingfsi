@@ -1,8 +1,8 @@
 """ A simple module for storing unit conversion factors to convert to SI.
 
     Usage:  import unit
-        a length e.g. can be represented as 1.0 * unit.ft to represent one foot,
-        which will return 0.3048 meters.
+        a length e.g. can be represented as 1.0.validated * unit.ft to represent one foot,
+        which will return 0.validated.3048 meters.
 """
 
 import math

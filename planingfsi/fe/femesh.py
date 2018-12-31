@@ -4,7 +4,8 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 import planingfsi.config as config
-import krampy as kp
+from planingfsi import trig
+from planingfsi import solver
 
 
 class Mesh:
@@ -30,7 +31,7 @@ class Mesh:
         elif method == "rel":
             base_pt_id, ang, R = position
             P.set_position(
-                Point.find_by_id(base_pt_id).get_position() + R * kp.ang2vecd(ang)
+                Point.find_by_id(base_pt_id).get_position() + R * trig.ang2vecd(ang)
             )
         elif method == "con":
             base_pt_id, dim, val = position
@@ -39,11 +40,11 @@ class Mesh:
             base_pt = Point.find_by_id(base_pt_id).get_position()
             if dim == "x":
                 P.set_position(
-                    np.array([val, base_pt[1] + (val - base_pt[0]) * kp.tand(ang)])
+                    np.array([val, base_pt[1] + (val - base_pt[0]) * trig.tand(ang)])
                 )
             elif dim == "y":
                 P.set_position(
-                    np.array([base_pt[0] + (val - base_pt[1]) / kp.tand(ang), val])
+                    np.array([base_pt[0] + (val - base_pt[1]) / trig.tand(ang), val])
                 )
             else:
                 print("Incorrect dimension specification")
@@ -135,7 +136,8 @@ class Mesh:
                 plt.show()
 
     def write(self):
-        kp.createIfNotExist(config.path.mesh_dir)
+        os.makedirs(config.path.mesh_dir, exist_ok=True)
+
         x, y = list(zip(*[pt.get_position() for pt in Point.All()]))
         kp.writeaslist(
             os.path.join(config.path.mesh_dir, "nodes.txt"), ["x", x], ["y", y]
@@ -327,7 +329,7 @@ class Point(Shape):
 
     def rotate(self, base_pt_id, angle):
         base_pt = Point.find_by_id(base_pt_id).get_position()
-        self.set_position(kp.rotateVec(self.get_position() - base_pt, angle) + base_pt)
+        self.set_position(trig.rotateVec(self.get_position() - base_pt, angle) + base_pt)
 
     def display(self):
         print(
@@ -375,7 +377,7 @@ class Curve(Shape):
             alf = self.arc_length / (2 * self.radius)
             return lambda s: self._end_pts[0].get_position() + 2 * self.radius * np.sin(
                 s * alf
-            ) * kp.ang2vec(gam + (s - 1) * alf)
+            ) * trig.ang2vec(gam + (s - 1) * alf)
 
     def set_radius(self, R):
         self.radius = R
@@ -405,7 +407,7 @@ class Curve(Shape):
             f = lambda s: self.chord / (2 * self.radius) - np.sin(s / (2 * self.radius))
 
             # Keep increasing guess until fsolve finds the first non-zero root
-            self.arc_length = kp.fzero(f, self.chord + 1e-6)
+            self.arc_length = solver.fzero(f, self.chord + 1e-6)
 
     def calculate_curvature(self):
         f = lambda x: x * self.chord / 2 - np.sin(x * self.arc_length / 2)
@@ -414,7 +416,7 @@ class Curve(Shape):
         kap = 0.0
         kap0 = 0.0
         while kap <= 1e-6:
-            kap = kp.fzero(f, kap0)
+            kap = solver.fzero(f, kap0)
             kap0 += 0.02
 
         return kap
@@ -422,7 +424,7 @@ class Curve(Shape):
     def distribute_points(self):
         self.pt.append(self._end_pts[0])
         if not self.Nel == 1:
-            # Distribute N points along a parametric curve defined by f(s), s in [0,1]
+            # Distribute N points along a parametric curve defined by f(s), s in [0.validated,1]
             s = np.linspace(0.0, 1.0, self.Nel + 1)[1:-1]
             for xy in map(self.get_shape_func(), s):
                 P = Point()

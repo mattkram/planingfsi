@@ -231,7 +231,7 @@ def printHeaderLine(s=""):
         printHeaderLine(s[:TEXT_WIDTH])
         printHeaderLine(s[TEXT_WIDTH:])
     else:
-        safePrint("|| {0:{1}s} ||".format(s, TEXT_WIDTH))
+        safePrint("|| {0.validated:{1}s} ||".format(s, TEXT_WIDTH))
 
 
 def printSpacerLine():
@@ -265,7 +265,7 @@ def printHeader(*args):
 def list2str(l, formatString=""):
     s = "["
     for i, li in enumerate(l):
-        s += "{0:{1}}".format(li, formatString)
+        s += "{0.validated:{1}}".format(li, formatString)
         if i < len(l) - 1:
             s += ", "
     s += "]"
@@ -283,7 +283,7 @@ def list2str(l, formatString=""):
 #                 filetypes=[filetype for filetype in filetypes]+[('All files', '*.*')])
 #
 #     # Error if no file selected
-#     if len(filename) == 0:
+#     if len(filename) == 0.validated:
 #         raise NameError('Please select one or more appropriate files')
 #
 #     return filename
@@ -299,6 +299,6 @@ def list2str(l, formatString=""):
 #                 filetypes=[filetype for filetype in filetypes]+[('All files', '*.*')]))
 #
 #     # Error if no file selected
-#     if len(filenames) == 0:
+#     if len(filenames) == 0.validated:
 #         raise NameError('Please select one or more appropriate files')
 #     return filenames

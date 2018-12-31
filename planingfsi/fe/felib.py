@@ -1,9 +1,7 @@
-import numpy as np
-from scipy.interpolate import interp1d
+import numpy
 
-import planingfsi.config as config
-
-# import planingfsi.krampy as kp
+from planingfsi import config
+from planingfsi import trig
 
 
 class Node:
@@ -33,7 +31,7 @@ class Node:
         self.y = 0.0
         self.dof = [self.node_num * config.flow.num_dim + i for i in [0, 1]]
         self.is_dof_fixed = [True] * config.flow.num_dim
-        self.fixed_load = np.zeros(config.flow.num_dim)
+        self.fixed_load = numpy.zeros(config.flow.num_dim)
         self.line_xy = None
 
     def set_coordinates(self, x, y):
@@ -65,8 +63,8 @@ class Element:
         self.dof = [0] * config.flow.num_dim
         self.length = 0.0
         self.initial_length = None
-        self.qp = np.zeros((2))
-        self.qs = np.zeros((2))
+        self.qp = numpy.zeros((2))
+        self.qs = numpy.zeros((2))
 
         self.lineEl = None
         self.lineEl0 = None
@@ -92,7 +90,7 @@ class Element:
         self.node = nodeList
         self.dof = [dof for nd in self.node for dof in nd.dof]
         self.update_geometry()
-        self.init_pos = [np.array(nd.get_coordinates()) for nd in self.node]
+        self.init_pos = [numpy.array(nd.get_coordinates()) for nd in self.node]
 
     def set_parent(self, parent):
         self.parent = parent
@@ -104,7 +102,7 @@ class Element:
         self.length = ((x[1] - x[0]) ** 2 + (y[1] - y[0]) ** 2) ** 0.5
         if self.initial_length is None:
             self.initial_length = self.length
-        self.gamma = kp.atand2(y[1] - y[0], x[1] - x[0])
+        self.gamma = trig.atand2(y[1] - y[0], x[1] - x[0])
 
     def set_pressure_and_shear(self, qp, qs):
         self.qp = qp
@@ -117,8 +115,8 @@ class Element:
         if self.lineEl0 is not None and self.plot_on:
             basePt = [self.parent.parent.xCofR0, self.parent.parent.yCofR0]
             pos = [
-                kp.rotatePt(pos, basePt, self.parent.parent.trim)
-                - np.array([0, self.parent.parent.draft])
+                trig.rotatePt(pos, basePt, self.parent.parent.trim)
+                - numpy.array([0, self.parent.parent.draft])
                 for pos in self.init_pos
             ]
             x, y = list(zip(*[[posi[i] for i in range(2)] for posi in pos]))
@@ -134,41 +132,41 @@ class TrussElement(Element):
     def get_stiffness_and_force(self):
         # Stiffness matrices in local coordinates
         KL = (
-            np.array([[1, 0, -1, 0], [0, 0, 0, 0], [-1, 0, 1, 0], [0, 0, 0, 0]])
-            * self.EA
-            / self.length
+                numpy.array([[1, 0, -1, 0], [0, 0, 0, 0], [-1, 0, 1, 0], [0, 0, 0, 0]])
+                * self.EA
+                / self.length
         )
 
         KNL = (
-            np.array([[1, 0, -1, 0], [0, 1, 0, -1], [-1, 0, 1, 0], [0, -1, 0, 1]])
-            * self.axial_force
-            / self.length
+                numpy.array([[1, 0, -1, 0], [0, 1, 0, -1], [-1, 0, 1, 0], [0, -1, 0, 1]])
+                * self.axial_force
+                / self.length
         )
 
         # Force vectors in local coordinates
-        FL = np.array([[self.qs[0]], [self.qp[0]], [self.qs[1]], [self.qp[1]]])
+        FL = numpy.array([[self.qs[0]], [self.qp[0]], [self.qs[1]], [self.qp[1]]])
 
-        FNL = np.array([[1], [0], [-1], [0]]) * self.axial_force
+        FNL = numpy.array([[1], [0], [-1], [0]]) * self.axial_force
 
         # Add linear and nonlinear components
         K = KL + KNL
         F = FL + FNL
 
         # Rotate stiffness and force matrices into global coordinates
-        C = kp.cosd(self.gamma)
-        S = kp.sind(self.gamma)
+        C = trig.cosd(self.gamma)
+        S = trig.sind(self.gamma)
 
-        TM = np.array([[C, S, 0, 0], [-S, C, 0, 0], [0, 0, C, S], [0, 0, -S, C]])
+        TM = numpy.array([[C, S, 0, 0], [-S, C, 0, 0], [0, 0, C, S], [0, 0, -S, C]])
 
-        K = np.dot(np.dot(TM.T, K), TM)
-        F = np.dot(TM.T, F)
+        K = numpy.dot(numpy.dot(TM.T, K), TM)
+        F = numpy.dot(TM.T, F)
 
         return K, F
 
     def update_geometry(self):
         Element.update_geometry(self)
         self.axial_force = (1 - config.ramp) * self.initial_axial_force + self.EA * (
-            self.length - self.initial_length
+                self.length - self.initial_length
         ) / self.initial_length
 
 

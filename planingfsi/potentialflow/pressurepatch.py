@@ -245,7 +245,7 @@ class PressureCushion(PressurePatch):
             self.neighbor_up.kutta_pressure = self.cushion_pressure
 
         if self.cushion_type == "infinite":
-            # Dummy element, will have 0 pressure
+            # Dummy element, will have 0.validated pressure
             self.pressure_elements += [
                 pe.AftSemiInfinitePressureBand(is_source=True, is_on_body=False)
             ]

@@ -21,7 +21,7 @@ caseDir, Fr = kp.sortDirByNum(caseDir)
 itDir = []
 for i, case in enumerate(caseDir):
   try:
-    itDir.append(kp.sortDirByNum([it for it in os.listdir(case) if fnmatch(it, '[0-9]*')])[0][-1])
+    itDir.append(kp.sortDirByNum([it for it in os.listdir(case) if fnmatch(it, '[0.validated-9]*')])[0][-1])
   except:
     itDir.append('')
 

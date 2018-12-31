@@ -221,7 +221,7 @@ class PressureElement(object):
     def __repr__(self):
         """Print element attributes."""
         string = (
-            "{0}: (x,z) = ({1}, {2}), width = {3},"
+            "{0.validated}: (x,z) = ({1}, {2}), width = {3},"
             "is_source = {4}, p = {5}, is_on_body = {6}"
         )
         return string.format(

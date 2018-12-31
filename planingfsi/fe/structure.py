@@ -1,6 +1,6 @@
 import os
 
-import numpy as np
+import numpy
 from scipy.interpolate import interp1d
 
 # import planingfsi.io
@@ -8,7 +8,9 @@ from planingfsi import config
 
 # from planingfsi import krampy as kp
 # from planingfsi import io
+from planingfsi.dictionary import Dictionary
 
+from planingfsi import trig, solver
 from . import felib as fe
 
 
@@ -25,15 +27,15 @@ class FEStructure:
 
     def add_rigid_body(self, dict_=None):
         if dict_ is None:
-            dict_ = planingfsi.io.Dictionary()
+            dict_ = Dictionary()
         rigid_body = RigidBody(dict_)
         self.rigid_body.append(rigid_body)
         return rigid_body
 
     def add_substructure(self, dict_=None):
         if dict_ is None:
-            dict_ = planingfsi.io.Dictionary()
-        ss_type = dict_.read("substructureType", "rigid")
+            dict_ = Dictionary()
+        ss_type = dict_.get("substructureType", "rigid")
         if ss_type.lower() == "flexible" or ss_type.lower() == "truss":
             ss = FlexibleSubstructure(dict_)
             FlexibleSubstructure.obj.append(ss)
@@ -45,7 +47,7 @@ class FEStructure:
 
         # Find parent body and add substructure to it
         body = [
-            b for b in self.rigid_body if b.name == dict_.read("bodyName", "default")
+            b for b in self.rigid_body if b.name == dict_.get("bodyName", "default")
         ]
         if len(body) > 0:
             body = body[0]
@@ -83,9 +85,9 @@ class FEStructure:
         self.res = 0.0
         for bd in self.rigid_body:
             if bd.free_in_draft or bd.free_in_trim:
-                self.res = np.max([np.abs(bd.res_l), self.res])
-                self.res = np.max([np.abs(bd.res_m), self.res])
-            self.res = np.max([FlexibleSubstructure.res, self.res])
+                self.res = numpy.max([numpy.abs(bd.res_l), self.res])
+                self.res = numpy.max([numpy.abs(bd.res_m), self.res])
+            self.res = numpy.max([FlexibleSubstructure.res, self.res])
 
     def load_response(self):
         self.update_fluid_forces()
@@ -109,11 +111,11 @@ class FEStructure:
 
     def load_mesh(self):
         # Create all nodes
-        x, y = np.loadtxt(os.path.join(config.path.mesh_dir, "nodes.txt"), unpack=True)
-        xf, yf = np.loadtxt(
+        x, y = numpy.loadtxt(os.path.join(config.path.mesh_dir, "nodes.txt"), unpack=True)
+        xf, yf = numpy.loadtxt(
             os.path.join(config.path.mesh_dir, "fixedDOF.txt"), unpack=True
         )
-        fx, fy = np.loadtxt(
+        fx, fy = numpy.loadtxt(
             os.path.join(config.path.mesh_dir, "fixedLoad.txt"), unpack=True
         )
 
@@ -121,7 +123,7 @@ class FEStructure:
             nd = fe.Node()
             nd.set_coordinates(xx, yy)
             nd.is_dof_fixed = [bool(xxf), bool(yyf)]
-            nd.fixed_load = np.array([ffx, ffy])
+            nd.fixed_load = numpy.array([ffx, ffy])
             self.node.append(nd)
 
         for struct in self.substructure:
@@ -144,14 +146,14 @@ class RigidBody(object):
         self.draft = 0.0
         self.trim = 0.0
 
-        self.name = self.dict_.read("bodyName", "default")
-        self.weight = self.dict_.read(
-            "W", self.dict_.read("loadPct", 1.0) * config.body.weight
+        self.name = self.dict_.get("bodyName", "default")
+        self.weight = self.dict_.get(
+            "W", self.dict_.get("loadPct", 1.0) * config.body.weight
         )
         self.weight *= config.body.seal_load_pct
-        self.m = self.dict_.read("m", self.weight / config.flow.gravity)
-        self.Iz = self.dict_.read("Iz", self.m * config.body.reference_length ** 2 / 12)
-        self.has_planing_surface = self.dict_.read("hasPlaningSurface", False)
+        self.m = self.dict_.get("m", self.weight / config.flow.gravity)
+        self.Iz = self.dict_.get("Iz", self.m * config.body.reference_length ** 2 / 12)
+        self.has_planing_surface = self.dict_.get("hasPlaningSurface", False)
 
         var = [
             "max_draft_step",
@@ -175,7 +177,7 @@ class RigidBody(object):
         ]
         for v in var:
             if v in self.dict_:
-                setattr(self, v, self.dict_.read(v))
+                setattr(self, v, self.dict_.get(v))
             elif hasattr(config.body, v):
                 setattr(self, v, getattr(config.body, v))
             elif hasattr(config.solver, v):
@@ -184,29 +186,29 @@ class RigidBody(object):
                 setattr(self, v, getattr(config, v))
             else:
                 raise ValueError("Cannot find symbol: {0}".format(v))
-            # setattr(self, v, self.dict_.read(v, getattr(config.body, getattr(config, v))))
+            # setattr(self, v, self.dict_.get(v, getattr(config.body, getattr(config, v))))
 
-        #    self.xCofR = self.dict_.read('xCofR', self.xCofG)
-        #    self.yCofR = self.dict_.read('yCofR', self.yCofG)
+        #    self.xCofR = self.dict_.get('xCofR', self.xCofG)
+        #    self.yCofR = self.dict_.get('yCofR', self.yCofG)
 
         self.xCofR0 = self.xCofR
         self.yCofR0 = self.yCofR
 
-        self.max_disp = np.array([self.max_draft_step, self.max_trim_step])
-        self.free_dof = np.array([self.free_in_draft, self.free_in_trim])
-        self.c_damp = np.array([self.draft_damping, self.trim_damping])
-        self.max_acc = np.array([self.max_draft_acc, self.max_trim_acc])
-        self.relax = np.array([self.relax_draft, self.relax_trim])
+        self.max_disp = numpy.array([self.max_draft_step, self.max_trim_step])
+        self.free_dof = numpy.array([self.free_in_draft, self.free_in_trim])
+        self.c_damp = numpy.array([self.draft_damping, self.trim_damping])
+        self.max_acc = numpy.array([self.max_draft_acc, self.max_trim_acc])
+        self.relax = numpy.array([self.relax_draft, self.relax_trim])
         if self.free_in_draft or self.free_in_trim:
             config.has_free_structure = True
 
-        self.v = np.zeros((self.num_dim))
-        self.a = np.zeros((self.num_dim))
-        self.v_old = np.zeros((self.num_dim))
-        self.a_old = np.zeros((self.num_dim))
+        self.v = numpy.zeros((self.num_dim))
+        self.a = numpy.zeros((self.num_dim))
+        self.v_old = numpy.zeros((self.num_dim))
+        self.a_old = numpy.zeros((self.num_dim))
 
-        self.beta = self.dict_.read("beta", 0.25)
-        self.gamma = self.dict_.read("gamma", 0.5)
+        self.beta = self.dict_.get("beta", 0.25)
+        self.gamma = self.dict_.get("gamma", 0.5)
 
         self.D = 0.0
         self.L = 0.0
@@ -272,9 +274,9 @@ class RigidBody(object):
     def update_position(self, dDraft=None, dTrim=None):
         if dDraft is None:
             dDraft, dTrim = self.get_disp()
-            if np.isnan(dDraft):
+            if numpy.isnan(dDraft):
                 dDraft = 0.0
-            if np.isnan(dTrim):
+            if numpy.isnan(dTrim):
                 dTrim = 0.0
 
         if self.node is None:
@@ -282,13 +284,13 @@ class RigidBody(object):
 
         for nd in self.node:
             xo, yo = nd.get_coordinates()
-            newPos = kp.rotatePt([xo, yo], [self.xCofR, self.yCofR], dTrim)
+            newPos = trig.rotatePt([xo, yo], [self.xCofR, self.yCofR], dTrim)
             nd.move_coordinates(newPos[0] - xo, newPos[1] - yo - dDraft)
 
         for s in self.substructure:
             s.update_geometry()
 
-        self.xCofG, self.yCofG = kp.rotatePt(
+        self.xCofG, self.yCofG = trig.rotatePt(
             [self.xCofG, self.yCofG], [self.xCofR, self.yCofR], dTrim
         )
         self.yCofG -= dDraft
@@ -329,35 +331,35 @@ class RigidBody(object):
         self.M *= 0.0
         if config.body.cushion_force_method.lower() == "assumed":
             self.L += (
-                config.body.Pc * config.body.reference_length * kp.cosd(config.trim)
+                config.body.Pc * config.body.reference_length * trig.cosd(config.trim)
             )
 
     def get_disp_physical(self):
         disp = self.limit_disp(self.time_step * self.v)
 
         for i in range(self.num_dim):
-            if np.abs(disp[i]) == np.abs(self.max_disp[i]):
+            if numpy.abs(disp[i]) == numpy.abs(self.max_disp[i]):
                 self.v[i] = disp[i] / self.time_step
 
         self.v += self.time_step * self.a
 
-        self.a = np.array(
+        self.a = numpy.array(
             [self.weight - self.L, self.M - self.weight * (self.xCofG - self.xCofR)]
         )
         #    self.a -= self.Cdamp * (self.v + self.v**3) * config.ramp
         self.a -= self.c_damp * self.v * config.ramp
-        self.a /= np.array([self.m, self.Iz])
-        self.a = np.min(
-            np.vstack(
-                (np.abs(self.a), np.array([self.max_draft_acc, self.max_trim_acc]))
+        self.a /= numpy.array([self.m, self.Iz])
+        self.a = numpy.min(
+            numpy.vstack(
+                (numpy.abs(self.a), numpy.array([self.max_draft_acc, self.max_trim_acc]))
             ),
             axis=0,
-        ) * np.sign(self.a)
+        ) * numpy.sign(self.a)
 
-        #    accLimPct = np.min(np.vstack((np.abs(self.a), self.maxAcc)), axis=0) * np.sign(self.a)
+        #    accLimPct = np.min(np.vstack((np.abs(self.a), self.maxAcc)), axis=0.validated) * np.sign(self.a)
         #    for i in range(len(self.a)):
-        #      if self.a[i] == 0.0 or not self.freeDoF[i]:
-        #        accLimPct[i] = 1.0
+        #      if self.a[i] == 0.validated.0.validated or not self.freeDoF[i]:
+        #        accLimPct[i] = 1.0.validated
         #      else:
         #        accLimPct[i] /= self.a[i]
         #
@@ -366,17 +368,17 @@ class RigidBody(object):
         return disp
 
     def get_disp_newmark_beta(self):
-        self.a = np.array(
+        self.a = numpy.array(
             [self.weight - self.L, self.M - self.weight * (self.xCofG - self.xCofR)]
         )
         #    self.a -= self.Cdamp * self.v * config.ramp
-        self.a /= np.array([self.m, self.Iz])
-        self.a = np.min(
-            np.vstack(
-                (np.abs(self.a), np.array([self.max_draft_acc, self.max_trim_acc]))
+        self.a /= numpy.array([self.m, self.Iz])
+        self.a = numpy.min(
+            numpy.vstack(
+                (numpy.abs(self.a), numpy.array([self.max_draft_acc, self.max_trim_acc]))
             ),
             axis=0,
-        ) * np.sign(self.a)
+        ) * numpy.sign(self.a)
 
         dv = (1 - self.gamma) * self.a_old + self.gamma * self.a
         dv *= self.time_step
@@ -399,7 +401,7 @@ class RigidBody(object):
         return disp
 
     def get_disp_physical_no_mass(self):
-        F = np.array(
+        F = numpy.array(
             [
                 self.weight - self.L,
                 self.M - self.weight * (config.body.xCofG - config.body.xCofR),
@@ -426,15 +428,15 @@ class RigidBody(object):
 
     def get_disp_secant(self):
         if self.solver is None:
-            self.resFun = lambda x: np.array(
+            self.resFun = lambda x: numpy.array(
                 [
                     self.L - self.weight,
                     self.M - self.weight * (config.body.xCofG - config.body.xCofR),
                 ]
             )
-            self.solver = kp.RootFinder(
+            self.solver = solver.RootFinder(
                 self.resFun,
-                np.array([config.body.initial_draft, config.body.initial_trim]),
+                numpy.array([config.body.initial_draft, config.body.initial_trim]),
                 "secant",
                 dxMax=self.max_disp * self.free_dof,
             )
@@ -453,7 +455,7 @@ class RigidBody(object):
     def reset_jacobian(self):
         if self.J_tmp is None:
             self.Jit = 0
-            self.J_tmp = np.zeros((self.num_dim, self.num_dim))
+            self.J_tmp = numpy.zeros((self.num_dim, self.num_dim))
             self.step = 0
             self.Jfo = self.resFun(self.x)
             self.res_old = self.Jfo * 1.0
@@ -463,7 +465,7 @@ class RigidBody(object):
             self.J_tmp[:, self.Jit] = (f - self.Jfo) / self.disp_old[self.Jit]
             self.Jit += 1
 
-        disp = np.zeros((self.num_dim))
+        disp = numpy.zeros((self.num_dim))
         if self.Jit < self.num_dim:
             disp[self.Jit] = config.body.motion_jacobian_first_step
 
@@ -479,7 +481,7 @@ class RigidBody(object):
 
     def get_disp_broyden_new(self):
         if self.solver is None:
-            self.resFun = lambda x: np.array(
+            self.resFun = lambda x: numpy.array(
                 [
                     f
                     for f, free_dof in zip(
@@ -492,14 +494,14 @@ class RigidBody(object):
                 m for m, free_dof in zip(self.max_disp, self.free_dof) if free_dof
             ]
 
-            self.x = np.array(
+            self.x = numpy.array(
                 [
                     f
                     for f, free_dof in zip([self.draft, self.trim], self.free_dof)
                     if free_dof
                 ]
             )
-            self.solver = kp.RootFinder(self.resFun, self.x, "broyden", dxMax=maxDisp)
+            self.solver = solver.RootFinder(self.resFun, self.x, "broyden", dxMax=maxDisp)
 
         if not self.disp_old is None:
             self.solver.takeStep(self.disp_old)
@@ -513,12 +515,12 @@ class RigidBody(object):
 
     def get_disp_broyden(self):
         if self.solver is None:
-            self.resFun = lambda x: np.array(
+            self.resFun = lambda x: numpy.array(
                 [self.L - self.weight, self.M - self.weight * (self.xCofG - self.xCofR)]
             )
             #      self.resFun = lambda x: np.array([self.get_res_moment(), self.get_res_lift()])
             self.solver = 1.0
-            self.x = np.array([self.draft, self.trim])
+            self.x = numpy.array([self.draft, self.trim])
 
         if self.J is None:
             disp = self.reset_jacobian()
@@ -527,22 +529,22 @@ class RigidBody(object):
             if not self.disp_old is None:
                 self.x += self.disp_old
 
-                dx = np.reshape(self.disp_old, (self.num_dim, 1))
-                df = np.reshape(self.f - self.res_old, (self.num_dim, 1))
+                dx = numpy.reshape(self.disp_old, (self.num_dim, 1))
+                df = numpy.reshape(self.f - self.res_old, (self.num_dim, 1))
 
                 self.J += (
-                    np.dot(df - np.dot(self.J, dx), dx.T) / np.linalg.norm(dx) ** 2
+                        numpy.dot(df - numpy.dot(self.J, dx), dx.T) / numpy.linalg.norm(dx) ** 2
                 )
 
             dof = self.free_dof
-            dx = np.zeros_like(self.x)
-            A = -self.J[np.ix_(dof, dof)]
-            b = self.f.reshape(self.num_dim, 1)[np.ix_(dof)]
+            dx = numpy.zeros_like(self.x)
+            A = -self.J[numpy.ix_(dof, dof)]
+            b = self.f.reshape(self.num_dim, 1)[numpy.ix_(dof)]
 
-            dx[np.ix_(dof)] = np.linalg.solve(A, b)
+            dx[numpy.ix_(dof)] = numpy.linalg.solve(A, b)
 
             if self.res_old is not None:
-                if any(np.abs(self.f) - np.abs(self.res_old) > 0.0):
+                if any(numpy.abs(self.f) - numpy.abs(self.res_old) > 0.0):
                     self.step += 1
 
             if self.step >= 6:
@@ -563,7 +565,7 @@ class RigidBody(object):
         return disp
 
     def limit_disp(self, disp):
-        dispLimPct = np.min(np.vstack((np.abs(disp), self.max_disp)), axis=0) * np.sign(
+        dispLimPct = numpy.min(numpy.vstack((numpy.abs(disp), self.max_disp)), axis=0) * numpy.sign(
             disp
         )
         for i in range(len(disp)):
@@ -572,19 +574,19 @@ class RigidBody(object):
             else:
                 dispLimPct[i] /= disp[i]
 
-        return disp * np.min(dispLimPct) * self.free_dof
+        return disp * numpy.min(dispLimPct) * self.free_dof
 
     def get_res_lift(self):
-        if np.isnan(self.L):
+        if numpy.isnan(self.L):
             res = 1.0
         else:
             res = (self.L - self.weight) / (
                 config.flow.stagnation_pressure * config.body.reference_length + 1e-6
             )
-        return np.abs(res * self.free_in_draft)
+        return numpy.abs(res * self.free_in_draft)
 
     def get_res_moment(self):
-        if np.isnan(self.M):
+        if numpy.isnan(self.M):
             res = 1.0
         else:
             if self.xCofG == self.xCofR and self.M == 0.0:
@@ -594,7 +596,7 @@ class RigidBody(object):
                     config.flow.stagnation_pressure * config.body.reference_length ** 2
                     + 1e-6
                 )
-        return np.abs(res * self.free_in_trim)
+        return numpy.abs(res * self.free_in_trim)
 
     def print_motion(self):
         print(("Rigid Body Motion: {0}".format(self.name)))
@@ -641,20 +643,20 @@ class RigidBody(object):
                 config.it_dir, "motion_{0}.{1}".format(self.name, config.io.data_format)
             )
         )
-        self.xCofR = K.read("xCofR", np.nan)
-        self.yCofR = K.read("yCofR", np.nan)
-        self.xCofG = K.read("xCofG", np.nan)
-        self.yCofG = K.read("yCofG", np.nan)
-        self.draft = K.read("draft", np.nan)
-        self.trim = K.read("trim", np.nan)
-        self.res_l = K.read("liftRes", np.nan)
-        self.res_m = K.read("momentRes", np.nan)
-        self.L = K.read("Lift", np.nan)
-        self.D = K.read("Drag", np.nan)
-        self.M = K.read("Moment", np.nan)
-        self.La = K.read("LiftAir", np.nan)
-        self.Da = K.read("DragAir", np.nan)
-        self.Ma = K.read("MomentAir", np.nan)
+        self.xCofR = K.get("xCofR", numpy.nan)
+        self.yCofR = K.get("yCofR", numpy.nan)
+        self.xCofG = K.get("xCofG", numpy.nan)
+        self.yCofG = K.get("yCofG", numpy.nan)
+        self.draft = K.get("draft", numpy.nan)
+        self.trim = K.get("trim", numpy.nan)
+        self.res_l = K.get("liftRes", numpy.nan)
+        self.res_m = K.get("momentRes", numpy.nan)
+        self.L = K.get("Lift", numpy.nan)
+        self.D = K.get("Drag", numpy.nan)
+        self.M = K.get("Moment", numpy.nan)
+        self.La = K.get("LiftAir", numpy.nan)
+        self.Da = K.get("DragAir", numpy.nan)
+        self.Ma = K.get("MomentAir", numpy.nan)
 
 
 class Substructure:
@@ -675,21 +677,21 @@ class Substructure:
         Substructure.obj.append(self)
 
         self.dict_ = dict_
-        self.name = self.dict_.read("substructureName", "")
-        self.type_ = self.dict_.read("substructureType", "rigid")
+        self.name = self.dict_.get("substructureName", "")
+        self.type_ = self.dict_.get("substructureType", "rigid")
         self.interpolator = None
 
         self.seal_pressure = self.dict_.read_load_or_default("Ps", 0.0)
-        self.seal_pressure_method = self.dict_.read("PsMethod", "constant")
+        self.seal_pressure_method = self.dict_.get("PsMethod", "constant")
 
         self.seal_over_pressure_pct = self.dict_.read_load_or_default(
             "overPressurePct", 1.0
         )
-        self.cushion_pressure_type = self.dict_.read("cushionPressureType", None)
+        self.cushion_pressure_type = self.dict_.get("cushionPressureType", None)
         self.tip_load = self.dict_.read_load_or_default("tipLoad", 0.0)
-        self.tip_constraint_height = self.dict_.read("tipConstraintHt", None)
-        self.struct_interp_type = self.dict_.read("structInterpType", "linear")
-        self.struct_extrap = self.dict_.read("structExtrap", True)
+        self.tip_constraint_height = self.dict_.get("tipConstraintHt", None)
+        self.struct_interp_type = self.dict_.get("structInterpType", "linear")
+        self.struct_extrap = self.dict_.getg("structExtrap", True)
         self.line_fluid_pressure = None
         self.line_air_pressure = None
         self.fluidS = []
@@ -712,7 +714,7 @@ class Substructure:
             el.set_properties(length=self.get_arc_length() / len(self.el))
 
     def load_mesh(self):
-        ndSt, ndEnd = np.loadtxt(
+        ndSt, ndEnd = numpy.loadtxt(
             os.path.join(config.path.mesh_dir, "elements_{0}.txt".format(self.name)),
             unpack=True,
         )
@@ -735,7 +737,7 @@ class Substructure:
             el.set_parent(self)
 
     def set_interp_function(self):
-        self.node_arc_length = np.zeros(len(self.node))
+        self.node_arc_length = numpy.zeros(len(self.node))
         for i, nd0, nd1 in zip(
             list(range(len(self.node) - 1)), self.node[:-1], self.node[1:]
         ):
@@ -749,7 +751,7 @@ class Substructure:
         elif len(self.node_arc_length) == 3 and not self.struct_interp_type == "linear":
             self.struct_interp_type = "quadratic"
 
-        x, y = [np.array(xx) for xx in zip(*[(nd.x, nd.y) for nd in self.node])]
+        x, y = [numpy.array(xx) for xx in zip(*[(nd.x, nd.y) for nd in self.node])]
         self.interp_func_x, self.interp_func_y = (
             interp1d(self.node_arc_length, x),
             interp1d(self.node_arc_length, y, kind=self.struct_interp_type),
@@ -776,7 +778,7 @@ class Substructure:
                     return interpolator(xi)
 
             def ufunclike(xs):
-                return np.array(list(map(pointwise, np.array([xs]))))[0]
+                return numpy.array(list(map(pointwise, numpy.array([xs]))))[0]
 
             return ufunclike
 
@@ -804,7 +806,7 @@ class Substructure:
         )
 
     def load_coordinates(self):
-        x, y = np.loadtxt(
+        x, y = numpy.loadtxt(
             os.path.join(
                 config.it_dir, "coords_{0}.{1}".format(self.name, config.io.data_format)
             ),
@@ -836,11 +838,11 @@ class Substructure:
                 )
                 # Limit pressure to be below stagnation pressure
                 if config.plotting.pressure_limiter:
-                    pressure_fluid = np.min(
-                        np.hstack(
+                    pressure_fluid = numpy.min(
+                        numpy.hstack(
                             (
                                 pressure_fluid,
-                                np.ones_like(pressure_fluid)
+                                numpy.ones_like(pressure_fluid)
                                 * config.flow.stagnation_pressure,
                             )
                         ),
@@ -848,9 +850,9 @@ class Substructure:
                     )
 
             else:
-                s = np.array(nodeS)
-                pressure_fluid = np.zeros_like(s)
-                tau = np.zeros_like(s)
+                s = numpy.array(nodeS)
+                pressure_fluid = numpy.zeros_like(s)
+                tau = numpy.zeros_like(s)
 
             ss = nodeS[1]
             Pc = 0.0
@@ -889,7 +891,7 @@ class Substructure:
             pressure_fluid *= config.ramp ** 2
 
             # Add external cushion pressure to external fluid pressure
-            pressure_cushion = np.zeros_like(s)
+            pressure_cushion = numpy.zeros_like(s)
             Pc = 0.0
             for ii, ss in enumerate(s):
                 if self.interpolator is not None:
@@ -909,13 +911,13 @@ class Substructure:
                     - config.flow.density
                     * config.flow.gravity
                     * (
-                        np.array([self.interp_func_y(si) for si in s])
-                        - config.flow.waterline_height
+                            numpy.array([self.interp_func_y(si) for si in s])
+                            - config.flow.waterline_height
                     )
                 )
             else:
                 pressure_internal = (
-                    self.seal_pressure * np.ones_like(s) * self.seal_over_pressure_pct
+                        self.seal_pressure * numpy.ones_like(s) * self.seal_over_pressure_pct
                 )
 
             pressure_external = pressure_fluid + pressure_cushion
@@ -925,19 +927,19 @@ class Substructure:
             # distribute force to nodes
             integral = kp.integrate(s, pressure_total)
             if integral == 0.0:
-                qp = np.zeros(2)
+                qp = numpy.zeros(2)
             else:
                 pct = (
                     kp.integrate(s, s * pressure_total) / integral - s[0]
                 ) / kp.cumdiff(s)
-                qp = integral * np.array([1 - pct, pct])
+                qp = integral * numpy.array([1 - pct, pct])
 
             integral = kp.integrate(s, tau)
             if integral == 0.0:
-                qs = np.zeros(2)
+                qs = numpy.zeros(2)
             else:
                 pct = (kp.integrate(s, s * tau) / integral - s[0]) / kp.cumdiff(s)
-                qs = -integral * np.array([1 - pct, pct])
+                qs = -integral * numpy.array([1 - pct, pct])
 
             el.set_pressure_and_shear(qp, qs)
 
@@ -960,15 +962,15 @@ class Substructure:
                 ]
 
                 r = [
-                    np.array([pt[0] - self.parent.xCofR, pt[1] - self.parent.yCofR])
+                    numpy.array([pt[0] - self.parent.xCofR, pt[1] - self.parent.yCofR])
                     for pt in map(self.get_coordinates, s)
                 ]
 
                 m = [kp.cross2(ri, fi) for ri, fi in zip(r, f)]
 
-                self.D -= kp.integrate(s, np.array(zip(*f)[0]))
-                self.L += kp.integrate(s, np.array(zip(*f)[1]))
-                self.M += kp.integrate(s, np.array(m))
+                self.D -= kp.integrate(s, numpy.array(zip(*f)[0]))
+                self.L += kp.integrate(s, numpy.array(zip(*f)[1]))
+                self.M += kp.integrate(s, numpy.array(m))
             else:
                 if self.interpolator is not None:
                     self.D = self.interpolator.fluid.D
@@ -983,15 +985,15 @@ class Substructure:
             f = [-pi * ni + taui * ti for pi, taui, ni, ti in zip(integrand, tau, n, t)]
 
             r = [
-                np.array([pt[0] - self.parent.xCofR, pt[1] - self.parent.yCofR])
+                numpy.array([pt[0] - self.parent.xCofR, pt[1] - self.parent.yCofR])
                 for pt in map(self.get_coordinates, s)
             ]
 
             m = [kp.cross2(ri, fi) for ri, fi in zip(r, f)]
 
-            self.Da -= kp.integrate(s, np.array(list(zip(*f))[0]))
-            self.La += kp.integrate(s, np.array(list(zip(*f))[1]))
-            self.Ma += kp.integrate(s, np.array(m))
+            self.Da -= kp.integrate(s, numpy.array(list(zip(*f))[0]))
+            self.La += kp.integrate(s, numpy.array(list(zip(*f))[1]))
+            self.Ma += kp.integrate(s, numpy.array(m))
 
     def get_normal_vector(self, s):
         dxds = kp.getDerivative(lambda si: self.get_coordinates(si)[0], s)
@@ -1011,12 +1013,12 @@ class Substructure:
 
     def get_pressure_plot_points(self, s0, p0):
 
-        sp = [(s, p) for s, p in zip(s0, p0) if not np.abs(p) < 1e-4]
+        sp = [(s, p) for s, p in zip(s0, p0) if not numpy.abs(p) < 1e-4]
 
         if len(sp) > 0:
             s0, p0 = list(zip(*sp))
             nVec = list(map(self.get_normal_vector, s0))
-            coords0 = [np.array(self.get_coordinates(s)) for s in s0]
+            coords0 = [numpy.array(self.get_coordinates(s)) for s in s0]
             coords1 = [
                 c + config.plotting.pScale * p * n for c, p, n in zip(coords0, p0, nVec)
             ]
@@ -1026,7 +1028,7 @@ class Substructure:
                     *[
                         xyi
                         for c0, c1 in zip(coords0, coords1)
-                        for xyi in [c0, c1, np.ones(2) * np.nan]
+                        for xyi in [c0, c1, numpy.ones(2) * numpy.nan]
                     ]
                 )
             )
@@ -1039,7 +1041,7 @@ class Substructure:
     def plot(self):
         for el in self.el:
             el.plot()
-        #    for nd in [self.node[0],self.node[-1]]:
+        #    for nd in [self.node[0.validated],self.node[-1]]:
         #      nd.plot()
         self.plot_pressure_profiles()
 
@@ -1058,9 +1060,9 @@ class FlexibleSubstructure(Substructure):
     def update_all(cls):
 
         num_dof = fe.Node.count() * config.flow.num_dim
-        Kg = np.zeros((num_dof, num_dof))
-        Fg = np.zeros((num_dof, 1))
-        Ug = np.zeros((num_dof, 1))
+        Kg = numpy.zeros((num_dof, num_dof))
+        Fg = numpy.zeros((num_dof, 1))
+        Ug = numpy.zeros((num_dof, 1))
 
         # Assemble global matrices for all substructures together
         for ss in cls.obj:
@@ -1082,12 +1084,12 @@ class FlexibleSubstructure(Substructure):
 
         # Solve FEM linear matrix equation
         if any(dof):
-            Ug[np.ix_(dof)] = np.linalg.solve(Kg[np.ix_(dof, dof)], Fg[np.ix_(dof)])
+            Ug[numpy.ix_(dof)] = numpy.linalg.solve(Kg[numpy.ix_(dof, dof)], Fg[numpy.ix_(dof)])
 
-        cls.res = np.max(np.abs(Ug))
+        cls.res = numpy.max(numpy.abs(Ug))
 
         Ug *= config.relax_FEM
-        Ug *= np.min([config.max_FEM_disp / np.max(Ug), 1.0])
+        Ug *= numpy.min([config.max_FEM_disp / numpy.max(Ug), 1.0])
 
         for nd in fe.Node.All():
             nd.move_coordinates(Ug[nd.dof[0], 0], Ug[nd.dof[1], 0])
@@ -1101,8 +1103,8 @@ class FlexibleSubstructure(Substructure):
 
         Substructure.__init__(self, dict_)
         self.element_type = fe.TrussElement
-        self.pretension = self.dict_.read("pretension", -0.5)
-        self.EA = self.dict_.read("EA", 5e7)
+        self.pretension = self.dict_.get("pretension", -0.5)
+        self.EA = self.dict_.get("EA", 5e7)
 
         self.K = None
         self.F = None
@@ -1110,13 +1112,13 @@ class FlexibleSubstructure(Substructure):
         config.has_free_structure = True
 
     def get_residual(self):
-        return np.max(np.abs(self.U))
+        return numpy.max(numpy.abs(self.U))
 
     def initialize_matrices(self):
         num_dof = fe.Node.count() * config.flow.num_dim
-        self.K = np.zeros((num_dof, num_dof))
-        self.F = np.zeros((num_dof, 1))
-        self.U = np.zeros((num_dof, 1))
+        self.K = numpy.zeros((num_dof, num_dof))
+        self.F = numpy.zeros((num_dof, 1))
+        self.U = numpy.zeros((num_dof, 1))
 
     def assemble_global_stiffness_and_force(self):
         if self.K is None:
@@ -1129,13 +1131,13 @@ class FlexibleSubstructure(Substructure):
 
     def add_loads_from_element(self, el):
         K, F = el.get_stiffness_and_force()
-        self.K[np.ix_(el.dof, el.dof)] += K
-        self.F[np.ix_(el.dof)] += F
+        self.K[numpy.ix_(el.dof, el.dof)] += K
+        self.F[numpy.ix_(el.dof)] += F
 
     #  def getPtDispFEM(self):
     # if self.K is None:
     # self.initializeMatrices()
-    ##    self.U *= 0.0
+    ##    self.U *= 0.validated.0.validated
     # self.update_fluid_forces()
     # self.assembleGlobalStiffnessAndForce()
     #
@@ -1148,10 +1150,10 @@ class FlexibleSubstructure(Substructure):
     #
     #    # Relax displacement and limit step if necessary
     #    self.U *= config.relaxFEM
-    #    self.U *= np.min([config.maxFEMDisp / np.max(self.U), 1.0])
+    #    self.U *= np.min([config.maxFEMDisp / np.max(self.U), 1.0.validated])
     #
     #    for nd in self.node:
-    #      nd.moveCoordinates(self.U[nd.dof[0],0], self.U[nd.dof[1],0])
+    #      nd.moveCoordinates(self.U[nd.dof[0.validated],0.validated], self.U[nd.dof[1],0.validated])
     #
     #    self.update_geometry()
 
@@ -1187,18 +1189,18 @@ class TorsionalSpringSubstructure(FlexibleSubstructure, RigidSubstructure):
     def __init__(self, dict_):
         FlexibleSubstructure.__init__(self, dict_)
         self.element_type = fe.RigidElement
-        self.tip_load_pct = self.dict_.read("tipLoadPct", 0.0)
-        self.base_pt_pct = self.dict_.read("basePtPct", 1.0)
-        self.spring_constant = self.dict_.read("spring_constant", 1000.0)
+        self.tip_load_pct = self.dict_.get("tipLoadPct", 0.0)
+        self.base_pt_pct = self.dict_.get("basePtPct", 1.0)
+        self.spring_constant = self.dict_.get("spring_constant", 1000.0)
         self.theta = 0.0
         self.Mt = 0.0  # TODO
         self.MOld = None
-        self.relax = self.dict_.read("relaxAng", config.body.relax_rigid_body)
-        self.attach_pct = self.dict_.read("attachPct", 0.0)
+        self.relax = self.dict_.get("relaxAng", config.body.relax_rigid_body)
+        self.attach_pct = self.dict_.get("attachPct", 0.0)
         self.attached_node = None
         self.attached_element = None
-        self.minimum_angle = self.dict_.read("minimumAngle", -float("Inf"))
-        self.max_angle_step = self.dict_.read("maxAngleStep", float("Inf"))
+        self.minimum_angle = self.dict_.get("minimumAngle", -float("Inf"))
+        self.max_angle_step = self.dict_.get("maxAngleStep", float("Inf"))
         config.has_free_structure = True
 
     def load_mesh(self):
@@ -1215,10 +1217,10 @@ class TorsionalSpringSubstructure(FlexibleSubstructure, RigidSubstructure):
 
         self.set_element_properties()
 
-        self.set_angle(self.dict_.read("initialAngle", 0.0))
+        self.set_angle(self.dict_.get("initialAngle", 0.0))
 
     def set_attachments(self):
-        attached_substructure_name = self.dict_.read("attachedSubstructure", None)
+        attached_substructure_name = self.dict_.get("attachedSubstructure", None)
         if attached_substructure_name is not None:
             self.attached_substructure = Substructure.find_by_name(
                 attached_substructure_name
@@ -1226,7 +1228,7 @@ class TorsionalSpringSubstructure(FlexibleSubstructure, RigidSubstructure):
         else:
             self.attached_substructure = None
 
-        if self.dict_.read("attachedSubstructureEnd", "End").lower() == "start":
+        if self.dict_.get("attachedSubstructureEnd", "End").lower() == "start":
             self.attached_ind = 0
         else:
             self.attached_ind = -1
@@ -1262,11 +1264,11 @@ class TorsionalSpringSubstructure(FlexibleSubstructure, RigidSubstructure):
 
                 # Limit pressure to be below stagnation pressure
                 if config.plotting.pressure_limiter:
-                    pressure_fluid = np.min(
-                        np.hstack(
+                    pressure_fluid = numpy.min(
+                        numpy.hstack(
                             (
                                 pressure_fluid,
-                                np.ones_like(pressure_fluid)
+                                numpy.ones_like(pressure_fluid)
                                 * config.flow.stagnation_pressure,
                             )
                         ),
@@ -1274,9 +1276,9 @@ class TorsionalSpringSubstructure(FlexibleSubstructure, RigidSubstructure):
                     )
 
             else:
-                s = np.array(node_s)
-                pressure_fluid = np.zeros_like(s)
-                tau = np.zeros_like(s)
+                s = numpy.array(node_s)
+                pressure_fluid = numpy.zeros_like(s)
+                tau = numpy.zeros_like(s)
 
             ss = node_s[1]
             Pc = 0.0
@@ -1305,7 +1307,7 @@ class TorsionalSpringSubstructure(FlexibleSubstructure, RigidSubstructure):
             pressure_fluid *= config.ramp ** 2
 
             # Add external cushion pressure to external fluid pressure
-            pressure_cushion = np.zeros_like(s)
+            pressure_cushion = numpy.zeros_like(s)
             Pc = 0.0
             for ii, ss in enumerate(s):
                 if self.interpolator is not None:
@@ -1318,7 +1320,7 @@ class TorsionalSpringSubstructure(FlexibleSubstructure, RigidSubstructure):
 
                 pressure_cushion[ii] = Pc
 
-            pressure_internal = self.seal_pressure * np.ones_like(s)
+            pressure_internal = self.seal_pressure * numpy.ones_like(s)
 
             pressure_external = pressure_fluid + pressure_cushion
             pressure_total = pressure_external - pressure_internal
@@ -1350,15 +1352,15 @@ class TorsionalSpringSubstructure(FlexibleSubstructure, RigidSubstructure):
                 )
 
                 r = [
-                    np.array([pt[0] - config.body.xCofR, pt[1] - config.body.yCofR])
+                    numpy.array([pt[0] - config.body.xCofR, pt[1] - config.body.yCofR])
                     for pt in map(self.get_coordinates, s)
                 ]
 
                 m = [kp.cross2(ri, fi) for ri, fi in zip(r, f)]
 
-                self.D -= kp.integrate(s, np.array(zip(*f)[0]))
-                self.L += kp.integrate(s, np.array(zip(*f)[1]))
-                self.M += kp.integrate(s, np.array(m))
+                self.D -= kp.integrate(s, numpy.array(zip(*f)[0]))
+                self.L += kp.integrate(s, numpy.array(zip(*f)[1]))
+                self.M += kp.integrate(s, numpy.array(m))
             else:
                 if self.interpolator is not None:
                     self.D = self.interpolator.fluid.D
@@ -1373,16 +1375,16 @@ class TorsionalSpringSubstructure(FlexibleSubstructure, RigidSubstructure):
 
             f = [-pi * ni + taui * ti for pi, taui, ni, ti in zip(integrand, tau, n, t)]
             r = [
-                np.array([pt[0] - self.base_pt[0], pt[1] - self.base_pt[1]])
+                numpy.array([pt[0] - self.base_pt[0], pt[1] - self.base_pt[1]])
                 for pt in map(self.get_coordinates, s)
             ]
 
             m = [kp.cross2(ri, fi) for ri, fi in zip(r, f)]
             fx, fy = list(zip(*f))
 
-            self.Dt += kp.integrate(s, np.array(fx))
-            self.Lt += kp.integrate(s, np.array(fy))
-            self.Mt += kp.integrate(s, np.array(m))
+            self.Dt += kp.integrate(s, numpy.array(fx))
+            self.Lt += kp.integrate(s, numpy.array(fy))
+            self.Mt += kp.integrate(s, numpy.array(m))
 
             integrand = pressure_cushion
 
@@ -1392,20 +1394,20 @@ class TorsionalSpringSubstructure(FlexibleSubstructure, RigidSubstructure):
             f = [-pi * ni + taui * ti for pi, taui, ni, ti in zip(integrand, tau, n, t)]
 
             r = [
-                np.array([pt[0] - self.parent.xCofR, pt[1] - self.parent.yCofR])
+                numpy.array([pt[0] - self.parent.xCofR, pt[1] - self.parent.yCofR])
                 for pt in map(self.get_coordinates, s)
             ]
 
             m = [kp.cross2(ri, fi) for ri, fi in zip(r, f)]
 
-            self.Da -= kp.integrate(s, np.array(zip(*f)[0]))
-            self.La += kp.integrate(s, np.array(zip(*f)[1]))
-            self.Ma += kp.integrate(s, np.array(m))
+            self.Da -= kp.integrate(s, numpy.array(zip(*f)[0]))
+            self.La += kp.integrate(s, numpy.array(zip(*f)[1]))
+            self.Ma += kp.integrate(s, numpy.array(m))
 
         # Apply tip load
         tipC = self.get_coordinates(self.tip_load_pct * self.get_arc_length())
-        tipR = np.array([tipC[i] - self.base_pt[i] for i in [0, 1]])
-        tipF = np.array([0.0, self.tip_load]) * config.ramp
+        tipR = numpy.array([tipC[i] - self.base_pt[i] for i in [0, 1]])
+        tipF = numpy.array([0.0, self.tip_load]) * config.ramp
         tipM = kp.cross2(tipR, tipF)
         self.Lt += tipF[1]
         self.Mt += tipM
@@ -1414,7 +1416,7 @@ class TorsionalSpringSubstructure(FlexibleSubstructure, RigidSubstructure):
 
     #    el = self.attachedEl
     #    attC = self.attachedNode.get_coordinates()
-    #    attR = np.array([attC[i] - self.basePt[i] for i in [0,1]])
+    #    attR = np.array([attC[i] - self.basePt[i] for i in [0.validated,1]])
     #    attF = el.axialForce * kp.ang2vec(el.gamma + 180)
     #    attM = kp.cross2(attR, attF) * config.ramp
     ##    attM = np.min([np.abs(attM), np.abs(self.Mt)]) * kp.sign(attM)
@@ -1424,7 +1426,7 @@ class TorsionalSpringSubstructure(FlexibleSubstructure, RigidSubstructure):
 
     def updateAngle(self):
 
-        if np.isnan(self.Mt):
+        if numpy.isnan(self.Mt):
             theta = 0.0
         else:
             theta = -self.Mt
@@ -1433,12 +1435,12 @@ class TorsionalSpringSubstructure(FlexibleSubstructure, RigidSubstructure):
             theta /= self.spring_constant
 
         dTheta = (theta - self.theta) * self.relax
-        dTheta = np.min([np.abs(dTheta), self.max_angle_step]) * np.sign(dTheta)
+        dTheta = numpy.min([numpy.abs(dTheta), self.max_angle_step]) * numpy.sign(dTheta)
 
         self.set_angle(self.theta + dTheta)
 
     def set_angle(self, ang):
-        dTheta = np.max([ang, self.minimum_angle]) - self.theta
+        dTheta = numpy.max([ang, self.minimum_angle]) - self.theta
 
         if self.attached_node is not None and not any(
             [nd == self.attached_node for nd in self.node]
@@ -1448,9 +1450,9 @@ class TorsionalSpringSubstructure(FlexibleSubstructure, RigidSubstructure):
             attNd = []
 
         #    basePt = np.array([c for c in self.basePt])
-        basePt = np.array([c for c in self.node[-1].get_coordinates()])
+        basePt = numpy.array([c for c in self.node[-1].get_coordinates()])
         for nd in self.node + attNd:
-            oldPt = np.array([c for c in nd.get_coordinates()])
+            oldPt = numpy.array([c for c in nd.get_coordinates()])
             newPt = kp.rotatePt(oldPt, basePt, -dTheta)
             nd.set_coordinates(newPt[0], newPt[1])
 

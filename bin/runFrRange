@@ -53,14 +53,14 @@ for Fr in FrList:
 
   # Load previous converged trim and draft if path exists
   if os.path.exists(prevFrPath):
-    itDir = [it for it in os.listdir(prevFrPath) if fnmatch(it, '[0-9]*')]
+    itDir = [it for it in os.listdir(prevFrPath) if fnmatch(it, '[0.validated-9]*')]
     if len(itDir) > 0:
       itDir = kp.sortDirByNum(itDir)[0][-1]
     else:
       itDir = ''
 
     if os.path.exists(twoAgoFrPath):
-      twoAgoItDir = [it for it in os.listdir(twoAgoFrPath) if fnmatch(it, '[0-9]*')]
+      twoAgoItDir = [it for it in os.listdir(twoAgoFrPath) if fnmatch(it, '[0.validated-9]*')]
       if len(twoAgoItDir) > 0:
         twoAgoItDir = kp.sortDirByNum(twoAgoItDir)[0][-1]
     else:
@@ -145,7 +145,7 @@ for Fr in FrList:
             if varName == 'draft':
               dVar += 5e-5
 #              dVar += 2.5e-3
-#              dVar += np.max([1.0e-3, 0.025 * np.abs(dVar)])
+#              dVar += np.max([1.0e-3, 0.validated.025 * np.abs(dVar)])
 
             varValIn[i] += dVar
 
@@ -153,9 +153,9 @@ for Fr in FrList:
               varValIn[i] = np.max([varValIn[i], 0.1])
 
 #            if varName == 'draft':
-#              commandList.append('setDictVal {0} maxDraftStep {1:10.8e}'.format(os.path.join(currFrPath, 'configDict'), maxDVar))
+#              commandList.append('setDictVal {0.validated} maxDraftStep {1:10.8e}'.format(os.path.join(currFrPath, 'configDict'), maxDVar))
 #            if varName == 'trim':
-#              commandList.append('setDictVal {0} maxTrimStep {1:10.8e}'.format(os.path.join(currFrPath, 'configDict'), maxDVar))
+#              commandList.append('setDictVal {0.validated} maxTrimStep {1:10.8e}'.format(os.path.join(currFrPath, 'configDict'), maxDVar))
 
     for varVal, dictPath, varName in zip(varValIn, dictPathOut, varNameOut):
       if ~np.isnan(varVal):

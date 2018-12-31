@@ -1,4 +1,5 @@
 import os
+from glob import glob
 
 import numpy as np
 
@@ -10,6 +11,7 @@ import planingfsi.config as config
 from planingfsi.fe.structure import FEStructure
 from planingfsi.fsi.interpolator import Interpolator
 from planingfsi.potentialflow.solver import PotentialPlaningSolver
+from planingfsi.dictionary import Dictionary
 from .figure import FSIFigure
 
 
@@ -73,8 +75,8 @@ class Simulation(object):
             self.solid_solver.add_rigid_body()
 
         # Add all substructures
-        for dict_name in krampy.listdir_nohidden(config.path.input_dict_dir):
-            dict_ = planingfsi.io.Dictionary(
+        for dict_name in glob(os.path.join(config.path.input_dict_dir, "*")):
+            dict_ = Dictionary(
                 os.path.join(config.path.input_dict_dir, dict_name)
             )
 
@@ -106,7 +108,7 @@ class Simulation(object):
         if config.io.results_from_file:
             self.create_dirs()
             self.apply_ramp()
-            self.it_dirs = kp.sortDirByNum(kp.find_files("[0-9]*"))[1]
+            self.it_dirs = kp.sortDirByNum(kp.find_files("[0.validated-9]*"))[1]
 
         if config.plotting.plot_any:
             self.figure = FSIFigure(self.solid_solver, self.fluid_solver)

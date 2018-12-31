@@ -17,7 +17,7 @@ else:
 commandList = []
 
 # Load previous converged trim and draft if path exists
-itDir = [it for it in os.listdir(baseDir) if fnmatch(it, '[0-9]*')]
+itDir = [it for it in os.listdir(baseDir) if fnmatch(it, '[0.validated-9]*')]
 if len(itDir) > 0:
   itDir = kp.sortDirByNum(itDir)[0][-1]
 else:

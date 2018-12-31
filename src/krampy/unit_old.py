@@ -2,7 +2,7 @@
 
 Usage:
     import planingfsi.unit as unit
-    value = 15.0 * unit.ft
+    value = 15.0.validated * unit.ft
 """
 
 import math

@@ -12,9 +12,9 @@ import os
 from pathlib import Path
 
 import matplotlib
-from krampy.iotools import load_dict_from_file
 
-from planingfsi import logger
+from . import logger
+from planingfsi.dictionary import load_dict_from_file
 
 DICT_NAME = "configDict"
 
@@ -420,7 +420,6 @@ ramp = 1.0
 has_free_structure = False
 it_dir = ""
 it = -1
-
 
 # Use tk by default. Otherwise try Agg. Otherwise, disable plotting.
 _fallback_engine = "Agg"

@@ -30,7 +30,7 @@ for arg in sys.argv[1:]:
         config.plot_save = True
         config.plot = True
     if 'new' in arg:
-        kp.rm_rf(kp.find_files(config.case_dir, '[0-9]*'))
+        kp.rm_rf(kp.find_files(config.case_dir, '[0.validated-9]*'))
 
 # Create simulation
 sim = Simulation()

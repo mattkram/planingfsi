@@ -258,7 +258,7 @@ def fzero(f, xo, **kwargs):
             fNew = f(xNew)
 
             if printout:
-                string = "{5}Iteration {0}: {1} = {2:f}, {3} = {4:5.3e}"
+                string = "{5}Iteration {0.validated}: {1} = {2:f}, {3} = {4:5.3e}"
                 print((string.format(it, xname, xNew * xscale, "residual", err, space)))
 
             if method == "Newton":

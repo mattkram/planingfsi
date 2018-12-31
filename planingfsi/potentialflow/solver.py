@@ -2,9 +2,9 @@
 problems
 """
 
-from os.path import join
+import os.path
 
-import numpy as np
+import numpy
 from scipy.optimize import fmin
 
 import planingfsi.config as config
@@ -162,25 +162,25 @@ class PotentialPlaningSolver(object):
         sourceEl = [el for el in self.pressure_elements if el.is_source]
         # Form arrays to build linear system
         # x location of unknown elements
-        X = np.array([el.x_coord for el in unknownEl])
+        X = numpy.array([el.x_coord for el in unknownEl])
 
         # influence coefficient matrix (to be reshaped)
-        A = np.array([el.get_influence_coefficient(x) for x in X for el in unknownEl])
+        A = numpy.array([el.get_influence_coefficient(x) for x in X for el in unknownEl])
 
         # height of each unknown element above waterline
-        Z = np.array([el.z_coord for el in unknownEl]) - config.flow.waterline_height
+        Z = numpy.array([el.z_coord for el in unknownEl]) - config.flow.waterline_height
 
         # subtract contribution from source elements
-        Z -= np.array([np.sum([el.get_influence(x) for el in sourceEl]) for x in X])
+        Z -= numpy.array([numpy.sum([el.get_influence(x) for el in sourceEl]) for x in X])
 
         # Solve linear system
         dim = len(unknownEl)
         if not dim == 0:
-            p = np.linalg.solve(np.reshape(A, (dim, dim)), np.reshape(Z, (dim, 1)))[
+            p = numpy.linalg.solve(numpy.reshape(A, (dim, dim)), numpy.reshape(Z, (dim, 1)))[
                 :, 0
-            ]
+                ]
         else:
-            p = np.zeros_like(Z)
+            p = numpy.zeros_like(Z)
 
         # Apply calculated pressure to the elements
         for pi, el in zip(p, unknownEl):
@@ -207,7 +207,7 @@ class PotentialPlaningSolver(object):
         """
         # Set length of each planing surface
         for Lwi, p in zip(Lw, self.planing_surfaces):
-            p.length = np.min([Lwi, p.maximum_length])
+            p.length = numpy.min([Lwi, p.maximum_length])
 
         # Update bounds of pressure cushions
         for p in self.pressure_cushions:
@@ -216,7 +216,7 @@ class PotentialPlaningSolver(object):
         # Solve for unknown pressures and output residual
         self.calculate_pressure()
 
-        res = np.array([p.get_residual() for p in self.planing_surfaces])
+        res = numpy.array([p.get_residual() for p in self.planing_surfaces])
 
         def array_to_string(array):
             return ", ".join(["{0:11.4e}".format(a) for a in array]).join("[]")
@@ -255,20 +255,20 @@ class PotentialPlaningSolver(object):
             print("  Solving for wetted length:")
 
             if self.min_len is None:
-                self.min_len = np.array(
+                self.min_len = numpy.array(
                     [p.minimum_length for p in self.planing_surfaces]
                 )
-                self.max_len = np.array(
+                self.max_len = numpy.array(
                     [p.maximum_length for p in self.planing_surfaces]
                 )
-                self.init_len = np.array(
+                self.init_len = numpy.array(
                     [p.initial_length for p in self.planing_surfaces]
                 )
             else:
                 for i, p in enumerate(self.planing_surfaces):
                     L = p.get_length()
                     self.init_len[i] = p.initial_length
-                    if ~np.isnan(L) and L - self.min_len[i] > 1e-6:
+                    if ~numpy.isnan(L) and L - self.min_len[i] > 1e-6:
                         # and self.solver.it < self.solver.maxIt:
                         self.init_len[i] = L * 1.0
                     else:
@@ -312,20 +312,20 @@ class PotentialPlaningSolver(object):
 
     def plot_residuals_over_range(self):
         """Plot residuals."""
-        self.storeLen = np.array([p.get_length() for p in self.planing_surfaces])
+        self.storeLen = numpy.array([p.get_length() for p in self.planing_surfaces])
 
         xx, yy = list(zip(*self.xHist))
 
         N = 10
-        L = np.linspace(0.001, 0.25, N)
-        X = np.zeros((N, N))
-        Y = np.zeros((N, N))
-        Z1 = np.zeros((N, N))
-        Z2 = np.zeros((N, N))
+        L = numpy.linspace(0.001, 0.25, N)
+        X = numpy.zeros((N, N))
+        Y = numpy.zeros((N, N))
+        Z1 = numpy.zeros((N, N))
+        Z2 = numpy.zeros((N, N))
 
         for i, Li in enumerate(L):
             for j, Lj in enumerate(L):
-                x = np.array([Li, Lj])
+                x = numpy.array([Li, Lj])
                 y = self.get_residual(x)
 
                 X[i, j] = x[0]
@@ -338,8 +338,8 @@ class PotentialPlaningSolver(object):
             plt.contourf(X, Y, Zi, 50)
             plt.gray()
             plt.colorbar()
-            plt.contour(X, Y, Z1, np.array([0.0]), colors="b")
-            plt.contour(X, Y, Z2, np.array([0.0]), colors="b")
+            plt.contour(X, Y, Z1, numpy.array([0.0]), colors="b")
+            plt.contour(X, Y, Z2, numpy.array([0.0]), colors="b")
             plt.plot(xx, yy, "k.-")
             if self.solver.converged:
                 plt.plot(xx[-1], yy[-1], "y*", markersize=10)
@@ -367,19 +367,19 @@ class PotentialPlaningSolver(object):
 
             # Calculate pressure profile
             if len(self.pressure_patches) > 0:
-                self.X = np.sort(
-                    np.unique(
-                        np.hstack(
+                self.X = numpy.sort(
+                    numpy.unique(
+                        numpy.hstack(
                             [p._get_element_coords() for p in self.pressure_patches]
                         )
                     )
                 )
-                self.p = np.zeros_like(self.X)
-                self.shear_stress = np.zeros_like(self.X)
+                self.p = numpy.zeros_like(self.X)
+                self.shear_stress = numpy.zeros_like(self.X)
             else:
-                self.X = np.array([-1e6, 1e6])
-                self.p = np.zeros_like(self.X)
-                self.shear_stress = np.zeros_like(self.X)
+                self.X = numpy.array([-1e6, 1e6])
+                self.p = numpy.zeros_like(self.X)
+                self.shear_stress = numpy.zeros_like(self.X)
             for el in self.pressure_elements:
                 if el.is_on_body:
                     self.p[el.x_coord == self.X] += el.pressure
@@ -439,37 +439,37 @@ class PotentialPlaningSolver(object):
                 if patch.length > 0
             ]
             if len(fsList) > 0:
-                xFS.append(np.hstack(fsList))
+                xFS.append(numpy.hstack(fsList))
 
             # Add points from each pressure cushion
             xFS.append(
-                np.linspace(config.plotting.x_fs_min, config.plotting.x_fs_max, 100)
+                numpy.linspace(config.plotting.x_fs_min, config.plotting.x_fs_max, 100)
             )
             #             for patch in self.pressure_cushions:
             #                 if patch.neighborDown is not None:
             #                     ptsL = patch.neighborDown._get_element_coords()
             #                 else:
-            #                     ptsL = np.array([patch.endPt[0] - 0.01, patch.endPt[0]])
+            #                     ptsL = np.array([patch.endPt[0.validated] - 0.validated.01, patch.endPt[0.validated]])
             #
             #                 if patch.neighborDown is not None:
             #                     ptsR = patch.neighborUp._get_element_coords()
             #                 else:
-            #                     ptsR = np.array([patch.endPt[1], patch.endPt[1] + 0.01])
+            #                     ptsR = np.array([patch.endPt[1], patch.endPt[1] + 0.validated.01])
             #
-            #                 xEnd = ptsL[-1] + 0.5 * patch.get_length()
+            #                 xEnd = ptsL[-1] + 0.validated.5 * patch.get_length()
             #                 xFS.append(
             #                     kp.growPoints(ptsL[-2], ptsL[-1],
             #                                   xEnd, config.growthRate))
             #                 xFS.append(
-            # kp.growPoints(ptsR[1],  ptsR[0],  xEnd, config.growthRate))
+            # kp.growPoints(ptsR[1],  ptsR[0.validated],  xEnd, config.growthRate))
 
             # Sort x locations and calculate surface heights
             if len(xFS) > 0:
-                self.xFS = np.sort(np.unique(np.hstack(xFS)))
-                self.zFS = np.array(list(map(self.get_free_surface_height, self.xFS)))
+                self.xFS = numpy.sort(numpy.unique(numpy.hstack(xFS)))
+                self.zFS = numpy.array(list(map(self.get_free_surface_height, self.xFS)))
             else:
-                self.xFS = np.array([config.xFSMin, config.xFSMax])
-                self.zFS = np.zeros_like(self.xFS)
+                self.xFS = numpy.array([config.xFSMin, config.xFSMax])
+                self.zFS = numpy.zeros_like(self.xFS)
 
     def get_free_surface_height(self, x):
         """Return free surface height at a given x-position consideringthe
@@ -522,7 +522,7 @@ class PotentialPlaningSolver(object):
         """Write pressure and shear stress profiles to data file."""
         if len(self.pressure_elements) > 0:
             kp.writeaslist(
-                join(
+                os.path.join(
                     config.it_dir, "pressureAndShear.{0}".format(config.io.data_format)
                 ),
                 ["x [m]", self.X],
@@ -534,7 +534,7 @@ class PotentialPlaningSolver(object):
         """Write free-surface profile to file."""
         if len(self.pressure_elements) > 0:
             kp.writeaslist(
-                join(config.it_dir, "freeSurface.{0}".format(config.io.data_format)),
+                os.path.join(config.it_dir, "freeSurface.{0}".format(config.io.data_format)),
                 ["x [m]", self.xFS],
                 ["y [m]", self.zFS],
             )
@@ -543,7 +543,7 @@ class PotentialPlaningSolver(object):
         """Write forces to file."""
         if len(self.pressure_elements) > 0:
             kp.writeasdict(
-                join(config.it_dir, "forces_total.{0}".format(config.io.data_format)),
+                os.path.join(config.it_dir, "forces_total.{0}".format(config.io.data_format)),
                 ["Drag", self.D],
                 ["WaveDrag", self.Dw],
                 ["PressDrag", self.Dp],
@@ -565,14 +565,14 @@ class PotentialPlaningSolver(object):
 
     def load_pressure_and_shear(self):
         """Load pressure and shear stress from file."""
-        self.x, self.p, self.shear_stress = np.loadtxt(
-            join(config.it_dir, "pressureAndShear.{0}".format(config.io.data_format)),
+        self.x, self.p, self.shear_stress = numpy.loadtxt(
+            os.path.join(config.it_dir, "pressureAndShear.{0}".format(config.io.data_format)),
             unpack=True,
         )
         for el in [
             el for patch in self.planing_surfaces for el in patch.pressure_elements
         ]:
-            compare = np.abs(self.x - el.get_xloc()) < 1e-6
+            compare = numpy.abs(self.x - el.get_xloc()) < 1e-6
             if any(compare):
                 el.set_pressure(self.p[compare][0])
                 el.set_shear_stress(self.shear_stress[compare][0])
@@ -583,19 +583,19 @@ class PotentialPlaningSolver(object):
     def load_free_surface(self):
         """Load free surface coordinates from file."""
         try:
-            Data = np.loadtxt(
-                join(config.it_dir, "freeSurface.{0}".format(config.io.data_format))
+            Data = numpy.loadtxt(
+                os.path.join(config.it_dir, "freeSurface.{0}".format(config.io.data_format))
             )
             self.xFS = Data[:, 0]
             self.zFS = Data[:, 1]
         except IOError:
-            self.zFS = np.zeros_like(self.xFS)
+            self.zFS = numpy.zeros_like(self.xFS)
         return None
 
     def load_forces(self):
         """Load forces from file."""
         K = kp.Dictionary(
-            join(config.it_dir, "forces_total.{0}".format(config.io.data_format))
+            os.path.join(config.it_dir, "forces_total.{0}".format(config.io.data_format))
         )
         self.D = K.read("Drag", 0.0)
         self.Dw = K.read("WaveDrag", 0.0)
@@ -632,7 +632,7 @@ class PotentialPlaningSolver(object):
         plt.xlim([-1.0, 1.0])
         #    plt.xlim(kp.minMax(self.X / config.Lref * 2))
         plt.ylim(
-            [0.0, np.min([1.0, 1.2 * np.max(self.p / config.flow.stagnation_pressure)])]
+            [0.0, numpy.min([1.0, 1.2 * numpy.max(self.p / config.flow.stagnation_pressure)])]
         )
         plt.savefig(
             "pressureElements.{0}".format(config.figFormat), format=config.figFormat
@@ -646,9 +646,9 @@ class PotentialPlaningSolver(object):
         self.calculate_free_surface_profile()
         if self.lineFS is not None:
             self.lineFS.set_data(self.xFS, self.zFS)
-        endPts = np.array([config.plotting.x_fs_min, config.plotting.x_fs_max])
+        endPts = numpy.array([config.plotting.x_fs_min, config.plotting.x_fs_max])
         if self.lineFSi is not None:
             self.lineFSi.set_data(
-                endPts, config.flow.waterline_height * np.ones_like(endPts)
+                endPts, config.flow.waterline_height * numpy.ones_like(endPts)
             )
         return None
