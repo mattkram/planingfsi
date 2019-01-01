@@ -14,6 +14,17 @@ planingfsi.config module
 ------------------------
 
 .. automodule:: planingfsi.config
+   :no-members:
+
+.. autoclass:: planingfsi.config.FlowConfig
+
+.. autoclass:: planingfsi.config.BodyConfig
+
+.. autoclass:: planingfsi.config.PlotConfig
+
+.. autoclass:: planingfsi.config.IOConfig
+
+.. autoclass:: planingfsi.config.SolverConfig
 
 planingfsi.dictionary module
 ----------------------------
