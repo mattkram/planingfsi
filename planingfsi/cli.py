@@ -40,6 +40,9 @@ def main():
 )
 def run(post_mode, plot_save, new_case):
     """Run the planingFSI solver."""
+
+    config.load_from_dict_file("configDict")
+
     if post_mode:
         logger.info("Running in post-processing mode")
         config.plotting.save = True

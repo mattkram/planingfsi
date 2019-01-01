@@ -8,14 +8,9 @@ The global attributes can then be simply accessed via ``config.attribute_name``.
 
 """
 import math
-from pathlib import Path
 
 from . import logger
 from .dictionary import load_dict_from_file
-
-DICT_NAME = "configDict"
-
-logger.info("Loading values from {0}".format(DICT_NAME))
 
 
 class ConfigItem(object):
@@ -70,10 +65,6 @@ class SubConfig(object):
     """An empty class used simply for dividing the configuration into
     different sections. Also useful in helping define the namespace scopes.
     """
-
-    def __init__(self):
-        if Path(DICT_NAME).exists():
-            self.load_from_dict_file(DICT_NAME)
 
     def load_from_dict_file(self, dict_name: str):
         """Load the configuration from a dictionary file.
@@ -146,8 +137,7 @@ class FlowConfig(SubConfig):
         """
         if self._froude_num is not None and self._flow_speed is not None:
             raise ValueError(
-                "Only one flow speed variable (either Froude number or flow speed) "
-                f"must be set in {DICT_NAME}"
+                "Only one flow speed variable (either Froude number or flow speed) can be set."
             )
 
         if self._froude_num is not None:
@@ -156,7 +146,7 @@ class FlowConfig(SubConfig):
             self.froude_num = self._froude_num
 
         if self._flow_speed is None:
-            raise ValueError(f"Must specify either U or Fr in {DICT_NAME}")
+            raise ValueError(f"Must specify either U or Fr")
         return self._flow_speed
 
     @flow_speed.setter
@@ -535,6 +525,7 @@ def load_from_dict_file(filename: str):
         filename: Path to the dictionary file.
 
     """
+    logger.info(f"Loading configuration from {filename}")
     for c in [flow, body, plotting, path, io, solver]:
         c.load_from_dict_file(filename)
 
