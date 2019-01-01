@@ -26,6 +26,7 @@ numpy = "^1.15"
 scipy = "^1.2"
 six = "^1.12"
 click = "^7.0"
+click-log = "^0.3.2"
 
 [tool.poetry.dev-dependencies]
 pytest = "^4.0"

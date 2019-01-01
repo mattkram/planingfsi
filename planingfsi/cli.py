@@ -12,11 +12,15 @@ import shutil
 from glob import glob
 
 import click
+import click_log
 
 from . import config
 from . import logger
 from .fe.femesh import Mesh
 from .fsi.simulation import Simulation
+
+
+click_log.basic_config(logger)
 
 
 @click.group(help="Run the PlaningFSI program")
