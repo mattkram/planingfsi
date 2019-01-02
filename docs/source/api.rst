@@ -71,20 +71,20 @@ planingfsi.fsi package
 
 .. automodule:: planingfsi.fsi
 
-planingfsi.fsi.fsifigure module
+planingfsi.fsi.figure module
 -------------------------------
 
-.. automodule:: planingfsi.fsi.fsifigure
+.. automodule:: planingfsi.fsi.figure
 
-planingfsi.fsi.fsiinterpolator module
+planingfsi.fsi.interpolator module
 -------------------------------------
 
-.. automodule:: planingfsi.fsi.fsiinterpolator
+.. automodule:: planingfsi.fsi.interpolator
 
-planingfsi.fsi.fsisimulation module
+planingfsi.fsi.simulation module
 -----------------------------------
 
-.. automodule:: planingfsi.fsi.fsisimulation
+.. automodule:: planingfsi.fsi.simulation
 
 planingfsi.potentialflow package
 ================================
