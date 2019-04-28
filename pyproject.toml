@@ -33,6 +33,7 @@ pytest-cov = "^2.6"
 coverage = "^4.5"
 black = {version = "^18.3-alpha.0",allows-prereleases = true}
 tox = "^3.6"
+pytest-flake8 = "^1.0"
 
 [tool.poetry.scripts]
 planingFSI = "planingfsi:cli.planingfsi.main"
