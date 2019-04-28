@@ -27,6 +27,14 @@ PlaningFSI can be installed with pip:
 pip install planingfsi
 ```
 
+## Contributing
+
+To contribute, you should install the code in developer mode.
+
+```
+poetry install --develop=.
+```
+
 ## Getting Started
 
 The main command-line interface is called `planingFSI` and can be called directly, once appropriate input files have been prepared.
