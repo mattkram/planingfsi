@@ -20,8 +20,13 @@ def test_config_init(config_instance):
     """Given an instance of the TestClass, attributes are None unless a default is provided."""
     assert config_instance is not None
     assert config_instance.float_attr == 0.0
-    assert config_instance.int_attr is None
     assert isinstance(config_instance.float_attr, float)
+
+
+def test_config_attribute_without_default_raises_exception(config_instance):
+    """An AttributeError is raised if there is no default."""
+    with pytest.raises(AttributeError):
+        _ = config_instance.int_attr
 
 
 def test_config_type_conversion(config_instance):
@@ -40,8 +45,6 @@ def test_flow_defaults():
     assert flow.waterline_height == 0.0
     assert flow.num_dim == 2
     assert not flow.include_friction
-    assert flow._froude_num is None
-    assert flow._flow_speed is None
 
 
 def test_flow_speed_requires_value():

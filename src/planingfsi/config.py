@@ -42,7 +42,9 @@ class ConfigItem(object):
         """Retrieve the value from the instance dictionary. If it doesn't exist, return the default."""
         if self.name in instance.__dict__:
             return instance.__dict__[self.name]
-        return self.default
+        elif self.default is not None:
+            return self.default
+        raise AttributeError(f"Attribute {self.name} has not been set and no default specified")
 
     def __set__(self, instance, value):
         """When the value is set, try to convert it and then store it in the instance dictionary."""
@@ -250,21 +252,24 @@ class BodyConfig(SubConfig):
 
     @property
     def xCofR(self):
-        if self._xCofR is not None:
+        try:
             return self._xCofR
-        return self.xCofG
+        except AttributeError:
+            return self.xCofG
 
     @property
     def yCofR(self):
-        if self._yCofR is not None:
+        try:
             return self._yCofR
-        return self.yCofG
+        except AttributeError:
+            return self.yCofG
 
     @property
     def weight(self):
-        if self._weight is not None:
+        try:
             return self._weight
-        return self.mass * flow.gravity
+        except AttributeError:
+            return self.mass * flow.gravity
 
     @weight.setter
     def weight(self, value):
