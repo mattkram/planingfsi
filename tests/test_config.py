@@ -7,7 +7,7 @@ from planingfsi.config import SubConfig, ConfigItem
 
 
 @pytest.fixture()
-def config_class():
+def config_instance():
     """An instance of a configuration class containing some attributes."""
     class TestClass(SubConfig):
         float_attr = ConfigItem(default=0.0)
@@ -16,19 +16,19 @@ def config_class():
     return TestClass()
 
 
-def test_config_init(config_class):
+def test_config_init(config_instance):
     """Given an instance of the TestClass, attributes are None unless a default is provided."""
-    assert config_class is not None
-    assert config_class.float_attr == 0.0
-    assert config_class.int_attr is None
-    assert isinstance(config_class.float_attr, float)
+    assert config_instance is not None
+    assert config_instance.float_attr == 0.0
+    assert config_instance.int_attr is None
+    assert isinstance(config_instance.float_attr, float)
 
 
-def test_config_type_conversion(config_class):
+def test_config_type_conversion(config_instance):
     """Conversion is performed based on the specified type."""
-    config_class.int_attr = 55.0
-    assert config_class.int_attr == 55
-    assert isinstance(config_class.int_attr, int)
+    config_instance.int_attr = 55.0
+    assert config_instance.int_attr == 55
+    assert isinstance(config_instance.int_attr, int)
 
 
 def test_flow_defaults():
