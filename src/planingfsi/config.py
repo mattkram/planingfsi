@@ -53,6 +53,7 @@ class ConfigItem(object):
         instance.__dict__[self.name] = value
 
     def __set_name__(self, _, name):
+        """Set the name when the ConfigItem is defined."""
         self.name = name
 
     @property
