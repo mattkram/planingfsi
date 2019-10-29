@@ -9,6 +9,7 @@ from planingfsi.config import SubConfig, ConfigItem
 @pytest.fixture()
 def config_instance():
     """An instance of a configuration class containing some attributes."""
+
     class TestClass(SubConfig):
         float_attr = ConfigItem(default=0.0)
         int_attr = ConfigItem(type_=int)

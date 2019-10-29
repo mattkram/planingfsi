@@ -28,10 +28,16 @@ class ConfigItem(object):
     Attributes are loaded from a dictionary with fancy default handling.
 
     """
+
     name: str
 
-    def __init__(self, alt_key: str = None, alt_keys: List[str] = None, default: Any = None,
-                 type_: Type = None):
+    def __init__(
+        self,
+        alt_key: str = None,
+        alt_keys: List[str] = None,
+        default: Any = None,
+        type_: Type = None,
+    ):
         self.alt_keys: List[str] = []
         if alt_key:
             self.alt_keys.append(alt_key)
@@ -46,7 +52,9 @@ class ConfigItem(object):
             return instance.__dict__[self.name]
         elif self.default is not None:
             return self.default
-        raise AttributeError(f"Attribute {self.name} has not been set and no default specified")
+        raise AttributeError(
+            f"Attribute {self.name} has not been set and no default specified"
+        )
 
     def __set__(self, instance: "SubConfig", value: Any):
         """When the value is set, try to convert it and then store it in the instance dictionary."""
