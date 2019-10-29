@@ -8,6 +8,7 @@ from planingfsi.config import SubConfig, ConfigItem
 
 @pytest.fixture()
 def config_class():
+    """An instance of a configuration class containing some attributes."""
     class TestClass(SubConfig):
         float_attr = ConfigItem(default=0.0)
         int_attr = ConfigItem(type_=int)
@@ -16,6 +17,7 @@ def config_class():
 
 
 def test_config_init(config_class):
+    """Given an instance of the TestClass, attributes are None unless a default is provided."""
     assert config_class is not None
     assert config_class.float_attr == 0.0
     assert config_class.int_attr is None
@@ -23,6 +25,7 @@ def test_config_init(config_class):
 
 
 def test_config_type_conversion(config_class):
+    """Conversion is performed based on the specified type."""
     config_class.int_attr = 55.0
     assert config_class.int_attr == 55
     assert isinstance(config_class.int_attr, int)
@@ -53,7 +56,7 @@ def test_flow_speed_requires_value():
 
 
 def test_set_flow_speed():
-    """Set the flow speed directly. Froude number will be calculated."""
+    """Setting the flow speed directly, Froude number will be calculated."""
     flow = config.flow
     flow._froude_num = None
     flow._flow_speed = 1.0
@@ -64,7 +67,7 @@ def test_set_flow_speed():
 
 
 def test_set_froude_number():
-    """Set the Froude number. Flow speed will be calculated."""
+    """Setting the Froude number, flow speed will be calculated."""
     flow = config.flow
     flow._froude_num = 1.0
     flow._flow_speed = None
