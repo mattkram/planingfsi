@@ -19,10 +19,8 @@ from . import logger
 
 DICT_NAME = "configDict"
 
-logger.info("Loading values from {0}".format(DICT_NAME))
 
-
-class ConfigItem(object):
+class ConfigItem:
     """A descriptor to represent a configuration item.
 
     Attributes are loaded from a dictionary with fancy default handling.
@@ -32,22 +30,19 @@ class ConfigItem(object):
     name: str
 
     def __init__(
-        self,
-        alt_key: str = None,
-        alt_keys: List[str] = None,
-        default: Any = None,
-        type_: Type = None,
+        self, *alt_keys: str, default: Any = None, type_: Type = None,
     ):
-        self.alt_keys: List[str] = []
-        if alt_key:
-            self.alt_keys.append(alt_key)
-        if alt_keys:
-            self.alt_keys.extend(alt_keys)
+        self.alt_keys: List[str] = list(alt_keys)
         self.default = default
         self.type_ = type_
 
     def __get__(self, instance, owner):
-        """Retrieve the value from the instance dictionary. If it doesn't exist, return the default."""
+        """Retrieve the value from the instance dictionary or return the default.
+
+        Raises:
+            AttributeError: If the attribute hasn't been set and the  default value isn't specified.
+
+        """
         if self.name in instance.__dict__:
             return instance.__dict__[self.name]
         elif self.default is not None:
@@ -105,7 +100,6 @@ class SubConfig(object):
 
         """
         dict_ = load_dict_from_file(dict_name)
-        config_items = {key: item for key, item in self.__class__.__dict__.items()}
         for key, config_item in self.__class__.__dict__.items():
             if isinstance(config_item, ConfigItem):
                 try:
@@ -117,22 +111,22 @@ class SubConfig(object):
 
 
 class FlowConfig(SubConfig):
-    density = ConfigItem(alt_key="rho", default=998.2)
-    gravity = ConfigItem(alt_key="g", default=9.81)
-    kinematic_viscosity = ConfigItem(alt_key="nu", default=1e-6)
-    waterline_height = ConfigItem(alt_key="hWL", default=0.0)
-    num_dim = ConfigItem(alt_key="dim", default=2)
-    include_friction = ConfigItem(alt_key="shearCalc", default=False)
+    density = ConfigItem("rho", default=998.2)
+    gravity = ConfigItem("g", default=9.81)
+    kinematic_viscosity = ConfigItem("nu", default=1e-6)
+    waterline_height = ConfigItem("hWL", default=0.0)
+    num_dim = ConfigItem("dim", default=2)
+    include_friction = ConfigItem("shearCalc", default=False)
 
-    _froude_num = ConfigItem(alt_key="Fr", default=None, type_=float)
-    _flow_speed = ConfigItem(alt_key="U", default=None, type_=float)
+    _froude_num = ConfigItem("Fr", default=None, type_=float)
+    _flow_speed = ConfigItem("U", default=None, type_=float)
 
     @property
     def reference_length(self):
         return body.reference_length
 
     @property
-    def flow_speed(self):
+    def flow_speed(self) -> float:
         """The flow speed is the native variable to store free-stream velocity. However, if Froude
         number is set from input file, that should override the flow speed input.
 
@@ -146,7 +140,7 @@ class FlowConfig(SubConfig):
             self.froude_num = self._froude_num
         elif self._flow_speed is None:
             raise ValueError("Must specify either U or Fr in {0}".format(DICT_NAME))
-        return self._flow_speed
+        return getattr(self, "_flow_speed")
 
     @flow_speed.setter
     def flow_speed(self, value):
@@ -181,13 +175,13 @@ class BodyConfig(SubConfig):
     _xCofR = ConfigItem(type_=float)
     _yCofR = ConfigItem(type_=float)
 
-    mass = ConfigItem(alt_key="m", default=1.0)
-    _weight = ConfigItem(alt_key="W")
+    mass = ConfigItem("m", default=1.0)
+    _weight = ConfigItem("W")
 
-    reference_length = ConfigItem(alt_keys=["Lref", "Lc"], default=1.0)
+    reference_length = ConfigItem("Lref", "Lc", default=1.0)
 
-    _cushion_pressure = ConfigItem(alt_key="Pc", default=0.0)
-    _seal_pressure = ConfigItem(alt_key="Ps", default=0.0)
+    _cushion_pressure = ConfigItem("Pc", default=0.0)
+    _seal_pressure = ConfigItem("Ps", default=0.0)
 
     # Rigid body motion parameters
     time_step = ConfigItem("timeStep", default=1e-3)
@@ -284,13 +278,13 @@ class BodyConfig(SubConfig):
 
 
 class PlotConfig(SubConfig):
-    pType = ConfigItem(alt_key="pScaleType", default="stagnation")
-    _pScale = ConfigItem(alt_key="pScale", default=1.0)
-    _pScalePct = ConfigItem(alt_key="pScalePct", default=1.0)
-    _pScaleHead = ConfigItem(alt_key="pScaleHead", default=1.0)
-    growth_rate = ConfigItem(alt_key="growthRate", default=1.1)
-    CofR_grid_len = ConfigItem(alt_key="CofRGridLen", default=0.5)
-    fig_format = ConfigItem(alt_key="figFormat", default="eps")
+    pType = ConfigItem("pScaleType", default="stagnation")
+    _pScale = ConfigItem("pScale", default=1.0)
+    _pScalePct = ConfigItem("pScalePct", default=1.0)
+    _pScaleHead = ConfigItem("pScaleHead", default=1.0)
+    growth_rate = ConfigItem("growthRate", default=1.1)
+    CofR_grid_len = ConfigItem("CofRGridLen", default=0.5)
+    fig_format = ConfigItem("figFormat", default="eps")
 
     pressure_limiter = ConfigItem("pressureLimiter", default=False)
 
@@ -369,7 +363,7 @@ class PathConfig(SubConfig):
     body_dict_dir = ConfigItem("bodyDictDir", default="bodyDict")
     input_dict_dir = ConfigItem("inputDictDir", default="inputDict")
     cushion_dict_dir = ConfigItem(
-        alt_keys=["pressureCushionDictDir", "cushionDictDir"], default="cushionDict"
+        "pressureCushionDictDir", "cushionDictDir", default="cushionDict"
     )
     mesh_dir = ConfigItem("meshDir", default="mesh")
     mesh_dict_dir = ConfigItem("meshDictDir", default="meshDict")
@@ -406,7 +400,7 @@ class SolverConfig(SubConfig):
     relax_final = ConfigItem("relaxF", default=0.5)
     max_residual = ConfigItem("tolerance", default=1e-6)
     pretension = ConfigItem("pretension", default=0.1)
-    relax_FEM = ConfigItem(alt_keys=["FEMRelax", "relaxFEM"], default=1.0)
+    relax_FEM = ConfigItem("FEMRelax", "relaxFEM", default=1.0)
     max_FEM_disp = ConfigItem("maxFEMDisp", default=1.0)
     num_damp = ConfigItem("numDamp", default=0.0)
 
@@ -432,7 +426,14 @@ io = IOConfig()
 solver = SolverConfig()
 
 
-def load_from_file(filename):
+def load_from_file(filename: str) -> None:
+    """Load the configuration from a file.
+
+    Args:
+        filename: The name of the file.
+
+    """
+    logger.info(f"Loading values from {filename}")
     for c in [flow, body, plotting, path, io, solver]:
         c.load_from_dict(filename)
 
