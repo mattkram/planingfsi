@@ -19,17 +19,17 @@ class FSIFigure:
         self.geometryAx = plt.axes([0.05, 0.6, 0.9, 0.35])
 
         for nd in self.solid.node:
-            nd.line_x_yline_xy, = plt.plot([], [], "ro")
+            (nd.line_x_yline_xy,) = plt.plot([], [], "ro")
 
-        self.fluid.lineFS, = plt.plot([], [], "b-")
-        self.fluid.lineFSi, = plt.plot([], [], "b--")
+        (self.fluid.lineFS,) = plt.plot([], [], "b-")
+        (self.fluid.lineFSi,) = plt.plot([], [], "b--")
 
         for struct in self.solid.substructure:
-            struct.line_air_pressure, = plt.plot([], [], "g-")
-            struct.line_fluid_pressure, = plt.plot([], [], "r-")
+            (struct.line_air_pressure,) = plt.plot([], [], "g-")
+            (struct.line_fluid_pressure,) = plt.plot([], [], "r-")
             for el in struct.el:
-                el.lineEl0, = plt.plot([], [], "k--")
-                el.lineEl, = plt.plot([], [], "k-", linewidth=2)
+                (el.lineEl0,) = plt.plot([], [], "k--")
+                (el.lineEl,) = plt.plot([], [], "k-", linewidth=2)
 
         self.lineCofR = []
         for bd in self.solid.rigid_body:
@@ -154,7 +154,7 @@ class PlotSeries:
         self.legEnt = kwargs.get("legEnt", None)
         self.ignoreFirst = kwargs.get("ignoreFirst", False)
 
-        self.line, = self.ax.plot([], [], kwargs.get("sty", "k-"))
+        (self.line,) = self.ax.plot([], [], kwargs.get("sty", "k-"))
 
         if self.seriesType == "history+curr":
             self.additionalSeries.append(
@@ -410,8 +410,8 @@ class CofRPlot:
         else:
             fcol = "k"
 
-        self.line, = self.ax.plot([], [], style)
-        self.lineCofG, = self.ax.plot(
+        (self.line,) = self.ax.plot([], [], style)
+        (self.lineCofG,) = self.ax.plot(
             [], [], "k" + marker, markersize=8, markerfacecolor=fcol
         )
         self.update()

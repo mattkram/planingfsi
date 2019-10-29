@@ -393,8 +393,8 @@ class PotentialPlaningSolver(object):
 
             f = self.get_free_surface_height
             xo = -10.1 * config.flow.lam
-            xTrough, = fmin(f, xo, disp=False)
-            xCrest, = fmin(lambda x: -f(x), xo, disp=False)
+            (xTrough,) = fmin(f, xo, disp=False)
+            (xCrest,) = fmin(lambda x: -f(x), xo, disp=False)
             self.Dw = (
                 0.0625
                 * config.flow.density
