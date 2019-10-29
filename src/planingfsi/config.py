@@ -8,14 +8,12 @@ The global attributes can then be simply accessed via config.attribute_name
 
 """
 import math
-import os
-from pathlib import Path
-from typing import Any, List
-
 import matplotlib
+import os
 from krampy.iotools import load_dict_from_file
-
+from pathlib import Path
 from planingfsi import logger
+from typing import Any, List, Type
 
 DICT_NAME = "configDict"
 
@@ -28,10 +26,11 @@ class ConfigItem(object):
     Attributes are loaded from a dictionary with fancy default handling.
 
     """
+    name: str
 
-    def __init__(self, alt_key=None, alt_keys=None, default=None, type_=None):
-        self.name = None
-        self.alt_keys = []
+    def __init__(self, alt_key: str = None, alt_keys: List[str] = None, default: Any = None,
+                 type_: Type = None):
+        self.alt_keys: List[str] = []
         if alt_key:
             self.alt_keys.append(alt_key)
         if alt_keys:
@@ -180,10 +179,6 @@ class BodyConfig(SubConfig):
     _cushion_pressure = ConfigItem(alt_key="Pc", default=0.0)
     _seal_pressure = ConfigItem(alt_key="Ps", default=0.0)
 
-    # TODO: Do these belong here?
-    PcBar = ConfigItem()
-    PsBar = ConfigItem()
-
     # Rigid body motion parameters
     time_step = ConfigItem("timeStep", default=1e-3)
     relax_rigid_body = ConfigItem("rigidBodyRelax", default=1.0)
@@ -320,6 +315,16 @@ class PlotConfig(SubConfig):
     def plot_any(self):
         return self.show or self.save or self.watch or self.show_pressure
 
+    @plot_any.setter
+    def plot_any(self, value: bool) -> None:
+        if not value:
+            self.save = False
+            self.show = False
+            self.show_pressure = False
+            self._watch = False
+        else:
+            raise ValueError("config.plotting.plot_any cannot be set to True")
+
     @property
     def x_fs_min(self):
         if self._x_fs_min is not None:
@@ -427,7 +432,6 @@ ramp = 1.0
 has_free_structure = False
 it_dir = ""
 it = -1
-
 
 # Use tk by default. Otherwise try Agg. Otherwise, disable plotting.
 _fallback_engine = "Agg"
