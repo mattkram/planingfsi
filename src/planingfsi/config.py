@@ -10,6 +10,7 @@ The global attributes can then be simply accessed via config.attribute_name
 import math
 import os
 from pathlib import Path
+from typing import Any, List
 
 import matplotlib
 from krampy.iotools import load_dict_from_file
@@ -46,18 +47,18 @@ class ConfigItem(object):
             return self.default
         raise AttributeError(f"Attribute {self.name} has not been set and no default specified")
 
-    def __set__(self, instance, value):
+    def __set__(self, instance: "SubConfig", value: Any):
         """When the value is set, try to convert it and then store it in the instance dictionary."""
         if value is not None and self.type_ is not None:
             value = self.type_(value)
         instance.__dict__[self.name] = value
 
-    def __set_name__(self, _, name):
+    def __set_name__(self, _, name: str):
         """Set the name when the ConfigItem is defined."""
         self.name = name
 
     @property
-    def keys(self):
+    def keys(self) -> List[str]:
         """A list of keys to look for when reading in the value."""
         return [self.name] + self.alt_keys
 
