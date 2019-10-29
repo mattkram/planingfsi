@@ -8,12 +8,14 @@ The global attributes can then be simply accessed via config.attribute_name
 
 """
 import math
-import matplotlib
 import os
-from krampy.iotools import load_dict_from_file
 from pathlib import Path
-from planingfsi import logger
 from typing import Any, List, Type
+
+import matplotlib
+from krampy.iotools import load_dict_from_file
+
+from . import logger
 
 DICT_NAME = "configDict"
 
