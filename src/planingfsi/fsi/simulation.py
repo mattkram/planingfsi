@@ -2,14 +2,14 @@ import os
 from pathlib import Path
 
 import numpy as np
-import planingfsi.config as config
-from planingfsi.dictionary import load_dict_from_file
-from planingfsi.fe.structure import FEStructure
-from planingfsi.fsi.interpolator import Interpolator
-from planingfsi.krampy_old import sortDirByNum, find_files, writeasdict
-from planingfsi.potentialflow.solver import PotentialPlaningSolver
 
 from .figure import FSIFigure
+from .interpolator import Interpolator
+from .. import config
+from ..dictionary import load_dict_from_file
+from ..fe.structure import FEStructure
+from ..krampy_old import sortDirByNum, find_files, writeasdict
+from ..potentialflow.solver import PotentialPlaningSolver
 
 
 class Simulation:
@@ -238,6 +238,8 @@ class Simulation:
             self.solid_solver.write_results()
 
     def load_results(self):
-        dict_ = load_dict_from_file(os.path.join(config.it_dir, "overallQuantities.txt"))
+        dict_ = load_dict_from_file(
+            os.path.join(config.it_dir, "overallQuantities.txt")
+        )
         config.ramp = dict_.get("Ramp", 0.0)
         self.solid_solver.res = dict_.get("Residual", 0.0)
