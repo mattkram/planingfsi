@@ -30,4 +30,5 @@ else:
             matplotlib.use(_fallback_engine)
         except ImportError:
             from .config import plotting
+
             plotting.plot_any = False
