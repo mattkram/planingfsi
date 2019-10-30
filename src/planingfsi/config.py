@@ -81,14 +81,10 @@ class ConfigItem:
         )
 
 
-class SubConfig(object):
+class SubConfig:
     """An empty class used simply for dividing the configuration into
     different sections. Also useful in helping define the namespace scopes.
     """
-
-    def __init__(self):
-        if Path(DICT_NAME).exists():
-            self.load_from_dict(DICT_NAME)
 
     def load_from_dict(self, dict_name: str):
         """Load the configuration from a dictionary file.
@@ -437,6 +433,10 @@ def load_from_file(filename: str) -> None:
     for c in [flow, body, plotting, path, io, solver]:
         c.load_from_dict(filename)
 
+
+# Load the default config dict file
+if Path(DICT_NAME).exists():
+    load_from_file(DICT_NAME)
 
 # Initialized constants
 ramp = 1.0
