@@ -3,31 +3,32 @@ import os
 import re
 import warnings
 from collections import UserDict
+from typing import Dict, Any, Match
 
 from . import logger
 
 __all__ = ["load_dict_from_file", "Dictionary"]
 
 
-def replace_single_quotes_with_double_quotes(string):
+def replace_single_quotes_with_double_quotes(string: str) -> str:
     """Replace all single-quoted strings with double-quotes."""
 
-    def repl(m):
+    def repl(m: Match) -> str:
         return m.group(1).join('""')
 
     return re.sub(r"'(.+?)'", repl, string)
 
 
-def replace_environment_variables(string):
+def replace_environment_variables(string: str) -> str:
     """Replace environment variables with their value."""
 
-    def repl(m):
+    def repl(m: Match) -> str:
         return os.environ[m.group(1)]
 
     return re.sub(r"\$(\w+)", repl, string)
 
 
-def add_quotes_to_words(string):
+def add_quotes_to_words(string: str) -> str:
     """Find words inside a string and surround with double-quotes."""
     quoted_pattern = re.compile('(".+?")')
     word_pattern = re.compile(r"([\w.-]+)")
@@ -36,7 +37,7 @@ def add_quotes_to_words(string):
 
     matches = quoted_pattern.split(string)
 
-    def repl(m):
+    def repl(m: Match) -> str:
         """Add quotes, only if it isn't a number."""
         value = m.group(1)
         if number_pattern.match(value):
@@ -48,7 +49,7 @@ def add_quotes_to_words(string):
     )
 
 
-def jsonify_string(string):
+def jsonify_string(string: str) -> str:
     """Loop through a string, ensuring double-quotes are used to comply with json standard.
 
     * Find pattern.
@@ -76,12 +77,12 @@ def jsonify_string(string):
         .replace("}{", "},{")
     )
 
-    logger.debug('JSONified string: "{}"'.format(string))
+    logger.debug(f'JSONified string: "{string}"')
 
     return string
 
 
-def load_dict_from_file(filename):
+def load_dict_from_file(filename: str) -> Dict[str, Any]:
     """Read a file, which is a less strict JSON format, and return a dictionary."""
     logger.debug('Loading Dictionary from file "{}"'.format(filename))
 
@@ -105,7 +106,7 @@ def load_dict_from_file(filename):
     return dict_
 
 
-def load_dict_from_string(string):
+def load_dict_from_string(string: str) -> Dict[str, Any]:
     """Convert string to JSON string, convert to a dictionary, and return."""
     logger.debug('Loading Dictionary from string: "{}"'.format(string))
 
@@ -133,10 +134,15 @@ def load_dict_from_string(string):
 class Dictionary(UserDict):
     """A deprecated class for loading dictionary from file."""
 
-    def __init__(self, from_dict=None, from_file=None, from_string=None):
+    def __init__(
+        self,
+        from_dict: Dict[str, Any] = None,
+        from_file: str = None,
+        from_string: str = None,
+    ):
         message = (
-            "The krampy.iotools.Dictionary class is deprecated. "
-            "Consider using the function load_dict_from_file instead."
+            "The dictionary.Dictionary class is deprecated. "
+            "Consider using the function load_dict_from_file() instead."
         )
         warnings.warn(message, DeprecationWarning)
         super().__init__()
