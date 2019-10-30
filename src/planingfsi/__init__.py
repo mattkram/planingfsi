@@ -14,7 +14,6 @@ import os
 import matplotlib
 
 from .__version__ import __version__
-from .config import plotting
 
 logger = logging.getLogger("planingfsi")
 logger.setLevel(logging.DEBUG)
@@ -30,4 +29,5 @@ else:
         try:
             matplotlib.use(_fallback_engine)
         except ImportError:
+            from .config import plotting
             plotting.plot_any = False
