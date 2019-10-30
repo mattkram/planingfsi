@@ -1,19 +1,18 @@
 import os
+from pathlib import Path
 
 import numpy as np
-
 import planingfsi.config as config
-
-# import planingfsi.io
-# import planingfsi.krampy as kp
-# from planingfsi import krampy, io
+from planingfsi.dictionary import load_dict_from_file
 from planingfsi.fe.structure import FEStructure
 from planingfsi.fsi.interpolator import Interpolator
+from planingfsi.krampy_old import sortDirByNum, find_files, writeasdict
 from planingfsi.potentialflow.solver import PotentialPlaningSolver
+
 from .figure import FSIFigure
 
 
-class Simulation(object):
+class Simulation:
     """Simulation object to manage the FSI problem. Handles the iteration
     between the fluid and solid solvers.
 
@@ -52,11 +51,11 @@ class Simulation(object):
         )
 
         if self.check_output_interval() and not config.io.results_from_file:
-            kp.createIfNotExist(config.path.case_dir)
-            kp.createIfNotExist(config.it_dir)
+            Path(config.path.case_dir).mkdir(exist_ok=True)
+            Path(config.it_dir).mkdir(exist_ok=True)
 
         if config.plotting.save:
-            kp.createIfNotExist(config.path.fig_dir_name)
+            Path(config.path.fig_dir_name).mkdir(exist_ok=True)
             if config.it == 0:
                 for f in os.listdir(config.path.fig_dir_name):
                     os.remove(os.path.join(config.path.fig_dir_name, f))
@@ -64,23 +63,19 @@ class Simulation(object):
     def load_input_files(self):
         # Add all rigid bodies
         if os.path.exists(config.path.body_dict_dir):
-            for dict_name in krampy.listdir_nohidden(config.path.body_dict_dir):
-                dict_ = planingfsi.io.Dictionary(
-                    os.path.join(config.path.body_dict_dir, dict_name)
-                )
+            for dict_path in Path(config.path.body_dict_dir).glob("*"):
+                dict_ = load_dict_from_file(str(dict_path))
                 self.solid_solver.add_rigid_body(dict_)
         else:
             self.solid_solver.add_rigid_body()
 
         # Add all substructures
-        for dict_name in krampy.listdir_nohidden(config.path.input_dict_dir):
-            dict_ = planingfsi.io.Dictionary(
-                os.path.join(config.path.input_dict_dir, dict_name)
-            )
+        for dict_path in Path(config.path.input_dict_dir).glob("*"):
+            dict_ = load_dict_from_file(str(dict_path))
 
             substructure = self.solid_solver.add_substructure(dict_)
 
-            if dict_.read("hasPlaningSurface", False):
+            if dict_.get("hasPlaningSurface", False):
                 planing_surface = self.fluid_solver.add_planing_surface(dict_)
                 interpolator = Interpolator(substructure, planing_surface, dict_)
                 interpolator.set_solid_position_function(substructure.get_coordinates)
@@ -90,10 +85,8 @@ class Simulation(object):
 
         # Add all pressure cushions
         if os.path.exists(config.path.cushion_dict_dir):
-            for dict_name in krampy.listdir_nohidden(config.path.cushion_dict_dir):
-                dict_ = planingfsi.io.Dictionary(
-                    os.path.join(config.path.cushion_dict_dir, dict_name)
-                )
+            for dict_path in Path(config.path.cushion_dict_dir).glob("*"):
+                dict_ = load_dict_from_file(str(dict_path))
                 self.fluid_solver.add_pressure_cushion(dict_)
 
     def run(self):
@@ -106,7 +99,7 @@ class Simulation(object):
         if config.io.results_from_file:
             self.create_dirs()
             self.apply_ramp()
-            self.it_dirs = kp.sortDirByNum(kp.find_files("[0-9]*"))[1]
+            self.it_dirs = sortDirByNum(find_files("[0-9]*"))[1]
 
         if config.plotting.plot_any:
             self.figure = FSIFigure(self.solid_solver, self.fluid_solver)
@@ -183,7 +176,7 @@ class Simulation(object):
                 config.it = int(self.it_dirs[config.it + 1])
             else:
                 config.it = config.max_it
-            it += 1
+            config.it += 1
         else:
             config.it += 1
 
@@ -235,7 +228,7 @@ class Simulation(object):
 
     def write_results(self):
         if self.check_output_interval() and not config.io.results_from_file:
-            kp.writeasdict(
+            writeasdict(
                 os.path.join(config.it_dir, "overallQuantities.txt"),
                 ["Ramp", config.ramp],
                 ["Residual", self.solid_solver.res],
@@ -245,6 +238,6 @@ class Simulation(object):
             self.solid_solver.write_results()
 
     def load_results(self):
-        K = kp.Dictionary(os.path.join(config.it_dir, "overallQuantities.txt"))
-        config.ramp = K.read("Ramp", 0.0)
-        self.solid_solver.res = K.read("Residual", 0.0)
+        dict_ = load_dict_from_file(os.path.join(config.it_dir, "overallQuantities.txt"))
+        config.ramp = dict_.get("Ramp", 0.0)
+        self.solid_solver.res = dict_.get("Residual", 0.0)
