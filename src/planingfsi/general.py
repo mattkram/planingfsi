@@ -360,20 +360,22 @@ def index_match(index_list, match_list, search_str, **kwargs):
 #  ff.close()
 #
 def writeaslist(filename, *args, **kwargs):
- headerFormat = kwargs.get('headerFormat', '<15')
- dataFormat   = kwargs.get('dataFormat', '>+10.8e')
- ff = open(filename, 'w')
- write(ff, headerFormat, [item for item in [arg[0] for arg in args]])
- for value in zip(*[arg[1] for arg in args]):
-   write(ff, dataFormat, value)
- ff.close()
+    headerFormat = kwargs.get("headerFormat", "<15")
+    dataFormat = kwargs.get("dataFormat", ">+10.8e")
+    ff = open(filename, "w")
+    write(ff, headerFormat, [item for item in [arg[0] for arg in args]])
+    for value in zip(*[arg[1] for arg in args]):
+        write(ff, dataFormat, value)
+    ff.close()
+
 
 def write(ff, writeFormat, items):
- if isinstance(items[0], str):
-   ff.write('# ')
- else:
-   ff.write('  ')
- ff.write(''.join('{1:{0}} '.format(writeFormat, item) for item in items) + '\n')
+    if isinstance(items[0], str):
+        ff.write("# ")
+    else:
+        ff.write("  ")
+    ff.write("".join("{1:{0}} ".format(writeFormat, item) for item in items) + "\n")
+
 
 # def sortDirByNum(dirStr, direction='forward'):
 #  num = np.array([float(''.join(i for i in dir.lower() if i.isdigit() or i == '.').strip('.')) for dir in dirStr])

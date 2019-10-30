@@ -6,6 +6,8 @@ from collections import UserDict
 
 from . import logger
 
+__all__ = ["load_dict_from_file", "Dictionary"]
+
 
 def replace_single_quotes_with_double_quotes(string):
     """Replace all single-quoted strings with double-quotes."""
@@ -68,10 +70,10 @@ def jsonify_string(string):
     string = re.sub(",+", ",", string)
     string = (
         string.replace("[,", "[")
-            .replace("{,", "{")
-            .replace(",]", "]")
-            .replace(",}", "}")
-            .replace("}{", "},{")
+        .replace("{,", "{")
+        .replace(",]", "]")
+        .replace(",}", "}")
+        .replace("}{", "},{")
     )
 
     logger.debug('JSONified string: "{}"'.format(string))

@@ -27,7 +27,7 @@ class ConfigItem:
     name: str
 
     def __init__(
-            self, *alt_keys: str, default: Any = None, type_: Type = None,
+        self, *alt_keys: str, default: Any = None, type_: Type = None,
     ):
         self.alt_keys: List[str] = list(alt_keys)
         self.default = default

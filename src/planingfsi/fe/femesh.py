@@ -141,9 +141,7 @@ class Mesh:
     def write(self):
         Path(config.path.mesh_dir).mkdir(exist_ok=True)
         x, y = list(zip(*[pt.get_position() for pt in Point.All()]))
-        writeaslist(
-            os.path.join(config.path.mesh_dir, "nodes.txt"), ["x", x], ["y", y]
-        )
+        writeaslist(os.path.join(config.path.mesh_dir, "nodes.txt"), ["x", x], ["y", y])
 
         x, y = list(zip(*[pt.get_fixed_dof() for pt in Point.All()]))
         writeaslist(
@@ -331,7 +329,9 @@ class Point(Shape):
 
     def rotate(self, base_pt_id, angle):
         base_pt = Point.find_by_id(base_pt_id).get_position()
-        self.set_position(trig.rotate_vec_2d(self.get_position() - base_pt, angle) + base_pt)
+        self.set_position(
+            trig.rotate_vec_2d(self.get_position() - base_pt, angle) + base_pt
+        )
 
     def display(self):
         print(
