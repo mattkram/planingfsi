@@ -211,15 +211,17 @@ class BodyConfig(SubConfig):
 
     @property
     def relax_draft(self) -> float:
-        if self._relax_draft is not None:
+        try:
             return self._relax_draft
-        return body.relax_rigid_body
+        except AttributeError:
+            return body.relax_rigid_body
 
     @property
     def relax_trim(self) -> float:
-        if self._relax_trim is not None:
+        try:
             return self._relax_trim
-        return body.relax_rigid_body
+        except AttributeError:
+            return body.relax_rigid_body
 
     @property
     def Pc(self) -> float:

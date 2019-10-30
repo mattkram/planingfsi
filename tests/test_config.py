@@ -99,6 +99,8 @@ def test_body_defaults():
     assert body.reference_length == 1.0
     assert body.mass == 1.0
     assert body.weight == config.flow.gravity
+    assert body.relax_draft == 1.0
+    assert body.relax_trim == 1.0
 
 
 def test_body_pressure_calculations():
