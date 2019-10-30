@@ -19,4 +19,4 @@ pipelines:
             --cov-report xml:./test-reports/coverage.xml
             --cov planingfsi
             tests
-          - poetry run codecov -t $CODECOV_KEY
+          - poetry run codecov -t $CODECOV_TOKEN
