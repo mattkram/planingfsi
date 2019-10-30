@@ -26,10 +26,13 @@ class Simulation:
     """
 
     def __init__(self):
-
-        # Create solid and fluid solver objects
         self.solid_solver = FEStructure()
         self.fluid_solver = PotentialPlaningSolver()
+        self.figure = (
+            FSIFigure(self.solid_solver, self.fluid_solver)
+            if config.plotting.plot_any
+            else None
+        )
 
     #     def setFluidPressureFunc(self, func):
     #         self.fluidPressureFunc = func
@@ -100,9 +103,6 @@ class Simulation:
             self.create_dirs()
             self.apply_ramp()
             self.it_dirs = sortDirByNum(find_files("[0-9]*"))[1]
-
-        if config.plotting.plot_any:
-            self.figure = FSIFigure(self.solid_solver, self.fluid_solver)
 
         # Initialize body at specified trim and draft
         self.solid_solver.initialize_rigid_bodies()
