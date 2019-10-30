@@ -11,7 +11,12 @@ pipelines:
         caches:
           - pip
         script:
-          - pip install --upgrade pip
-          - pip install poetry
+          - python -m pip install --upgrade pip
+          - python -m pip install poetry codecov
           - poetry install
-          - poetry run pytest --cov planingfsi
+          - poetry run python -m pytest
+            --junitxml=./test-reports/junit.xml
+            --cov-report xml:./test-reports/coverage.xml
+            --cov planingfsi
+            tests
+          - poetry run codecov -t $CODECOV_KEY
