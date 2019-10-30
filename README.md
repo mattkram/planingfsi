@@ -1,6 +1,7 @@
 # PlaningFSI
 
 [![Bitbucket Pipelines](https://img.shields.io/bitbucket/pipelines/mattkram/planingfsi/develop.svg)](https://bitbucket.org/mattkram/planingfsi/addon/pipelines/home)
+[![codecov](https://codecov.io/bb/mattkram/planingfsi/branch/develop/graph/badge.svg)](https://codecov.io/bb/mattkram/planingfsi)
 [![Documentation Status](https://readthedocs.org/projects/planingfsi/badge/?version=latest)](https://planingfsi.readthedocs.io/en/latest/?badge=latest)
 [![Version](https://img.shields.io/pypi/v/planingfsi.svg)](https://pypi.org/project/planingfsi/)
 [![License](https://img.shields.io/pypi/l/planingfsi.svg)](https://pypi.org/project/planingfsi/)
