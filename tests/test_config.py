@@ -113,3 +113,15 @@ def test_body_pressure_calculations():
     body.weight = 5.0
     body.PcBar = 10.0
     assert body.Pc == 50.0
+
+
+@pytest.fixture()
+def config_from_file(test_dir):
+    config.load_from_file(test_dir / "input_files" / "configDict")
+
+
+@pytest.mark.usefixtures("config_from_file")
+def test_load_config_from_file():
+    """Configuration loaded from file overrides defaults."""
+    assert config.flow.density == 998.2
+    assert config.flow.kinematic_viscosity == 1.0048e-6
