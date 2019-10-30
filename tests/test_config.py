@@ -59,6 +59,15 @@ def test_flow_speed_requires_value():
         _ = flow.froude_num
 
 
+def test_set_flow_speed_only_once():
+    """The Froude number and flow speed can't both be set, otherwise a ValueError is raised."""
+    flow = config.flow
+    flow._froude_num = 1.0
+    flow._flow_speed = 1.0
+    with pytest.raises(ValueError):
+        _ = flow.flow_speed
+
+
 def test_set_flow_speed():
     """Setting the flow speed directly, Froude number will be calculated."""
     flow = config.flow
