@@ -16,7 +16,6 @@ classifiers = [
 ]
 packages = [
     { include = "planingfsi", from = "src" },
-    { include = "krampy", from = "src" },
 ]
 
 [tool.poetry.dependencies]

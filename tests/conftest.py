@@ -3,7 +3,7 @@ from pathlib import Path
 
 import pytest
 from click.testing import CliRunner
-from krampy.iotools import Dictionary
+from planingfsi.dictionary import Dictionary
 
 PROJECT_DIR = Path(__file__).parents[1]
 

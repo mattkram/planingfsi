@@ -8,14 +8,11 @@ The global attributes can then be simply accessed via config.attribute_name
 
 """
 import math
-import os
 from pathlib import Path
 from typing import Any, List, Type, Dict
 
-import matplotlib
-from krampy.iotools import load_dict_from_file
-
 from . import logger
+from .dictionary import load_dict_from_file
 
 DICT_NAME = "configDict"
 
@@ -30,7 +27,7 @@ class ConfigItem:
     name: str
 
     def __init__(
-        self, *alt_keys: str, default: Any = None, type_: Type = None,
+            self, *alt_keys: str, default: Any = None, type_: Type = None,
     ):
         self.alt_keys: List[str] = list(alt_keys)
         self.default = default

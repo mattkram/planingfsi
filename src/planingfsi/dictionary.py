@@ -4,7 +4,7 @@ import re
 import warnings
 from collections import UserDict
 
-from krampy import logger
+from . import logger
 
 
 def replace_single_quotes_with_double_quotes(string):
@@ -22,13 +22,13 @@ def replace_environment_variables(string):
     def repl(m):
         return os.environ[m.group(1)]
 
-    return re.sub("\$(\w+)", repl, string)
+    return re.sub(r"\$(\w+)", repl, string)
 
 
 def add_quotes_to_words(string):
     """Find words inside a string and surround with double-quotes."""
     quoted_pattern = re.compile('(".+?")')
-    word_pattern = re.compile("([\w.-]+)")
+    word_pattern = re.compile(r"([\w.-]+)")
     # Any number, integer, float, or exponential
     number_pattern = re.compile(r"[-+]?[0-9]*\.?[0-9]+([eE][-+]?[0-9]+)?")
 
@@ -68,10 +68,10 @@ def jsonify_string(string):
     string = re.sub(",+", ",", string)
     string = (
         string.replace("[,", "[")
-        .replace("{,", "{")
-        .replace(",]", "]")
-        .replace(",}", "}")
-        .replace("}{", "},{")
+            .replace("{,", "{")
+            .replace(",]", "]")
+            .replace(",}", "}")
+            .replace("}{", "},{")
     )
 
     logger.debug('JSONified string: "{}"'.format(string))
@@ -121,7 +121,7 @@ def load_dict_from_string(string):
                 dict_[key] = float(match.group(1))
             elif "unit." in val:
                 # noinspection PyUnresolvedReferences
-                from krampy import unit
+                from planingfsi import unit
 
                 dict_[key] = eval(val)
 

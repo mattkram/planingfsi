@@ -1,10 +1,14 @@
 import os
+from pathlib import Path
 
 import numpy as np
 import matplotlib.pyplot as plt
 
 import planingfsi.config as config
-import krampy as kp
+from planingfsi.general import writeaslist
+from planingfsi.solver import fzero
+
+from .. import trig
 
 
 class Mesh:
@@ -30,7 +34,7 @@ class Mesh:
         elif method == "rel":
             base_pt_id, ang, R = position
             P.set_position(
-                Point.find_by_id(base_pt_id).get_position() + R * kp.ang2vecd(ang)
+                Point.find_by_id(base_pt_id).get_position() + R * trig.ang2vecd(ang)
             )
         elif method == "con":
             base_pt_id, dim, val = position
@@ -39,11 +43,11 @@ class Mesh:
             base_pt = Point.find_by_id(base_pt_id).get_position()
             if dim == "x":
                 P.set_position(
-                    np.array([val, base_pt[1] + (val - base_pt[0]) * kp.tand(ang)])
+                    np.array([val, base_pt[1] + (val - base_pt[0]) * trig.tand(ang)])
                 )
             elif dim == "y":
                 P.set_position(
-                    np.array([base_pt[0] + (val - base_pt[1]) / kp.tand(ang), val])
+                    np.array([base_pt[0] + (val - base_pt[1]) / trig.tand(ang), val])
                 )
             else:
                 print("Incorrect dimension specification")
@@ -135,14 +139,14 @@ class Mesh:
                 plt.show()
 
     def write(self):
-        kp.createIfNotExist(config.path.mesh_dir)
+        Path(config.path.mesh_dir).mkdir(exist_ok=True)
         x, y = list(zip(*[pt.get_position() for pt in Point.All()]))
-        kp.writeaslist(
+        writeaslist(
             os.path.join(config.path.mesh_dir, "nodes.txt"), ["x", x], ["y", y]
         )
 
         x, y = list(zip(*[pt.get_fixed_dof() for pt in Point.All()]))
-        kp.writeaslist(
+        writeaslist(
             os.path.join(config.path.mesh_dir, "fixedDOF.txt"),
             ["x", x],
             ["y", y],
@@ -151,7 +155,7 @@ class Mesh:
         )
 
         x, y = list(zip(*[pt.get_fixed_load() for pt in Point.All()]))
-        kp.writeaslist(
+        writeaslist(
             os.path.join(config.path.mesh_dir, "fixedLoad.txt"),
             ["x", x],
             ["y", y],
@@ -202,7 +206,7 @@ class Submesh(Mesh):
                     ]
                 )
             )
-            kp.writeaslist(
+            writeaslist(
                 os.path.join(
                     config.path.mesh_dir, "elements_{0}.txt".format(self.name)
                 ),
@@ -327,7 +331,7 @@ class Point(Shape):
 
     def rotate(self, base_pt_id, angle):
         base_pt = Point.find_by_id(base_pt_id).get_position()
-        self.set_position(kp.rotateVec(self.get_position() - base_pt, angle) + base_pt)
+        self.set_position(trig.rotate_vec_2d(self.get_position() - base_pt, angle) + base_pt)
 
     def display(self):
         print(
@@ -375,7 +379,7 @@ class Curve(Shape):
             alf = self.arc_length / (2 * self.radius)
             return lambda s: self._end_pts[0].get_position() + 2 * self.radius * np.sin(
                 s * alf
-            ) * kp.ang2vec(gam + (s - 1) * alf)
+            ) * trig.ang2vec(gam + (s - 1) * alf)
 
     def set_radius(self, R):
         self.radius = R
@@ -405,7 +409,7 @@ class Curve(Shape):
             f = lambda s: self.chord / (2 * self.radius) - np.sin(s / (2 * self.radius))
 
             # Keep increasing guess until fsolve finds the first non-zero root
-            self.arc_length = kp.fzero(f, self.chord + 1e-6)
+            self.arc_length = fzero(f, self.chord + 1e-6)
 
     def calculate_curvature(self):
         f = lambda x: x * self.chord / 2 - np.sin(x * self.arc_length / 2)
@@ -414,7 +418,7 @@ class Curve(Shape):
         kap = 0.0
         kap0 = 0.0
         while kap <= 1e-6:
-            kap = kp.fzero(f, kap0)
+            kap = fzero(f, kap0)
             kap0 += 0.02
 
         return kap
