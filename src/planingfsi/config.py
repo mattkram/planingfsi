@@ -439,6 +439,7 @@ if Path(DICT_NAME).exists():
     load_from_file(DICT_NAME)
 
 # Initialized constants
+# TODO: These should be moved to the Simulation class
 ramp = 1.0
 has_free_structure = False
 it_dir = ""
