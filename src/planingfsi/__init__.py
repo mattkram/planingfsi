@@ -9,7 +9,25 @@ and the structural solver considers a large-deformation simple beam element.
 
 """
 import logging
+import os
+
+import matplotlib
+
 from .__version__ import __version__
+from .config import plotting
 
 logger = logging.getLogger("planingfsi")
 logger.setLevel(logging.DEBUG)
+
+# Use tk by default. Otherwise try Agg. Otherwise, disable plotting.
+_fallback_engine = "Agg"
+if os.environ.get("DISPLAY") is None:
+    matplotlib.use(_fallback_engine)
+else:
+    try:
+        from matplotlib import pyplot
+    except ImportError:
+        try:
+            matplotlib.use(_fallback_engine)
+        except ImportError:
+            plotting.plot_any = False

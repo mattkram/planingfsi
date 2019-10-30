@@ -10,7 +10,7 @@ The global attributes can then be simply accessed via config.attribute_name
 import math
 import os
 from pathlib import Path
-from typing import Any, List, Type
+from typing import Any, List, Type, Dict
 
 import matplotlib
 from krampy.iotools import load_dict_from_file
@@ -36,7 +36,7 @@ class ConfigItem:
         self.default = default
         self.type_ = type_
 
-    def __get__(self, instance, owner):
+    def __get__(self, instance: "SubConfig", _: Any) -> Any:
         """Retrieve the value from the instance dictionary or return the default.
 
         Raises:
@@ -51,13 +51,13 @@ class ConfigItem:
             f"Attribute {self.name} has not been set and no default specified"
         )
 
-    def __set__(self, instance: "SubConfig", value: Any):
+    def __set__(self, instance: "SubConfig", value: Any) -> None:
         """When the value is set, try to convert it and then store it in the instance dictionary."""
         if value is not None and self.type_ is not None:
             value = self.type_(value)
         instance.__dict__[self.name] = value
 
-    def __set_name__(self, _, name: str):
+    def __set_name__(self, _: Any, name: str) -> None:
         """Set the name when the ConfigItem is defined."""
         self.name = name
 
@@ -66,7 +66,7 @@ class ConfigItem:
         """A list of keys to look for when reading in the value."""
         return [self.name] + self.alt_keys
 
-    def get_from_dict(self, dict_):
+    def get_from_dict(self, dict_: Dict[str, Any]) -> Any:
         """Try to read all keys from the dictionary until a non-None value is found.
 
         Returns the default value if no appropriate value is found in the dictionary.
@@ -86,7 +86,7 @@ class SubConfig:
     different sections. Also useful in helping define the namespace scopes.
     """
 
-    def load_from_dict(self, dict_name: str):
+    def load_from_dict(self, dict_name: str) -> None:
         """Load the configuration from a dictionary file.
 
         Parameters
@@ -118,7 +118,7 @@ class FlowConfig(SubConfig):
     _flow_speed = ConfigItem("U", default=None, type_=float)
 
     @property
-    def reference_length(self):
+    def reference_length(self) -> float:
         return body.reference_length
 
     @property
@@ -139,29 +139,29 @@ class FlowConfig(SubConfig):
         return getattr(self, "_flow_speed")
 
     @flow_speed.setter
-    def flow_speed(self, value):
+    def flow_speed(self, value: float) -> None:
         """Set the raw flow speed variable and ensure raw Froude number is not also set."""
         self._flow_speed = value
         self._froude_num = None
 
     @property
-    def froude_num(self):
+    def froude_num(self) -> float:
         return self.flow_speed / math.sqrt(self.gravity * self.reference_length)
 
     @froude_num.setter
-    def froude_num(self, value):
+    def froude_num(self, value: float) -> None:
         self.flow_speed = value * math.sqrt(self.gravity * self.reference_length)
 
     @property
-    def stagnation_pressure(self):
+    def stagnation_pressure(self) -> float:
         return 0.5 * self.density * self.flow_speed ** 2
 
     @property
-    def k0(self):
+    def k0(self) -> float:
         return self.gravity / self.flow_speed ** 2
 
     @property
-    def lam(self):
+    def lam(self) -> float:
         return 2 * math.pi / self.k0
 
 
@@ -210,66 +210,66 @@ class BodyConfig(SubConfig):
     _relax_trim = ConfigItem("trimRelax", type_=float)
 
     @property
-    def relax_draft(self):
+    def relax_draft(self) -> float:
         if self._relax_draft is not None:
             return self._relax_draft
         return body.relax_rigid_body
 
     @property
-    def relax_trim(self):
+    def relax_trim(self) -> float:
         if self._relax_trim is not None:
             return self._relax_trim
         return body.relax_rigid_body
 
     @property
-    def Pc(self):
+    def Pc(self) -> float:
         return self._cushion_pressure
 
     @property
-    def PcBar(self):
+    def PcBar(self) -> float:
         return self._cushion_pressure * self.reference_length / self.weight
 
     @PcBar.setter
-    def PcBar(self, value):
+    def PcBar(self, value: float) -> None:
         self._cushion_pressure = value * self.weight / self.reference_length
 
     @property
-    def Ps(self):
+    def Ps(self) -> float:
         return self._seal_pressure
 
     @property
-    def PsBar(self):
+    def PsBar(self) -> float:
         if self._cushion_pressure == 0.0:
             return 0.0
         return self._seal_pressure / self._cushion_pressure
 
     @PsBar.setter
-    def PsBar(self, value):
+    def PsBar(self, value: float) -> None:
         self._seal_pressure = value * self._cushion_pressure
 
     @property
-    def xCofR(self):
+    def xCofR(self) -> float:
         try:
             return self._xCofR
         except AttributeError:
             return self.xCofG
 
     @property
-    def yCofR(self):
+    def yCofR(self) -> float:
         try:
             return self._yCofR
         except AttributeError:
             return self.yCofG
 
     @property
-    def weight(self):
+    def weight(self) -> float:
         try:
             return self._weight
         except AttributeError:
             return self.mass * flow.gravity
 
     @weight.setter
-    def weight(self, value):
+    def weight(self, value: float) -> None:
         self.mass = value / flow.gravity
 
 
@@ -308,11 +308,11 @@ class PlotConfig(SubConfig):
     _watch = ConfigItem("plotWatch", default=False)
 
     @property
-    def watch(self):
+    def watch(self) -> bool:
         return self._watch or self.show
 
     @property
-    def plot_any(self):
+    def plot_any(self) -> bool:
         return self.show or self.save or self.watch or self.show_pressure
 
     @plot_any.setter
@@ -326,7 +326,7 @@ class PlotConfig(SubConfig):
             raise ValueError("config.plotting.plot_any cannot be set to True")
 
     @property
-    def x_fs_min(self):
+    def x_fs_min(self) -> float:
         if self._x_fs_min is not None:
             return self._x_fs_min
         if self.xmin is not None:
@@ -334,7 +334,7 @@ class PlotConfig(SubConfig):
         return self.lambda_min * flow.lam
 
     @property
-    def x_fs_max(self):
+    def x_fs_max(self) -> float:
         if self._x_fs_max is not None:
             return self._x_fs_max
         if self.xmax is not None:
@@ -342,7 +342,7 @@ class PlotConfig(SubConfig):
         return self.lambda_max * flow.lam
 
     @property
-    def pScale(self):
+    def pScale(self) -> float:
         if plotting.pType == "stagnation":
             return flow.stagnation_pressure
         elif plotting.pType == "cushion":
@@ -401,13 +401,13 @@ class SolverConfig(SubConfig):
     num_damp = ConfigItem("numDamp", default=0.0)
 
     @property
-    def wetted_length_max_step_pct_inc(self):
+    def wetted_length_max_step_pct_inc(self) -> float:
         if self._wetted_length_max_step_pct_inc is not None:
             return self._wetted_length_max_step_pct_inc
         return self.wetted_length_max_step_pct
 
     @property
-    def wetted_length_max_step_pct_dec(self):
+    def wetted_length_max_step_pct_dec(self) -> float:
         if self._wetted_length_max_step_pct_dec is not None:
             return self._wetted_length_max_step_pct_dec
         return self.wetted_length_max_step_pct
@@ -443,16 +443,3 @@ ramp = 1.0
 has_free_structure = False
 it_dir = ""
 it = -1
-
-# Use tk by default. Otherwise try Agg. Otherwise, disable plotting.
-_fallback_engine = "Agg"
-if os.environ.get("DISPLAY") is None:
-    matplotlib.use(_fallback_engine)
-else:
-    try:
-        from matplotlib import pyplot
-    except ImportError:
-        try:
-            matplotlib.use(_fallback_engine)
-        except ImportError:
-            plotting.plot_any = False
