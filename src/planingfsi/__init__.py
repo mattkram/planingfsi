@@ -13,8 +13,6 @@ import os
 
 import matplotlib
 
-from .__version__ import __version__
-
 logger = logging.getLogger("planingfsi")
 logger.setLevel(logging.DEBUG)
 
