@@ -493,7 +493,7 @@ class PlaningSurface(PressurePatch):
             self.p = np.array([eli.pressure for eli in el])
             self.p += self.pressure_elements[0].pressure
             self.shear_stress = np.array([eli.shear_stress for eli in el])
-            self.s = np.array([self.interpolator.getSFixedX(xx) for xx in self.x])
+            self.s = np.array([self.interpolator.get_s_fixed_x(xx) for xx in self.x])
 
             self.fP = interp1d(self.x, self.p, bounds_error=False, fill_value=0.0)
             self.fTau = interp1d(
@@ -568,7 +568,7 @@ class PlaningSurface(PressurePatch):
                 )
 
         x = self._get_element_coords()[0:-1]
-        s = np.array([self.interpolator.getSFixedX(xx) for xx in x])
+        s = np.array([self.interpolator.get_s_fixed_x(xx) for xx in x])
         s = s[-1] - s
 
         for si, el in zip(s, self.pressure_elements):
