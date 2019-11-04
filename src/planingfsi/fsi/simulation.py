@@ -25,7 +25,7 @@ class Simulation:
 
     def __init__(self) -> None:
         self.solid_solver = FEStructure()
-        self.fluid_solver = PotentialPlaningSolver()
+        self.fluid_solver = PotentialPlaningSolver(self)
         self.figure = FSIFigure(self) if config.plotting.plot_any else None
         self.it = 0
 
