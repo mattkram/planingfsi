@@ -26,11 +26,8 @@ class Simulation:
     def __init__(self) -> None:
         self.solid_solver = FEStructure()
         self.fluid_solver = PotentialPlaningSolver()
-        self.figure = (
-            FSIFigure(self)
-            if config.plotting.plot_any
-            else None
-        )
+        self.figure = FSIFigure(self) if config.plotting.plot_any else None
+        self.it = 0
 
     #     def setFluidPressureFunc(self, func):
     #         self.fluidPressureFunc = func
@@ -47,19 +44,22 @@ class Simulation:
         """Update the structural response."""
         self.solid_solver.calculate_response()
 
+    @property
+    def it_dir(self):
+        return os.path.join(config.path.case_dir, "{0}".format(self.it))
+
     def create_dirs(self) -> None:
-        config.it_dir = os.path.join(config.path.case_dir, "{0}".format(config.it))
         config.path.fig_dir_name = os.path.join(
             config.path.case_dir, config.path.fig_dir_name
         )
 
         if self.check_output_interval() and not config.io.results_from_file:
             Path(config.path.case_dir).mkdir(exist_ok=True)
-            Path(config.it_dir).mkdir(exist_ok=True)
+            Path(self.it_dir).mkdir(exist_ok=True)
 
         if config.plotting.save:
             Path(config.path.fig_dir_name).mkdir(exist_ok=True)
-            if config.it == 0:
+            if self.it == 0:
                 for f in os.listdir(config.path.fig_dir_name):
                     os.remove(os.path.join(config.path.fig_dir_name, f))
 
@@ -104,7 +104,7 @@ class Simulation:
         """Run the fluid-structure interaction simulation by iterating
         between the fluid and solid solvers.
         """
-        config.it = 0
+        self.it = 0
         self.solid_solver.load_mesh()
 
         if config.io.results_from_file:
@@ -117,9 +117,9 @@ class Simulation:
         self.update_fluid_response()
 
         # Iterate between solid and fluid solvers until equilibrium
-        while config.it <= config.solver.num_ramp_it or (
+        while self.it <= config.solver.num_ramp_it or (
             self.get_residual() >= config.solver.max_residual
-            and config.it <= config.solver.max_it
+            and self.it <= config.solver.max_it
         ):
 
             # Calculate response
@@ -157,14 +157,14 @@ class Simulation:
 
     def increment(self) -> None:
         if config.io.results_from_file:
-            old_ind = np.nonzero(config.it == self.it_dirs)[0][0]
+            old_ind = np.nonzero(self.it == self.it_dirs)[0][0]
             if not old_ind == len(self.it_dirs) - 1:
-                config.it = int(self.it_dirs[old_ind + 1])
+                self.it = int(self.it_dirs[old_ind + 1])
             else:
-                config.it = config.solver.max_it + 1
+                self.it = config.solver.max_it + 1
             self.create_dirs()
         else:
-            config.it += 1
+            self.it += 1
 
     def update_figure(self) -> None:
         if self.figure is not None and config.plotting.plot_any:
@@ -184,13 +184,13 @@ class Simulation:
         # Update iteration number depending on whether loading existing or
         # simply incrementing by 1
         if config.io.results_from_file:
-            if config.it < len(self.it_dirs) - 1:
-                config.it = int(self.it_dirs[config.it + 1])
+            if self.it < len(self.it_dirs) - 1:
+                self.it = int(self.it_dirs[self.it + 1])
             else:
-                config.it = config.solver.max_it
-            config.it += 1
+                self.it = config.solver.max_it
+            self.it += 1
         else:
-            config.it += 1
+            self.it += 1
 
         config.res_l = self.solid_solver.rigid_body[0].get_res_l()
         config.res_m = self.solid_solver.rigid_body[0].get_res_moment()
@@ -208,7 +208,7 @@ class Simulation:
             if config.solver.num_ramp_it == 0:
                 ramp = 1.0
             else:
-                ramp = np.min((config.it / float(config.solver.num_ramp_it), 1.0))
+                ramp = np.min((self.it / float(config.solver.num_ramp_it), 1.0))
 
             config.ramp = ramp
             config.solver.relax_FEM = (
@@ -219,7 +219,7 @@ class Simulation:
         if config.io.results_from_file:
             return 1.0
             return load_dict_from_file(
-                os.path.join(config.it_dir, "overallQuantities.txt")
+                os.path.join(self.it_dir, "overallQuantities.txt")
             ).get("Residual", 0.0)
         else:
             return self.solid_solver.res
@@ -227,21 +227,21 @@ class Simulation:
     def print_status(self) -> None:
         print(
             "Residual after iteration {1:>4d}: {0:5.3e}".format(
-                self.get_residual(), config.it
+                self.get_residual(), self.it
             )
         )
 
     def check_output_interval(self) -> bool:
         return (
-            config.it >= config.solver.max_it
+            self.it >= config.solver.max_it
             or self.get_residual() < config.solver.max_residual
-            or np.mod(config.it, config.io.write_interval) == 0
+            or np.mod(self.it, config.io.write_interval) == 0
         )
 
     def write_results(self) -> None:
         if self.check_output_interval() and not config.io.results_from_file:
             writeasdict(
-                os.path.join(config.it_dir, "overallQuantities.txt"),
+                os.path.join(self.it_dir, "overallQuantities.txt"),
                 ["Ramp", config.ramp],
                 ["Residual", self.solid_solver.res],
             )
@@ -250,8 +250,6 @@ class Simulation:
             self.solid_solver.write_results()
 
     def load_results(self) -> None:
-        dict_ = load_dict_from_file(
-            os.path.join(config.it_dir, "overallQuantities.txt")
-        )
+        dict_ = load_dict_from_file(os.path.join(self.it_dir, "overallQuantities.txt"))
         config.ramp = dict_.get("Ramp", 0.0)
         self.solid_solver.res = dict_.get("Residual", 0.0)

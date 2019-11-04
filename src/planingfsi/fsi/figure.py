@@ -113,14 +113,14 @@ class FSIFigure:
                 + r"$Fr={1:>8.3f}$"
                 + "\n"
                 + r"$\bar{{P_c}}={2:>8.3f}$"
-            ).format(config.it, config.flow.froude_num, config.body.PcBar)
+            ).format(self.simulation.it, config.flow.froude_num, config.body.PcBar)
         )
 
         # Update each lower subplot
         for s in self.subplot:
             s.update(
                 self.solid.res < config.solver.max_residual
-                and config.it > config.solver.num_ramp_it
+                and self.simulation.it > config.solver.num_ramp_it
             )
 
         for l in self.lineCofR:
@@ -140,7 +140,9 @@ class FSIFigure:
         plt.savefig(
             os.path.join(
                 config.path.fig_dir_name,
-                "frame{1:04d}.{0}".format(config.plotting.fig_format, config.it),
+                "frame{1:04d}.{0}".format(
+                    config.plotting.fig_format, self.simulation.it
+                ),
             ),
             format=config.plotting.fig_format,
         )  # , dpi=300)
