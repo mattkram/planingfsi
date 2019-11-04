@@ -23,7 +23,7 @@ class Simulation:
 
     """
 
-    def __init__(self):
+    def __init__(self) -> None:
         self.solid_solver = FEStructure()
         self.fluid_solver = PotentialPlaningSolver()
         self.figure = (
@@ -61,19 +61,26 @@ class Simulation:
                 for f in os.listdir(config.path.fig_dir_name):
                     os.remove(os.path.join(config.path.fig_dir_name, f))
 
-    def load_input_files(self):
+    def load_input_files(self) -> None:
+        """Load all of the input files."""
+        self._load_rigid_bodies()
+        self._load_substructures()
+        self._load_pressure_cushions()
+
+    def _load_rigid_bodies(self) -> None:
         # Add all rigid bodies
-        if os.path.exists(config.path.body_dict_dir):
+        if Path(config.path.body_dict_dir).exists():
             for dict_path in Path(config.path.body_dict_dir).glob("*"):
                 dict_ = load_dict_from_file(str(dict_path))
                 self.solid_solver.add_rigid_body(dict_)
         else:
+            # Add a dummy rigid body that cannot move
             self.solid_solver.add_rigid_body()
 
+    def _load_substructures(self) -> None:
         # Add all substructures
         for dict_path in Path(config.path.input_dict_dir).glob("*"):
             dict_ = load_dict_from_file(str(dict_path))
-
             substructure = self.solid_solver.add_substructure(dict_)
 
             if dict_.get("hasPlaningSurface", False):
@@ -84,13 +91,14 @@ class Simulation:
                     planing_surface.get_loads_in_range
                 )
 
+    def _load_pressure_cushions(self) -> None:
         # Add all pressure cushions
-        if os.path.exists(config.path.cushion_dict_dir):
+        if Path(config.path.cushion_dict_dir).exists():
             for dict_path in Path(config.path.cushion_dict_dir).glob("*"):
                 dict_ = load_dict_from_file(str(dict_path))
                 self.fluid_solver.add_pressure_cushion(dict_)
 
-    def run(self):
+    def run(self) -> None:
         """Run the fluid-structure interaction simulation by iterating
         between the fluid and solid solvers.
         """
