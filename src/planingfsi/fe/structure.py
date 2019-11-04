@@ -1102,8 +1102,8 @@ class FlexibleSubstructure(Substructure):
 
         cls.res = np.max(np.abs(Ug))
 
-        Ug *= config.relax_FEM
-        Ug *= np.min([config.max_FEM_disp / np.max(Ug), 1.0])
+        Ug *= config.solver.relax_FEM
+        Ug *= np.min([config.solver.max_FEM_disp / np.max(Ug), 1.0])
 
         for nd in fe.Node.All():
             nd.move_coordinates(Ug[nd.dof[0], 0], Ug[nd.dof[1], 0])
@@ -1117,8 +1117,8 @@ class FlexibleSubstructure(Substructure):
 
         Substructure.__init__(self, dict_)
         self.element_type = fe.TrussElement
-        self.pretension = self.dict_.read("pretension", -0.5)
-        self.EA = self.dict_.read("EA", 5e7)
+        self.pretension = self.dict_.get("pretension", -0.5)
+        self.EA = self.dict_.get("EA", 5e7)
 
         self.K = None
         self.F = None

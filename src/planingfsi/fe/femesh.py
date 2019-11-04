@@ -379,7 +379,7 @@ class Curve(Shape):
             alf = self.arc_length / (2 * self.radius)
             return lambda s: self._end_pts[0].get_position() + 2 * self.radius * np.sin(
                 s * alf
-            ) * trig.ang2vec(gam + (s - 1) * alf)
+            ) * trig.angd2vec2d(gam + (s - 1) * alf)
 
     def set_radius(self, R):
         self.radius = R

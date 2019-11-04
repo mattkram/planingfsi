@@ -258,7 +258,7 @@ class PotentialPlaningSolver(object):
                 )
             else:
                 for i, p in enumerate(self.planing_surfaces):
-                    L = p.get_length()
+                    L = p.length
                     self.init_len[i] = p.initial_length
                     if ~np.isnan(L) and L - self.min_len[i] > 1e-6:
                         # and self.solver.it < self.solver.maxIt:

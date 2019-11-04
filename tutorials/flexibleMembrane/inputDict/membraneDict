@@ -2,7 +2,7 @@ substructureName  : 'membrane'
 substructureType  : 'flexible'
 hasPlaningSurface : True
 
-Ps : 5000.0
+Ps : 50000.0
 EA : 1e8
 
 # Fluid Parameters

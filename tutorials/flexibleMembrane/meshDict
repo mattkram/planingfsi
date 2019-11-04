@@ -1,0 +1,12 @@
+# Create submeshes
+
+# Create points (ID, type, params)
+mesh.add_point(1, 'rel', [0, 180.0, 1.0])
+mesh.add_point(2, 'rel', [0,   0.0, 1.0])
+
+mesh.move_points(0.0, 0.5, [1, 2])
+
+meshMembrane = mesh.add_submesh('membrane')
+meshMembrane.add_curve(1, 2, Nel=50, arcLen=2.5)
+
+mesh.fix_points([1, 2])
