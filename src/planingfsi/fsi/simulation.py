@@ -104,17 +104,14 @@ class Simulation:
         """Run the fluid-structure interaction simulation by iterating
         between the fluid and solid solvers.
         """
-        self.it = 0
-        self.solid_solver.load_mesh()
+        self.reset()
 
         if config.io.results_from_file:
             self.create_dirs()
             self.apply_ramp()
             self.it_dirs = sortDirByNum(find_files("[0-9]*"))[1]
 
-        # Initialize body at specified trim and draft
-        self.solid_solver.initialize_rigid_bodies()
-        self.update_fluid_response()
+        self.initialize_solvers()
 
         # Iterate between solid and fluid solvers until equilibrium
         while self.it <= config.solver.num_ramp_it or (
@@ -155,7 +152,18 @@ class Simulation:
         if self.figure is not None and config.plotting.show:
             self.figure.show()
 
+    def reset(self) -> None:
+        """Reset iteration counter and load the structural mesh."""
+        self.it = 0
+        self.solid_solver.load_mesh()
+
+    def initialize_solvers(self) -> None:
+        """Initialize body at specified trim and draft and solve initial fluid problem."""
+        self.solid_solver.initialize_rigid_bodies()
+        self.update_fluid_response()
+
     def increment(self) -> None:
+        """Increment iteration counter. If loading from files, use the next stored iteration."""
         if config.io.results_from_file:
             old_ind = np.nonzero(self.it == self.it_dirs)[0][0]
             if not old_ind == len(self.it_dirs) - 1:
