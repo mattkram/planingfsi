@@ -1,14 +1,12 @@
 import os
 from pathlib import Path
 
-import numpy as np
 import matplotlib.pyplot as plt
+import numpy as np
 
-import planingfsi.config as config
-from planingfsi.general import writeaslist
-from planingfsi.solver import fzero
-
-from .. import trig
+from .. import config, trig
+from ..general import writeaslist
+from ..solver import fzero
 
 
 class Mesh:
@@ -379,7 +377,7 @@ class Curve(Shape):
             alf = self.arc_length / (2 * self.radius)
             return lambda s: self._end_pts[0].get_position() + 2 * self.radius * np.sin(
                 s * alf
-            ) * trig.angd2vec2d(gam + (s - 1) * alf)
+            ) * trig.ang2vec(gam + (s - 1) * alf)[:2]
 
     def set_radius(self, R):
         self.radius = R
