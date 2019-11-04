@@ -16,13 +16,11 @@ class Simulation:
     """Simulation object to manage the FSI problem. Handles the iteration
     between the fluid and solid solvers.
 
-    Attributes
-    ----------
-    solid_solver : FEStructure
-        Solid solver.
+    Attributes:
+        solid_solver (FEStructure): The structural solver.
+        fluid_solver (PotentialPlaningSolver): The fluid solver.
+        figure (Optional[FSIFigure]): A figure object for visualizing the solution.
 
-    fluid_solver : PotentialPlaningSolver
-        Fluid solver.
     """
 
     def __init__(self):
@@ -40,14 +38,14 @@ class Simulation:
     #     def setSolidPositionFunc(self, func):
     #         self.solidPositionFunc = func
 
-    def update_fluid_response(self):
+    def update_fluid_response(self) -> None:
         self.fluid_solver.calculate_response()
         self.solid_solver.update_fluid_forces()
 
-    def update_solid_response(self):
+    def update_solid_response(self) -> None:
         self.solid_solver.calculate_response()
 
-    def create_dirs(self):
+    def create_dirs(self) -> None:
         config.it_dir = os.path.join(config.path.case_dir, "{0}".format(config.it))
         config.path.fig_dir_name = os.path.join(
             config.path.case_dir, config.path.fig_dir_name
