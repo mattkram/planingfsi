@@ -97,7 +97,9 @@ class Simulation:
                 planing_surface = self.fluid_solver.add_planing_surface(dict_)
                 interpolator = Interpolator(substructure, planing_surface, dict_)
                 interpolator.solid_position_function = substructure.get_coordinates
-                interpolator.fluid_pressure_function = planing_surface.get_loads_in_range
+                interpolator.fluid_pressure_function = (
+                    planing_surface.get_loads_in_range
+                )
         print(f"Substructures: {self.solid_solver.substructure}")
 
     def _load_pressure_cushions(self) -> None:

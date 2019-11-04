@@ -375,9 +375,13 @@ class Curve(Shape):
             x, y = list(zip(*xy))
             gam = np.arctan2(y[1] - y[0], x[1] - x[0])
             alf = self.arc_length / (2 * self.radius)
-            return lambda s: self._end_pts[0].get_position() + 2 * self.radius * np.sin(
-                s * alf
-            ) * trig.ang2vec(gam + (s - 1) * alf)[:2]
+            return (
+                lambda s: self._end_pts[0].get_position()
+                + 2
+                * self.radius
+                * np.sin(s * alf)
+                * trig.ang2vec(gam + (s - 1) * alf)[:2]
+            )
 
     def set_radius(self, R):
         self.radius = R

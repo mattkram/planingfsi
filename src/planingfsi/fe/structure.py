@@ -694,9 +694,7 @@ class Substructure:
         self.seal_pressure = self.get_or_config("Ps", 0.0)
         self.seal_pressure_method = self.dict_.get("PsMethod", "constant")
 
-        self.seal_over_pressure_pct = self.get_or_config(
-            "overPressurePct", 1.0
-        )
+        self.seal_over_pressure_pct = self.get_or_config("overPressurePct", 1.0)
         self.cushion_pressure_type = self.dict_.get("cushionPressureType", None)
         self.tip_load = self.get_or_config("tipLoad", 0.0)
         self.tip_constraint_height = self.dict_.get("tipConstraintHt", None)

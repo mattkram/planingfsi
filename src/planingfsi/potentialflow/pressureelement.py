@@ -84,9 +84,9 @@ def _get_gamma3(lam, aux_f):
     float
     """
     return (
-            -kp.sign(lam) * aux_f / np.pi
-            - 2 * kp.heaviside(-lam) * np.cos(lam)
-            - kp.heaviside(lam)
+        -kp.sign(lam) * aux_f / np.pi
+        - 2 * kp.heaviside(-lam) * np.cos(lam)
+        - kp.heaviside(lam)
     )
 
 
@@ -143,15 +143,15 @@ class PressureElement(object):
     """
 
     def __init__(
-            self,
-            x_coord=np.nan,
-            z_coord=np.nan,
-            pressure=np.nan,
-            shear_stress=0.0,
-            width=np.nan,
-            is_source=False,
-            is_on_body=False,
-            parent=None,
+        self,
+        x_coord=np.nan,
+        z_coord=np.nan,
+        pressure=np.nan,
+        shear_stress=0.0,
+        width=np.nan,
+        is_source=False,
+        is_on_body=False,
+        parent=None,
     ):
 
         # TODO: Replace x_coord with coord pointer to Coordinate object,
@@ -399,9 +399,9 @@ class CompleteTriangularPressureElement(PressureElement):
         lambda_0 = config.flow.k0 * x_coord
         _, aux_g = _get_aux_fg(lambda_0)
         influence = (
-                _get_gamma1(lambda_0, aux_g)
-                * self.width
-                / (self._width[1] * self._width[0])
+            _get_gamma1(lambda_0, aux_g)
+            * self.width
+            / (self._width[1] * self._width[0])
         )
 
         lambda_1 = config.flow.k0 * (x_coord - self._width[1])

@@ -335,7 +335,9 @@ class PotentialPlaningSolver(object):
             plt.title("Residual for {0} seal trailing edge pressure".format(seal))
             plt.xlabel("Bow seal length")
             plt.ylabel("Stern seal length")
-            plt.savefig("{0}SealResidual_{1}.png".format(seal, self.simulation.it), format="png")
+            plt.savefig(
+                "{0}SealResidual_{1}.png".format(seal, self.simulation.it), format="png"
+            )
             plt.clf()
 
         self.get_residual(self.storeLen)
@@ -509,7 +511,8 @@ class PotentialPlaningSolver(object):
         if len(self.pressure_elements) > 0:
             kp.writeaslist(
                 join(
-                    self.simulation.it_dir, "pressureAndShear.{0}".format(config.io.data_format)
+                    self.simulation.it_dir,
+                    "pressureAndShear.{0}".format(config.io.data_format),
                 ),
                 ["x [m]", self.X],
                 ["p [Pa]", self.p],
@@ -520,7 +523,10 @@ class PotentialPlaningSolver(object):
         """Write free-surface profile to file."""
         if len(self.pressure_elements) > 0:
             kp.writeaslist(
-                join(self.simulation.it_dir, "freeSurface.{0}".format(config.io.data_format)),
+                join(
+                    self.simulation.it_dir,
+                    "freeSurface.{0}".format(config.io.data_format),
+                ),
                 ["x [m]", self.xFS],
                 ["y [m]", self.zFS],
             )
@@ -529,7 +535,10 @@ class PotentialPlaningSolver(object):
         """Write forces to file."""
         if len(self.pressure_elements) > 0:
             kp.writeasdict(
-                join(self.simulation.it_dir, "forces_total.{0}".format(config.io.data_format)),
+                join(
+                    self.simulation.it_dir,
+                    "forces_total.{0}".format(config.io.data_format),
+                ),
                 ["Drag", self.D],
                 ["WaveDrag", self.Dw],
                 ["PressDrag", self.Dp],
@@ -552,7 +561,10 @@ class PotentialPlaningSolver(object):
     def load_pressure_and_shear(self):
         """Load pressure and shear stress from file."""
         self.x, self.p, self.shear_stress = np.loadtxt(
-            join(self.simulation.it_dir, "pressureAndShear.{0}".format(config.io.data_format)),
+            join(
+                self.simulation.it_dir,
+                "pressureAndShear.{0}".format(config.io.data_format),
+            ),
             unpack=True,
         )
         for el in [
@@ -570,7 +582,10 @@ class PotentialPlaningSolver(object):
         """Load free surface coordinates from file."""
         try:
             data = np.loadtxt(
-                join(self.simulation.it_dir, "freeSurface.{0}".format(config.io.data_format))
+                join(
+                    self.simulation.it_dir,
+                    "freeSurface.{0}".format(config.io.data_format),
+                )
             )
             self.xFS = data[:, 0]
             self.zFS = data[:, 1]
@@ -581,7 +596,9 @@ class PotentialPlaningSolver(object):
     def load_forces(self):
         """Load forces from file."""
         dict_ = load_dict_from_file(
-            join(self.simulation.it_dir, "forces_total.{0}".format(config.io.data_format))
+            join(
+                self.simulation.it_dir, "forces_total.{0}".format(config.io.data_format)
+            )
         )
         self.D = dict_.get("Drag", 0.0)
         self.Dw = dict_.get("WaveDrag", 0.0)
@@ -621,7 +638,8 @@ class PotentialPlaningSolver(object):
             [0.0, np.min([1.0, 1.2 * np.max(self.p / config.flow.stagnation_pressure)])]
         )
         plt.savefig(
-            f"pressureElements.{config.plotting.fig_format}", format=config.plotting.fig_format
+            f"pressureElements.{config.plotting.fig_format}",
+            format=config.plotting.fig_format,
         )
         plt.figure(1)
 
