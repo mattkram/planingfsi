@@ -5,17 +5,11 @@ problems
 from os.path import join
 
 import numpy as np
-from planingfsi import solver
-from planingfsi.dictionary import load_dict_from_file
 from scipy.optimize import fmin
 
-import planingfsi.config as config
-
-import planingfsi.krampy_old as kp
-# from planingfsi import io
-
-from planingfsi.potentialflow.pressurepatch import PlaningSurface
-from planingfsi.potentialflow.pressurepatch import PressureCushion
+from .. import solver, config, krampy_old as kp
+from ..dictionary import load_dict_from_file
+from ..potentialflow.pressurepatch import PlaningSurface, PressureCushion
 
 if config.plotting.plot_any:
     import matplotlib.pyplot as plt
