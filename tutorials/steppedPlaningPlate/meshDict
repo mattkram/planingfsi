@@ -1,7 +1,10 @@
-# Create submeshes
+from .dictionary import load_dict_from_file
 
-K = io.Dictionary('configDict')
-AOA = K.read('AOA', 10.0)
+M  = mesh
+
+# Create submeshes
+K = load_dict_from_file('configDict')
+AOA = K.get('AOA', 10.0)
 
 # Create points (ID, type, params)
 M.add_point(1, 'rel', [ 0, 180, 0.1])
