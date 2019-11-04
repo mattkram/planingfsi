@@ -720,9 +720,6 @@ class Substructure:
     def get_residual(self):
         return 0.0
 
-    def set_interpolator(self, interpolator):
-        self.interpolator = interpolator
-
     def set_element_properties(self):
         for el in self.el:
             el.set_properties(length=self.get_arc_length() / len(self.el))

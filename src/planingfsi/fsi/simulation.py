@@ -88,10 +88,8 @@ class Simulation:
             if dict_.get("hasPlaningSurface", False):
                 planing_surface = self.fluid_solver.add_planing_surface(dict_)
                 interpolator = Interpolator(substructure, planing_surface, dict_)
-                interpolator.set_solid_position_function(substructure.get_coordinates)
-                interpolator.set_fluid_pressure_function(
-                    planing_surface.get_loads_in_range
-                )
+                interpolator.solid_position_function = substructure.get_coordinates
+                interpolator.fluid_pressure_function = planing_surface.get_loads_in_range
 
     def _load_pressure_cushions(self) -> None:
         """Load all pressure cushions from files."""

@@ -10,12 +10,12 @@ class Interpolator:
         self.solid = solid
         self.fluid = fluid
 
-        self.solid.set_interpolator(self)
+        self.solid.interpolator = self
         self.fluid.interpolator = self
 
-        self.solidPositionFunction = None
-        self.fluidPressureFunction = None
-        self.getBodyHeight = self.get_surface_height_fixed_x
+        self.solid_position_function = None
+        self.fluid_pressure_function = None
+        self.get_body_height = self.get_surface_height_fixed_x
 
         self.sSep = []
         self.sImm = []
@@ -27,20 +27,14 @@ class Interpolator:
         self.sImmPctStart = dict_.get("sImmPctStart", 0.9)
 
     def set_body_height_function(self, func_name):
-        self.getBodyHeight = getattr(self, func_name)
-
-    def set_solid_position_function(self, func):
-        self.solidPositionFunction = func
-
-    def set_fluid_pressure_function(self, func):
-        self.fluidPressureFunction = func
+        self.get_body_height = getattr(self, func_name)
 
     def get_surface_height_fixed_x(self, x):
         s = np.max([self.get_s_fixed_x(x, 0.5), 0.0])
         return self.get_coordinates(s)[1]
 
     def get_coordinates(self, s):
-        return self.solidPositionFunction(s)
+        return self.solid_position_function(s)
 
     def get_min_max_s(self):
         pts = self.fluid._get_element_coords()
@@ -82,7 +76,7 @@ class Interpolator:
         return self.get_coordinates(self.sSep)
 
     def get_loads_in_range(self, s0, s1):
-        x = [self.solidPositionFunction(s)[0] for s in [s0, s1]]
-        x, p, tau = self.fluidPressureFunction(x[0], x[1])
+        x = [self.solid_position_function(s)[0] for s in [s0, s1]]
+        x, p, tau = self.fluid_pressure_function(x[0], x[1])
         s = np.array([self.get_s_fixed_x(xx, 0.5) for xx in x])
         return s, p, tau
