@@ -5,7 +5,7 @@ import numpy as np
 from scipy.interpolate import interp1d
 
 from . import felib as fe
-from .. import config, krampy_old as kp
+from .. import config, solver, krampy_old as kp
 
 
 class FEStructure:
@@ -443,7 +443,7 @@ class RigidBody:
                     self.M - self.weight * (config.body.xCofG - config.body.xCofR),
                 ]
             )
-            self.solver = kp.RootFinder(
+            self.solver = solver.RootFinder(
                 self.resFun,
                 np.array([config.body.initial_draft, config.body.initial_trim]),
                 "secant",
@@ -510,7 +510,9 @@ class RigidBody:
                     if free_dof
                 ]
             )
-            self.solver = kp.RootFinder(self.resFun, self.x, "broyden", dxMax=maxDisp)
+            self.solver = solver.RootFinder(
+                self.resFun, self.x, "broyden", dxMax=maxDisp
+            )
 
         if not self.disp_old is None:
             self.solver.takeStep(self.disp_old)
