@@ -5,7 +5,7 @@ import numpy as np
 
 from .figure import FSIFigure
 from .interpolator import Interpolator
-from .. import config
+from .. import config, logger
 from ..dictionary import load_dict_from_file
 from ..fe.structure import FEStructure
 from ..krampy_old import sortDirByNum, find_files, writeasdict
@@ -148,7 +148,8 @@ class Simulation:
         if self.figure is not None and config.io.write_time_histories:
             self.figure.write_time_histories()
 
-        print("Execution complete")
+        logger.info("Execution complete")
+
         if self.figure is not None and config.plotting.show:
             self.figure.show()
 
@@ -203,9 +204,9 @@ class Simulation:
         config.res_l = self.solid_solver.rigid_body[0].get_res_l()
         config.res_m = self.solid_solver.rigid_body[0].get_res_moment()
 
-        print("Rigid Body Residuals:")
-        print(("  Lift:   {0:0.4e}".format(config.res_l)))
-        print(("  Moment: {0:0.4e}\n".format(config.res_m)))
+        logger.info("Rigid Body Residuals:")
+        logger.info("  Lift:   {0:0.4e}".format(config.res_l))
+        logger.info("  Moment: {0:0.4e}\n".format(config.res_m))
 
         return np.array([config.res_l, config.res_m])
 
@@ -233,7 +234,7 @@ class Simulation:
             return self.solid_solver.res
 
     def print_status(self) -> None:
-        print(
+        logger.info(
             "Residual after iteration {1:>4d}: {0:5.3e}".format(
                 self.get_residual(), self.it
             )
