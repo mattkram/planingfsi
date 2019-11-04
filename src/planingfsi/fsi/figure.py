@@ -6,12 +6,13 @@ import matplotlib.pyplot as plt
 import planingfsi.config as config
 
 # import planingfsi.krampy as kp
+from planingfsi.fe.structure import FEStructure
+from planingfsi.potentialflow.solver import PotentialPlaningSolver
 
 
 class FSIFigure:
-    def __init__(self, solid, fluid):
-        self.solid = solid
-        self.fluid = fluid
+    def __init__(self, simulation):
+        self.simulation = simulation
 
         plt.figure(figsize=(16, 12))
         if config.plotting.watch:
@@ -93,6 +94,14 @@ class FSIFigure:
             self.subplot.append(MotionSubplot([0.05, 0.05, 0.25, 0.2], bd[1]))
 
         self.subplot.append(ResidualSubplot([0.40, 0.05, 0.25, 0.45], self.solid))
+
+    @property
+    def solid(self) -> FEStructure:
+        return self.simulation.solid_solver
+
+    @property
+    def fluid(self) -> PotentialPlaningSolver:
+        return self.simulation.fluid_solver
 
     def update(self):
         self.solid.plot()

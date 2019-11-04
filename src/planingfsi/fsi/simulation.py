@@ -27,7 +27,7 @@ class Simulation:
         self.solid_solver = FEStructure()
         self.fluid_solver = PotentialPlaningSolver()
         self.figure = (
-            FSIFigure(self.solid_solver, self.fluid_solver)
+            FSIFigure(self)
             if config.plotting.plot_any
             else None
         )
