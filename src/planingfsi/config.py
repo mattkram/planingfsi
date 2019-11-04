@@ -443,3 +443,6 @@ ramp = 1.0
 has_free_structure = False
 it_dir = ""
 it = -1
+# TODO: This need to be factored out eventually
+res_l = 1.0
+res_m = 1.0

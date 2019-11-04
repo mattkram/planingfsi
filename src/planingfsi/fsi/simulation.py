@@ -39,10 +39,12 @@ class Simulation:
     #         self.solidPositionFunc = func
 
     def update_fluid_response(self) -> None:
+        """Update the fluid response and apply to the structural solver."""
         self.fluid_solver.calculate_response()
         self.solid_solver.update_fluid_forces()
 
     def update_solid_response(self) -> None:
+        """Update the structural response."""
         self.solid_solver.calculate_response()
 
     def create_dirs(self) -> None:
@@ -68,7 +70,7 @@ class Simulation:
         self._load_pressure_cushions()
 
     def _load_rigid_bodies(self) -> None:
-        # Add all rigid bodies
+        """Load all rigid bodies from files."""
         if Path(config.path.body_dict_dir).exists():
             for dict_path in Path(config.path.body_dict_dir).glob("*"):
                 dict_ = load_dict_from_file(str(dict_path))
@@ -78,7 +80,7 @@ class Simulation:
             self.solid_solver.add_rigid_body()
 
     def _load_substructures(self) -> None:
-        # Add all substructures
+        """Load all substructures from files."""
         for dict_path in Path(config.path.input_dict_dir).glob("*"):
             dict_ = load_dict_from_file(str(dict_path))
             substructure = self.solid_solver.add_substructure(dict_)
@@ -92,7 +94,7 @@ class Simulation:
                 )
 
     def _load_pressure_cushions(self) -> None:
-        # Add all pressure cushions
+        """Load all pressure cushions from files."""
         if Path(config.path.cushion_dict_dir).exists():
             for dict_path in Path(config.path.cushion_dict_dir).glob("*"):
                 dict_ = load_dict_from_file(str(dict_path))
@@ -138,33 +140,37 @@ class Simulation:
             # Increment iteration count
             self.increment()
 
-        if config.plotting.save and not config.plotting.fig_format == "png":
+        if (
+            self.figure is not None
+            and config.plotting.save
+            and not config.plotting.fig_format == "png"
+        ):
             config.plotting.fig_format = "png"
             self.figure.save()
 
-        if config.io.write_time_histories:
+        if self.figure is not None and config.io.write_time_histories:
             self.figure.write_time_histories()
 
         print("Execution complete")
-        if config.plotting.show:
+        if self.figure is not None and config.plotting.show:
             self.figure.show()
 
-    def increment(self):
+    def increment(self) -> None:
         if config.io.results_from_file:
             old_ind = np.nonzero(config.it == self.it_dirs)[0][0]
             if not old_ind == len(self.it_dirs) - 1:
                 config.it = int(self.it_dirs[old_ind + 1])
             else:
-                config.it = config.max_it + 1
+                config.it = config.solver.max_it + 1
             self.create_dirs()
         else:
             config.it += 1
 
-    def update_figure(self):
-        if config.plotting.plot_any:
+    def update_figure(self) -> None:
+        if self.figure is not None and config.plotting.plot_any:
             self.figure.update()
 
-    def get_body_res(self, x):
+    def get_body_res(self, x: np.array) -> np.array:
         self.solid_solver.get_pt_disp_rb(x[0], x[1])
         self.solid_solver.update_nodal_positions()
         self.update_fluid_response()
@@ -181,7 +187,7 @@ class Simulation:
             if config.it < len(self.it_dirs) - 1:
                 config.it = int(self.it_dirs[config.it + 1])
             else:
-                config.it = config.max_it
+                config.it = config.solver.max_it
             config.it += 1
         else:
             config.it += 1
@@ -195,9 +201,9 @@ class Simulation:
 
         return np.array([config.res_l, config.res_m])
 
-    def apply_ramp(self):
+    def apply_ramp(self) -> None:
         if config.io.results_from_file:
-            self.loadResults()
+            self.load_results()
         else:
             if config.solver.num_ramp_it == 0:
                 ramp = 1.0
@@ -205,34 +211,34 @@ class Simulation:
                 ramp = np.min((config.it / float(config.solver.num_ramp_it), 1.0))
 
             config.ramp = ramp
-            config.relax_FEM = (
+            config.solver.relax_FEM = (
                 1 - ramp
             ) * config.solver.relax_initial + ramp * config.solver.relax_final
 
-    def get_residual(self):
+    def get_residual(self) -> float:
         if config.io.results_from_file:
             return 1.0
-            return kp.Dictionary(
+            return load_dict_from_file(
                 os.path.join(config.it_dir, "overallQuantities.txt")
-            ).read("Residual", 0.0)
+            ).get("Residual", 0.0)
         else:
             return self.solid_solver.res
 
-    def print_status(self):
+    def print_status(self) -> None:
         print(
             "Residual after iteration {1:>4d}: {0:5.3e}".format(
                 self.get_residual(), config.it
             )
         )
 
-    def check_output_interval(self):
+    def check_output_interval(self) -> bool:
         return (
             config.it >= config.solver.max_it
             or self.get_residual() < config.solver.max_residual
             or np.mod(config.it, config.io.write_interval) == 0
         )
 
-    def write_results(self):
+    def write_results(self) -> None:
         if self.check_output_interval() and not config.io.results_from_file:
             writeasdict(
                 os.path.join(config.it_dir, "overallQuantities.txt"),
@@ -243,7 +249,7 @@ class Simulation:
             self.fluid_solver.write_results()
             self.solid_solver.write_results()
 
-    def load_results(self):
+    def load_results(self) -> None:
         dict_ = load_dict_from_file(
             os.path.join(config.it_dir, "overallQuantities.txt")
         )

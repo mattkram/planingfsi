@@ -1,4 +1,5 @@
 import os
+from typing import Dict, Any
 
 import numpy as np
 from scipy.interpolate import interp1d
@@ -23,17 +24,32 @@ class FEStructure:
         self.node = []
         self.res = 1.0
 
-    def add_rigid_body(self, dict_=None):
+    def add_rigid_body(self, dict_: Dict[str, Any] = None) -> "RigidBody":
+        """Add a rigid body to the structure.
+
+        Args
+        ----
+        dict_: A dictionary containing rigid body specifications.
+
+        """
         if dict_ is None:
-            dict_ = planingfsi.io.Dictionary()
+            dict_ = {}
         rigid_body = RigidBody(dict_)
         self.rigid_body.append(rigid_body)
         return rigid_body
 
-    def add_substructure(self, dict_=None):
+    def add_substructure(self, dict_: Dict[str, Any] = None) -> "Substructure":
+        """Add a substructure to the structure, whose type is determined at run-time.
+
+        Args
+        ----
+        dict_: A dictionary containing substructure specifications.
+
+        """
         if dict_ is None:
-            dict_ = planingfsi.io.Dictionary()
-        ss_type = dict_.read("substructureType", "rigid")
+            dict_ = {}
+        # TODO: This logic is better handled by the factory pattern
+        ss_type = dict_.get("substructureType", "rigid")
         if ss_type.lower() == "flexible" or ss_type.lower() == "truss":
             ss = FlexibleSubstructure(dict_)
             FlexibleSubstructure.obj.append(ss)
@@ -45,7 +61,7 @@ class FEStructure:
 
         # Find parent body and add substructure to it
         body = [
-            b for b in self.rigid_body if b.name == dict_.read("bodyName", "default")
+            b for b in self.rigid_body if b.name == dict_.get("bodyName", "default")
         ]
         if len(body) > 0:
             body = body[0]

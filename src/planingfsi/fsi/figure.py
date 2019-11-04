@@ -122,7 +122,7 @@ class FSIFigure:
         if config.plotting.save:
             self.save()
 
-    def writeTimeHistories(self):
+    def write_time_histories(self):
         for s in self.subplot:
             if isinstance(s, TimeHistory):
                 s.write()
