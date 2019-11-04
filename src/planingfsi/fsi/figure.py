@@ -3,11 +3,12 @@ import os
 import numpy as np
 import matplotlib.pyplot as plt
 
-import planingfsi.config as config
+from .. import config
 
-# import planingfsi.krampy as kp
-from planingfsi.fe.structure import FEStructure
-from planingfsi.potentialflow.solver import PotentialPlaningSolver
+from ..fe.structure import FEStructure
+from ..potentialflow.solver import PotentialPlaningSolver
+
+from ..krampy_old import minMax, rotateVec
 
 
 class FSIFigure:
@@ -41,10 +42,10 @@ class FSIFigure:
                 CofRPlot(self.geometryAx, bd, symbol=False, style="k-", marker="o")
             )
 
-        xMin, xMax = kp.minMax(
+        xMin, xMax = minMax(
             [nd.x for struct in self.solid.substructure for nd in struct.node]
         )
-        yMin, yMax = kp.minMax(
+        yMin, yMax = minMax(
             [nd.y for struct in self.solid.substructure for nd in struct.node]
         )
 
@@ -430,8 +431,8 @@ class CofRPlot:
     def update(self):
         l = config.plotting.CofR_grid_len
         c = np.array([self.body.xCofR, self.body.yCofR])
-        hvec = kp.rotateVec(np.array([0.5 * l, 0.0]), self.body.trim)
-        vvec = kp.rotateVec(np.array([0.0, 0.5 * l]), self.body.trim)
+        hvec = rotateVec(np.array([0.5 * l, 0.0]), self.body.trim)
+        vvec = rotateVec(np.array([0.0, 0.5 * l]), self.body.trim)
         pts = [c - hvec, c + hvec, np.ones(2) * np.nan, c - vvec, c + vvec]
         self.line.set_data(list(zip(*pts)))
         self.lineCofG.set_data(self.body.xCofG, self.body.yCofG)

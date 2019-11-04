@@ -34,7 +34,7 @@ class Mesh:
         elif method == "rel":
             base_pt_id, ang, R = position
             P.set_position(
-                Point.find_by_id(base_pt_id).get_position() + R * trig.ang2vecd(ang)
+                Point.find_by_id(base_pt_id).get_position() + R * trig.angd2vec2d(ang)
             )
         elif method == "con":
             base_pt_id, dim, val = position
