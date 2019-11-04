@@ -4,13 +4,8 @@ from typing import Dict, Any
 import numpy as np
 from scipy.interpolate import interp1d
 
-# import planingfsi.io
-from planingfsi import config
-
-# from planingfsi import krampy as kp
-# from planingfsi import io
-
 from . import felib as fe
+from .. import config, krampy_old as kp
 
 
 class FEStructure:
@@ -153,21 +148,21 @@ class FEStructure:
             ss.set_attachments()
 
 
-class RigidBody(object):
-    def __init__(self, dict_):
+class RigidBody:
+    def __init__(self, dict_: Dict[str, Any]):
         self.dict_ = dict_
         self.num_dim = 2
         self.draft = 0.0
         self.trim = 0.0
 
-        self.name = self.dict_.read("bodyName", "default")
-        self.weight = self.dict_.read(
-            "W", self.dict_.read("loadPct", 1.0) * config.body.weight
+        self.name = self.dict_.get("bodyName", "default")
+        self.weight = self.dict_.get(
+            "W", self.dict_.get("loadPct", 1.0) * config.body.weight
         )
         self.weight *= config.body.seal_load_pct
-        self.m = self.dict_.read("m", self.weight / config.flow.gravity)
-        self.Iz = self.dict_.read("Iz", self.m * config.body.reference_length ** 2 / 12)
-        self.has_planing_surface = self.dict_.read("hasPlaningSurface", False)
+        self.m = self.dict_.get("m", self.weight / config.flow.gravity)
+        self.Iz = self.dict_.get("Iz", self.m * config.body.reference_length ** 2 / 12)
+        self.has_planing_surface = self.dict_.get("hasPlaningSurface", False)
 
         var = [
             "max_draft_step",
@@ -191,7 +186,7 @@ class RigidBody(object):
         ]
         for v in var:
             if v in self.dict_:
-                setattr(self, v, self.dict_.read(v))
+                setattr(self, v, self.dict_.get(v))
             elif hasattr(config.body, v):
                 setattr(self, v, getattr(config.body, v))
             elif hasattr(config.solver, v):
@@ -221,8 +216,8 @@ class RigidBody(object):
         self.v_old = np.zeros((self.num_dim))
         self.a_old = np.zeros((self.num_dim))
 
-        self.beta = self.dict_.read("beta", 0.25)
-        self.gamma = self.dict_.read("gamma", 0.5)
+        self.beta = self.dict_.get("beta", 0.25)
+        self.gamma = self.dict_.get("gamma", 0.5)
 
         self.D = 0.0
         self.L = 0.0
@@ -628,28 +623,29 @@ class RigidBody(object):
         print(("  Moment Res: {0:5.4e}".format(self.res_m)))
 
     def write_motion(self):
-        kp.writeasdict(
-            os.path.join(
-                config.it_dir, "motion_{0}.{1}".format(self.name, config.io.data_format)
-            ),
-            ["xCofR", self.xCofR],
-            ["yCofR", self.yCofR],
-            ["xCofG", self.xCofG],
-            ["yCofG", self.yCofG],
-            ["draft", self.draft],
-            ["trim", self.trim],
-            ["liftRes", self.res_l],
-            ["momentRes", self.res_m],
-            ["Lift", self.L],
-            ["Drag", self.D],
-            ["Moment", self.M],
-            ["LiftAir", self.La],
-            ["DragAir", self.Da],
-            ["MomentAir", self.Ma],
-        )
-        for ss in self.substructure:
-            if ss.type_ == "torsionalSpring":
-                ss.writeDeformation()
+        """"""
+        # kp.writeasdict(
+        #     os.path.join(
+        #         config.it_dir, "motion_{0}.{1}".format(self.name, config.io.data_format)
+        #     ),
+        #     ["xCofR", self.xCofR],
+        #     ["yCofR", self.yCofR],
+        #     ["xCofG", self.xCofG],
+        #     ["yCofG", self.yCofG],
+        #     ["draft", self.draft],
+        #     ["trim", self.trim],
+        #     ["liftRes", self.res_l],
+        #     ["momentRes", self.res_m],
+        #     ["Lift", self.L],
+        #     ["Drag", self.D],
+        #     ["Moment", self.M],
+        #     ["LiftAir", self.La],
+        #     ["DragAir", self.Da],
+        #     ["MomentAir", self.Ma],
+        # )
+        # for ss in self.substructure:
+        #     if ss.type_ == "torsionalSpring":
+        #         ss.writeDeformation()
 
     def load_motion(self):
         K = kp.dict_ionary(
@@ -691,21 +687,21 @@ class Substructure:
         Substructure.obj.append(self)
 
         self.dict_ = dict_
-        self.name = self.dict_.read("substructureName", "")
-        self.type_ = self.dict_.read("substructureType", "rigid")
+        self.name = self.dict_.get("substructureName", "")
+        self.type_ = self.dict_.get("substructureType", "rigid")
         self.interpolator = None
 
-        self.seal_pressure = self.dict_.read_load_or_default("Ps", 0.0)
-        self.seal_pressure_method = self.dict_.read("PsMethod", "constant")
+        self.seal_pressure = self.get_or_config("Ps", 0.0)
+        self.seal_pressure_method = self.dict_.get("PsMethod", "constant")
 
-        self.seal_over_pressure_pct = self.dict_.read_load_or_default(
+        self.seal_over_pressure_pct = self.get_or_config(
             "overPressurePct", 1.0
         )
-        self.cushion_pressure_type = self.dict_.read("cushionPressureType", None)
-        self.tip_load = self.dict_.read_load_or_default("tipLoad", 0.0)
-        self.tip_constraint_height = self.dict_.read("tipConstraintHt", None)
-        self.struct_interp_type = self.dict_.read("structInterpType", "linear")
-        self.struct_extrap = self.dict_.read("structExtrap", True)
+        self.cushion_pressure_type = self.dict_.get("cushionPressureType", None)
+        self.tip_load = self.get_or_config("tipLoad", 0.0)
+        self.tip_constraint_height = self.dict_.get("tipConstraintHt", None)
+        self.struct_interp_type = self.dict_.get("structInterpType", "linear")
+        self.struct_extrap = self.dict_.get("structExtrap", True)
         self.line_fluid_pressure = None
         self.line_air_pressure = None
         self.fluidS = []
@@ -808,13 +804,14 @@ class Substructure:
         return max(self.node_arc_length)
 
     def write_coordinates(self):
-        kp.writeaslist(
-            os.path.join(
-                config.it_dir, "coords_{0}.{1}".format(self.name, config.io.data_format)
-            ),
-            ["x [m]", [nd.x for nd in self.node]],
-            ["y [m]", [nd.y for nd in self.node]],
-        )
+        """"""
+        # kp.writeaslist(
+        #     os.path.join(
+        #         config.it_dir, "coords_{0}.{1}".format(self.name, config.io.data_format)
+        #     ),
+        #     ["x [m]", [nd.x for nd in self.node]],
+        #     ["y [m]", [nd.y for nd in self.node]],
+        # )
 
     def load_coordinates(self):
         x, y = np.loadtxt(
@@ -1061,6 +1058,12 @@ class Substructure:
 
     def set_angle(self):
         return None
+
+    def get_or_config(self, key, default):
+        value = self.dict_.get(key, default)
+        if isinstance(value, str):
+            value = getattr(config, value)
+        return value
 
 
 class FlexibleSubstructure(Substructure):

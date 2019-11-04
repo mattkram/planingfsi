@@ -26,7 +26,7 @@ class Simulation:
     def __init__(self) -> None:
         self.solid_solver = FEStructure()
         self.fluid_solver = PotentialPlaningSolver(self)
-        self.figure = FSIFigure(self) if config.plotting.plot_any else None
+        self._figure = None
         self.it = 0
 
     #     def setFluidPressureFunc(self, func):
@@ -34,6 +34,13 @@ class Simulation:
     #
     #     def setSolidPositionFunc(self, func):
     #         self.solidPositionFunc = func
+
+    @property
+    def figure(self):
+        """Use a property for the figure object to initialize lazily."""
+        if self._figure is None and config.plotting.plot_any:
+            self._figure = FSIFigure(self)
+        return self._figure
 
     def update_fluid_response(self) -> None:
         """Update the fluid response and apply to the structural solver."""
@@ -78,6 +85,7 @@ class Simulation:
         else:
             # Add a dummy rigid body that cannot move
             self.solid_solver.add_rigid_body()
+        print(f"Rigid Bodies: {self.solid_solver.rigid_body}")
 
     def _load_substructures(self) -> None:
         """Load all substructures from files."""
@@ -90,6 +98,7 @@ class Simulation:
                 interpolator = Interpolator(substructure, planing_surface, dict_)
                 interpolator.solid_position_function = substructure.get_coordinates
                 interpolator.fluid_pressure_function = planing_surface.get_loads_in_range
+        print(f"Substructures: {self.solid_solver.substructure}")
 
     def _load_pressure_cushions(self) -> None:
         """Load all pressure cushions from files."""
@@ -97,6 +106,7 @@ class Simulation:
             for dict_path in Path(config.path.cushion_dict_dir).glob("*"):
                 dict_ = load_dict_from_file(str(dict_path))
                 self.fluid_solver.add_pressure_cushion(dict_)
+        print(f"Pressure Cushions: {self.fluid_solver.pressure_cushions}")
 
     def run(self) -> None:
         """Run the fluid-structure interaction simulation by iterating

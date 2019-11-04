@@ -5,10 +5,8 @@ import numpy as np
 from scipy.interpolate import interp1d
 from scipy.optimize import fmin
 
-import planingfsi.config as config
-
-# import planingfsi.krampy as kp
-import planingfsi.potentialflow.pressureelement as pe
+from . import pressureelement as pe
+from .. import config, krampy_old as kp
 
 
 class PressurePatch(object):
@@ -98,7 +96,7 @@ class PressurePatch(object):
         for i, el in enumerate(self.pressure_elements):
             el.x_coord = x[i]
             if not el.is_source:
-                el.z_coord = self.interpolator.getBodyHeight(x[i])
+                el.z_coord = self.interpolator.get_body_height(x[i])
 
             if isinstance(el, pe.CompleteTriangularPressureElement):
                 el.width = [x[i] - x[i - 1], x[i + 1] - x[i]]
@@ -157,22 +155,22 @@ class PressurePatch(object):
 
     def write_forces(self):
         """Write forces to file."""
-        kp.writeasdict(
-            os.path.join(
-                config.it_dir,
-                "forces_{0}.{1}".format(self.patch_name, config.io.data_format),
-            ),
-            ["Drag", self.D],
-            ["WaveDrag", self.Dw],
-            ["PressDrag", self.Dp],
-            ["FricDrag", self.Df],
-            ["Lift", self.L],
-            ["PressLift", self.Lp],
-            ["FricLift", self.Lf],
-            ["Moment", self.M],
-            ["BasePt", self.base_pt],
-            ["Length", self.length],
-        )
+        # kp.writeasdict(
+        #     os.path.join(
+        #         config.it_dir,
+        #         "forces_{0}.{1}".format(self.patch_name, config.io.data_format),
+        #     ),
+        #     ["Drag", self.D],
+        #     ["WaveDrag", self.Dw],
+        #     ["PressDrag", self.Dp],
+        #     ["FricDrag", self.Df],
+        #     ["Lift", self.L],
+        #     ["PressLift", self.Lp],
+        #     ["FricLift", self.Lf],
+        #     ["Moment", self.M],
+        #     ["BasePt", self.base_pt],
+        #     ["Length", self.length],
+        # )
 
     def load_forces(self):
         """Load forces from file."""
@@ -372,25 +370,29 @@ class PlaningSurface(PressurePatch):
         PlaningSurface.count += 1
         PlaningSurface.all.append(self)
 
-        self.patch_name = dict_.read("substructureName", "")
-        Nfl = dict_.read("Nfl", 0)
-        self.point_spacing = dict_.read("pointSpacing", "linear")
-        self.initial_length = dict_.read("initialLength", None)
-        self.minimum_length = dict_.read("minimumLength", 0.0)
-        self.maximum_length = dict_.read("maximum_length", float("Inf"))
+        self.patch_name = dict_.get("substructureName", "")
+        Nfl = dict_.get("Nfl", 0)
+        self.point_spacing = dict_.get("pointSpacing", "linear")
+        self.initial_length = dict_.get("initialLength", None)
+        self.minimum_length = dict_.get("minimumLength", 0.0)
+        self.maximum_length = dict_.get("maximum_length", float("Inf"))
 
-        self.spring_constant = dict_.read("springConstant", 1e4)
+        self.spring_constant = dict_.get("springConstant", 1e4)
         self.kutta_pressure = kwargs.get(
-            "kuttaPressure", dict_.read_load_or_default("kuttaPressure", 0.0)
+            "kuttaPressure", dict_.get("kuttaPressure", 0.0)
         )
+        if isinstance(self.kutta_pressure, str):
+            self.kutta_pressure = getattr(config, self.kutta_pressure)
         self._upstream_pressure = kwargs.get(
-            "upstreamPressure", dict_.read_load_or_default("upstreamPressure", 0.0)
+            "upstreamPressure", dict_.get("upstreamPressure", 0.0)
         )
+        if isinstance(self._upstream_pressure, str):
+            self._upstream_pressure = getattr(config, self._upstream_pressure)
 
         self.is_initialized = False
         self.is_active = True
         self.is_kutta_unknown = True
-        self.is_sprung = dict_.read("isSprung", False)
+        self.is_sprung = dict_.get("isSprung", False)
         if self.is_sprung:
             self.initial_length = 0.0
             self.minimum_length = 0.0
@@ -579,7 +581,7 @@ class PlaningSurface(PressurePatch):
             x = [x]
         return np.array(
             [
-                kp.getDerivative(self.interpolator.getBodyHeight, xx, direction)
+                kp.getDerivative(self.interpolator.get_body_height, xx, direction)
                 for xx in x
             ]
         )

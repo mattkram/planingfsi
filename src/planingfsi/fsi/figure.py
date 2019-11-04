@@ -49,18 +49,26 @@ class FSIFigure:
             [nd.y for struct in self.solid.substructure for nd in struct.node]
         )
 
-        if config.plotting.xmin is not None:
+        try:
             xMin = config.plotting.xmin
             config.plotting.ext_w = 0.0
-        if config.plotting.xmax is not None:
+        except AttributeError:
+            pass
+        try:
             xMax = config.plotting.xmax
             config.plotting.ext_e = 0.0
-        if config.plotting.ymin is not None:
+        except AttributeError:
+            pass
+        try:
             yMin = config.plotting.ymin
             config.plotting.ext_s = 0.0
-        if config.plotting.ymax is not None:
+        except AttributeError:
+            pass
+        try:
             yMax = config.plotting.ymax
             config.plotting.ext_n = 0.0
+        except AttributeError:
+            pass
 
         plt.xlabel(r"$x$ [m]", fontsize=22)
         plt.ylabel(r"$y$ [m]", fontsize=22)
@@ -237,7 +245,7 @@ class TimeHistory:
             s.update(final)
 
         for ax in self.ax:
-            xMin, xMax = 0.0, config.it + 5
+            xMin, xMax = 0.0, 5 #config.it + 5
             yMin = np.nan
             for i, l in enumerate(ax.get_lines()):
                 y = l.get_data()[1]
@@ -280,7 +288,7 @@ class MotionSubplot(TimeHistory):
     def __init__(self, pos, body):
         TimeHistory.__init__(self, pos, body.name)
 
-        itFunc = lambda: config.it
+        itFunc = lambda: 0 #config.it
         drftFunc = lambda: body.draft
         trimFunc = lambda: body.trim
 
@@ -321,7 +329,7 @@ class ForceSubplot(TimeHistory):
     def __init__(self, pos, body):
         TimeHistory.__init__(self, pos, body.name)
 
-        itFunc = lambda: config.it
+        itFunc = lambda: 0 #config.it
         liftFunc = lambda: body.L / body.weight
         dragFunc = lambda: body.D / body.weight
         momFunc = lambda: body.M / (body.weight * config.body.reference_length)
@@ -369,7 +377,7 @@ class ResidualSubplot(TimeHistory):
     def __init__(self, pos, solid):
         TimeHistory.__init__(self, pos, "residuals")
 
-        itFunc = lambda: config.it
+        itFunc = lambda: 0 #config.it
 
         col = ["r", "b", "g"]
         for bd, coli in zip(solid.rigid_body, col):

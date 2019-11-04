@@ -10,9 +10,8 @@ except ImportError:
     plt = None
     pass
 
-import planingfsi.config as config
-
-# import planingfsi.krampy as kp
+from .. import krampy_old as kp
+from .. import config
 
 
 _PLOT_INFINITY = 50.0

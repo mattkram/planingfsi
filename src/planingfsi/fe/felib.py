@@ -1,9 +1,6 @@
 import numpy as np
-from scipy.interpolate import interp1d
 
-import planingfsi.config as config
-
-# import planingfsi.krampy as kp
+from .. import config, krampy_old as kp
 
 
 class Node:

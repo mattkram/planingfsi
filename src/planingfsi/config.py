@@ -125,7 +125,11 @@ class FlowConfig(SubConfig):
 
         """
         if self._froude_num is not None:
-            if self._flow_speed is not None:
+            try:
+                _ = self._flow_speed
+            except AttributeError:
+                pass
+            else:
                 raise ValueError(
                     "Only one flow speed variable (either Froude number or flow "
                     "speed) must be set in {0}".format(DICT_NAME)
@@ -343,12 +347,14 @@ class PlotConfig(SubConfig):
     @property
     def pScale(self) -> float:
         if plotting.pType == "stagnation":
-            return flow.stagnation_pressure
+            pScale = flow.stagnation_pressure
         elif plotting.pType == "cushion":
-            return body.Pc if body.Pc > 0.0 else 1.0
+            pScale = body.Pc if body.Pc > 0.0 else 1.0
         elif plotting.pType == "hydrostatic":
-            return flow.density * flow.gravity * self._pScaleHead
-        return self._pScale * self._pScalePct
+            pScale = flow.density * flow.gravity * self._pScaleHead
+        else:
+            pScale = self._pScale
+        return pScale * self._pScalePct
 
 
 class PathConfig(SubConfig):
@@ -401,15 +407,17 @@ class SolverConfig(SubConfig):
 
     @property
     def wetted_length_max_step_pct_inc(self) -> float:
-        if self._wetted_length_max_step_pct_inc is not None:
+        try:
             return self._wetted_length_max_step_pct_inc
-        return self.wetted_length_max_step_pct
+        except AttributeError:
+            return self.wetted_length_max_step_pct
 
     @property
     def wetted_length_max_step_pct_dec(self) -> float:
-        if self._wetted_length_max_step_pct_dec is not None:
+        try:
             return self._wetted_length_max_step_pct_dec
-        return self.wetted_length_max_step_pct
+        except AttributeError:
+            return self.wetted_length_max_step_pct
 
 
 # Flow-related variables
