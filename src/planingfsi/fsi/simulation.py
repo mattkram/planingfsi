@@ -9,7 +9,7 @@ from .interpolator import Interpolator
 from .. import config, logger
 from ..dictionary import load_dict_from_file
 from ..fe.structure import FEStructure
-from ..general import sortDirByNum, find_files, writeasdict
+from ..general import writeasdict
 from ..potentialflow.solver import PotentialPlaningSolver
 
 
@@ -121,7 +121,7 @@ class Simulation:
         if config.io.results_from_file:
             self.create_dirs()
             self.apply_ramp()
-            self.it_dirs = sortDirByNum(find_files("[0-9]*"))[1]
+            self.it_dirs = sorted(Path(".").glob("[0-9]*"), key=lambda x: int(x.name))
 
         self.initialize_solvers()
 

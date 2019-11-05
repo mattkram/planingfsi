@@ -1,24 +1,7 @@
 """General utilities."""
-import os
-from fnmatch import fnmatch
-
 import numpy
 
 from . import trig
-
-
-def find_files(path=".", pattern="*"):
-    """Return list of files in path matching the pattern.
-
-    Args
-    ----
-    path : str, optional
-        Path to search. Default is current directory.
-
-    pattern : str
-        Wildcard pattern to match.
-    """
-    return [d for d in os.listdir(path) if fnmatch(d, pattern)]
 
 
 def sign(x):
@@ -124,17 +107,3 @@ def write(ff, writeFormat, items):
     else:
         ff.write("  ")
     ff.write("".join("{1:{0}} ".format(writeFormat, item) for item in items) + "\n")
-
-
-def sortDirByNum(dirStr, direction="forward"):
-    num = numpy.array(
-        [
-            float("".join(i for i in dir.lower() if i.isdigit() or i == ".").strip("."))
-            for dir in dirStr
-        ]
-    )
-    if direction == "reverse":
-        ind = numpy.argsort(num)[::-1]
-    else:
-        ind = numpy.argsort(num)
-    return [dirStr[i] for i in ind], num[ind]
