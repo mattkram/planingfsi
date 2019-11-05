@@ -1,7 +1,8 @@
 import json
 import os
 import re
-from typing import Dict, Any, Match
+from pathlib import Path
+from typing import Dict, Any, Match, Union
 
 from . import logger
 
@@ -78,11 +79,11 @@ def jsonify_string(string: str) -> str:
     return string
 
 
-def load_dict_from_file(filename: str) -> Dict[str, Any]:
+def load_dict_from_file(filename: Union[Path, str]) -> Dict[str, Any]:
     """Read a file, which is a less strict JSON format, and return a dictionary."""
     logger.debug('Loading Dictionary from file "{}"'.format(filename))
 
-    with open(filename) as f:
+    with Path(filename).open() as f:
         dict_iter = (line.split("#")[0].strip() for line in f.readlines())
     dict_ = load_dict_from_string(",".join(dict_iter))
 

@@ -1,4 +1,7 @@
 """General utilities."""
+from pathlib import Path
+from typing import Union, Any
+
 import numpy
 
 from . import trig
@@ -91,14 +94,13 @@ def writeasdict(filename, *args, **kwargs):
     ff.close()
 
 
-def writeaslist(filename, *args, **kwargs):
+def writeaslist(filename: Union[Path, str], *args: Any, **kwargs: Any) -> None:
     headerFormat = kwargs.get("headerFormat", "<15")
     dataFormat = kwargs.get("dataFormat", ">+10.8e")
-    ff = open(filename, "w")
-    write(ff, headerFormat, [item for item in [arg[0] for arg in args]])
-    for value in zip(*[arg[1] for arg in args]):
-        write(ff, dataFormat, value)
-    ff.close()
+    with Path(filename).open("w") as ff:
+        write(ff, headerFormat, [item for item in [arg[0] for arg in args]])
+        for value in zip(*[arg[1] for arg in args]):
+            write(ff, dataFormat, value)
 
 
 def write(ff, writeFormat, items):

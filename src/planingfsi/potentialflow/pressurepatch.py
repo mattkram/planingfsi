@@ -263,7 +263,7 @@ class PressureCushion(PressurePatch):
                 pe.AftHalfTriangularPressureElement(is_source=True, is_on_body=False)
             ]
 
-        self._update_end_pts()
+        self.update_end_pts()
 
     @property
     def base_pt(self):
@@ -286,7 +286,7 @@ class PressureCushion(PressurePatch):
             x = np.hstack((self.end_pts[0] + addL, self.end_pts[1] + addL))
             return x
 
-    def _update_end_pts(self):
+    def update_end_pts(self):
         if self.neighbor_down is not None:
             self._end_pts[0] = self.neighbor_down.end_pts[1]
         if self.neighbor_up is not None:

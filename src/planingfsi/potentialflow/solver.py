@@ -1,32 +1,33 @@
 """Fundamental module for constructing and solving planing potential flow
 problems
 """
-
-from os.path import join
+import weakref
+from typing import List, Dict, Any, Optional
 
 import numpy as np
 from planingfsi import general
 from scipy.optimize import fmin
 
+from .pressureelement import PressureElement
+from .pressurepatch import PlaningSurface, PressureCushion, PressurePatch
 from .. import solver, config
 from ..dictionary import load_dict_from_file
-from ..potentialflow.pressurepatch import PlaningSurface, PressureCushion
+from ..fsi import simulation as fsi_simulation
 
 if config.plotting.plot_any:
     import matplotlib.pyplot as plt
 
 
-class PotentialPlaningSolver(object):
-    """The top-level object which handles calculation of the potential flow
-    problem.
+class PotentialPlaningSolver:
+    """The top-level object which handles calculation of the potential flow problem.
 
     Pointers to the planing surfaces and pressure elements are stored for
     reference during initialization and problem setup. The potential planing
     calculation is then solved during iteration with the structural solver.
     """
 
-    def __init__(self, simulation):
-        self.simulation = simulation
+    def __init__(self, simulation: "fsi_simulation.Simulation"):
+        self._simulation = weakref.ref(simulation)
         self.X = None
         self.D = None
         self.Dw = None
@@ -46,34 +47,36 @@ class PotentialPlaningSolver(object):
         self.storeLen = None
         self.max_len = None
 
-        self.planing_surfaces = []
-        self.pressure_cushions = []
-        self.pressure_patches = []
-        self.pressure_elements = []
+        self.planing_surfaces: List[PlaningSurface] = []
+        self.pressure_cushions: List[PressureCushion] = []
+        self.pressure_patches: List[PressurePatch] = []
+        self.pressure_elements: List[PressureElement] = []
         self.lineFS = None
         self.lineFSi = None
-        self.solver = None
+        self.solver: Optional[solver.RootFinder] = None
 
         self.min_len = None
         self.init_len = None
 
-    def add_pressure_patch(self, instance):
+    @property
+    def simulation(self) -> "fsi_simulation.Simulation":
+        """A reference to the simulation object by resolving the weak reference."""
+        simulation = self._simulation()
+        if simulation is None:
+            raise ReferenceError("Simulation object cannot be accessed.")
+        return simulation
+
+    def add_pressure_patch(self, instance: PressurePatch) -> None:
         """Add pressure patch to the calculation.
 
-        Args
-        ----
-        instance : PressurePatch
-            The pressure patch object to add.
+        Args:
+            instance: The pressure patch object to add.
 
-        Returns
-        -------
-        None
         """
         self.pressure_patches.append(instance)
-        self.pressure_elements += [el for el in instance.pressure_elements]
-        return None
+        self.pressure_elements.extend([el for el in instance.pressure_elements])
 
-    def add_planing_surface(self, dict_, **kwargs):
+    def add_planing_surface(self, dict_: Dict[str, Any], **kwargs: Any) -> PlaningSurface:
         """Add planing surface to the calculation from a dictionary file name.
 
         Args
@@ -92,7 +95,7 @@ class PotentialPlaningSolver(object):
         self.add_pressure_patch(instance)
         return instance
 
-    def add_pressure_cushion(self, dict_, **kwargs):
+    def add_pressure_cushion(self, dict_:Dict[str,Any], **kwargs:Any) -> PressureCushion:
         """Add pressure cushion to the calculation from a dictionary file name.
 
         Args
@@ -111,7 +114,7 @@ class PotentialPlaningSolver(object):
         self.add_pressure_patch(instance)
         return instance
 
-    def get_planing_surface_by_name(self, name):
+    def get_planing_surface_by_name(self, name:str) ->Optional[PlaningSurface]:
         """Return planing surface by name.
 
         Args
@@ -130,17 +133,13 @@ class PotentialPlaningSolver(object):
         else:
             return None
 
-    def print_element_status(self):
+    def print_element_status(self) ->None:
         """Print status of each element."""
         for el in self.pressure_elements:
-            el.print_element()
+            print(el)
 
-        return None
-
-    def calculate_pressure(self):
-        """Calculate pressure of each element to satisfy body boundary
-        conditions.
-        """
+    def calculate_pressure(self) -> None:
+        """Calculate pressure of each element to satisfy body boundary conditions."""
         # Form lists of unknown and source elements
         unknown_el = [el for el in self.pressure_elements if not el.is_source and el.width > 0.0]
         nan_el = [el for el in self.pressure_elements if el.width <= 0.0]
@@ -172,9 +171,7 @@ class PotentialPlaningSolver(object):
         for el in nan_el:
             el.pressure = 0.0
 
-        return None
-
-    def get_residual(self, Lw):
+    def get_residual(self, Lw: np.ndarray) -> np.array:
         """Return array of residuals of each planing surface to satisfy Kutta
         condition.
 
@@ -189,28 +186,29 @@ class PotentialPlaningSolver(object):
             Array of trailing edge residuals of each planing surface.
         """
         # Set length of each planing surface
-        for Lwi, p in zip(Lw, self.planing_surfaces):
-            p.length = np.min([Lwi, p.maximum_length])
+        for Lwi, planing_surface in zip(Lw, self.planing_surfaces):
+            planing_surface.length = np.min([Lwi, planing_surface.maximum_length])
 
         # Update bounds of pressure cushions
-        for p in self.pressure_cushions:
-            p._update_end_pts()
+        for pressure_cushion in self.pressure_cushions:
+            pressure_cushion.update_end_pts()
 
         # Solve for unknown pressures and output residual
         self.calculate_pressure()
 
         res = np.array([p.get_residual() for p in self.planing_surfaces])
 
-        def array_to_string(array):
+        def array_to_string(array: np.ndarray) -> str:
+            """Convert an array to a string."""
             return ", ".join(["{0:11.4e}".format(a) for a in array]).join("[]")
 
-        print("      Lw:      ", array_to_string(Lw))
-        print("      Residual:", array_to_string(res))
+        print(f"      Lw:       {array_to_string(Lw)}")
+        print(f"      Residual: {array_to_string(res)}")
         print()
 
         return res
 
-    def calculate_response(self):
+    def calculate_response(self) -> None:
         """Calculate response, including pressure and free-surface profiles.
 
         Will load results from file if specified.
@@ -220,7 +218,7 @@ class PotentialPlaningSolver(object):
         else:
             self.calculate_response_unknown_wetted_length()
 
-    def calculate_response_unknown_wetted_length(self):
+    def calculate_response_unknown_wetted_length(self) -> None:
         """Calculate potential flow problem via iteration to find wetted length
         of all planing surfaces to satisfy all trailing edge conditions.
         """
@@ -284,9 +282,9 @@ class PotentialPlaningSolver(object):
 
             self.calculate_pressure_and_shear_profile()
 
-    def plot_residuals_over_range(self):
+    def plot_residuals_over_range(self) -> None:
         """Plot residuals."""
-        self.storeLen = np.array([p.get_length() for p in self.planing_surfaces])
+        self.storeLen = np.array([p.length for p in self.planing_surfaces])
 
         xx, yy = list(zip(*self.xHist))
 
@@ -328,7 +326,7 @@ class PotentialPlaningSolver(object):
 
         self.get_residual(self.storeLen)
 
-    def calculate_pressure_and_shear_profile(self):
+    def calculate_pressure_and_shear_profile(self) -> None:
         """Calculate pressure and shear stress profiles over plate surface."""
         if self.X is None:
             if config.flow.include_friction:
@@ -372,7 +370,7 @@ class PotentialPlaningSolver(object):
             if config.plotting.show_pressure:
                 self.plot_pressure()
 
-    def calculate_free_surface_profile(self):
+    def calculate_free_surface_profile(self) -> None:
         """Calculate free surface profile."""
         if self.xFS is None:
             xFS = []
@@ -426,39 +424,32 @@ class PotentialPlaningSolver(object):
                 self.xFS = np.array([config.plotting.xFSMin, config.plotting.xFSMax])
                 self.zFS = np.zeros_like(self.xFS)
 
-    def get_free_surface_height(self, x):
-        """Return free surface height at a given x-position consideringthe
+    def get_free_surface_height(self, x: float) -> float:
+        """Return free surface height at a given x-position considering the
         contributions from all pressure patches.
 
-        Args
-        ----
-        x : float
-            x-position at which free surface height shall be returned.
+        Args:
+            x: x-position at which free surface height shall be returned.
 
-        Returns
-        -------
-        float
-            Free-surface position at input x-position
+        Returns:
+            Free-surface position at input x-position.
+
         """
         return sum([patch.get_free_surface_height(x) for patch in self.pressure_patches])
 
-    def get_free_surface_derivative(self, x, direction="c"):
+    def get_free_surface_derivative(self, x: float, direction: str="c") -> float:
         """Return slope (derivative) of free-surface profile.
 
-        Args
-        ----
-        x : float
-            x-position
+        Args:
+            x: x-position.
 
-        Returns
-        -------
-        float
-            Derivative or slope of free-surface profile
+        Returns:
+            Derivative or slope of free-surface profile.
+
         """
-        ddx = general.getDerivative(self.get_free_surface_height, x, direction=direction)
-        return ddx
+        return general.getDerivative(self.get_free_surface_height, x, direction=direction)
 
-    def write_results(self):
+    def write_results(self) -> None:
         """Write results to file."""
         # Post-process results from current solution
         #    self.calculate_pressure_and_shear_profile()
@@ -471,30 +462,30 @@ class PotentialPlaningSolver(object):
         if self.xFS is not None:
             self.write_free_surface()
 
-    def write_pressure_and_shear(self):
+    def write_pressure_and_shear(self) -> None:
         """Write pressure and shear stress profiles to data file."""
-        if len(self.pressure_elements) > 0:
+        if self.pressure_elements:
             general.writeaslist(
-                join(self.simulation.it_dir, "pressureAndShear.{0}".format(config.io.data_format),),
+                self.simulation.it_dir / f"pressureAndShear.{config.io.data_format}",
                 ["x [m]", self.X],
                 ["p [Pa]", self.p],
                 ["shear_stress [Pa]", self.shear_stress],
             )
 
-    def write_free_surface(self):
+    def write_free_surface(self) -> None:
         """Write free-surface profile to file."""
-        if len(self.pressure_elements) > 0:
+        if self.pressure_elements:
             general.writeaslist(
-                join(self.simulation.it_dir, "freeSurface.{0}".format(config.io.data_format),),
+                self.simulation.it_dir / f"freeSurface.{config.io.data_format}",
                 ["x [m]", self.xFS],
                 ["y [m]", self.zFS],
             )
 
-    def write_forces(self):
+    def write_forces(self) -> None:
         """Write forces to file."""
-        if len(self.pressure_elements) > 0:
+        if self.pressure_elements:
             general.writeasdict(
-                join(self.simulation.it_dir, "forces_total.{0}".format(config.io.data_format),),
+                self.simulation.it_dir / f"forces_total.{config.io.data_format}",
                 ["Drag", self.D],
                 ["WaveDrag", self.Dw],
                 ["PressDrag", self.Dp],
@@ -508,16 +499,16 @@ class PotentialPlaningSolver(object):
         for patch in self.pressure_patches:
             patch.write_forces()
 
-    def load_response(self):
+    def load_response(self) -> None:
         """Load results from file."""
         self.load_forces()
         self.load_pressure_and_shear()
         self.load_free_surface()
 
-    def load_pressure_and_shear(self):
+    def load_pressure_and_shear(self) -> None:
         """Load pressure and shear stress from file."""
         self.x, self.p, self.shear_stress = np.loadtxt(
-            join(self.simulation.it_dir, "pressureAndShear.{0}".format(config.io.data_format),),
+            str(self.simulation.it_dir / f"pressureAndShear.{config.io.data_format}"),
             unpack=True,
         )
         for el in [el for patch in self.planing_surfaces for el in patch.pressure_elements]:
@@ -529,22 +520,21 @@ class PotentialPlaningSolver(object):
         for p in self.planing_surfaces:
             p.calculate_forces()
 
-    def load_free_surface(self):
+    def load_free_surface(self) -> None:
         """Load free surface coordinates from file."""
         try:
             data = np.loadtxt(
-                join(self.simulation.it_dir, "freeSurface.{0}".format(config.io.data_format),)
+                str(self.simulation.it_dir / f"freeSurface.{config.io.data_format}")
             )
             self.xFS = data[:, 0]
             self.zFS = data[:, 1]
         except IOError:
             self.zFS = np.zeros_like(self.xFS)
-        return None
 
-    def load_forces(self):
+    def load_forces(self) -> None:
         """Load forces from file."""
         dict_ = load_dict_from_file(
-            join(self.simulation.it_dir, "forces_total.{0}".format(config.io.data_format))
+            self.simulation.it_dir/ f"forces_total.{config.io.data_format}"
         )
         self.D = dict_.get("Drag", 0.0)
         self.Dw = dict_.get("WaveDrag", 0.0)
@@ -558,7 +548,7 @@ class PotentialPlaningSolver(object):
         for patch in self.pressure_patches:
             patch.load_forces()
 
-    def plot_pressure(self):
+    def plot_pressure(self) -> None:
         """Create a plot of the pressure and shear stress profiles."""
         plt.figure(figsize=(5.0, 5.0))
         plt.xlabel(r"$x/L_i$")
@@ -585,9 +575,7 @@ class PotentialPlaningSolver(object):
         )
         plt.figure(1)
 
-        return None
-
-    def plot_free_surface(self):
+    def plot_free_surface(self) -> None:
         """Create a plot of the free surface profile."""
         self.calculate_free_surface_profile()
         if self.lineFS is not None:
@@ -595,4 +583,3 @@ class PotentialPlaningSolver(object):
         end_pts = np.array([config.plotting.x_fs_min, config.plotting.x_fs_max])
         if self.lineFSi is not None:
             self.lineFSi.set_data(end_pts, config.flow.waterline_height * np.ones_like(end_pts))
-        return None
