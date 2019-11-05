@@ -1,14 +1,13 @@
-""" A simple module for storing unit conversion factors to convert to SI.
+"""A simple module for storing unit conversion factors to convert to SI.
 
-    Usage:  import unit
-        a length e.g. can be represented as 1.0 * unit.ft to represent one foot,
-        which will return 0.3048 meters.
+Example: A length e.g. can be represented as 1.0 * unit.ft to represent one foot,
+    which will return 0.3048 meters.
+
 """
-
 import math
 
 # Acceleration due to gravity
-grav = 9.80665
+_gravity = 9.80665
 
 # Convert length to m
 m = 1.0
@@ -28,9 +27,9 @@ lbm = kg / 2.20462
 
 # Convert force to N
 N = 1.0
-lb = grav * lbm
+lb = _gravity * lbm
 lbf = 1.0 * lb  # lbs-force
-mtf = grav * 1000.0  # metric tonnes-force
+mtf = _gravity * 1000.0  # metric tonnes-force
 stf = N * lb * 2000.0
 
 rad = 1.0
