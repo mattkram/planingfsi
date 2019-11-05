@@ -1,8 +1,7 @@
+import math
 from typing import Callable, Any
 
 import numpy
-
-import numpy as np
 
 
 class RootFinder:
@@ -20,21 +19,23 @@ class RootFinder:
         func: Callable[[numpy.array], numpy.array],
         xo: numpy.array,
         method: str,
-        **kwargs: Any
+        **kwargs: Any,
     ):
         self.func = func
         self.x = numpy.array(xo)
         self.f = numpy.zeros_like(xo)
         self.dim = len(xo)
 
-        self.x_min = numpy.array(kwargs.get("xMin", -np.ones_like(xo) * float("Inf")))
-        self.x_max = numpy.array(kwargs.get("xMax", np.ones_like(xo) * float("Inf")))
+        self.x_min = numpy.array(
+            kwargs.get("xMin", -numpy.ones_like(xo) * float("Inf"))
+        )
+        self.x_max = numpy.array(kwargs.get("xMax", numpy.ones_like(xo) * float("Inf")))
         self.max_it = kwargs.get("maxIt", 100)
         self.dx_init = kwargs.get("firstStep", 1e-6)
         self.error_limit = kwargs.get("errLim", 1e-6)
         self.relax = kwargs.get("relax", 1.0)
 
-        dx_max = kwargs.get("dxMax", np.ones_like(xo) * float("Inf"))
+        dx_max = kwargs.get("dxMax", numpy.ones_like(xo) * float("Inf"))
         self.dx_max_increase = numpy.array(kwargs.get("dxMaxInc", dx_max))
         self.dx_max_decrease = numpy.array(kwargs.get("dxMaxDec", dx_max))
 
@@ -76,19 +77,19 @@ class RootFinder:
 
         x = self.x + dx
 
-        x = np.max(np.vstack((x, self.x_min)), axis=0)
-        x = np.min(np.vstack((x, self.x_max)), axis=0)
+        x = numpy.max(numpy.vstack((x, self.x_min)), axis=0)
+        x = numpy.min(numpy.vstack((x, self.x_max)), axis=0)
 
         dx = x - self.x
 
-        dx_lim_pct = np.ones_like(dx)
+        dx_lim_pct = numpy.ones_like(dx)
         for i in range(len(dx_lim_pct)):
             if dx[i] > 0:
-                dx_lim_pct[i] = np.min([dx[i], self.dx_max_increase[i]]) / dx[i]
+                dx_lim_pct[i] = numpy.min([dx[i], self.dx_max_increase[i]]) / dx[i]
             elif dx[i] < 0:
-                dx_lim_pct[i] = np.max([dx[i], -self.dx_max_decrease[i]]) / dx[i]
+                dx_lim_pct[i] = numpy.max([dx[i], -self.dx_max_decrease[i]]) / dx[i]
 
-        dx *= np.min(dx_lim_pct)
+        dx *= numpy.min(dx_lim_pct)
         self.dx = dx
 
         return dx
@@ -98,11 +99,11 @@ class RootFinder:
         self.f_prev = self.f * 1.0
 
     def evaluate_error(self) -> None:
-        self.err = np.max(np.abs(self.dx + 1e-8))
+        self.err = numpy.max(numpy.abs(self.dx + 1e-8))
         if self.df is not None:
-            self.err += np.max(np.abs(self.df + 1e-8))
+            self.err += numpy.max(numpy.abs(self.df + 1e-8))
         else:
-            self.err += np.max(np.abs(self.f))
+            self.err += numpy.max(numpy.abs(self.f))
 
     def evaluate_function(self) -> None:
         self.f = self.func(self.x)
@@ -113,7 +114,7 @@ class RootFinder:
 
     def get_step_secant(self) -> numpy.array:
         if self.it == 0:
-            self.dx = np.ones_like(self.x) * self.dx_init
+            self.dx = numpy.ones_like(self.x) * self.dx_init
         else:
             self.dx = -self.f * (self.x - self.x_prev) / (self.f - self.f_prev + 1e-8)
         return self.dx
@@ -130,9 +131,9 @@ class RootFinder:
         fo = self.f * 1.0
         xo = self.x * 1.0
 
-        self.jacobian = np.zeros((self.dim, self.dim))
+        self.jacobian = numpy.zeros((self.dim, self.dim))
         for i in range(self.dim):
-            self.dx = np.zeros_like(self.x)
+            self.dx = numpy.zeros_like(self.x)
             self.dx[i] = self.dx_init
             self.take_step()
             self.jacobian[:, i] = self.df / self.dx[i]
@@ -145,11 +146,12 @@ class RootFinder:
         if self.it == 0 or self.jacobian is None:
             self.reset_jacobian()
 
-        dx = np.reshape(self.dx, (self.dim, 1))
-        df = np.reshape(self.df, (self.dim, 1))
+        dx = numpy.reshape(self.dx, (self.dim, 1))
+        df = numpy.reshape(self.df, (self.dim, 1))
 
         self.jacobian += (
-            np.dot(df - np.dot(self.jacobian, dx), dx.T) / np.linalg.norm(dx) ** 2
+            numpy.dot(df - numpy.dot(self.jacobian, dx), dx.T)
+            / numpy.linalg.norm(dx) ** 2
         )
         dx *= 0.0
         dof = [
@@ -158,13 +160,15 @@ class RootFinder:
         ]
         if any(dof):
             b = self.f.reshape(self.dim, 1)
-            dx[np.ix_(dof)] = np.linalg.solve(-self.jacobian[np.ix_(dof, dof)], b[np.ix_(dof)])
+            dx[numpy.ix_(dof)] = numpy.linalg.solve(
+                -self.jacobian[numpy.ix_(dof, dof)], b[numpy.ix_(dof)]
+            )
 
-        if any(np.abs(self.f) - np.abs(self.f_prev) > 0.0):
+        if any(numpy.abs(self.f) - numpy.abs(self.f_prev) > 0.0):
             self.jacobian_step += 1
 
         if self.jacobian_step >= self.max_jacobian_reset_step:
-            dx = np.ones_like(dx) * self.dx_init
+            dx = numpy.ones_like(dx) * self.dx_init
             self.jacobian = None
 
         self.dx = dx.reshape(self.dim)
@@ -185,27 +189,31 @@ class RootFinder:
         return self.x
 
 
-def fzero(func: Callable[[float], float], x_init: float, **kwargs: Any) -> float:
+def fzero(
+    func: Callable[[float], float],
+    x_init: float,
+    *,
+    max_it: int = 100,
+    first_step: float = 1e-6,
+    err_lim: float = 1e-6,
+    xmin: float = -math.inf,
+    xmax: float = math.inf,
+) -> float:
     """Find the root of a scalar function func with an initial guess x_init.
 
     Args:
         func: The function for which to find the zero-crossing point.
         x_init: The initial guess of the function's solution.
+        max_it: Maximum number of iterations.
+        first_step: Length of first step.
+        err_lim: Tolerance for iteration residual.
+        xmin: Minimum value for x-variable.
+        xmax: Maximum value for x-variable.
 
-    Keyword Args:
-        max_it (int): Maximum number of iterations (default=100)
-        first_step (float): Length of first step (default=1e-6)
-        err_lim (float): Tolerance for iteration residual (default=1e-6)
-        x_min (float): Minimum value for x-variable (default=-Inf)
-        x_max (float): Maximum value for x-variable (default=+Inf)
+    Returns:
+        The value x such that func(x) == 0.0, within a given tolerance.
 
     """
-    max_it = kwargs.get("maxIt", 100)
-    first_step = kwargs.get("first_step", 1e-6)
-    err_lim = kwargs.get("err_lim", 1e-6)
-    x_min = kwargs.get("xmin", -float("Inf"))
-    x_max = kwargs.get("xmax", float("Inf"))
-
     error = 1.0
     it_num = 0
     x_old = x_init
@@ -215,7 +223,7 @@ def fzero(func: Callable[[float], float], x_init: float, **kwargs: Any) -> float
         f_new = func(x_new)
         delta_x = -f_new * (x_new - x_old) / (f_new - f_old)
         x_old, f_old = x_new, f_new
-        x_new = max(min(x_new + delta_x, x_max), x_min)
+        x_new = max(min(x_new + delta_x, xmax), xmin)
         error = numpy.abs(x_new - x_old)
         it_num += 1
     return x_new
