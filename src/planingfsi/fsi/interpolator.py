@@ -37,7 +37,7 @@ class Interpolator:
         return self.solid_position_function(s)
 
     def get_min_max_s(self):
-        pts = self.fluid._get_element_coords()
+        pts = self.fluid.get_element_coords()
         return [self.get_s_fixed_x(x) for x in [pts[0], pts[-1]]]
 
     def get_s_fixed_x(self, x, so_pct=0.5):

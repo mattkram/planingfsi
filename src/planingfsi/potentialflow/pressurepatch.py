@@ -1,4 +1,5 @@
 """Classes representing a pressure patch on the free surface."""
+import abc
 import os
 
 import numpy as np
@@ -11,7 +12,7 @@ from . import pressureelement as pe
 from .. import config
 
 
-class PressurePatch(object):
+class PressurePatch(abc.ABC):
     """Abstract base class representing a patch of pressure elements on the
     free surface.
 
@@ -94,7 +95,7 @@ class PressurePatch(object):
         """Re-distribute pressure element positions given the length and end
         points of this patch.
         """
-        x = self._get_element_coords()
+        x = self.get_element_coords()
         for i, el in enumerate(self.pressure_elements):
             el.x_coord = x[i]
             if not el.is_source:
@@ -122,6 +123,14 @@ class PressurePatch(object):
         """
         return sum([el.get_influence(x) for el in self.pressure_elements])
 
+    @abc.abstractmethod
+    def calculate_forces(self):
+        return NotImplemented
+
+    @abc.abstractmethod
+    def get_element_coords(self):
+        return NotImplemented
+
     def calculate_wave_drag(self):
         """Calculate wave drag of patch.
 
@@ -132,7 +141,7 @@ class PressurePatch(object):
         xo = -10.1 * config.flow.lam
         (xTrough,) = fmin(self.get_free_surface_height, xo, disp=False)
         (xCrest,) = fmin(lambda x: -self.get_free_surface_height(x), xo, disp=False)
-        self.Dw = (
+        self.drag_wave = (
             0.0625
             * config.flow.density
             * config.flow.gravity
@@ -142,14 +151,14 @@ class PressurePatch(object):
     def print_forces(self):
         """Print forces to screen."""
         print(("Forces and Moment for {0}:".format(self.patch_name)))
-        print(("    Total Drag [N]      : {0:6.4e}".format(self.D)))
-        print(("    Wave Drag [N]       : {0:6.4e}".format(self.Dw)))
-        print(("    Pressure Drag [N]   : {0:6.4e}".format(self.Dp)))
-        print(("    Frictional Drag [N] : {0:6.4e}".format(self.Df)))
-        print(("    Total Lift [N]      : {0:6.4e}".format(self.L)))
-        print(("    Pressure Lift [N]   : {0:6.4e}".format(self.Lp)))
-        print(("    Frictional Lift [N] : {0:6.4e}".format(self.Lf)))
-        print(("    Moment [N-m]        : {0:6.4e}".format(self.M)))
+        print(("    Total Drag [N]      : {0:6.4e}".format(self.drag_total)))
+        print(("    Wave Drag [N]       : {0:6.4e}".format(self.drag_wave)))
+        print(("    Pressure Drag [N]   : {0:6.4e}".format(self.drag_pressure)))
+        print(("    Frictional Drag [N] : {0:6.4e}".format(self.drag_friction)))
+        print(("    Total Lift [N]      : {0:6.4e}".format(self.lift_total)))
+        print(("    Pressure Lift [N]   : {0:6.4e}".format(self.lift_pressure)))
+        print(("    Frictional Lift [N] : {0:6.4e}".format(self.lift_friction)))
+        print(("    Moment [N-m]        : {0:6.4e}".format(self.moment_total)))
 
     def write_forces(self):
         """Write forces to file."""
@@ -177,14 +186,14 @@ class PressurePatch(object):
                 config.it_dir, "forces_{0}.{1}".format(self.patch_name, config.io.data_format),
             )
         )
-        self.D = K.get("Drag", 0.0)
-        self.Dw = K.get("WaveDrag", 0.0)
-        self.Dp = K.get("PressDrag", 0.0)
-        self.Df = K.get("FricDrag", 0.0)
-        self.L = K.get("Lift", 0.0)
-        self.Lp = K.get("PressLift", 0.0)
-        self.Lf = K.get("FricLift", 0.0)
-        self.M = K.get("Moment", 0.0)
+        self.drag_total = K.get("Drag", 0.0)
+        self.drag_wave = K.get("WaveDrag", 0.0)
+        self.drag_pressure = K.get("PressDrag", 0.0)
+        self.drag_friction = K.get("FricDrag", 0.0)
+        self.lift_total = K.get("Lift", 0.0)
+        self.lift_pressure = K.get("PressLift", 0.0)
+        self.lift_friction = K.get("FricLift", 0.0)
+        self.moment_total = K.get("Moment", 0.0)
         self.base_pt = K.get("BasePt", 0.0)
         self.length = K.get("Length", 0.0)
 
@@ -276,7 +285,7 @@ class PressureCushion(PressurePatch):
     def base_pt(self, x):
         self._end_pts[1] = x
 
-    def _get_element_coords(self):
+    def get_element_coords(self):
         """Return x-locations of all elements."""
         if not self.cushion_type == "smoothed" or np.isnan(self.smoothing_factor):
             return self.end_pts
@@ -440,10 +449,10 @@ class PlaningSurface(PressurePatch):
     def _reset_element_coords(self):
         """Set width of first element to be twice as wide."""
         PressurePatch._reset_element_coords(self)
-        x = self._get_element_coords()
+        x = self.get_element_coords()
         self.pressure_elements[0].width = x[2] - x[0]
 
-    def _get_element_coords(self):
+    def get_element_coords(self):
         """Get position of pressure elements."""
         return self.pct * self.length + self._end_pts[0]
 
@@ -469,26 +478,29 @@ class PlaningSurface(PressurePatch):
 
             AOA = trig.atand(self._get_body_derivative(self.x))
 
-            self.Dp = general.integrate(self.s, self.p * trig.sind(AOA))
-            self.Df = general.integrate(self.s, self.shear_stress * trig.cosd(AOA))
-            self.Lp = general.integrate(self.s, self.p * trig.cosd(AOA))
-            self.Lf = -general.integrate(self.s, self.shear_stress * trig.sind(AOA))
-            self.D = self.Dp + self.Df
-            self.L = self.Lp + self.Lf
-            self.M = general.integrate(
+            self.drag_pressure = general.integrate(self.s, self.p * trig.sind(AOA))
+            self.drag_friction = general.integrate(self.s, self.shear_stress * trig.cosd(AOA))
+            self.lift_pressure = general.integrate(self.s, self.p * trig.cosd(AOA))
+            self.lift_friction = -general.integrate(self.s, self.shear_stress * trig.sind(AOA))
+            self.drag_total = self.drag_pressure + self.drag_friction
+            self.lift_total = self.lift_pressure + self.lift_friction
+            self.moment_total = general.integrate(
                 self.x, self.p * trig.cosd(AOA) * (self.x - config.body.xCofR)
             )
         else:
-            self.Dp = 0.0
-            self.Df = 0.0
-            self.Lp = 0.0
-            self.Lf = 0.0
-            self.D = 0.0
-            self.L = 0.0
-            self.M = 0.0
+            self.drag_pressure = 0.0
+            self.drag_friction = 0.0
+            self.lift_pressure = 0.0
+            self.lift_friction = 0.0
+            self.drag_total = 0.0
+            self.lift_total = 0.0
+            self.moment_total = 0.0
             self.x = []
         if self.is_sprung:
             self._apply_spring()
+
+        if config.flow.include_friction:
+            self._calculate_shear_stress()
 
         self.calculate_wave_drag()
 
@@ -518,8 +530,8 @@ class PlaningSurface(PressurePatch):
         zs = self.pressure_elements[0].z_coord
         disp = zs - self.parent.get_free_surface_height(xs)
         Fs = -self.spring_constant * disp
-        self.L += Fs
-        self.M += Fs * (xs - config.body.xCofR)
+        self.lift_total += Fs
+        self.moment_total += Fs * (xs - config.body.xCofR)
 
     def _calculate_shear_stress(self):
         def shear_stress_func(xx):
@@ -529,7 +541,7 @@ class PlaningSurface(PressurePatch):
                 Rex = config.flow.flow_speed * xx / config.flow.kinematic_viscosity
                 return 0.332 * config.flow.density * config.flow.flow_speed ** 2 * Rex ** -0.5
 
-        x = self._get_element_coords()[0:-1]
+        x = self.get_element_coords()[0:-1]
         s = np.array([self.interpolator.get_s_fixed_x(xx) for xx in x])
         s = s[-1] - s
 

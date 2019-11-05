@@ -22,25 +22,27 @@ class PotentialPlaningSolver:
 
     def __init__(self, simulation: "fsi_simulation.Simulation"):
         self._simulation = weakref.ref(simulation)
-        self.X = None
-        self.D = None
-        self.Dw = None
-        self.Dp = None
-        self.Df = None
-        self.L = None
-        self.Lp = None
-        self.Lf = None
-        self.M = None
-        self.p = None
-        self.shear_stress = None
-        self.xFS = None
-        self.zFS = None
-        self.xBar: Optional[float] = None
 
         self.planing_surfaces: List[PlaningSurface] = []
         self.pressure_cushions: List[PressureCushion] = []
         self.pressure_patches: List[PressurePatch] = []
         self.pressure_elements: List[PressureElement] = []
+
+        self.x_coord = np.array([])
+        self.pressure = np.array([])
+        self.shear_stress = np.array([])
+        self.x_coord_fs = np.array([])
+        self.z_coord_fs = np.array([])
+
+        self.drag_total = np.nan
+        self.drag_wave = np.nan
+        self.drag_pressure = np.nan
+        self.drag_friction = np.nan
+        self.lift_total = np.nan
+        self.lift_pressure = np.nan
+        self.lift_friction = np.nan
+        self.moment_total = np.nan
+        self.x_bar = np.nan
 
         self.solver: Optional[solver.RootFinder] = None
         self.fluid_it = 0
@@ -165,37 +167,6 @@ class PotentialPlaningSolver:
 
         return residual
 
-    def calculate_response(self) -> None:
-        """Calculate response, including pressure and free-surface profiles.
-
-        Will load results from file if specified. Otherwise, calculate potential flow problem via
-        iteration to find wetted length of all planing surfaces to satisfy all trailing edge
-        conditions.
-
-        """
-        if config.io.results_from_file:
-            self.load_response()
-            return
-
-        # Reset results so they will be recalculated after new solution
-        self.xFS = None
-        self.X = None
-
-        if not self.planing_surfaces:
-            # Return early if there are no planing surfaces
-            return
-
-        # Initialize planing surface lengths and then solve until residual is *zero*
-        self._initialize_solver()
-        assert self.solver is not None
-
-        if (self.init_len > 0.0).any():
-            logger.info("  Solving for wetted length:")
-            self.fluid_it = 0
-            self.solver.solve()
-
-        self.calculate_pressure_and_shear_profile()
-
     def _initialize_solver(self) -> None:
         """Initialize the solver before each call."""
         for p in self.planing_surfaces:
@@ -234,103 +205,133 @@ class PotentialPlaningSolver:
             self.init_len - self.min_len
         )
 
+    def calculate_response(self) -> None:
+        """Calculate response, including pressure and free-surface profiles.
+
+        Will load results from file if specified. Otherwise, calculate potential flow problem via
+        iteration to find wetted length of all planing surfaces to satisfy all trailing edge
+        conditions.
+
+        """
+        if config.io.results_from_file:
+            self.load_response()
+            return
+
+        if not self.planing_surfaces:
+            # Return early if there are no planing surfaces
+            return
+
+        # Initialize planing surface lengths and then solve until residual is *zero*
+        self._initialize_solver()
+        assert self.solver is not None
+
+        if (self.init_len > 0.0).any():
+            logger.info("  Solving for wetted length:")
+            self.fluid_it = 0
+            self.solver.solve()
+
+        # Post-process results from current solution
+        self.calculate_free_surface_profile()
+        self.calculate_pressure_and_shear_profile()
+
     def calculate_pressure_and_shear_profile(self) -> None:
         """Calculate pressure and shear stress profiles over plate surface."""
-        if self.X is None:
-            if config.flow.include_friction:
-                for p in self.planing_surfaces:
-                    p._calculate_shear_stress()
+        # Calculate forces on each patch
+        for p in self.pressure_patches:
+            p.calculate_forces()
 
-            # Calculate forces on each patch
-            for p in self.pressure_patches:
-                p.calculate_forces()
-
-            # Calculate pressure profile
-            if len(self.pressure_patches) > 0:
-                self.X = np.sort(
-                    np.unique(np.hstack([p._get_element_coords() for p in self.pressure_patches]))
-                )
-                self.p = np.zeros_like(self.X)
-                self.shear_stress = np.zeros_like(self.X)
-            else:
-                self.X = np.array([-1e6, 1e6])
-                self.p = np.zeros_like(self.X)
-                self.shear_stress = np.zeros_like(self.X)
-            for el in self.pressure_elements:
-                if el.is_on_body:
-                    self.p[el.x_coord == self.X] += el.pressure
-                    self.shear_stress[el.x_coord == self.X] += el.shear_stress
-
-            # Calculate total forces as sum of forces on each patch
-            for var in ["D", "Dp", "Df", "Dw", "L", "Lp", "Lf", "M"]:
-                setattr(self, var, sum([getattr(p, var) for p in self.pressure_patches]))
-
-            f = self.get_free_surface_height
-            xo = -10.1 * config.flow.lam
-            (xTrough,) = fmin(f, xo, disp=False)
-            (xCrest,) = fmin(lambda x: -f(x), xo, disp=False)
-            self.Dw = (
-                0.0625 * config.flow.density * config.flow.gravity * (f(xCrest) - f(xTrough)) ** 2
+        # Calculate pressure profile
+        if self.pressure_patches:
+            self.x_coord = np.unique(
+                np.hstack([p.get_element_coords() for p in self.pressure_patches])
             )
+        else:
+            self.x_coord = np.array([-1e6, 1e6])
+        self.pressure = np.zeros_like(self.x_coord)
+        self.shear_stress = np.zeros_like(self.x_coord)
 
-            # Calculate center of pressure
-            self.xBar = general.integrate(self.X, self.p * self.X) / self.L
-            if config.plotting.show_pressure:
-                figure.plot_pressure(self)
+        for el in self.pressure_elements:
+            if el.is_on_body:
+                ind = el.x_coord == self.x_coord
+                self.pressure[ind] += el.pressure
+                self.shear_stress[ind] += el.shear_stress
+
+        # Calculate total forces as sum of forces on each patch
+        for var in [
+            "drag_total",
+            "drag_pressure",
+            "drag_friction",
+            "drag_wave",
+            "lift_total",
+            "lift_pressure",
+            "lift_friction",
+            "moment_total",
+        ]:
+            setattr(self, var, sum([getattr(p, var) for p in self.pressure_patches]))
+
+        f = self.get_free_surface_height
+        xo = -10.1 * config.flow.lam
+        (xTrough,) = fmin(f, xo, disp=False)
+        (xCrest,) = fmin(lambda x: -f(x), xo, disp=False)
+        self.drag_wave = (
+            0.0625 * config.flow.density * config.flow.gravity * (f(xCrest) - f(xTrough)) ** 2
+        )
+
+        # Calculate center of pressure
+        self.x_bar = general.integrate(self.x_coord, self.pressure * self.x_coord) / self.lift_total
+        if config.plotting.show_pressure:
+            figure.plot_pressure(self)
 
     def calculate_free_surface_profile(self) -> None:
         """Calculate free surface profile."""
-        if self.xFS is None:
-            xFS = []
-            # Grow points upstream and downstream from first and last plate
-            for surf in self.planing_surfaces:
-                if surf.length > 0:
-                    pts = surf._get_element_coords()
-                    xFS.append(
-                        general.growPoints(
-                            pts[1], pts[0], config.plotting.x_fs_min, config.plotting.growth_rate,
-                        )
+        xFS = []
+        # Grow points upstream and downstream from first and last plate
+        for surf in self.planing_surfaces:
+            if surf.length > 0:
+                pts = surf.get_element_coords()
+                xFS.append(
+                    general.growPoints(
+                        pts[1], pts[0], config.plotting.x_fs_min, config.plotting.growth_rate,
                     )
-                    xFS.append(
-                        general.growPoints(
-                            pts[-2], pts[-1], config.plotting.x_fs_max, config.plotting.growth_rate,
-                        )
+                )
+                xFS.append(
+                    general.growPoints(
+                        pts[-2], pts[-1], config.plotting.x_fs_max, config.plotting.growth_rate,
                     )
+                )
 
-            # Add points from each planing surface
-            fsList = [
-                patch._get_element_coords() for patch in self.planing_surfaces if patch.length > 0
-            ]
-            if len(fsList) > 0:
-                xFS.append(np.hstack(fsList))
+        # Add points from each planing surface
+        fsList = [patch.get_element_coords() for patch in self.planing_surfaces if patch.length > 0]
+        if len(fsList) > 0:
+            xFS.append(np.hstack(fsList))
 
-            # Add points from each pressure cushion
-            xFS.append(np.linspace(config.plotting.x_fs_min, config.plotting.x_fs_max, 100))
-            #             for patch in self.pressure_cushions:
-            #                 if patch.neighborDown is not None:
-            #                     ptsL = patch.neighborDown._get_element_coords()
-            #                 else:
-            #                     ptsL = np.array([patch.endPt[0] - 0.01, patch.endPt[0]])
-            #
-            #                 if patch.neighborDown is not None:
-            #                     ptsR = patch.neighborUp._get_element_coords()
-            #                 else:
-            #                     ptsR = np.array([patch.endPt[1], patch.endPt[1] + 0.01])
-            #
-            #                 xEnd = ptsL[-1] + 0.5 * patch.get_length()
-            #                 xFS.append(
-            #                     kp.growPoints(ptsL[-2], ptsL[-1],
-            #                                   xEnd, config.growthRate))
-            #                 xFS.append(
-            # kp.growPoints(ptsR[1],  ptsR[0],  xEnd, config.growthRate))
+        # Add points from each pressure cushion
+        xFS.append(np.linspace(config.plotting.x_fs_min, config.plotting.x_fs_max, 100))
+        #             for patch in self.pressure_cushions:
+        #                 if patch.neighborDown is not None:
+        #                     ptsL = patch.neighborDown._get_element_coords()
+        #                 else:
+        #                     ptsL = np.array([patch.endPt[0] - 0.01, patch.endPt[0]])
+        #
+        #                 if patch.neighborDown is not None:
+        #                     ptsR = patch.neighborUp._get_element_coords()
+        #                 else:
+        #                     ptsR = np.array([patch.endPt[1], patch.endPt[1] + 0.01])
+        #
+        #                 xEnd = ptsL[-1] + 0.5 * patch.get_length()
+        #                 xFS.append(
+        #                     kp.growPoints(ptsL[-2], ptsL[-1],
+        #                                   xEnd, config.growthRate))
+        #                 xFS.append(
+        # kp.growPoints(ptsR[1],  ptsR[0],  xEnd, config.growthRate))
 
-            # Sort x locations and calculate surface heights
-            if len(xFS) > 0:
-                self.xFS = np.sort(np.unique(np.hstack(xFS)))
-                self.zFS = np.array(list(map(self.get_free_surface_height, self.xFS)))
-            else:
-                self.xFS = np.array([config.plotting.xFSMin, config.plotting.xFSMax])
-                self.zFS = np.zeros_like(self.xFS)
+        # Sort x locations and calculate surface heights
+        if len(xFS) > 0:
+            self.x_coord_fs = np.sort(np.unique(np.hstack(xFS)))
+            self.z_coord_fs = np.array(list(map(self.get_free_surface_height, self.x_coord_fs)))
+        else:
+            self.x_coord_fs = np.array([config.plotting.xFSMin, config.plotting.xFSMax])
+            self.z_coord_fs = np.zeros_like(self.x_coord_fs)
 
     def get_free_surface_height(self, x: float) -> float:
         """Return free surface height at a given x-position considering the
@@ -359,25 +360,18 @@ class PotentialPlaningSolver:
         return general.getDerivative(self.get_free_surface_height, x, direction=direction)
 
     def write_results(self) -> None:
-        """Write results to file."""
-        # Post-process results from current solution
-        #    self.calculate_pressure_and_shear_profile()
-        self.calculate_free_surface_profile()
-
-        if self.D is not None:
-            self.write_forces()
-        if self.X is not None:
-            self.write_pressure_and_shear()
-        if self.xFS is not None:
-            self.write_free_surface()
+        """Write results to files."""
+        self.write_forces()
+        self.write_pressure_and_shear()
+        self.write_free_surface()
 
     def write_pressure_and_shear(self) -> None:
         """Write pressure and shear stress profiles to data file."""
         if self.pressure_elements:
             general.writeaslist(
                 self.simulation.it_dir / f"pressureAndShear.{config.io.data_format}",
-                ["x [m]", self.X],
-                ["p [Pa]", self.p],
+                ["x [m]", self.x_coord],
+                ["p [Pa]", self.pressure],
                 ["shear_stress [Pa]", self.shear_stress],
             )
 
@@ -386,8 +380,8 @@ class PotentialPlaningSolver:
         if self.pressure_elements:
             general.writeaslist(
                 self.simulation.it_dir / f"freeSurface.{config.io.data_format}",
-                ["x [m]", self.xFS],
-                ["y [m]", self.zFS],
+                ["x [m]", self.x_coord_fs],
+                ["y [m]", self.z_coord_fs],
             )
 
     def write_forces(self) -> None:
@@ -395,14 +389,14 @@ class PotentialPlaningSolver:
         if self.pressure_elements:
             general.writeasdict(
                 self.simulation.it_dir / f"forces_total.{config.io.data_format}",
-                ["Drag", self.D],
-                ["WaveDrag", self.Dw],
-                ["PressDrag", self.Dp],
-                ["FricDrag", self.Df],
-                ["Lift", self.L],
-                ["PressLift", self.Lp],
-                ["FricLift", self.Lf],
-                ["Moment", self.M],
+                ["Drag", self.drag_total],
+                ["WaveDrag", self.drag_wave],
+                ["PressDrag", self.drag_pressure],
+                ["FricDrag", self.drag_friction],
+                ["Lift", self.lift_total],
+                ["PressLift", self.lift_pressure],
+                ["FricLift", self.lift_friction],
+                ["Moment", self.moment_total],
             )
 
         for patch in self.pressure_patches:
@@ -416,13 +410,13 @@ class PotentialPlaningSolver:
 
     def load_pressure_and_shear(self) -> None:
         """Load pressure and shear stress from file."""
-        self.X, self.p, self.shear_stress = np.loadtxt(
+        self.x_coord, self.pressure, self.shear_stress = np.loadtxt(
             str(self.simulation.it_dir / f"pressureAndShear.{config.io.data_format}"), unpack=True,
         )
         for el in [el for patch in self.planing_surfaces for el in patch.pressure_elements]:
-            compare = np.abs(self.X - el.get_xloc()) < 1e-6
+            compare = np.abs(self.x_coord - el.get_xloc()) < 1e-6
             if any(compare):
-                el.set_pressure(self.p[compare][0])
+                el.set_pressure(self.pressure[compare][0])
                 el.set_shear_stress(self.shear_stress[compare][0])
 
         for p in self.planing_surfaces:
@@ -432,24 +426,24 @@ class PotentialPlaningSolver:
         """Load free surface coordinates from file."""
         try:
             data = np.loadtxt(str(self.simulation.it_dir / f"freeSurface.{config.io.data_format}"))
-            self.xFS = data[:, 0]
-            self.zFS = data[:, 1]
+            self.x_coord_fs = data[:, 0]
+            self.z_coord_fs = data[:, 1]
         except IOError:
-            self.zFS = np.zeros_like(self.xFS)
+            self.z_coord_fs = np.zeros_like(self.x_coord_fs)
 
     def load_forces(self) -> None:
         """Load forces from file."""
         dict_ = load_dict_from_file(
             self.simulation.it_dir / f"forces_total.{config.io.data_format}"
         )
-        self.D = dict_.get("Drag", 0.0)
-        self.Dw = dict_.get("WaveDrag", 0.0)
-        self.Dp = dict_.get("PressDrag", 0.0)
-        self.Df = dict_.get("FricDrag", 0.0)
-        self.L = dict_.get("Lift", 0.0)
-        self.Lp = dict_.get("PressLift", 0.0)
-        self.Lf = dict_.get("FricLift", 0.0)
-        self.M = dict_.get("Moment", 0.0)
+        self.drag_total = dict_.get("Drag", 0.0)
+        self.drag_wave = dict_.get("WaveDrag", 0.0)
+        self.drag_pressure = dict_.get("PressDrag", 0.0)
+        self.drag_friction = dict_.get("FricDrag", 0.0)
+        self.lift_total = dict_.get("Lift", 0.0)
+        self.lift_pressure = dict_.get("PressLift", 0.0)
+        self.lift_friction = dict_.get("FricLift", 0.0)
+        self.moment_total = dict_.get("Moment", 0.0)
 
         for patch in self.pressure_patches:
             patch.load_forces()

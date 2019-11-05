@@ -930,9 +930,9 @@ class Substructure:
                 self.M += general.integrate(s, np.array(m))
             else:
                 if self.interpolator is not None:
-                    self.D = self.interpolator.fluid.D
-                    self.L = self.interpolator.fluid.L
-                    self.M = self.interpolator.fluid.M
+                    self.D = self.interpolator.fluid.drag_total
+                    self.L = self.interpolator.fluid.lift_total
+                    self.M = self.interpolator.fluid.moment_total
 
             integrand = pressure_cushion
 
