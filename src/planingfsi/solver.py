@@ -1,199 +1,203 @@
+from typing import Callable, Any
+
 import numpy
 
 import numpy as np
 
 
 class RootFinder:
-    def __init__(self, func, xo, method, **kwargs):
+    """A generalized root finder for solving nonlinear equations.
+
+    Args:
+        func: A callable which returns an array of residuals the same shape as the argument.
+        xo: An array with an initial guess at the solution.
+        method: The method to use for solving. Options are "broyden" and "secant".
+
+    """
+
+    def __init__(
+        self,
+        func: Callable[[numpy.array], numpy.array],
+        xo: numpy.array,
+        method: str,
+        **kwargs: Any
+    ):
         self.func = func
+        self.x = numpy.array(xo)
+        self.f = numpy.zeros_like(xo)
         self.dim = len(xo)
 
-        self.xMin = kwargs.get("xMin", -np.ones_like(xo) * float("Inf"))
-        self.xMax = kwargs.get("xMax", np.ones_like(xo) * float("Inf"))
-        self.maxIt = kwargs.get("maxIt", 100)
-        self.dx0 = kwargs.get("firstStep", 1e-6)
-        self.errLim = kwargs.get("errLim", 1e-6)
+        self.x_min = numpy.array(kwargs.get("xMin", -np.ones_like(xo) * float("Inf")))
+        self.x_max = numpy.array(kwargs.get("xMax", np.ones_like(xo) * float("Inf")))
+        self.max_it = kwargs.get("maxIt", 100)
+        self.dx_init = kwargs.get("firstStep", 1e-6)
+        self.error_limit = kwargs.get("errLim", 1e-6)
         self.relax = kwargs.get("relax", 1.0)
-        self.dxMax = kwargs.get("dxMax", np.ones_like(xo) * float("Inf"))
-        self.dxMaxInc = kwargs.get("dxMaxInc", self.dxMax)
-        self.dxMaxDec = kwargs.get("dxMaxDec", self.dxMax)
 
-        self.relax = kwargs.get("relax", 1.0)
-        self.derivativeMethod = kwargs.get("derivativeMethod", "right")
+        dx_max = kwargs.get("dxMax", np.ones_like(xo) * float("Inf"))
+        self.dx_max_increase = numpy.array(kwargs.get("dxMaxInc", dx_max))
+        self.dx_max_decrease = numpy.array(kwargs.get("dxMaxDec", dx_max))
+
+        self.derivative_method = kwargs.get("derivativeMethod", "right")
         self.err = 1.0
         self.it = 0
-        self.J = None
-        self.xOld = None
-        self.fOld = None
-        self.maxJacobianResetStep = kwargs.get("maxJacobianResetStep", 5)
-        self.converged = False
+        self.jacobian: numpy.array = None
+        self.x_prev = numpy.zeros((self.dim,))
+        self.f_prev = numpy.zeros((self.dim,))
+        self.max_jacobian_reset_step = kwargs.get("maxJacobianResetStep", 5)
+        self.is_converged = False
 
         # Calculate function value at initial point
-        self.x = xo
+        self.dx = numpy.zeros_like(xo)
+        self.df = numpy.zeros_like(xo)
 
-        # Convert to numpy arrays
-        for v in ["x", "xMin", "xMax", "dxMax", "dxMaxInc", "dxMaxDec"]:
-            exec("self.{0} = np.array([a for a in self.{0}])".format(v))
+        self.evaluate_function()
 
-        self.evalF()
+        self.jacobian_step = 0
 
         if method.lower() == "broyden":
-            self.getStep = self.getStepBroyden
+            self.get_step = self.get_step_broyden
         else:
-            self.getStep = self.getStepSecant
+            self.get_step = self.get_step_secant
 
-    def reinitialize(self, xo):
+    def reinitialize(self, xo: numpy.array) -> None:
         self.err = 1.0
         self.it = 0
-        self.J = None
+        self.jacobian = None
 
         # Calculate function value at initial point
         self.x = xo
-        self.evalF()
+        self.evaluate_function()
 
-    def setMaxStep(self, *args):
-        if len(args) == 1:
-            self.dxMaxInc = args[0]
-            self.dxMaxDec = args[0]
-        else:
-            self.dxMaxInc = args[0]
-            self.dxMaxDec = args[1]
-
-    def limitStep(self, dx=None):
+    def _limit_step(self, dx: numpy.array = None) -> numpy.array:
         if dx is None:
             dx = self.dx
         dx *= self.relax
 
         x = self.x + dx
 
-        x = np.max(np.vstack((x, self.xMin)), axis=0)
-        x = np.min(np.vstack((x, self.xMax)), axis=0)
+        x = np.max(np.vstack((x, self.x_min)), axis=0)
+        x = np.min(np.vstack((x, self.x_max)), axis=0)
 
         dx = x - self.x
 
-        dxLimPct = np.ones_like(dx)
-        for i in range(len(dxLimPct)):
+        dx_lim_pct = np.ones_like(dx)
+        for i in range(len(dx_lim_pct)):
             if dx[i] > 0:
-                dxLimPct[i] = np.min([dx[i], self.dxMaxInc[i]]) / dx[i]
+                dx_lim_pct[i] = np.min([dx[i], self.dx_max_increase[i]]) / dx[i]
             elif dx[i] < 0:
-                dxLimPct[i] = np.max([dx[i], -self.dxMaxDec[i]]) / dx[i]
+                dx_lim_pct[i] = np.max([dx[i], -self.dx_max_decrease[i]]) / dx[i]
 
-        dx *= np.min(dxLimPct)
+        dx *= np.min(dx_lim_pct)
         self.dx = dx
 
         return dx
 
-    def storePrevStep(self):
-        self.xOld = self.x * 1.0
-        self.fOld = self.f * 1.0
+    def store_previous_step(self) -> None:
+        self.x_prev = self.x * 1.0
+        self.f_prev = self.f * 1.0
 
-    def evalErr(self):
+    def evaluate_error(self) -> None:
         self.err = np.max(np.abs(self.dx + 1e-8))
         if self.df is not None:
             self.err += np.max(np.abs(self.df + 1e-8))
         else:
             self.err += np.max(np.abs(self.f))
 
-    def evalF(self):
+    def evaluate_function(self) -> None:
         self.f = self.func(self.x)
-        if self.fOld is not None:
-            self.df = self.f - self.fOld
+        if self.f_prev is not None:
+            self.df = self.f - self.f_prev
         else:
             self.df = None
 
-    def getStepSecant(self):
+    def get_step_secant(self) -> numpy.array:
         if self.it == 0:
-            self.dx = np.ones_like(self.x) * self.dx0
+            self.dx = np.ones_like(self.x) * self.dx_init
         else:
-            self.dx = -self.f * (self.x - self.xOld) / (self.f - self.fOld + 1e-8)
+            self.dx = -self.f * (self.x - self.x_prev) / (self.f - self.f_prev + 1e-8)
         return self.dx
 
-    def takeStep(self, dx=None):
+    def take_step(self, dx: numpy.array = None) -> None:
         if dx is not None:
             self.dx = dx
-        self.storePrevStep()
+        self.store_previous_step()
         self.x += self.dx
-        self.evalF()
+        self.evaluate_function()
         self.it += 1
 
-    def reset_jacobian(self):
+    def reset_jacobian(self) -> None:
         fo = self.f * 1.0
         xo = self.x * 1.0
 
-        self.J = np.zeros((self.dim, self.dim))
+        self.jacobian = np.zeros((self.dim, self.dim))
         for i in range(self.dim):
             self.dx = np.zeros_like(self.x)
-            self.dx[i] = self.dx0
-            self.takeStep()
-            self.J[:, i] = self.df / self.dx[i]
+            self.dx[i] = self.dx_init
+            self.take_step()
+            self.jacobian[:, i] = self.df / self.dx[i]
             self.f = fo
             self.x = xo
 
-        self.step = 0
+        self.jacobian_step = 0
 
-    def getStepBroyden(self):
-        if self.it == 0 or self.J is None:
+    def get_step_broyden(self) -> numpy.array:
+        if self.it == 0 or self.jacobian is None:
             self.reset_jacobian()
 
         dx = np.reshape(self.dx, (self.dim, 1))
         df = np.reshape(self.df, (self.dim, 1))
 
-        self.J += np.dot(df - np.dot(self.J, dx), dx.T) / np.linalg.norm(dx) ** 2
+        self.jacobian += (
+            np.dot(df - np.dot(self.jacobian, dx), dx.T) / np.linalg.norm(dx) ** 2
+        )
         dx *= 0.0
         dof = [
             not x <= xMin and not x >= xMax
-            for x, xMin, xMax in zip(self.x, self.xMin, self.xMax)
+            for x, xMin, xMax in zip(self.x, self.x_min, self.x_max)
         ]
         if any(dof):
-            A = -self.J
             b = self.f.reshape(self.dim, 1)
-            dx[np.ix_(dof)] = np.linalg.solve(A[np.ix_(dof, dof)], b[np.ix_(dof)])
+            dx[np.ix_(dof)] = np.linalg.solve(-self.jacobian[np.ix_(dof, dof)], b[np.ix_(dof)])
 
-        if any(np.abs(self.f) - np.abs(self.fOld) > 0.0):
-            self.step += 1
+        if any(np.abs(self.f) - np.abs(self.f_prev) > 0.0):
+            self.jacobian_step += 1
 
-        if self.step >= self.maxJacobianResetStep:
-            dx = np.ones_like(dx) * self.dx0
-            self.J = None
+        if self.jacobian_step >= self.max_jacobian_reset_step:
+            dx = np.ones_like(dx) * self.dx_init
+            self.jacobian = None
 
         self.dx = dx.reshape(self.dim)
 
         return self.dx
 
-    def solve(self):
-        while self.err >= self.errLim and self.it < self.maxIt:
-            self.getStep()
-            self.limitStep()
-            self.takeStep()
-            self.evalErr()
+    def solve(self) -> numpy.array:
+        while self.err >= self.error_limit and self.it < self.max_it:
+            self.get_step()
+            self._limit_step()
+            self.take_step()
+            self.evaluate_error()
 
-        self.converged = self.err < self.errLim and not any(self.x <= self.xMin)
+        self.is_converged = self.err < self.error_limit and not any(
+            self.x <= self.x_min
+        )
 
         return self.x
 
 
-def fzero(func, x_init, **kwargs):
-    """Find the root of a function func with an initial guess x_init.
+def fzero(func: Callable[[float], float], x_init: float, **kwargs: Any) -> float:
+    """Find the root of a scalar function func with an initial guess x_init.
 
-    Parameters
-    ----------
-    func : function
-        The function for which to find the zero-crossing point.
-    x_init : float
-        The initial guess of the function's solution.
+    Args:
+        func: The function for which to find the zero-crossing point.
+        x_init: The initial guess of the function's solution.
 
-    Keyword Parameters
-    ------------------
-    max_it : int
-        Maximum number of iterations (default=100)
-    first_step : float
-        Length of first step (default=1e-6)
-    err_lim : float
-        Tolerance for iteration residual (default=1e-6)
-    xmin : float
-        Minimum value for x-variable (default=-Inf)
-    xmax : float
-        Maximum value for x-variable (default=+Inf)
+    Keyword Args:
+        max_it (int): Maximum number of iterations (default=100)
+        first_step (float): Length of first step (default=1e-6)
+        err_lim (float): Tolerance for iteration residual (default=1e-6)
+        x_min (float): Minimum value for x-variable (default=-Inf)
+        x_max (float): Maximum value for x-variable (default=+Inf)
 
     """
     max_it = kwargs.get("maxIt", 100)

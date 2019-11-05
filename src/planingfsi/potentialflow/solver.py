@@ -288,9 +288,10 @@ class PotentialPlaningSolver(object):
                     relax=config.solver.wetted_length_relax,
                 )
             else:
-                self.solver.maxIt = config.solver.wetted_length_max_it
+                self.solver.max_it = config.solver.wetted_length_max_it
                 self.solver.reinitialize(self.init_len * 1.0)
-                self.solver.setMaxStep(dxMaxInc, dxMaxDec)
+                self.solver.dx_max_increase = dxMaxInc
+                self.solver.dx_max_decrease = dxMaxDec
 
             if any(self.init_len > 0.0):
                 self.solver.solve()

@@ -452,10 +452,10 @@ class RigidBody:
             )
 
         if not self.disp_old is None:
-            self.solver.takeStep(self.disp_old)
+            self.solver.take_step(self.disp_old)
 
         # Solve for limited displacement
-        disp = self.solver.limitStep(self.solver.getStep())
+        disp = self.solver._limit_step(self.solver.get_step())
 
         self.two_ago_disp = self.disp_old
         self.disp_old = disp
@@ -516,10 +516,10 @@ class RigidBody:
             )
 
         if not self.disp_old is None:
-            self.solver.takeStep(self.disp_old)
+            self.solver.take_step(self.disp_old)
 
         # Solve for limited displacement
-        disp = self.solver.limitStep(self.solver.getStep())
+        disp = self.solver._limit_step(self.solver.get_step())
 
         self.two_ago_disp = self.disp_old
         self.disp_old = disp
