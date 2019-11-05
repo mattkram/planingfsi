@@ -284,29 +284,25 @@ class PotentialPlaningSolver:
 
     def calculate_free_surface_profile(self) -> None:
         """Calculate free surface profile."""
-        xFS = []
-        # Grow points upstream and downstream from first and last plate
+        x_fs: List[float] = []
         for surf in self.planing_surfaces:
             if surf.length > 0:
-                pts = surf.get_element_coords()
-                xFS.append(
-                    general.growPoints(
-                        pts[1], pts[0], config.plotting.x_fs_min, config.plotting.growth_rate,
-                    )
-                )
-                xFS.append(
-                    general.growPoints(
-                        pts[-2], pts[-1], config.plotting.x_fs_max, config.plotting.growth_rate,
-                    )
-                )
+                # Add points from each planing surface
+                x_fs.extend(surf.get_element_coords())
 
-        # Add points from each planing surface
-        fsList = [patch.get_element_coords() for patch in self.planing_surfaces if patch.length > 0]
-        if len(fsList) > 0:
-            xFS.append(np.hstack(fsList))
-
+        # Grow points upstream and downstream from first and last plate
+        x_fs_u = np.unique(x_fs)
+        x_fs.extend(
+            general.growPoints(
+                x_fs_u[-2], x_fs_u[-1], config.plotting.x_fs_max, config.plotting.growth_rate,
+            )
+        )
+        x_fs.extend(
+            general.growPoints(
+                x_fs_u[1], x_fs_u[0], config.plotting.x_fs_min, config.plotting.growth_rate,
+            )
+        )
         # Add points from each pressure cushion
-        xFS.append(np.linspace(config.plotting.x_fs_min, config.plotting.x_fs_max, 100))
         #             for patch in self.pressure_cushions:
         #                 if patch.neighborDown is not None:
         #                     ptsL = patch.neighborDown._get_element_coords()
@@ -326,12 +322,8 @@ class PotentialPlaningSolver:
         # kp.growPoints(ptsR[1],  ptsR[0],  xEnd, config.growthRate))
 
         # Sort x locations and calculate surface heights
-        if len(xFS) > 0:
-            self.x_coord_fs = np.sort(np.unique(np.hstack(xFS)))
-            self.z_coord_fs = np.array(list(map(self.get_free_surface_height, self.x_coord_fs)))
-        else:
-            self.x_coord_fs = np.array([config.plotting.x_fs_min, config.plotting.x_fs_max])
-            self.z_coord_fs = np.zeros_like(self.x_coord_fs)
+        self.x_coord_fs = np.unique(x_fs)
+        self.z_coord_fs = np.array(list(map(self.get_free_surface_height, self.x_coord_fs)))
 
     def get_free_surface_height(self, x: float) -> float:
         """Return free surface height at a given x-position considering the

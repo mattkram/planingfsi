@@ -105,7 +105,6 @@ class FSIFigure:
 
     def plot_free_surface(self) -> None:
         """Create a plot of the free surface profile."""
-        self.fluid.calculate_free_surface_profile()
         self.lineFS.set_data(self.fluid.x_coord_fs, self.fluid.z_coord_fs)
         end_pts = np.array([config.plotting.x_fs_min, config.plotting.x_fs_max])
         self.lineFSi.set_data(end_pts, config.flow.waterline_height * np.ones_like(end_pts))
