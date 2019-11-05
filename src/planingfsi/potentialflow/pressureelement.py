@@ -23,8 +23,10 @@ def _get_aux_fg(lam):
     lam = abs(lam)
     (aux_sine, aux_cosine) = sici(lam)
     (sine, cosine) = np.sin(lam), np.cos(lam)
-    return (cosine * (0.5 * np.pi - aux_sine) + sine * aux_cosine,
-            sine * (0.5 * np.pi - aux_sine) - cosine * aux_cosine)
+    return (
+        cosine * (0.5 * np.pi - aux_sine) + sine * aux_cosine,
+        sine * (0.5 * np.pi - aux_sine) - cosine * aux_cosine,
+    )
 
 
 def _get_gamma1(lam, aux_g):
@@ -63,9 +65,7 @@ def _get_gamma2(lam, aux_f):
     float
 
     """
-    return general.sign(lam) * aux_f / np.pi + general.heaviside(-lam) * (
-        2 * np.cos(lam) - 1
-    )
+    return general.sign(lam) * aux_f / np.pi + general.heaviside(-lam) * (2 * np.cos(lam) - 1)
 
 
 def _get_gamma3(lam, aux_f):
@@ -82,11 +82,7 @@ def _get_gamma3(lam, aux_f):
     -------
     float
     """
-    return (
-        -kp.sign(lam) * aux_f / np.pi
-        - 2 * kp.heaviside(-lam) * np.cos(lam)
-        - kp.heaviside(lam)
-    )
+    return -kp.sign(lam) * aux_f / np.pi - 2 * kp.heaviside(-lam) * np.cos(lam) - kp.heaviside(lam)
 
 
 def _eval_left_right(f, x, dx=1e-6):
@@ -218,8 +214,7 @@ class PressureElement(object):
     def __repr__(self):
         """Print element attributes."""
         string = (
-            "{0}: (x,z) = ({1}, {2}), width = {3},"
-            "is_source = {4}, p = {5}, is_on_body = {6}"
+            "{0}: (x,z) = ({1}, {2}), width = {3}," "is_source = {4}, p = {5}, is_on_body = {6}"
         )
         return string.format(
             self.__class__.__name__,
@@ -236,9 +231,7 @@ class PressureElement(object):
         _pressure = np.array([self.pressure(xi) for xi in x_coords])
 
         plt.plot(x_coords, _pressure, color=color, linetype="-")
-        plt.plot(
-            self.x_coord * np.ones(2), [0.0, self.pressure], color=color, linetype="--"
-        )
+        plt.plot(self.x_coord * np.ones(2), [0.0, self.pressure], color=color, linetype="--")
 
 
 class AftHalfTriangularPressureElement(PressureElement):
@@ -397,11 +390,7 @@ class CompleteTriangularPressureElement(PressureElement):
         """
         lambda_0 = config.flow.k0 * x_coord
         _, aux_g = _get_aux_fg(lambda_0)
-        influence = (
-            _get_gamma1(lambda_0, aux_g)
-            * self.width
-            / (self._width[1] * self._width[0])
-        )
+        influence = _get_gamma1(lambda_0, aux_g) * self.width / (self._width[1] * self._width[0])
 
         lambda_1 = config.flow.k0 * (x_coord - self._width[1])
         _, aux_g = _get_aux_fg(lambda_1)

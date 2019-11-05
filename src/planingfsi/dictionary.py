@@ -44,9 +44,7 @@ def add_quotes_to_words(string: str) -> str:
             return value
         return value.join('""')
 
-    return "".join(
-        word_pattern.sub(repl, m) if i % 2 == 0 else m for i, m in enumerate(matches)
-    )
+    return "".join(word_pattern.sub(repl, m) if i % 2 == 0 else m for i, m in enumerate(matches))
 
 
 def jsonify_string(string: str) -> str:
@@ -97,9 +95,7 @@ def load_dict_from_file(filename: str) -> Dict[str, Any]:
         base_dict_dir = os.path.split(base_dict_dir)
         # Tracing relative references from original file directory
         if base_dict_dir[0].startswith("."):
-            base_dict_dir = os.path.abspath(
-                os.path.join(os.path.dirname(filename), *base_dict_dir)
-            )
+            base_dict_dir = os.path.abspath(os.path.join(os.path.dirname(filename), *base_dict_dir))
         base_dict = load_dict_from_file(base_dict_dir)
         dict_.update({k: v for k, v in base_dict.items() if k not in dict_})
 

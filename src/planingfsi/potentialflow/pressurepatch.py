@@ -136,11 +136,7 @@ class PressurePatch(object):
             0.0625
             * config.flow.density
             * config.flow.gravity
-            * (
-                self.get_free_surface_height(xCrest)
-                - self.get_free_surface_height(xTrough)
-            )
-            ** 2
+            * (self.get_free_surface_height(xCrest) - self.get_free_surface_height(xTrough)) ** 2
         )
 
     def print_forces(self):
@@ -178,8 +174,7 @@ class PressurePatch(object):
         """Load forces from file."""
         K = load_dict_from_file(
             os.path.join(
-                config.it_dir,
-                "forces_{0}.{1}".format(self.patch_name, config.io.data_format),
+                config.it_dir, "forces_{0}.{1}".format(self.patch_name, config.io.data_format),
             )
         )
         self.D = K.get("Drag", 0.0)
@@ -221,23 +216,15 @@ class PressureCushion(PressurePatch):
         self.index = PressureCushion.count
         PressureCushion.count += 1
 
-        self.patch_name = dict_.read(
-            "pressureCushionName", "pressureCushion{0}".format(self.index)
-        )
+        self.patch_name = dict_.read("pressureCushionName", "pressureCushion{0}".format(self.index))
 
         # TODO: cushion_type variability should be managed by sub-classing
         # PressurePatch
         self.cushion_type = dict_.read("cushionType", "")
-        self.cushion_pressure = kwargs.get(
-            "Pc", dict_.read_load_or_default("cushionPressure", 0.0)
-        )
+        self.cushion_pressure = kwargs.get("Pc", dict_.read_load_or_default("cushionPressure", 0.0))
 
-        self.neighbor_up = PlaningSurface.find_by_name(
-            dict_.read("upstreamPlaningSurface", "")
-        )
-        self.neighbor_down = PlaningSurface.find_by_name(
-            dict_.read("downstreamPlaningSurface", "")
-        )
+        self.neighbor_up = PlaningSurface.find_by_name(dict_.read("upstreamPlaningSurface", ""))
+        self.neighbor_down = PlaningSurface.find_by_name(dict_.read("downstreamPlaningSurface", ""))
 
         if self.neighbor_down is not None:
             self.neighbor_down.upstream_pressure = self.cushion_pressure
@@ -256,9 +243,7 @@ class PressureCushion(PressurePatch):
 
         else:
             self.pressure_elements += [
-                pe.ForwardHalfTriangularPressureElement(
-                    is_source=True, is_on_body=False
-                )
+                pe.ForwardHalfTriangularPressureElement(is_source=True, is_on_body=False)
             ]
 
             Nfl = dict_.read("numElements", 10)
@@ -266,15 +251,12 @@ class PressureCushion(PressurePatch):
             for n in [self.neighbor_down, self.neighbor_up]:
                 if n is None and ~np.isnan(self.smoothing_factor):
                     self.pressure_elements += [
-                        pe.CompleteTriangularPressureElement(
-                            is_source=True, is_on_body=False
-                        )
+                        pe.CompleteTriangularPressureElement(is_source=True, is_on_body=False)
                         for __ in range(Nfl)
                     ]
 
             self.end_pts = [
-                dict_.read_load_or_default(key, 0.0)
-                for key in ["downstreamLoc", "upstreamLoc"]
+                dict_.read_load_or_default(key, 0.0) for key in ["downstreamLoc", "upstreamLoc"]
             ]
 
             self.pressure_elements += [
@@ -300,9 +282,7 @@ class PressureCushion(PressurePatch):
             return self.end_pts
         else:
             add_width = np.arctanh(0.99) * self.length / (2 * self.smoothing_factor)
-            addL = np.linspace(
-                -add_width, add_width, len(self.pressure_elements) / 2 + 1
-            )
+            addL = np.linspace(-add_width, add_width, len(self.pressure_elements) / 2 + 1)
             x = np.hstack((self.end_pts[0] + addL, self.end_pts[1] + addL))
             return x
 
@@ -322,10 +302,7 @@ class PressureCushion(PressurePatch):
                 el.set_source_pressure(
                     0.5
                     * self.cushion_pressure
-                    * (
-                        np.tanh(alf * el.x_coord)
-                        - np.tanh(alf * (el.x_coord - self.length))
-                    )
+                    * (np.tanh(alf * el.x_coord) - np.tanh(alf * (el.x_coord - self.length)))
                 )
             # for infinite pressure cushion, first element is dummy, set to
             # zero, second is semiInfinitePressureBand and set to cushion
@@ -380,14 +357,10 @@ class PlaningSurface(PressurePatch):
         self.maximum_length = dict_.get("maximum_length", float("Inf"))
 
         self.spring_constant = dict_.get("springConstant", 1e4)
-        self.kutta_pressure = kwargs.get(
-            "kuttaPressure", dict_.get("kuttaPressure", 0.0)
-        )
+        self.kutta_pressure = kwargs.get("kuttaPressure", dict_.get("kuttaPressure", 0.0))
         if isinstance(self.kutta_pressure, str):
             self.kutta_pressure = getattr(config, self.kutta_pressure)
-        self._upstream_pressure = kwargs.get(
-            "upstreamPressure", dict_.get("upstreamPressure", 0.0)
-        )
+        self._upstream_pressure = kwargs.get("upstreamPressure", dict_.get("upstreamPressure", 0.0))
         if isinstance(self._upstream_pressure, str):
             self._upstream_pressure = getattr(config, self._upstream_pressure)
 
@@ -400,22 +373,14 @@ class PlaningSurface(PressurePatch):
             self.minimum_length = 0.0
             self.maximum_length = 0.0
 
-        self.pressure_elements += [
-            pe.ForwardHalfTriangularPressureElement(is_on_body=False)
-        ]
+        self.pressure_elements += [pe.ForwardHalfTriangularPressureElement(is_on_body=False)]
 
         self.pressure_elements += [
-            pe.ForwardHalfTriangularPressureElement(
-                is_source=True, pressure=self.kutta_pressure
-            )
+            pe.ForwardHalfTriangularPressureElement(is_source=True, pressure=self.kutta_pressure)
         ]
+        self.pressure_elements += [pe.CompleteTriangularPressureElement() for __ in range(Nfl - 1)]
         self.pressure_elements += [
-            pe.CompleteTriangularPressureElement() for __ in range(Nfl - 1)
-        ]
-        self.pressure_elements += [
-            pe.AftHalfTriangularPressureElement(
-                is_source=True, pressure=self.upstream_pressure
-            )
+            pe.AftHalfTriangularPressureElement(is_source=True, pressure=self.upstream_pressure)
         ]
 
         for el in self.pressure_elements:
@@ -500,9 +465,7 @@ class PlaningSurface(PressurePatch):
             self.s = np.array([self.interpolator.get_s_fixed_x(xx) for xx in self.x])
 
             self.fP = interp1d(self.x, self.p, bounds_error=False, fill_value=0.0)
-            self.fTau = interp1d(
-                self.x, self.shear_stress, bounds_error=False, fill_value=0.0
-            )
+            self.fTau = interp1d(self.x, self.shear_stress, bounds_error=False, fill_value=0.0)
 
             AOA = trig.atand(self._get_body_derivative(self.x))
 
@@ -564,12 +527,7 @@ class PlaningSurface(PressurePatch):
                 return 0.0
             else:
                 Rex = config.flow.flow_speed * xx / config.flow.kinematic_viscosity
-                return (
-                    0.332
-                    * config.flow.density
-                    * config.flow.flow_speed ** 2
-                    * Rex ** -0.5
-                )
+                return 0.332 * config.flow.density * config.flow.flow_speed ** 2 * Rex ** -0.5
 
         x = self._get_element_coords()[0:-1]
         s = np.array([self.interpolator.get_s_fixed_x(xx) for xx in x])
@@ -582,8 +540,5 @@ class PlaningSurface(PressurePatch):
         if isinstance(x, float):
             x = [x]
         return np.array(
-            [
-                general.getDerivative(self.interpolator.get_body_height, xx, direction)
-                for xx in x
-            ]
+            [general.getDerivative(self.interpolator.get_body_height, xx, direction) for xx in x]
         )

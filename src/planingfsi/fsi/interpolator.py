@@ -42,14 +42,12 @@ class Interpolator:
 
     def get_s_fixed_x(self, x, so_pct=0.5):
         return fzero(
-            lambda s: self.get_coordinates(s)[0] - x,
-            so_pct * self.solid.get_arc_length(),
+            lambda s: self.get_coordinates(s)[0] - x, so_pct * self.solid.get_arc_length(),
         )
 
     def get_s_fixed_y(self, y, so_pct):
         return fzero(
-            lambda s: self.get_coordinates(s)[1] - y,
-            so_pct * self.solid.get_arc_length(),
+            lambda s: self.get_coordinates(s)[1] - y, so_pct * self.solid.get_arc_length(),
         )
 
     @property
@@ -58,8 +56,7 @@ class Interpolator:
             self.sImm = self.sImmPctStart * self.solid.get_arc_length()
 
         self.sImm = fzero(
-            lambda s: self.get_coordinates(s)[1] - config.flow.waterline_height,
-            self.sImm,
+            lambda s: self.get_coordinates(s)[1] - config.flow.waterline_height, self.sImm,
         )
 
         return self.get_coordinates(self.sImm)[0]

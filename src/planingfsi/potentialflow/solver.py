@@ -142,9 +142,7 @@ class PotentialPlaningSolver(object):
         conditions.
         """
         # Form lists of unknown and source elements
-        unknown_el = [
-            el for el in self.pressure_elements if not el.is_source and el.width > 0.0
-        ]
+        unknown_el = [el for el in self.pressure_elements if not el.is_source and el.width > 0.0]
         nan_el = [el for el in self.pressure_elements if el.width <= 0.0]
         source_el = [el for el in self.pressure_elements if el.is_source]
         # Form arrays to build linear system
@@ -163,9 +161,7 @@ class PotentialPlaningSolver(object):
         # Solve linear system
         dim = len(unknown_el)
         if not dim == 0:
-            p = np.linalg.solve(np.reshape(A, (dim, dim)), np.reshape(Z, (dim, 1)))[
-                :, 0
-            ]
+            p = np.linalg.solve(np.reshape(A, (dim, dim)), np.reshape(Z, (dim, 1)))[:, 0]
         else:
             p = np.zeros_like(Z)
 
@@ -242,15 +238,9 @@ class PotentialPlaningSolver(object):
             print("  Solving for wetted length:")
 
             if self.min_len is None:
-                self.min_len = np.array(
-                    [p.minimum_length for p in self.planing_surfaces]
-                )
-                self.max_len = np.array(
-                    [p.maximum_length for p in self.planing_surfaces]
-                )
-                self.init_len = np.array(
-                    [p.initial_length for p in self.planing_surfaces]
-                )
+                self.min_len = np.array([p.minimum_length for p in self.planing_surfaces])
+                self.max_len = np.array([p.maximum_length for p in self.planing_surfaces])
+                self.init_len = np.array([p.initial_length for p in self.planing_surfaces])
             else:
                 for i, p in enumerate(self.planing_surfaces):
                     L = p.length
@@ -261,12 +251,8 @@ class PotentialPlaningSolver(object):
                     else:
                         self.init_len[i] = p.initial_length
 
-            dxMaxDec = config.solver.wetted_length_max_step_pct_dec * (
-                self.init_len - self.min_len
-            )
-            dxMaxInc = config.solver.wetted_length_max_step_pct_inc * (
-                self.init_len - self.min_len
-            )
+            dxMaxDec = config.solver.wetted_length_max_step_pct_dec * (self.init_len - self.min_len)
+            dxMaxInc = config.solver.wetted_length_max_step_pct_inc * (self.init_len - self.min_len)
 
             for i, p in enumerate(self.planing_surfaces):
                 if p.initial_length == 0.0:
@@ -337,9 +323,7 @@ class PotentialPlaningSolver(object):
             plt.title("Residual for {0} seal trailing edge pressure".format(seal))
             plt.xlabel("Bow seal length")
             plt.ylabel("Stern seal length")
-            plt.savefig(
-                "{0}SealResidual_{1}.png".format(seal, self.simulation.it), format="png"
-            )
+            plt.savefig("{0}SealResidual_{1}.png".format(seal, self.simulation.it), format="png")
             plt.clf()
 
         self.get_residual(self.storeLen)
@@ -358,11 +342,7 @@ class PotentialPlaningSolver(object):
             # Calculate pressure profile
             if len(self.pressure_patches) > 0:
                 self.X = np.sort(
-                    np.unique(
-                        np.hstack(
-                            [p._get_element_coords() for p in self.pressure_patches]
-                        )
-                    )
+                    np.unique(np.hstack([p._get_element_coords() for p in self.pressure_patches]))
                 )
                 self.p = np.zeros_like(self.X)
                 self.shear_stress = np.zeros_like(self.X)
@@ -377,19 +357,14 @@ class PotentialPlaningSolver(object):
 
             # Calculate total forces as sum of forces on each patch
             for var in ["D", "Dp", "Df", "Dw", "L", "Lp", "Lf", "M"]:
-                setattr(
-                    self, var, sum([getattr(p, var) for p in self.pressure_patches])
-                )
+                setattr(self, var, sum([getattr(p, var) for p in self.pressure_patches]))
 
             f = self.get_free_surface_height
             xo = -10.1 * config.flow.lam
             (xTrough,) = fmin(f, xo, disp=False)
             (xCrest,) = fmin(lambda x: -f(x), xo, disp=False)
             self.Dw = (
-                0.0625
-                * config.flow.density
-                * config.flow.gravity
-                * (f(xCrest) - f(xTrough)) ** 2
+                0.0625 * config.flow.density * config.flow.gravity * (f(xCrest) - f(xTrough)) ** 2
             )
 
             # Calculate center of pressure
@@ -407,34 +382,24 @@ class PotentialPlaningSolver(object):
                     pts = surf._get_element_coords()
                     xFS.append(
                         general.growPoints(
-                            pts[1],
-                            pts[0],
-                            config.plotting.x_fs_min,
-                            config.plotting.growth_rate,
+                            pts[1], pts[0], config.plotting.x_fs_min, config.plotting.growth_rate,
                         )
                     )
                     xFS.append(
                         general.growPoints(
-                            pts[-2],
-                            pts[-1],
-                            config.plotting.x_fs_max,
-                            config.plotting.growth_rate,
+                            pts[-2], pts[-1], config.plotting.x_fs_max, config.plotting.growth_rate,
                         )
                     )
 
             # Add points from each planing surface
             fsList = [
-                patch._get_element_coords()
-                for patch in self.planing_surfaces
-                if patch.length > 0
+                patch._get_element_coords() for patch in self.planing_surfaces if patch.length > 0
             ]
             if len(fsList) > 0:
                 xFS.append(np.hstack(fsList))
 
             # Add points from each pressure cushion
-            xFS.append(
-                np.linspace(config.plotting.x_fs_min, config.plotting.x_fs_max, 100)
-            )
+            xFS.append(np.linspace(config.plotting.x_fs_min, config.plotting.x_fs_max, 100))
             #             for patch in self.pressure_cushions:
             #                 if patch.neighborDown is not None:
             #                     ptsL = patch.neighborDown._get_element_coords()
@@ -475,9 +440,7 @@ class PotentialPlaningSolver(object):
         float
             Free-surface position at input x-position
         """
-        return sum(
-            [patch.get_free_surface_height(x) for patch in self.pressure_patches]
-        )
+        return sum([patch.get_free_surface_height(x) for patch in self.pressure_patches])
 
     def get_free_surface_derivative(self, x, direction="c"):
         """Return slope (derivative) of free-surface profile.
@@ -492,9 +455,7 @@ class PotentialPlaningSolver(object):
         float
             Derivative or slope of free-surface profile
         """
-        ddx = general.getDerivative(
-            self.get_free_surface_height, x, direction=direction
-        )
+        ddx = general.getDerivative(self.get_free_surface_height, x, direction=direction)
         return ddx
 
     def write_results(self):
@@ -514,10 +475,7 @@ class PotentialPlaningSolver(object):
         """Write pressure and shear stress profiles to data file."""
         if len(self.pressure_elements) > 0:
             general.writeaslist(
-                join(
-                    self.simulation.it_dir,
-                    "pressureAndShear.{0}".format(config.io.data_format),
-                ),
+                join(self.simulation.it_dir, "pressureAndShear.{0}".format(config.io.data_format),),
                 ["x [m]", self.X],
                 ["p [Pa]", self.p],
                 ["shear_stress [Pa]", self.shear_stress],
@@ -527,10 +485,7 @@ class PotentialPlaningSolver(object):
         """Write free-surface profile to file."""
         if len(self.pressure_elements) > 0:
             general.writeaslist(
-                join(
-                    self.simulation.it_dir,
-                    "freeSurface.{0}".format(config.io.data_format),
-                ),
+                join(self.simulation.it_dir, "freeSurface.{0}".format(config.io.data_format),),
                 ["x [m]", self.xFS],
                 ["y [m]", self.zFS],
             )
@@ -539,10 +494,7 @@ class PotentialPlaningSolver(object):
         """Write forces to file."""
         if len(self.pressure_elements) > 0:
             general.writeasdict(
-                join(
-                    self.simulation.it_dir,
-                    "forces_total.{0}".format(config.io.data_format),
-                ),
+                join(self.simulation.it_dir, "forces_total.{0}".format(config.io.data_format),),
                 ["Drag", self.D],
                 ["WaveDrag", self.Dw],
                 ["PressDrag", self.Dp],
@@ -565,15 +517,10 @@ class PotentialPlaningSolver(object):
     def load_pressure_and_shear(self):
         """Load pressure and shear stress from file."""
         self.x, self.p, self.shear_stress = np.loadtxt(
-            join(
-                self.simulation.it_dir,
-                "pressureAndShear.{0}".format(config.io.data_format),
-            ),
+            join(self.simulation.it_dir, "pressureAndShear.{0}".format(config.io.data_format),),
             unpack=True,
         )
-        for el in [
-            el for patch in self.planing_surfaces for el in patch.pressure_elements
-        ]:
+        for el in [el for patch in self.planing_surfaces for el in patch.pressure_elements]:
             compare = np.abs(self.x - el.get_xloc()) < 1e-6
             if any(compare):
                 el.set_pressure(self.p[compare][0])
@@ -586,10 +533,7 @@ class PotentialPlaningSolver(object):
         """Load free surface coordinates from file."""
         try:
             data = np.loadtxt(
-                join(
-                    self.simulation.it_dir,
-                    "freeSurface.{0}".format(config.io.data_format),
-                )
+                join(self.simulation.it_dir, "freeSurface.{0}".format(config.io.data_format),)
             )
             self.xFS = data[:, 0]
             self.zFS = data[:, 1]
@@ -600,9 +544,7 @@ class PotentialPlaningSolver(object):
     def load_forces(self):
         """Load forces from file."""
         dict_ = load_dict_from_file(
-            join(
-                self.simulation.it_dir, "forces_total.{0}".format(config.io.data_format)
-            )
+            join(self.simulation.it_dir, "forces_total.{0}".format(config.io.data_format))
         )
         self.D = dict_.get("Drag", 0.0)
         self.Dw = dict_.get("WaveDrag", 0.0)
@@ -632,18 +574,14 @@ class PotentialPlaningSolver(object):
         for line in plt.gca().lines:
             x, y = line.get_data()
             line.set_data(
-                x / config.body.reference_length * 2,
-                y / config.flow.stagnation_pressure,
+                x / config.body.reference_length * 2, y / config.flow.stagnation_pressure,
             )
 
         plt.xlim([-1.0, 1.0])
         #    plt.xlim(kp.minMax(self.X / config.Lref * 2))
-        plt.ylim(
-            [0.0, np.min([1.0, 1.2 * np.max(self.p / config.flow.stagnation_pressure)])]
-        )
+        plt.ylim([0.0, np.min([1.0, 1.2 * np.max(self.p / config.flow.stagnation_pressure)])])
         plt.savefig(
-            f"pressureElements.{config.plotting.fig_format}",
-            format=config.plotting.fig_format,
+            f"pressureElements.{config.plotting.fig_format}", format=config.plotting.fig_format,
         )
         plt.figure(1)
 
@@ -656,7 +594,5 @@ class PotentialPlaningSolver(object):
             self.lineFS.set_data(self.xFS, self.zFS)
         end_pts = np.array([config.plotting.x_fs_min, config.plotting.x_fs_max])
         if self.lineFSi is not None:
-            self.lineFSi.set_data(
-                end_pts, config.flow.waterline_height * np.ones_like(end_pts)
-            )
+            self.lineFSi.set_data(end_pts, config.flow.waterline_height * np.ones_like(end_pts))
         return None

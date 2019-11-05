@@ -58,9 +58,7 @@ class Simulation:
         return Path(config.path.case_dir, str(self.it))
 
     def create_dirs(self) -> None:
-        config.path.fig_dir_name = os.path.join(
-            config.path.case_dir, config.path.fig_dir_name
-        )
+        config.path.fig_dir_name = os.path.join(config.path.case_dir, config.path.fig_dir_name)
 
         if self.check_output_interval() and not config.io.results_from_file:
             Path(config.path.case_dir).mkdir(exist_ok=True)
@@ -99,9 +97,7 @@ class Simulation:
                 planing_surface = self.fluid_solver.add_planing_surface(dict_)
                 interpolator = Interpolator(substructure, planing_surface, dict_)
                 interpolator.solid_position_function = substructure.get_coordinates
-                interpolator.fluid_pressure_function = (
-                    planing_surface.get_loads_in_range
-                )
+                interpolator.fluid_pressure_function = planing_surface.get_loads_in_range
         print(f"Substructures: {self.solid_solver.substructure}")
 
     def _load_pressure_cushions(self) -> None:
@@ -127,8 +123,7 @@ class Simulation:
 
         # Iterate between solid and fluid solvers until equilibrium
         while self.it <= config.solver.num_ramp_it or (
-            self.get_residual() >= config.solver.max_residual
-            and self.it <= config.solver.max_it
+            self.get_residual() >= config.solver.max_residual and self.it <= config.solver.max_it
         ):
 
             # Calculate response
@@ -240,17 +235,15 @@ class Simulation:
     def get_residual(self) -> float:
         if config.io.results_from_file:
             return 1.0
-            return load_dict_from_file(
-                os.path.join(self.it_dir, "overallQuantities.txt")
-            ).get("Residual", 0.0)
+            return load_dict_from_file(os.path.join(self.it_dir, "overallQuantities.txt")).get(
+                "Residual", 0.0
+            )
         else:
             return self.solid_solver.res
 
     def print_status(self) -> None:
         logger.info(
-            "Residual after iteration {1:>4d}: {0:5.3e}".format(
-                self.get_residual(), self.it
-            )
+            "Residual after iteration {1:>4d}: {0:5.3e}".format(self.get_residual(), self.it)
         )
 
     def check_output_interval(self) -> bool:

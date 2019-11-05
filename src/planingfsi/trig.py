@@ -127,19 +127,10 @@ def rotate_vec(
     about: numpy.array = numpy.zeros(3),
 ) -> numpy.array:
     """Rotate a 3d vector v by angle ang in degrees."""
-    rot_x = numpy.array(
-        [[1, 0, 0], [0, cosd(ang_x), -sind(ang_x)], [0, sind(ang_x), cosd(ang_x)]]
-    )
-    rot_y = numpy.array(
-        [[cosd(ang_y), 0, sind(ang_y)], [0, 1, 0], [-sind(ang_y), 0, cosd(ang_y)]]
-    )
-    rot_z = numpy.array(
-        [[cosd(ang_z), -sind(ang_z), 0], [sind(ang_z), cosd(ang_z), 0], [0, 0, 1]]
-    )
+    rot_x = numpy.array([[1, 0, 0], [0, cosd(ang_x), -sind(ang_x)], [0, sind(ang_x), cosd(ang_x)]])
+    rot_y = numpy.array([[cosd(ang_y), 0, sind(ang_y)], [0, 1, 0], [-sind(ang_y), 0, cosd(ang_y)]])
+    rot_z = numpy.array([[cosd(ang_z), -sind(ang_z), 0], [sind(ang_z), cosd(ang_z), 0], [0, 0, 1]])
 
     return (
-        numpy.dot(
-            numpy.dot(numpy.dot(rot_x, rot_y), rot_z), (numpy.asarray(vec) - about).T
-        )
-        + about
+        numpy.dot(numpy.dot(numpy.dot(rot_x, rot_y), rot_z), (numpy.asarray(vec) - about).T) + about
     )

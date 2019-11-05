@@ -26,9 +26,7 @@ class RootFinder:
         self.f = numpy.zeros_like(xo)
         self.dim = len(xo)
 
-        self.x_min = numpy.array(
-            kwargs.get("xMin", -numpy.ones_like(xo) * float("Inf"))
-        )
+        self.x_min = numpy.array(kwargs.get("xMin", -numpy.ones_like(xo) * float("Inf")))
         self.x_max = numpy.array(kwargs.get("xMax", numpy.ones_like(xo) * float("Inf")))
         self.max_it = kwargs.get("maxIt", 100)
         self.dx_init = kwargs.get("firstStep", 1e-6)
@@ -150,13 +148,11 @@ class RootFinder:
         df = numpy.reshape(self.df, (self.dim, 1))
 
         self.jacobian += (
-            numpy.dot(df - numpy.dot(self.jacobian, dx), dx.T)
-            / numpy.linalg.norm(dx) ** 2
+            numpy.dot(df - numpy.dot(self.jacobian, dx), dx.T) / numpy.linalg.norm(dx) ** 2
         )
         dx *= 0.0
         dof = [
-            not x <= xMin and not x >= xMax
-            for x, xMin, xMax in zip(self.x, self.x_min, self.x_max)
+            not x <= xMin and not x >= xMax for x, xMin, xMax in zip(self.x, self.x_min, self.x_max)
         ]
         if any(dof):
             b = self.f.reshape(self.dim, 1)
@@ -182,9 +178,7 @@ class RootFinder:
             self.take_step()
             self.evaluate_error()
 
-        self.is_converged = self.err < self.error_limit and not any(
-            self.x <= self.x_min
-        )
+        self.is_converged = self.err < self.error_limit and not any(self.x <= self.x_min)
 
         return self.x
 

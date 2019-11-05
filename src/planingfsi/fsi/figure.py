@@ -32,9 +32,7 @@ class FSIFigure:
 
         self.lineCofR = []
         for bd in self.solid.rigid_body:
-            CofRPlot(
-                self.geometryAx, bd, symbol=False, style="k--", marker="s", fill=False
-            )
+            CofRPlot(self.geometryAx, bd, symbol=False, style="k--", marker="s", fill=False)
             self.lineCofR.append(
                 CofRPlot(self.geometryAx, bd, symbol=False, style="k-", marker="o")
             )
@@ -81,9 +79,7 @@ class FSIFigure:
             ]
         )
         plt.gca().set_aspect("equal")
-        self.TXT = plt.text(
-            0.05, 0.95, "", ha="left", va="top", transform=plt.gca().transAxes
-        )
+        self.TXT = plt.text(0.05, 0.95, "", ha="left", va="top", transform=plt.gca().transAxes)
 
         self.subplot = []
 
@@ -112,11 +108,7 @@ class FSIFigure:
         self.fluid.plot_free_surface()
         self.TXT.set_text(
             (
-                r"Iteration {0}"
-                + "\n"
-                + r"$Fr={1:>8.3f}$"
-                + "\n"
-                + r"$\bar{{P_c}}={2:>8.3f}$"
+                r"Iteration {0}" + "\n" + r"$Fr={1:>8.3f}$" + "\n" + r"$\bar{{P_c}}={2:>8.3f}$"
             ).format(self.simulation.it, config.flow.froude_num, config.body.PcBar)
         )
 
@@ -144,9 +136,7 @@ class FSIFigure:
         plt.savefig(
             os.path.join(
                 config.path.fig_dir_name,
-                "frame{1:04d}.{0}".format(
-                    config.plotting.fig_format, self.simulation.it
-                ),
+                "frame{1:04d}.{0}".format(config.plotting.fig_format, self.simulation.it),
             ),
             format=config.plotting.fig_format,
         )  # , dpi=300)
@@ -173,13 +163,7 @@ class PlotSeries:
 
         if self.seriesType == "history+curr":
             self.additionalSeries.append(
-                PlotSeries(
-                    xFunc,
-                    yFunc,
-                    ax=self.ax,
-                    type="point",
-                    sty=kwargs.get("currSty", "ro"),
-                )
+                PlotSeries(xFunc, yFunc, ax=self.ax, type="point", sty=kwargs.get("currSty", "ro"),)
             )
 
     def update(self, final=False):
@@ -230,9 +214,7 @@ class TimeHistory:
         plt.setp(self.ax[axInd], **kwargs)
 
     def createLegend(self, axInd=0):
-        line, name = list(
-            zip(*[(s.line, s.legEnt) for s in self.series if s.legEnt is not None])
-        )
+        line, name = list(zip(*[(s.line, s.legEnt) for s in self.series if s.legEnt is not None]))
         self.ax[axInd].legend(line, name, loc="lower left")
 
     def update(self, final=False):
@@ -292,29 +274,17 @@ class MotionSubplot(TimeHistory):
         # Add plot series to appropriate axis
         self.addSeries(
             PlotSeries(
-                itFunc,
-                drftFunc,
-                ax=self.ax[0],
-                sty="b-",
-                type="history+curr",
-                legEnt="Draft",
+                itFunc, drftFunc, ax=self.ax[0], sty="b-", type="history+curr", legEnt="Draft",
             )
         )
         self.addSeries(
             PlotSeries(
-                itFunc,
-                trimFunc,
-                ax=self.ax[1],
-                sty="r-",
-                type="history+curr",
-                legEnt="Trim",
+                itFunc, trimFunc, ax=self.ax[1], sty="r-", type="history+curr", legEnt="Trim",
             )
         )
 
         self.setProperties(
-            title=r"Motion History: {0}".format(body.name),
-            xlabel=r"Iteration",
-            ylabel=r"$d$ [m]",
+            title=r"Motion History: {0}".format(body.name), xlabel=r"Iteration", ylabel=r"$d$ [m]",
         )
         self.setProperties(1, ylabel=r"$\theta$ [deg]")
         self.createLegend()
@@ -331,32 +301,17 @@ class ForceSubplot(TimeHistory):
 
         self.addSeries(
             PlotSeries(
-                itFunc,
-                liftFunc,
-                sty="r-",
-                type="history+curr",
-                legEnt="Lift",
-                ignoreFirst=True,
+                itFunc, liftFunc, sty="r-", type="history+curr", legEnt="Lift", ignoreFirst=True,
             )
         )
         self.addSeries(
             PlotSeries(
-                itFunc,
-                dragFunc,
-                sty="b-",
-                type="history+curr",
-                legEnt="Drag",
-                ignoreFirst=True,
+                itFunc, dragFunc, sty="b-", type="history+curr", legEnt="Drag", ignoreFirst=True,
             )
         )
         self.addSeries(
             PlotSeries(
-                itFunc,
-                momFunc,
-                sty="g-",
-                type="history+curr",
-                legEnt="Moment",
-                ignoreFirst=True,
+                itFunc, momFunc, sty="g-", type="history+curr", legEnt="Moment", ignoreFirst=True,
             )
         )
 
@@ -426,9 +381,7 @@ class CofRPlot:
             fcol = "k"
 
         (self.line,) = self.ax.plot([], [], style)
-        (self.lineCofG,) = self.ax.plot(
-            [], [], "k" + marker, markersize=8, markerfacecolor=fcol
-        )
+        (self.lineCofG,) = self.ax.plot([], [], "k" + marker, markersize=8, markerfacecolor=fcol)
         self.update()
 
     def update(self):

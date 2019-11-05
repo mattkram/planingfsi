@@ -56,9 +56,7 @@ class FEStructure:
         self.substructure.append(ss)
 
         # Find parent body and add substructure to it
-        body = [
-            b for b in self.rigid_body if b.name == dict_.get("bodyName", "default")
-        ]
+        body = [b for b in self.rigid_body if b.name == dict_.get("bodyName", "default")]
         if len(body) > 0:
             body = body[0]
         else:
@@ -122,12 +120,8 @@ class FEStructure:
     def load_mesh(self):
         # Create all nodes
         x, y = np.loadtxt(os.path.join(config.path.mesh_dir, "nodes.txt"), unpack=True)
-        xf, yf = np.loadtxt(
-            os.path.join(config.path.mesh_dir, "fixedDOF.txt"), unpack=True
-        )
-        fx, fy = np.loadtxt(
-            os.path.join(config.path.mesh_dir, "fixedLoad.txt"), unpack=True
-        )
+        xf, yf = np.loadtxt(os.path.join(config.path.mesh_dir, "fixedDOF.txt"), unpack=True)
+        fx, fy = np.loadtxt(os.path.join(config.path.mesh_dir, "fixedLoad.txt"), unpack=True)
 
         for xx, yy, xxf, yyf, ffx, ffy in zip(x, y, xf, yf, fx, fy):
             nd = fe.Node()
@@ -157,9 +151,7 @@ class RigidBody:
         self.trim = 0.0
 
         self.name = self.dict_.get("bodyName", "default")
-        self.weight = self.dict_.get(
-            "W", self.dict_.get("loadPct", 1.0) * config.body.weight
-        )
+        self.weight = self.dict_.get("W", self.dict_.get("loadPct", 1.0) * config.body.weight)
         self.weight *= config.body.seal_load_pct
         self.m = self.dict_.get("m", self.weight / config.flow.gravity)
         self.Iz = self.dict_.get("Iz", self.m * config.body.reference_length ** 2 / 12)
@@ -340,9 +332,7 @@ class RigidBody:
         self.L *= 0.0
         self.M *= 0.0
         if config.body.cushion_force_method.lower() == "assumed":
-            self.L += (
-                config.body.Pc * config.body.reference_length * trig.cosd(config.trim)
-            )
+            self.L += config.body.Pc * config.body.reference_length * trig.cosd(config.trim)
 
     def get_disp_physical(self):
         disp = self.limit_disp(self.time_step * self.v)
@@ -353,17 +343,12 @@ class RigidBody:
 
         self.v += self.time_step * self.a
 
-        self.a = np.array(
-            [self.weight - self.L, self.M - self.weight * (self.xCofG - self.xCofR)]
-        )
+        self.a = np.array([self.weight - self.L, self.M - self.weight * (self.xCofG - self.xCofR)])
         #    self.a -= self.Cdamp * (self.v + self.v**3) * config.ramp
         self.a -= self.c_damp * self.v * config.ramp
         self.a /= np.array([self.m, self.Iz])
         self.a = np.min(
-            np.vstack(
-                (np.abs(self.a), np.array([self.max_draft_acc, self.max_trim_acc]))
-            ),
-            axis=0,
+            np.vstack((np.abs(self.a), np.array([self.max_draft_acc, self.max_trim_acc]))), axis=0,
         ) * np.sign(self.a)
 
         #    accLimPct = np.min(np.vstack((np.abs(self.a), self.maxAcc)), axis=0) * np.sign(self.a)
@@ -378,16 +363,11 @@ class RigidBody:
         return disp
 
     def get_disp_newmark_beta(self):
-        self.a = np.array(
-            [self.weight - self.L, self.M - self.weight * (self.xCofG - self.xCofR)]
-        )
+        self.a = np.array([self.weight - self.L, self.M - self.weight * (self.xCofG - self.xCofR)])
         #    self.a -= self.Cdamp * self.v * config.ramp
         self.a /= np.array([self.m, self.Iz])
         self.a = np.min(
-            np.vstack(
-                (np.abs(self.a), np.array([self.max_draft_acc, self.max_trim_acc]))
-            ),
-            axis=0,
+            np.vstack((np.abs(self.a), np.array([self.max_draft_acc, self.max_trim_acc]))), axis=0,
         ) * np.sign(self.a)
 
         dv = (1 - self.gamma) * self.a_old + self.gamma * self.a
@@ -412,10 +392,7 @@ class RigidBody:
 
     def get_disp_physical_no_mass(self):
         F = np.array(
-            [
-                self.weight - self.L,
-                self.M - self.weight * (config.body.xCofG - config.body.xCofR),
-            ]
+            [self.weight - self.L, self.M - self.weight * (config.body.xCofG - config.body.xCofR),]
         )
         #    F -= self.Cdamp * self.v
 
@@ -500,20 +477,12 @@ class RigidBody:
                     if free_dof
                 ]
             )
-            maxDisp = [
-                m for m, free_dof in zip(self.max_disp, self.free_dof) if free_dof
-            ]
+            maxDisp = [m for m, free_dof in zip(self.max_disp, self.free_dof) if free_dof]
 
             self.x = np.array(
-                [
-                    f
-                    for f, free_dof in zip([self.draft, self.trim], self.free_dof)
-                    if free_dof
-                ]
+                [f for f, free_dof in zip([self.draft, self.trim], self.free_dof) if free_dof]
             )
-            self.solver = solver.RootFinder(
-                self.resFun, self.x, "broyden", dxMax=maxDisp
-            )
+            self.solver = solver.RootFinder(self.resFun, self.x, "broyden", dxMax=maxDisp)
 
         if not self.disp_old is None:
             self.solver.take_step(self.disp_old)
@@ -544,9 +513,7 @@ class RigidBody:
                 dx = np.reshape(self.disp_old, (self.num_dim, 1))
                 df = np.reshape(self.f - self.res_old, (self.num_dim, 1))
 
-                self.J += (
-                    np.dot(df - np.dot(self.J, dx), dx.T) / np.linalg.norm(dx) ** 2
-                )
+                self.J += np.dot(df - np.dot(self.J, dx), dx.T) / np.linalg.norm(dx) ** 2
 
             dof = self.free_dof
             dx = np.zeros_like(self.x)
@@ -577,9 +544,7 @@ class RigidBody:
         return disp
 
     def limit_disp(self, disp):
-        dispLimPct = np.min(np.vstack((np.abs(disp), self.max_disp)), axis=0) * np.sign(
-            disp
-        )
+        dispLimPct = np.min(np.vstack((np.abs(disp), self.max_disp)), axis=0) * np.sign(disp)
         for i in range(len(disp)):
             if disp[i] == 0.0 or not self.free_dof[i]:
                 dispLimPct[i] = 1.0
@@ -605,8 +570,7 @@ class RigidBody:
                 res = 1.0
             else:
                 res = (self.M - self.weight * (self.xCofG - self.xCofR)) / (
-                    config.flow.stagnation_pressure * config.body.reference_length ** 2
-                    + 1e-6
+                    config.flow.stagnation_pressure * config.body.reference_length ** 2 + 1e-6
                 )
         return np.abs(res * self.free_in_trim)
 
@@ -652,9 +616,7 @@ class RigidBody:
 
     def load_motion(self):
         K = load_dict_from_file(
-            os.path.join(
-                config.it_dir, "motion_{0}.{1}".format(self.name, config.io.data_format)
-            )
+            os.path.join(config.it_dir, "motion_{0}.{1}".format(self.name, config.io.data_format))
         )
         self.xCofR = K.get("xCofR", np.nan)
         self.yCofR = K.get("yCofR", np.nan)
@@ -723,8 +685,7 @@ class Substructure:
 
     def load_mesh(self):
         ndSt, ndEnd = np.loadtxt(
-            os.path.join(config.path.mesh_dir, "elements_{0}.txt".format(self.name)),
-            unpack=True,
+            os.path.join(config.path.mesh_dir, "elements_{0}.txt".format(self.name)), unpack=True,
         )
         if isinstance(ndSt, float):
             ndSt = [int(ndSt)]
@@ -746,12 +707,9 @@ class Substructure:
 
     def set_interp_function(self):
         self.node_arc_length = np.zeros(len(self.node))
-        for i, nd0, nd1 in zip(
-            list(range(len(self.node) - 1)), self.node[:-1], self.node[1:]
-        ):
+        for i, nd0, nd1 in zip(list(range(len(self.node) - 1)), self.node[:-1], self.node[1:]):
             self.node_arc_length[i + 1] = (
-                self.node_arc_length[i]
-                + ((nd1.x - nd0.x) ** 2 + (nd1.y - nd0.y) ** 2) ** 0.5
+                self.node_arc_length[i] + ((nd1.x - nd0.x) ** 2 + (nd1.y - nd0.y) ** 2) ** 0.5
             )
 
         if len(self.node_arc_length) == 2:
@@ -779,9 +737,7 @@ class Substructure:
                 if xi < xs[0]:
                     return ys[0] + (xi - xs[0]) * (ys[1] - ys[0]) / (xs[1] - xs[0])
                 elif xi > xs[-1]:
-                    return ys[-1] + (xi - xs[-1]) * (ys[-1] - ys[-2]) / (
-                        xs[-1] - xs[-2]
-                    )
+                    return ys[-1] + (xi - xs[-1]) * (ys[-1] - ys[-2]) / (xs[-1] - xs[-2])
                 else:
                     return interpolator(xi)
 
@@ -816,9 +772,7 @@ class Substructure:
 
     def load_coordinates(self):
         x, y = np.loadtxt(
-            os.path.join(
-                config.it_dir, "coords_{0}.{1}".format(self.name, config.io.data_format)
-            ),
+            os.path.join(config.it_dir, "coords_{0}.{1}".format(self.name, config.io.data_format)),
             unpack=True,
         )
         for xx, yy, nd in zip(x, y, self.node):
@@ -842,17 +796,14 @@ class Substructure:
             # Get pressure at end points and all fluid points along element
             nodeS = [self.node_arc_length[i], self.node_arc_length[i + 1]]
             if self.interpolator is not None:
-                s, pressure_fluid, tau = self.interpolator.get_loads_in_range(
-                    nodeS[0], nodeS[1]
-                )
+                s, pressure_fluid, tau = self.interpolator.get_loads_in_range(nodeS[0], nodeS[1])
                 # Limit pressure to be below stagnation pressure
                 if config.plotting.pressure_limiter:
                     pressure_fluid = np.min(
                         np.hstack(
                             (
                                 pressure_fluid,
-                                np.ones_like(pressure_fluid)
-                                * config.flow.stagnation_pressure,
+                                np.ones_like(pressure_fluid) * config.flow.stagnation_pressure,
                             )
                         ),
                         axis=0,
@@ -947,9 +898,7 @@ class Substructure:
             if integral == 0.0:
                 qs = np.zeros(2)
             else:
-                pct = (
-                    general.integrate(s, s * tau) / integral - s[0]
-                ) / general.cumdiff(s)
+                pct = (general.integrate(s, s * tau) / integral - s[0]) / general.cumdiff(s)
                 qs = -integral * np.array([1 - pct, pct])
 
             el.set_pressure_and_shear(qp, qs)
@@ -967,10 +916,7 @@ class Substructure:
                 n = list(map(self.get_normal_vector, s))
                 t = [trig.rotate_vec_2d(ni, -90) for ni in n]
 
-                f = [
-                    -pi * ni + taui * ti
-                    for pi, taui, ni, ti in zip(integrand, tau, n, t)
-                ]
+                f = [-pi * ni + taui * ti for pi, taui, ni, ti in zip(integrand, tau, n, t)]
 
                 r = [
                     np.array([pt[0] - self.parent.xCofR, pt[1] - self.parent.yCofR])
@@ -1018,9 +964,7 @@ class Substructure:
                 self.get_pressure_plot_points(self.fluidS, self.fluidP)
             )
         if self.line_air_pressure is not None:
-            self.line_air_pressure.set_data(
-                self.get_pressure_plot_points(self.airS, self.airP)
-            )
+            self.line_air_pressure.set_data(self.get_pressure_plot_points(self.airS, self.airP))
 
     def get_pressure_plot_points(self, s0, p0):
 
@@ -1030,9 +974,7 @@ class Substructure:
             s0, p0 = list(zip(*sp))
             nVec = list(map(self.get_normal_vector, s0))
             coords0 = [np.array(self.get_coordinates(s)) for s in s0]
-            coords1 = [
-                c + config.plotting.pScale * p * n for c, p, n in zip(coords0, p0, nVec)
-            ]
+            coords1 = [c + config.plotting.pScale * p * n for c, p, n in zip(coords0, p0, nVec)]
 
             return list(
                 zip(
@@ -1228,9 +1170,7 @@ class TorsionalSpringSubstructure(FlexibleSubstructure, RigidSubstructure):
         elif self.base_pt_pct == 0.0:
             self.base_pt = self.node[0].get_coordinates()
         else:
-            self.base_pt = self.get_coordinates(
-                self.base_pt_pct * self.get_arc_length()
-            )
+            self.base_pt = self.get_coordinates(self.base_pt_pct * self.get_arc_length())
 
         self.set_element_properties()
 
@@ -1239,9 +1179,7 @@ class TorsionalSpringSubstructure(FlexibleSubstructure, RigidSubstructure):
     def set_attachments(self):
         attached_substructure_name = self.dict_.read("attachedSubstructure", None)
         if attached_substructure_name is not None:
-            self.attached_substructure = Substructure.find_by_name(
-                attached_substructure_name
-            )
+            self.attached_substructure = Substructure.find_by_name(attached_substructure_name)
         else:
             self.attached_substructure = None
 
@@ -1275,9 +1213,7 @@ class TorsionalSpringSubstructure(FlexibleSubstructure, RigidSubstructure):
             # Get pressure at end points and all fluid points along element
             node_s = [self.node_arc_length[i], self.node_arc_length[i + 1]]
             if self.interpolator is not None:
-                s, pressure_fluid, tau = self.interpolator.get_loads_in_range(
-                    node_s[0], node_s[1]
-                )
+                s, pressure_fluid, tau = self.interpolator.get_loads_in_range(node_s[0], node_s[1])
 
                 # Limit pressure to be below stagnation pressure
                 if config.plotting.pressure_limiter:
@@ -1285,8 +1221,7 @@ class TorsionalSpringSubstructure(FlexibleSubstructure, RigidSubstructure):
                         np.hstack(
                             (
                                 pressure_fluid,
-                                np.ones_like(pressure_fluid)
-                                * config.flow.stagnation_pressure,
+                                np.ones_like(pressure_fluid) * config.flow.stagnation_pressure,
                             )
                         ),
                         axis=0,
@@ -1356,17 +1291,11 @@ class TorsionalSpringSubstructure(FlexibleSubstructure, RigidSubstructure):
                 t = [trig.rotate_vec_2d(ni, -90) for ni in n]
 
                 fC = [
-                    -pi * ni + taui * ti
-                    for pi, taui, ni, ti in zip(pressure_external, tau, n, t)
+                    -pi * ni + taui * ti for pi, taui, ni, ti in zip(pressure_external, tau, n, t)
                 ]
-                fFl = [
-                    -pi * ni + taui * ti
-                    for pi, taui, ni, ti in zip(pressure_fluid, tau, n, t)
-                ]
+                fFl = [-pi * ni + taui * ti for pi, taui, ni, ti in zip(pressure_fluid, tau, n, t)]
                 f = fC + fFl
-                print(
-                    ("Cushion Lift-to-Weight: {0}".format(fC[1] / config.body.weight))
-                )
+                print(("Cushion Lift-to-Weight: {0}".format(fC[1] / config.body.weight)))
 
                 r = [
                     np.array([pt[0] - config.body.xCofR, pt[1] - config.body.yCofR])
@@ -1486,8 +1415,7 @@ class TorsionalSpringSubstructure(FlexibleSubstructure, RigidSubstructure):
     def writeDeformation(self):
         general.writeasdict(
             os.path.join(
-                config.it_dir,
-                "deformation_{0}.{1}".format(self.name, config.io.data_format),
+                config.it_dir, "deformation_{0}.{1}".format(self.name, config.io.data_format),
             ),
             ["angle", self.theta],
         )

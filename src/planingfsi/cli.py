@@ -9,11 +9,15 @@ from pathlib import Path
 from typing import Optional
 
 import click
+import click_log
 
 from . import config
 from . import logger
 from .fe.femesh import Mesh
 from .fsi.simulation import Simulation
+
+
+click_log.basic_config(logger)
 
 
 @click.group(name="planingfsi", help="Run the PlaningFSI program")
@@ -22,10 +26,20 @@ def cli() -> None:
 
 
 @cli.command(name="run")
-@click.option("post_mode", "--post", is_flag=True)
-@click.option("--plot_save", is_flag=True)
-@click.option("new_case", "--new", is_flag=True)
+@click.option(
+    "post_mode",
+    "--post",
+    is_flag=True,
+    help="Run in post-processing mode, loading results from file and generating figures.",
+)
+@click.option("--plot_save", is_flag=True, help="Save the plots to figures.")
+@click.option(
+    "new_case", "--new", is_flag=True, help="Force generate new case, deleting old results first.",
+)
 def run_planingfsi(post_mode: bool, plot_save: bool, new_case: bool) -> None:
+    """Run the planingFSI solver."""
+    config.load_from_file("configDict")
+
     if post_mode:
         logger.info("Running in post-processing mode")
         config.plotting.save = True
@@ -35,6 +49,7 @@ def run_planingfsi(post_mode: bool, plot_save: bool, new_case: bool) -> None:
         config.plotting.save = True
         config.plotting.plot_any = True
     if new_case:
+        logger.info("Removing all time directories")
         for it_dir in Path(config.path.case_dir).glob("[0-9]*"):
             it_dir.unlink()
 
@@ -51,6 +66,7 @@ def run_planingfsi(post_mode: bool, plot_save: bool, new_case: bool) -> None:
 def generate_mesh(
     mesh_dict: Optional[str], plot_show: bool, plot_save: bool, verbose: bool
 ) -> None:
+    """Generate the initial mesh."""
     if mesh_dict is not None:
         config.path.mesh_dict_dir = mesh_dict
 

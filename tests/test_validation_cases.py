@@ -4,8 +4,7 @@ from pathlib import Path
 
 import pytest
 from click.testing import CliRunner
-
-from planingfsi.cli import main
+from planingfsi.cli import cli
 
 
 @pytest.fixture()
@@ -33,10 +32,11 @@ def cli_runner(tmpdir, validation_base_dir):
     return f
 
 
+@pytest.mark.skip
 @pytest.mark.parametrize("case_name", ("flat_plate",))
 def test_flat_plate(cli_runner, case_name):
     runner = cli_runner(case_name)
-    runner.invoke(main, ["run"])
+    runner.invoke(cli, ["run"])
 
     validation_extension = ".validated"
     validation_items = [f for f in os.listdir(".") if f.endswith(validation_extension)]

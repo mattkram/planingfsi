@@ -31,22 +31,16 @@ class Mesh:
             P.set_position(np.array(position))
         elif method == "rel":
             base_pt_id, ang, R = position
-            P.set_position(
-                Point.find_by_id(base_pt_id).get_position() + R * trig.angd2vec2d(ang)
-            )
+            P.set_position(Point.find_by_id(base_pt_id).get_position() + R * trig.angd2vec2d(ang))
         elif method == "con":
             base_pt_id, dim, val = position
             ang = kwargs.get("angle", 0 if dim == "x" else 90)
 
             base_pt = Point.find_by_id(base_pt_id).get_position()
             if dim == "x":
-                P.set_position(
-                    np.array([val, base_pt[1] + (val - base_pt[0]) * trig.tand(ang)])
-                )
+                P.set_position(np.array([val, base_pt[1] + (val - base_pt[0]) * trig.tand(ang)]))
             elif dim == "y":
-                P.set_position(
-                    np.array([base_pt[0] + (val - base_pt[1]) / trig.tand(ang), val])
-                )
+                P.set_position(np.array([base_pt[0] + (val - base_pt[1]) / trig.tand(ang), val]))
             else:
                 print("Incorrect dimension specification")
         elif method == "pct":
@@ -55,9 +49,7 @@ class Mesh:
             end_pt = Point.find_by_id(end_pt_id).get_position()
             P.set_position((1 - pct) * base_pt + pct * end_pt)
         else:
-            raise NameError(
-                "Incorrect position specification method for point, ID: {0}".format(ID)
-            )
+            raise NameError("Incorrect position specification method for point, ID: {0}".format(ID))
 
         return P
 
@@ -100,9 +92,7 @@ class Mesh:
             pt.set_position((pt.get_position() - base_pt) * sf + base_pt)
 
     def get_diff(self, pt0, pt1):
-        return (
-            Point.find_by_id(pt1).get_position() - Point.find_by_id(pt0).get_position()
-        )
+        return Point.find_by_id(pt1).get_position() - Point.find_by_id(pt0).get_position()
 
     def get_length(self, pt0, pt1):
         return np.linalg.norm(self.get_diff(pt0, pt1))
@@ -195,17 +185,10 @@ class Submesh(Mesh):
     def write(self):
         if len(self.line) > 0:
             ptL, ptR = list(
-                zip(
-                    *[
-                        [pt.get_index() for pt in l._get_element_coords()]
-                        for l in self.line
-                    ]
-                )
+                zip(*[[pt.get_index() for pt in l._get_element_coords()] for l in self.line])
             )
             writeaslist(
-                os.path.join(
-                    config.path.mesh_dir, "elements_{0}.txt".format(self.name)
-                ),
+                os.path.join(config.path.mesh_dir, "elements_{0}.txt".format(self.name)),
                 ["ptL", ptL],
                 ["ptR", ptR],
                 headerFormat="<4",
@@ -327,18 +310,13 @@ class Point(Shape):
 
     def rotate(self, base_pt_id, angle):
         base_pt = Point.find_by_id(base_pt_id).get_position()
-        self.set_position(
-            trig.rotate_vec_2d(self.get_position() - base_pt, angle) + base_pt
-        )
+        self.set_position(trig.rotate_vec_2d(self.get_position() - base_pt, angle) + base_pt)
 
     def display(self):
         print(
             (
                 "{0} {1}: ID = {2}, Pos = {3}".format(
-                    self.__class__.__name__,
-                    self.get_index(),
-                    self.get_id(),
-                    self.get_position(),
+                    self.__class__.__name__, self.get_index(), self.get_id(), self.get_position(),
                 )
             )
         )
@@ -377,10 +355,7 @@ class Curve(Shape):
             alf = self.arc_length / (2 * self.radius)
             return (
                 lambda s: self._end_pts[0].get_position()
-                + 2
-                * self.radius
-                * np.sin(s * alf)
-                * trig.ang2vec(gam + (s - 1) * alf)[:2]
+                + 2 * self.radius * np.sin(s * alf) * trig.ang2vec(gam + (s - 1) * alf)[:2]
             )
 
     def set_radius(self, R):
@@ -462,10 +437,7 @@ class Curve(Shape):
         print(
             (
                 "{0} {1}: ID = {2}, Pt IDs = {3}".format(
-                    self.__class__.__name__,
-                    self.get_index(),
-                    self.get_id(),
-                    self.getPtIDs(),
+                    self.__class__.__name__, self.get_index(), self.get_id(), self.getPtIDs(),
                 )
             )
         )

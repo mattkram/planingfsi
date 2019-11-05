@@ -49,9 +49,7 @@ class ConfigItem:
         try:
             return self.default
         except AttributeError:
-            raise AttributeError(
-                f"Attribute {self.name} has not been set and no default specified"
-            )
+            raise AttributeError(f"Attribute {self.name} has not been set and no default specified")
 
     def __set__(self, instance: "SubConfig", value: Any) -> None:
         """When the value is set, try to convert it and then store it in the instance dictionary."""
@@ -78,9 +76,7 @@ class ConfigItem:
             value = dict_.get(key)
             if value is not None:
                 return value
-        raise KeyError(
-            'None of the following keys "{}" found in dictionary.'.format(self.keys)
-        )
+        raise KeyError('None of the following keys "{}" found in dictionary.'.format(self.keys))
 
 
 class SubConfig:
@@ -91,10 +87,8 @@ class SubConfig:
     def load_from_dict(self, dict_name: str) -> None:
         """Load the configuration from a dictionary file.
 
-        Parameters
-        ----------
-        dict_name
-            The path to the dictionary file.
+        Args:
+            dict_name: The path to the dictionary file.
 
         """
         dict_ = load_dict_from_file(dict_name)
@@ -109,6 +103,18 @@ class SubConfig:
 
 
 class FlowConfig(SubConfig):
+    """Configuration related to the fluid dynamics problem.
+
+    Attributes:
+        density (float): Mass density of the fluid.
+        gravity (float): Acceleration due to gravity.
+        kinematic_viscosity (float): Kinematic viscosity of the fluid.
+        waterline_height (float): Height of the waterline above the reference.
+        num_dim (int): Number of dimensions.
+        include_friction (bool): If True, include a flat-plate estimation for the frictional drag component.
+
+    """
+
     density = ConfigItem("rho", default=998.2)
     gravity = ConfigItem("g", default=9.81)
     kinematic_viscosity = ConfigItem("nu", default=1e-6)
@@ -121,6 +127,11 @@ class FlowConfig(SubConfig):
 
     @property
     def reference_length(self) -> float:
+        """float: Reference length used for potential-flow solver.
+
+        Defaults to reference length of the rigid body.
+
+        """
         return body.reference_length
 
     @property
@@ -148,6 +159,7 @@ class FlowConfig(SubConfig):
 
     @property
     def froude_num(self) -> float:
+        """float: The Froude number is the non-dimensional speed."""
         return self.flow_speed / math.sqrt(self.gravity * self.reference_length)
 
     @froude_num.setter
@@ -156,18 +168,49 @@ class FlowConfig(SubConfig):
 
     @property
     def stagnation_pressure(self) -> float:
+        """float: The pressure at the stagnation point."""
         return 0.5 * self.density * self.flow_speed ** 2
 
     @property
     def k0(self) -> float:
+        """float: A wave number used internally in the potential-flow solver."""
         return self.gravity / self.flow_speed ** 2
 
     @property
     def lam(self) -> float:
+        """float: A wavelength used internally in the potential-flow solver."""
         return 2 * math.pi / self.k0
 
 
 class BodyConfig(SubConfig):
+    """Configuration for the rigid body.
+
+    Attributes:
+        xCofG (float): x-coordinate of the center of gravity.
+        yCofG (float): y-coordinate of the center of gravity.
+        mass (float): Mass of the rigid body.
+        reference_length (float): Reference length of the body.
+        time_step (float): Time step to use when solving time-domain rigid body motion.
+        relax_rigid_body (float): Under-relaxation factor to use for static rigid body motion solver.
+        motion_method (str): Motion method to use for rigid body solver.
+        motion_jacobian_first_step (float): Step length to use for first step in Jacobian calculation.
+        bow_seal_tip_load (float): Fixed load to apply to bow seal tip.
+        tip_constraint_ht (float): Height of constraint for seal tip.
+        seal_load_pct (float): Contribution of seals as percentage of total weight.
+        cushion_force_method (str): Method to use for cushion force calculation.
+        initial_draft (float): Initial draft to use in motion solver.
+        initial_trim (float): Initial trim to use in motion solver.
+        max_draft_step (float): Maximum step to use when solving for draft.
+        max_trim_step (float): Maximum step to use when solving for trim.
+        max_draft_acc (float): Maximum step in acceleration to use when solving for draft.
+        max_trim_acc (float): Maximum step in acceleration to use when solving for trim.
+        free_in_draft (bool): If True, body will be free in draft.
+        free_in_trim (bool): If True, body will be free in trim.
+        draft_damping (float): Damping value to use when solving for draft.
+        trim_damping (float): Damping value to use when solving for trim.
+
+    """
+
     xCofG = ConfigItem(default=0.0)
     yCofG = ConfigItem(default=0.0)
     _xCofR = ConfigItem(type=float)
@@ -213,6 +256,11 @@ class BodyConfig(SubConfig):
 
     @property
     def relax_draft(self) -> float:
+        """float: Under-relaxation factor to apply to the draft solver.
+
+        Defaults to rigid body under-relaxation factor.
+
+        """
         try:
             return self._relax_draft
         except AttributeError:
@@ -220,6 +268,11 @@ class BodyConfig(SubConfig):
 
     @property
     def relax_trim(self) -> float:
+        """float: Under-relaxation factor to apply to the trim solver.
+
+        Defaults to rigid body under-relaxation factor.
+
+        """
         try:
             return self._relax_trim
         except AttributeError:
@@ -227,10 +280,12 @@ class BodyConfig(SubConfig):
 
     @property
     def Pc(self) -> float:
+        """float: Alias for cushion pressure."""
         return self._cushion_pressure
 
     @property
     def PcBar(self) -> float:
+        """float: Non-dimensional cushion pressure."""
         return self._cushion_pressure * self.reference_length / self.weight
 
     @PcBar.setter
@@ -239,10 +294,12 @@ class BodyConfig(SubConfig):
 
     @property
     def Ps(self) -> float:
+        """float: Pressure inside the seal."""
         return self._seal_pressure
 
     @property
     def PsBar(self) -> float:
+        """float: Non-dimensional seal pressure as ratio of cushion pressure."""
         if self._cushion_pressure == 0.0:
             return 0.0
         return self._seal_pressure / self._cushion_pressure
@@ -253,6 +310,7 @@ class BodyConfig(SubConfig):
 
     @property
     def xCofR(self) -> float:
+        """float: x-coordinate of the center of rotation. Defaults to center of gravity."""
         try:
             return self._xCofR
         except AttributeError:
@@ -260,6 +318,7 @@ class BodyConfig(SubConfig):
 
     @property
     def yCofR(self) -> float:
+        """float: y-coordinate of the center of rotation. Defaults to center of gravity."""
         try:
             return self._yCofR
         except AttributeError:
@@ -267,6 +326,7 @@ class BodyConfig(SubConfig):
 
     @property
     def weight(self) -> float:
+        """float: Weight of the body. Defaults to mass times gravity."""
         try:
             return self._weight
         except AttributeError:
@@ -278,6 +338,20 @@ class BodyConfig(SubConfig):
 
 
 class PlotConfig(SubConfig):
+    """Configuration for plotting of the response.
+
+    Attributes:
+        pType (str): Selected method by which to scale pressure lines.
+        growth_rate (float): Rate at which to grow points when plotting free surface.
+        CofR_grid_len (float): Length of grid for plotting center-of-rotation.
+        fig_format (str): Format to save figures in.
+        pressure_limiter (bool): If True, limit the pressure bar length.
+        save (bool): If True, figures will be saved.
+        show (bool): If True, show the plot window while running the solver.
+        show_pressure (bool): If True, show the pressure profile lines.
+
+    """
+
     pType = ConfigItem("pScaleType", default="stagnation")
     _pScale = ConfigItem("pScale", default=1.0)
     _pScalePct = ConfigItem("pScalePct", default=1.0)
@@ -313,10 +387,12 @@ class PlotConfig(SubConfig):
 
     @property
     def watch(self) -> bool:
+        """bool: If True, watch the plot figure."""
         return self._watch or self.show
 
     @property
     def plot_any(self) -> bool:
+        """bool: If True, plot will be generated, otherwise skip to save compute time."""
         return self.show or self.save or self.watch or self.show_pressure
 
     @plot_any.setter
@@ -331,6 +407,7 @@ class PlotConfig(SubConfig):
 
     @property
     def x_fs_min(self) -> float:
+        """float: Minimum x-location to use for plotting free surface."""
         if self._x_fs_min is not None:
             return self._x_fs_min
         if self.xmin is not None:
@@ -339,6 +416,7 @@ class PlotConfig(SubConfig):
 
     @property
     def x_fs_max(self) -> float:
+        """float: Maximum x-location to use for plotting free surface."""
         if self._x_fs_max is not None:
             return self._x_fs_max
         if self.xmax is not None:
@@ -347,6 +425,7 @@ class PlotConfig(SubConfig):
 
     @property
     def pScale(self) -> float:
+        """float: Pressure value to use to scale the pressure profile."""
         if plotting.pType == "stagnation":
             pScale = flow.stagnation_pressure
         elif plotting.pType == "cushion":
@@ -359,19 +438,42 @@ class PlotConfig(SubConfig):
 
 
 class PathConfig(SubConfig):
-    # Directories and file formats
+    """Directories and file formats.
+
+    Attributes:
+        case_dir (str): Path to the case directory.
+        fig_dir_name (str): Path to the figures directory, relative to the case directory.
+        body_dict_dir (str): Path to the body dict directory, relative to the case directory.
+        input_dict_dir (str): Path to the input dict directory, relative to the case directory.
+        cushion_dict_dir (str): Path to the cushion dict directory, relative to the case directory.
+        mesh_dir (str): Path to the mesh directory, relative to the case directory.
+        mesh_dict_dir (str): Path to the mesh dictionary file, relative to the case directory.
+
+    Todo:
+        * Verify these attribute descriptions.
+
+    """
+
     case_dir = ConfigItem("caseDir", default=".")
     fig_dir_name = ConfigItem("figDirName", default="figures")
     body_dict_dir = ConfigItem("bodyDictDir", default="bodyDict")
     input_dict_dir = ConfigItem("inputDictDir", default="inputDict")
-    cushion_dict_dir = ConfigItem(
-        "pressureCushionDictDir", "cushionDictDir", default="cushionDict"
-    )
+    cushion_dict_dir = ConfigItem("pressureCushionDictDir", "cushionDictDir", default="cushionDict")
     mesh_dir = ConfigItem("meshDir", default="mesh")
     mesh_dict_dir = ConfigItem("meshDictDir", default="meshDict")
 
 
 class IOConfig(SubConfig):
+    """Configuration for file I/O.
+
+    Attributes:
+        data_format (str): Format of text files to save data in.
+        write_interval (int): Interval in iterations for which to write result files.
+        write_time_histories (bool): If True, time histories of rigid-body motion will be written to files.
+        results_from_file (bool): If True, load the results from previously-saved files.
+
+    """
+
     data_format = ConfigItem("dataFormat", default="txt")
     write_interval = ConfigItem("writeInterval", default=1)
     write_time_histories = ConfigItem("writeTimeHistories", default=False)
@@ -379,19 +481,28 @@ class IOConfig(SubConfig):
 
 
 class SolverConfig(SubConfig):
-    # Parameters for wetted length solver
+    """Parameters for solvers.
+
+    Attributes:
+        wetted_length_solver (str): Chosen solver to use for wetted length.
+        wetted_length_tol (float): Tolerance to use for wetted-length solver.
+        wetted_length_relax (float): Under-relaxation factor to use for wetted-length solver.
+        wetted_length_max_it (int): Maximum number of iterations to use for wetted-length solver.
+        wetted_length_max_it_0 (int): Maximum number of iterations to use for wetted-length solver in first rigid body
+            iteration.
+        wetted_length_max_step_pct (float): Maximum allowable change in wetted length as fraction of wetted length.
+
+
+    """
+
     wetted_length_solver = ConfigItem("wettedLengthSolver", default="Secant")
     wetted_length_tol = ConfigItem("wettedLengthTol", default=1e-6)
     wetted_length_relax = ConfigItem("wettedLengthRelax", default=1.0)
     wetted_length_max_it = ConfigItem("wettedLengthMaxIt", default=20)
     wetted_length_max_it_0 = ConfigItem("wettedLengthMaxIt0", default=100)
     wetted_length_max_step_pct = ConfigItem("wettedLengthMaxStepPct", default=0.2)
-    _wetted_length_max_step_pct_inc = ConfigItem(
-        "wettedLengthMaxStepPctInc", type=float
-    )
-    _wetted_length_max_step_pct_dec = ConfigItem(
-        "wettedLengthMaxStepPctDec", type=float
-    )
+    _wetted_length_max_step_pct_inc = ConfigItem("wettedLengthMaxStepPctInc", type=float)
+    _wetted_length_max_step_pct_dec = ConfigItem("wettedLengthMaxStepPctDec", type=float)
     wetted_length_max_jacobian_reset_step = ConfigItem(
         "wettedLengthMaxJacobianResetStep", default=100
     )
@@ -408,6 +519,7 @@ class SolverConfig(SubConfig):
 
     @property
     def wetted_length_max_step_pct_inc(self) -> float:
+        """float: Maximum allowable increase in wetted length as fraction of wetted length."""
         try:
             return self._wetted_length_max_step_pct_inc
         except AttributeError:
@@ -415,13 +527,14 @@ class SolverConfig(SubConfig):
 
     @property
     def wetted_length_max_step_pct_dec(self) -> float:
+        """float: Maximum allowable decrease in wetted length as fraction of wetted length."""
         try:
             return self._wetted_length_max_step_pct_dec
         except AttributeError:
             return self.wetted_length_max_step_pct
 
 
-# Flow-related variables
+# Create instances of each class and store on module
 flow = FlowConfig()
 body = BodyConfig()
 plotting = PlotConfig()

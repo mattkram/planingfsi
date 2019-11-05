@@ -4,7 +4,7 @@ from planingfsi.cli import cli
 
 
 @pytest.mark.skip
-def test_run_planingfsi(runner):    
+def test_run_planingfsi(runner):
     results = runner.invoke(cli, ["run"])
     assert results.exit_code == 0
 
