@@ -11,7 +11,7 @@ and the structural solver considers a large-deformation simple beam element.
 import logging
 
 logger = logging.getLogger("planingfsi")
-logger.setLevel(logging.DEBUG)
+logger.setLevel(logging.INFO)
 
 # # Use tk by default. Otherwise try Agg. Otherwise, disable plotting.
 # _fallback_engine = "Agg"
