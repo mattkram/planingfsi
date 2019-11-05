@@ -418,7 +418,7 @@ class PlaningSurface(PressurePatch):
 
     @PressurePatch.length.setter
     def length(self, length):
-        length = np.max([length, 0.0])
+        length = np.min([np.max([length, 0.0]), self.maximum_length])
 
         x0 = self.interpolator.get_separation_point()[0]
         self._end_pts = [x0, x0 + length]

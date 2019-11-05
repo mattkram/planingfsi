@@ -41,11 +41,13 @@ class PotentialPlaningSolver:
         self.pressure_cushions: List[PressureCushion] = []
         self.pressure_patches: List[PressurePatch] = []
         self.pressure_elements: List[PressureElement] = []
-        self.solver: Optional[solver.RootFinder] = None
 
-        self.min_len = None
-        self.max_len = None
-        self.init_len = None
+        self.solver: Optional[solver.RootFinder] = None
+        self.fluid_it = 0
+
+        self.min_len = np.array([])
+        self.max_len = np.array([])
+        self.init_len = np.array([])
 
     @property
     def simulation(self) -> "fsi_simulation.Simulation":
@@ -140,7 +142,7 @@ class PotentialPlaningSolver:
         """
         # Set length of each planing surface
         for Lwi, planing_surface in zip(wetted_length, self.planing_surfaces):
-            planing_surface.length = np.min([Lwi, planing_surface.maximum_length])
+            planing_surface.length = Lwi
 
         # Update bounds of pressure cushions
         for pressure_cushion in self.pressure_cushions:
@@ -155,84 +157,89 @@ class PotentialPlaningSolver:
             """Convert an array to a string."""
             return ", ".join(["{0:11.4e}".format(a) for a in array]).join("[]")
 
+        logger.info(f"    Wetted length iteration: {self.fluid_it}")
         logger.info(f"      Lw:       {array_to_string(wetted_length)}")
-        logger.info(f"      Residual: {array_to_string(residual)}")
-        logger.info("\n")
+        logger.info(f"      Residual: {array_to_string(residual)}\n")
+
+        self.fluid_it += 1
 
         return residual
 
     def calculate_response(self) -> None:
         """Calculate response, including pressure and free-surface profiles.
 
-        Will load results from file if specified.
+        Will load results from file if specified. Otherwise, calculate potential flow problem via
+        iteration to find wetted length of all planing surfaces to satisfy all trailing edge
+        conditions.
+
         """
         if config.io.results_from_file:
             self.load_response()
-        else:
-            self.calculate_response_unknown_wetted_length()
+            return
 
-    def calculate_response_unknown_wetted_length(self) -> None:
-        """Calculate potential flow problem via iteration to find wetted length
-        of all planing surfaces to satisfy all trailing edge conditions.
-        """
         # Reset results so they will be recalculated after new solution
         self.xFS = None
         self.X = None
 
-        # Initialize planing surface lengths and then solve until residual is
-        # *zero*
-        if len(self.planing_surfaces) > 0:
-            for p in self.planing_surfaces:
-                p.initialize_end_pts()
+        if not self.planing_surfaces:
+            # Return early if there are no planing surfaces
+            return
 
-            print("  Solving for wetted length:")
+        # Initialize planing surface lengths and then solve until residual is *zero*
+        for p in self.planing_surfaces:
+            p.initialize_end_pts()
 
-            if self.min_len is None:
-                self.min_len = np.array([p.minimum_length for p in self.planing_surfaces])
-                self.max_len = np.array([p.maximum_length for p in self.planing_surfaces])
-                self.init_len = np.array([p.initial_length for p in self.planing_surfaces])
-            else:
-                for i, p in enumerate(self.planing_surfaces):
-                    L = p.length
-                    self.init_len[i] = p.initial_length
-                    if ~np.isnan(L) and L - self.min_len[i] > 1e-6:
-                        # and self.solver.it < self.solver.maxIt:
-                        self.init_len[i] = L * 1.0
-                    else:
-                        self.init_len[i] = p.initial_length
+        logger.info("  Solving for wetted length:")
 
-            dxMaxDec = config.solver.wetted_length_max_step_pct_dec * (self.init_len - self.min_len)
-            dxMaxInc = config.solver.wetted_length_max_step_pct_inc * (self.init_len - self.min_len)
-
+        if not self.init_len:
+            self.init_len = np.array([p.initial_length for p in self.planing_surfaces])
+            self.min_len = np.array([p.minimum_length for p in self.planing_surfaces])
+            self.max_len = np.array([p.maximum_length for p in self.planing_surfaces])
+        else:
             for i, p in enumerate(self.planing_surfaces):
-                if p.initial_length == 0.0:
-                    self.init_len[i] = 0.0
+                length = p.length
+                if np.isnan(length) or length - self.min_len[i] < 1e-6:
+                    self.init_len[i] = p.initial_length
+                else:
+                    self.init_len[i] = length
 
-            if self.solver is None:
-                self.solver = solver.RootFinder(
-                    self._calculate_residual,
-                    self.init_len * 1.0,
-                    config.solver.wetted_length_solver,
-                    xMin=self.min_len,
-                    xMax=self.max_len,
-                    errLim=config.solver.wetted_length_tol,
-                    dxMaxDec=dxMaxDec,
-                    dxMaxInc=dxMaxInc,
-                    firstStep=1e-6,
-                    maxIt=config.solver.wetted_length_max_it_0,
-                    maxJacobianResetStep=config.solver.wetted_length_max_jacobian_reset_step,
-                    relax=config.solver.wetted_length_relax,
-                )
-            else:
-                self.solver.max_it = config.solver.wetted_length_max_it
-                self.solver.reinitialize(self.init_len * 1.0)
-                self.solver.dx_max_increase = dxMaxInc
-                self.solver.dx_max_decrease = dxMaxDec
+        dx_max_decrease = config.solver.wetted_length_max_step_pct_dec * (
+            self.init_len - self.min_len
+        )
+        dx_max_increase = config.solver.wetted_length_max_step_pct_inc * (
+            self.init_len - self.min_len
+        )
 
-            if any(self.init_len > 0.0):
-                self.solver.solve()
+        for i, p in enumerate(self.planing_surfaces):
+            if p.initial_length == 0.0:
+                self.init_len[i] = 0.0
 
-            self.calculate_pressure_and_shear_profile()
+        if self.solver is None:
+            self.solver = solver.RootFinder(
+                self._calculate_residual,
+                self.init_len,
+                config.solver.wetted_length_solver,
+                xMin=self.min_len,
+                xMax=self.max_len,
+                errLim=config.solver.wetted_length_tol,
+                dxMaxDec=dx_max_decrease,
+                dxMaxInc=dx_max_increase,
+                firstStep=1e-6,
+                maxIt=config.solver.wetted_length_max_it_0,
+                maxJacobianResetStep=config.solver.wetted_length_max_jacobian_reset_step,
+                relax=config.solver.wetted_length_relax,
+            )
+        else:
+            self.solver.max_it = config.solver.wetted_length_max_it
+            self.solver.reinitialize(self.init_len)
+            self.solver.dx_max_decrease = dx_max_decrease
+            self.solver.dx_max_increase = dx_max_increase
+
+        if (self.init_len > 0.0).any():
+            self.fluid_it = 0
+            self.solver.solve()
+
+        self.calculate_pressure_and_shear_profile()
 
     def calculate_pressure_and_shear_profile(self) -> None:
         """Calculate pressure and shear stress profiles over plate surface."""
