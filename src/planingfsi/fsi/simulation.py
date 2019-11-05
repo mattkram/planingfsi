@@ -28,6 +28,7 @@ class Simulation:
         self.fluid_solver = PotentialPlaningSolver(self)
         self._figure: Optional[FSIFigure] = None
         self.it = 0
+        self.ramp = 1.0
 
     #     def setFluidPressureFunc(self, func):
     #         self.fluidPressureFunc = func
@@ -230,7 +231,8 @@ class Simulation:
             else:
                 ramp = np.min((self.it / float(config.solver.num_ramp_it), 1.0))
 
-            config.ramp = ramp
+            # TODO: Remove reference to config.ramp eventually
+            config.ramp = self.ramp = ramp
             config.solver.relax_FEM = (
                 1 - ramp
             ) * config.solver.relax_initial + ramp * config.solver.relax_final
