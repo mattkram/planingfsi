@@ -42,7 +42,7 @@ planingfsi = "planingfsi:cli.cli"
 
 [tool.black]
 line-length = 100
-py36 = true
+target-version = ["py36"]
 include = '\.pyi?$'
 exclude = '''
 /(
