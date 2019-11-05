@@ -38,8 +38,7 @@ tox = "^3.6"
 mypy = "^0.740.0"
 
 [tool.poetry.scripts]
-planingFSI = "planingfsi:cli.planingfsi.main"
-generateMesh = "planingfsi:cli.mesh.main"
+planingfsi = "planingfsi:cli.cli"
 
 [tool.black]
 line-length = 100
