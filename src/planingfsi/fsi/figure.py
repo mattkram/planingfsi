@@ -1,14 +1,11 @@
 import os
 
-import numpy as np
 import matplotlib.pyplot as plt
+import numpy as np
 
 from .. import config, trig
-
 from ..fe.structure import FEStructure
 from ..potentialflow.solver import PotentialPlaningSolver
-
-from ..general import minMax
 
 
 class FSIFigure:
@@ -42,12 +39,10 @@ class FSIFigure:
                 CofRPlot(self.geometryAx, bd, symbol=False, style="k-", marker="o")
             )
 
-        xMin, xMax = minMax(
-            [nd.x for struct in self.solid.substructure for nd in struct.node]
-        )
-        yMin, yMax = minMax(
-            [nd.y for struct in self.solid.substructure for nd in struct.node]
-        )
+        x = [nd.x for struct in self.solid.substructure for nd in struct.node]
+        y = [nd.y for struct in self.solid.substructure for nd in struct.node]
+        xMin, xMax = min(x), max(x)
+        yMin, yMax = min(y), max(y)
 
         try:
             xMin = config.plotting.xmin
