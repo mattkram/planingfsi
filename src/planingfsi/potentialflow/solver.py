@@ -346,19 +346,6 @@ class PotentialPlaningSolver:
         """
         return sum([patch.get_free_surface_height(x) for patch in self.pressure_patches])
 
-    def get_free_surface_derivative(self, x: float, direction: str = "c") -> float:
-        """Return slope (derivative) of free-surface profile.
-
-        Args:
-            x: x-position.
-            direction: The differencing direction, c: central, r: right, l: left.
-
-        Returns:
-            Derivative or slope of free-surface profile.
-
-        """
-        return general.getDerivative(self.get_free_surface_height, x, direction=direction)
-
     def write_results(self) -> None:
         """Write results to files."""
         self._write_forces()
