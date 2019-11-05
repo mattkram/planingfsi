@@ -25,13 +25,17 @@ class ConfigItem:
     """
 
     name: str
+    default: Any
 
-    def __init__(
-        self, *alt_keys: str, default: Any = None, type_: Type = None,
-    ):
+    def __init__(self, *alt_keys: str, **kwargs: Any):
         self.alt_keys: List[str] = list(alt_keys)
-        self.default = default
-        self.type_ = type_
+        try:
+            self.default = kwargs["default"]
+        except KeyError:
+            # If default not specified, leave undefined. Handled in __get__.
+            # Allows None to be the default value.
+            pass
+        self.type_ = kwargs.get("type_")
 
     def __get__(self, instance: "SubConfig", _: Any) -> Any:
         """Retrieve the value from the instance dictionary or return the default.
@@ -42,11 +46,12 @@ class ConfigItem:
         """
         if self.name in instance.__dict__:
             return instance.__dict__[self.name]
-        elif self.default is not None:
+        try:
             return self.default
-        raise AttributeError(
-            f"Attribute {self.name} has not been set and no default specified"
-        )
+        except AttributeError:
+            raise AttributeError(
+                f"Attribute {self.name} has not been set and no default specified"
+            )
 
     def __set__(self, instance: "SubConfig", value: Any) -> None:
         """When the value is set, try to convert it and then store it in the instance dictionary."""
