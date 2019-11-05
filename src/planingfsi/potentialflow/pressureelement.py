@@ -23,10 +23,8 @@ def _get_aux_fg(lam):
     lam = abs(lam)
     (aux_sine, aux_cosine) = sici(lam)
     (sine, cosine) = np.sin(lam), np.cos(lam)
-    return (
-        cosine * (0.5 * np.pi - aux_sine) + sine * aux_cosine,
-        sine * (0.5 * np.pi - aux_sine) - cosine * aux_cosine,
-    )
+    return (cosine * (0.5 * np.pi - aux_sine) + sine * aux_cosine,
+            sine * (0.5 * np.pi - aux_sine) - cosine * aux_cosine)
 
 
 def _get_gamma1(lam, aux_g):

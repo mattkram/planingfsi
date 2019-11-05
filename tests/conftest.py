@@ -24,10 +24,14 @@ def input_dir(test_dir):
 
 
 @pytest.fixture()
+def validation_base_dir(test_dir):
+    return test_dir / "validation_cases"
+
+
+@pytest.fixture()
 def test_dict(input_dir):
     os.environ["HOME"] = "Dummy"
-    dict_ = load_dict_from_file(input_dir / "testDict")
-    return dict_
+    dict_ = Dictionary(from_file=str(input_dir / "testDict"))
 
 
 @pytest.fixture()
