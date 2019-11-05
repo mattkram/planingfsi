@@ -3,7 +3,7 @@ from pathlib import Path
 
 import pytest
 from click.testing import CliRunner
-from planingfsi.dictionary import Dictionary
+from planingfsi.dictionary import load_dict_from_file
 
 PROJECT_DIR = Path(__file__).parents[1]
 
@@ -26,7 +26,7 @@ def input_dir(test_dir):
 @pytest.fixture()
 def test_dict(input_dir):
     os.environ["HOME"] = "Dummy"
-    dict_ = Dictionary(from_file=str(input_dir / "testDict"))
+    dict_ = load_dict_from_file(input_dir / "testDict")
     return dict_
 
 

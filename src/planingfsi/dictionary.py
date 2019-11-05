@@ -7,7 +7,7 @@ from typing import Dict, Any, Match
 
 from . import logger
 
-__all__ = ["load_dict_from_file", "Dictionary"]
+__all__ = ["load_dict_from_file"]
 
 
 def replace_single_quotes_with_double_quotes(string: str) -> str:
@@ -100,7 +100,7 @@ def load_dict_from_file(filename: str) -> Dict[str, Any]:
             base_dict_dir = os.path.abspath(
                 os.path.join(os.path.dirname(filename), *base_dict_dir)
             )
-        base_dict = Dictionary(from_file=base_dict_dir)
+        base_dict = load_dict_from_file(base_dict_dir)
         dict_.update({k: v for k, v in base_dict.items() if k not in dict_})
 
     return dict_
@@ -129,26 +129,3 @@ def load_dict_from_string(string: str) -> Dict[str, Any]:
                 dict_[key] = eval(val)
 
     return dict_
-
-
-class Dictionary(UserDict):
-    """A deprecated class for loading dictionary from file."""
-
-    def __init__(
-        self,
-        from_dict: Dict[str, Any] = None,
-        from_file: str = None,
-        from_string: str = None,
-    ):
-        message = (
-            "The dictionary.Dictionary class is deprecated. "
-            "Consider using the function load_dict_from_file() instead."
-        )
-        warnings.warn(message, DeprecationWarning)
-        super().__init__()
-        if from_dict:
-            self.update(from_dict)
-        elif from_file:
-            self.update(load_dict_from_file(from_file))
-        elif from_string:
-            self.update(load_dict_from_string(from_string))
