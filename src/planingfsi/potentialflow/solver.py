@@ -186,35 +186,25 @@ class PotentialPlaningSolver:
             return
 
         # Initialize planing surface lengths and then solve until residual is *zero*
+        self._initialize_solver()
+        assert self.solver is not None
+
+        if (self.init_len > 0.0).any():
+            logger.info("  Solving for wetted length:")
+            self.fluid_it = 0
+            self.solver.solve()
+
+        self.calculate_pressure_and_shear_profile()
+
+    def _initialize_solver(self) -> None:
+        """Initialize the solver before each call."""
         for p in self.planing_surfaces:
             p.initialize_end_pts()
 
-        logger.info("  Solving for wetted length:")
-
-        if not self.init_len:
+        if self.solver is None:
             self.init_len = np.array([p.initial_length for p in self.planing_surfaces])
             self.min_len = np.array([p.minimum_length for p in self.planing_surfaces])
             self.max_len = np.array([p.maximum_length for p in self.planing_surfaces])
-        else:
-            for i, p in enumerate(self.planing_surfaces):
-                length = p.length
-                if np.isnan(length) or length - self.min_len[i] < 1e-6:
-                    self.init_len[i] = p.initial_length
-                else:
-                    self.init_len[i] = length
-
-        dx_max_decrease = config.solver.wetted_length_max_step_pct_dec * (
-            self.init_len - self.min_len
-        )
-        dx_max_increase = config.solver.wetted_length_max_step_pct_inc * (
-            self.init_len - self.min_len
-        )
-
-        for i, p in enumerate(self.planing_surfaces):
-            if p.initial_length == 0.0:
-                self.init_len[i] = 0.0
-
-        if self.solver is None:
             self.solver = solver.RootFinder(
                 self._calculate_residual,
                 self.init_len,
@@ -222,8 +212,6 @@ class PotentialPlaningSolver:
                 xMin=self.min_len,
                 xMax=self.max_len,
                 errLim=config.solver.wetted_length_tol,
-                dxMaxDec=dx_max_decrease,
-                dxMaxInc=dx_max_increase,
                 firstStep=1e-6,
                 maxIt=config.solver.wetted_length_max_it_0,
                 maxJacobianResetStep=config.solver.wetted_length_max_jacobian_reset_step,
@@ -231,15 +219,20 @@ class PotentialPlaningSolver:
             )
         else:
             self.solver.max_it = config.solver.wetted_length_max_it
-            self.solver.reinitialize(self.init_len)
-            self.solver.dx_max_decrease = dx_max_decrease
-            self.solver.dx_max_increase = dx_max_increase
+            for i, p in enumerate(self.planing_surfaces):
+                length = p.length
+                if np.isnan(length) or length - self.min_len[i] < 1e-6:
+                    self.init_len[i] = p.initial_length
+                else:
+                    self.init_len[i] = length
 
-        if (self.init_len > 0.0).any():
-            self.fluid_it = 0
-            self.solver.solve()
-
-        self.calculate_pressure_and_shear_profile()
+        self.solver.reinitialize(self.init_len)
+        self.solver.dx_max_decrease = config.solver.wetted_length_max_step_pct_dec * (
+            self.init_len - self.min_len
+        )
+        self.solver.dx_max_increase = config.solver.wetted_length_max_step_pct_inc * (
+            self.init_len - self.min_len
+        )
 
     def calculate_pressure_and_shear_profile(self) -> None:
         """Calculate pressure and shear stress profiles over plate surface."""
