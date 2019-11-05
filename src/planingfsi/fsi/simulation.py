@@ -90,7 +90,7 @@ class Simulation:
     def _load_substructures(self) -> None:
         """Load all substructures from files."""
         for dict_path in Path(config.path.input_dict_dir).glob("*"):
-            dict_ = load_dict_from_file(str(dict_path))
+            dict_ = load_dict_from_file(dict_path)
             substructure = self.solid_solver.add_substructure(dict_)
 
             if dict_.get("hasPlaningSurface", False):
@@ -104,7 +104,7 @@ class Simulation:
         """Load all pressure cushions from files."""
         if Path(config.path.cushion_dict_dir).exists():
             for dict_path in Path(config.path.cushion_dict_dir).glob("*"):
-                dict_ = load_dict_from_file(str(dict_path))
+                dict_ = load_dict_from_file(dict_path)
                 self.fluid_solver.add_pressure_cushion(dict_)
         print(f"Pressure Cushions: {self.fluid_solver.pressure_cushions}")
 

@@ -66,7 +66,7 @@ class PotentialPlaningSolver:
             raise ReferenceError("Simulation object cannot be accessed.")
         return simulation
 
-    def add_pressure_patch(self, instance: PressurePatch) -> None:
+    def _add_pressure_patch(self, instance: PressurePatch) -> None:
         """Add pressure patch to the calculation.
 
         Args:
@@ -76,45 +76,37 @@ class PotentialPlaningSolver:
         self.pressure_patches.append(instance)
         self.pressure_elements.extend([el for el in instance.pressure_elements])
 
-    def add_planing_surface(self, dict_: Dict[str, Any], **kwargs: Any) -> PlaningSurface:
+    def add_planing_surface(self, dict_: Dict[str, Any]) -> PlaningSurface:
         """Add planing surface to the calculation from a dictionary file name.
 
-        Args
-        ----
-        dict_ : planingfsi.io.Dictionary
-            The dictionary file.
+        Args:
+            dict_: The dictionary file.
 
-        Returns
-        -------
-        PlaningSurface
+        Returns:
             Instance created from dictionary.
+
         """
-        kwargs["parent"] = self
-        instance = PlaningSurface(dict_, **kwargs)
+        instance = PlaningSurface(dict_)
         self.planing_surfaces.append(instance)
-        self.add_pressure_patch(instance)
+        self._add_pressure_patch(instance)
         return instance
 
-    def add_pressure_cushion(self, dict_:Dict[str,Any], **kwargs:Any) -> PressureCushion:
+    def add_pressure_cushion(self, dict_: Dict[str, Any]) -> PressureCushion:
         """Add pressure cushion to the calculation from a dictionary file name.
 
-        Args
-        ----
-        dict_ : planingfsi.io.Dictionary
-            The dictionary file.
+        Args:
+            dict_: The dictionary file.
 
-        Returns
-        -------
-        PressureCushion
+        Returns:
             Instance created from dictionary.
+
         """
-        kwargs["parent"] = self
-        instance = PressureCushion(dict_, **kwargs)
+        instance = PressureCushion(dict_)
         self.pressure_cushions.append(instance)
-        self.add_pressure_patch(instance)
+        self._add_pressure_patch(instance)
         return instance
 
-    def get_planing_surface_by_name(self, name:str) ->Optional[PlaningSurface]:
+    def get_planing_surface_by_name(self, name: str) -> Optional[PlaningSurface]:
         """Return planing surface by name.
 
         Args
@@ -133,7 +125,7 @@ class PotentialPlaningSolver:
         else:
             return None
 
-    def print_element_status(self) ->None:
+    def print_element_status(self) -> None:
         """Print status of each element."""
         for el in self.pressure_elements:
             print(el)
@@ -437,7 +429,7 @@ class PotentialPlaningSolver:
         """
         return sum([patch.get_free_surface_height(x) for patch in self.pressure_patches])
 
-    def get_free_surface_derivative(self, x: float, direction: str="c") -> float:
+    def get_free_surface_derivative(self, x: float, direction: str = "c") -> float:
         """Return slope (derivative) of free-surface profile.
 
         Args:
@@ -508,8 +500,7 @@ class PotentialPlaningSolver:
     def load_pressure_and_shear(self) -> None:
         """Load pressure and shear stress from file."""
         self.x, self.p, self.shear_stress = np.loadtxt(
-            str(self.simulation.it_dir / f"pressureAndShear.{config.io.data_format}"),
-            unpack=True,
+            str(self.simulation.it_dir / f"pressureAndShear.{config.io.data_format}"), unpack=True,
         )
         for el in [el for patch in self.planing_surfaces for el in patch.pressure_elements]:
             compare = np.abs(self.x - el.get_xloc()) < 1e-6
@@ -523,9 +514,7 @@ class PotentialPlaningSolver:
     def load_free_surface(self) -> None:
         """Load free surface coordinates from file."""
         try:
-            data = np.loadtxt(
-                str(self.simulation.it_dir / f"freeSurface.{config.io.data_format}")
-            )
+            data = np.loadtxt(str(self.simulation.it_dir / f"freeSurface.{config.io.data_format}"))
             self.xFS = data[:, 0]
             self.zFS = data[:, 1]
         except IOError:
@@ -534,7 +523,7 @@ class PotentialPlaningSolver:
     def load_forces(self) -> None:
         """Load forces from file."""
         dict_ = load_dict_from_file(
-            self.simulation.it_dir/ f"forces_total.{config.io.data_format}"
+            self.simulation.it_dir / f"forces_total.{config.io.data_format}"
         )
         self.D = dict_.get("Drag", 0.0)
         self.Dw = dict_.get("WaveDrag", 0.0)
