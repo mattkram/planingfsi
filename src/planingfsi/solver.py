@@ -190,8 +190,6 @@ def fzero(
     max_it: int = 100,
     first_step: float = 1e-6,
     err_lim: float = 1e-6,
-    xmin: float = -math.inf,
-    xmax: float = math.inf,
 ) -> float:
     """Find the root of a scalar function func with an initial guess x_init.
 
@@ -201,8 +199,6 @@ def fzero(
         max_it: Maximum number of iterations.
         first_step: Length of first step.
         err_lim: Tolerance for iteration residual.
-        xmin: Minimum value for x-variable.
-        xmax: Maximum value for x-variable.
 
     Returns:
         The value x such that func(x) == 0.0, within a given tolerance.
@@ -217,7 +213,7 @@ def fzero(
         f_new = func(x_new)
         delta_x = -f_new * (x_new - x_old) / (f_new - f_old)
         x_old, f_old = x_new, f_new
-        x_new = max(min(x_new + delta_x, xmax), xmin)
+        x_new += delta_x
         error = numpy.abs(x_new - x_old)
         it_num += 1
     return x_new
