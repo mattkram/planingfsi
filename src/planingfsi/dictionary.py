@@ -1,8 +1,6 @@
 import json
 import os
 import re
-import warnings
-from collections import UserDict
 from typing import Dict, Any, Match
 
 from . import logger
