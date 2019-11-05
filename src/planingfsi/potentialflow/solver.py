@@ -12,10 +12,7 @@ from .pressureelement import PressureElement
 from .pressurepatch import PlaningSurface, PressureCushion, PressurePatch
 from .. import solver, config
 from ..dictionary import load_dict_from_file
-from ..fsi import simulation as fsi_simulation
-
-if config.plotting.plot_any:
-    import matplotlib.pyplot as plt
+from ..fsi import simulation as fsi_simulation, figure
 
 
 class PotentialPlaningSolver:
@@ -51,8 +48,6 @@ class PotentialPlaningSolver:
         self.pressure_cushions: List[PressureCushion] = []
         self.pressure_patches: List[PressurePatch] = []
         self.pressure_elements: List[PressureElement] = []
-        self.lineFS = None
-        self.lineFSi = None
         self.solver: Optional[solver.RootFinder] = None
 
         self.min_len = None
@@ -105,30 +100,6 @@ class PotentialPlaningSolver:
         self.pressure_cushions.append(instance)
         self._add_pressure_patch(instance)
         return instance
-
-    def get_planing_surface_by_name(self, name: str) -> Optional[PlaningSurface]:
-        """Return planing surface by name.
-
-        Args
-        ----
-        name : str
-            Name of planing surface.
-
-        Returns
-        -------
-        PlaningSurface
-            Planing surface object match
-        """
-        surfaces = [surf for surf in self.planing_surfaces if surf.patch_name == name]
-        if len(surfaces) > 0:
-            return surfaces[0]
-        else:
-            return None
-
-    def print_element_status(self) -> None:
-        """Print status of each element."""
-        for el in self.pressure_elements:
-            print(el)
 
     def calculate_pressure(self) -> None:
         """Calculate pressure of each element to satisfy body boundary conditions."""
@@ -274,50 +245,6 @@ class PotentialPlaningSolver:
 
             self.calculate_pressure_and_shear_profile()
 
-    def plot_residuals_over_range(self) -> None:
-        """Plot residuals."""
-        self.storeLen = np.array([p.length for p in self.planing_surfaces])
-
-        xx, yy = list(zip(*self.xHist))
-
-        N = 10
-        L = np.linspace(0.001, 0.25, N)
-        X = np.zeros((N, N))
-        Y = np.zeros((N, N))
-        Z1 = np.zeros((N, N))
-        Z2 = np.zeros((N, N))
-
-        for i, Li in enumerate(L):
-            for j, Lj in enumerate(L):
-                x = np.array([Li, Lj])
-                y = self.get_residual(x)
-
-                X[i, j] = x[0]
-                Y[i, j] = x[1]
-                Z1[i, j] = y[0]
-                Z2[i, j] = y[1]
-
-        for i, Zi, seal in zip([2, 3], [Z1, Z2], ["bow", "stern"]):
-            plt.figure(i)
-            plt.contourf(X, Y, Zi, 50)
-            plt.gray()
-            plt.colorbar()
-            plt.contour(X, Y, Z1, np.array([0.0]), colors="b")
-            plt.contour(X, Y, Z2, np.array([0.0]), colors="b")
-            plt.plot(xx, yy, "k.-")
-            if self.solver.converged:
-                plt.plot(xx[-1], yy[-1], "y*", markersize=10)
-            else:
-                plt.plot(xx[-1], yy[-1], "rx", markersize=8)
-
-            plt.title("Residual for {0} seal trailing edge pressure".format(seal))
-            plt.xlabel("Bow seal length")
-            plt.ylabel("Stern seal length")
-            plt.savefig("{0}SealResidual_{1}.png".format(seal, self.simulation.it), format="png")
-            plt.clf()
-
-        self.get_residual(self.storeLen)
-
     def calculate_pressure_and_shear_profile(self) -> None:
         """Calculate pressure and shear stress profiles over plate surface."""
         if self.X is None:
@@ -360,7 +287,7 @@ class PotentialPlaningSolver:
             # Calculate center of pressure
             self.xBar = general.integrate(self.X, self.p * self.X) / self.L
             if config.plotting.show_pressure:
-                self.plot_pressure()
+                figure.plot_pressure(self)
 
     def calculate_free_surface_profile(self) -> None:
         """Calculate free surface profile."""
@@ -434,6 +361,7 @@ class PotentialPlaningSolver:
 
         Args:
             x: x-position.
+            direction: The differencing direction, c: central, r: right, l: left.
 
         Returns:
             Derivative or slope of free-surface profile.
@@ -536,39 +464,3 @@ class PotentialPlaningSolver:
 
         for patch in self.pressure_patches:
             patch.load_forces()
-
-    def plot_pressure(self) -> None:
-        """Create a plot of the pressure and shear stress profiles."""
-        plt.figure(figsize=(5.0, 5.0))
-        plt.xlabel(r"$x/L_i$")
-        plt.ylabel(r"$p/(1/2\rho U^2)$")
-
-        for el in self.pressure_elements:
-            el.plot()
-
-        plt.plot(self.X, self.p, "k-")
-        plt.plot(self.X, self.shear_stress * 1000, "c--")
-
-        # Scale y axis by stagnation pressure
-        for line in plt.gca().lines:
-            x, y = line.get_data()
-            line.set_data(
-                x / config.body.reference_length * 2, y / config.flow.stagnation_pressure,
-            )
-
-        plt.xlim([-1.0, 1.0])
-        #    plt.xlim(kp.minMax(self.X / config.Lref * 2))
-        plt.ylim([0.0, np.min([1.0, 1.2 * np.max(self.p / config.flow.stagnation_pressure)])])
-        plt.savefig(
-            f"pressureElements.{config.plotting.fig_format}", format=config.plotting.fig_format,
-        )
-        plt.figure(1)
-
-    def plot_free_surface(self) -> None:
-        """Create a plot of the free surface profile."""
-        self.calculate_free_surface_profile()
-        if self.lineFS is not None:
-            self.lineFS.set_data(self.xFS, self.zFS)
-        end_pts = np.array([config.plotting.x_fs_min, config.plotting.x_fs_max])
-        if self.lineFSi is not None:
-            self.lineFSi.set_data(end_pts, config.flow.waterline_height * np.ones_like(end_pts))

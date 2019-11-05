@@ -20,8 +20,8 @@ class FSIFigure:
         for nd in self.solid.node:
             (nd.line_x_yline_xy,) = plt.plot([], [], "ro")
 
-        (self.fluid.lineFS,) = plt.plot([], [], "b-")
-        (self.fluid.lineFSi,) = plt.plot([], [], "b--")
+        (self.lineFS,) = plt.plot([], [], "b-")
+        (self.lineFSi,) = plt.plot([], [], "b--")
 
         for struct in self.solid.substructure:
             (struct.line_air_pressure,) = plt.plot([], [], "g-")
@@ -103,9 +103,16 @@ class FSIFigure:
     def fluid(self) -> PotentialPlaningSolver:
         return self.simulation.fluid_solver
 
+    def plot_free_surface(self) -> None:
+        """Create a plot of the free surface profile."""
+        self.fluid.calculate_free_surface_profile()
+        self.lineFS.set_data(self.fluid.xFS, self.fluid.zFS)
+        end_pts = np.array([config.plotting.x_fs_min, config.plotting.x_fs_max])
+        self.lineFSi.set_data(end_pts, config.flow.waterline_height * np.ones_like(end_pts))
+
     def update(self):
         self.solid.plot()
-        self.fluid.plot_free_surface()
+        self.plot_free_surface()
         self.TXT.set_text(
             (
                 r"Iteration {0}" + "\n" + r"$Fr={1:>8.3f}$" + "\n" + r"$\bar{{P_c}}={2:>8.3f}$"
@@ -392,3 +399,31 @@ class CofRPlot:
         pts = [c - hvec, c + hvec, np.ones(2) * np.nan, c - vvec, c + vvec]
         self.line.set_data(list(zip(*pts)))
         self.lineCofG.set_data(self.body.xCofG, self.body.yCofG)
+
+
+def plot_pressure(solver) -> None:
+    """Create a plot of the pressure and shear stress profiles."""
+    plt.figure(figsize=(5.0, 5.0))
+    plt.xlabel(r"$x/L_i$")
+    plt.ylabel(r"$p/(1/2\rho U^2)$")
+
+    for el in solver.pressure_elements:
+        el.plot()
+
+    plt.plot(solver.X, solver.p, "k-")
+    plt.plot(solver.X, solver.shear_stress * 1000, "c--")
+
+    # Scale y axis by stagnation pressure
+    for line in plt.gca().lines:
+        x, y = line.get_data()
+        line.set_data(
+            x / config.body.reference_length * 2, y / config.flow.stagnation_pressure,
+        )
+
+    plt.xlim([-1.0, 1.0])
+    #    plt.xlim(kp.minMax(self.X / config.Lref * 2))
+    plt.ylim([0.0, np.min([1.0, 1.2 * np.max(solver.p / config.flow.stagnation_pressure)])])
+    plt.savefig(
+        f"pressureElements.{config.plotting.fig_format}", format=config.plotting.fig_format,
+    )
+    plt.figure(1)
