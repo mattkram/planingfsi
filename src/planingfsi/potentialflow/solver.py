@@ -1,16 +1,13 @@
-"""Fundamental module for constructing and solving planing potential flow
-problems
-"""
+"""Fundamental module for constructing and solving planing potential flow problems."""
 import weakref
 from typing import List, Dict, Any, Optional
 
 import numpy as np
-from planingfsi import general
 from scipy.optimize import fmin
 
 from .pressureelement import PressureElement
 from .pressurepatch import PlaningSurface, PressureCushion, PressurePatch
-from .. import solver, config
+from .. import solver, config, general, logger
 from ..dictionary import load_dict_from_file
 from ..fsi import simulation as fsi_simulation, figure
 
@@ -38,11 +35,7 @@ class PotentialPlaningSolver:
         self.shear_stress = None
         self.xFS = None
         self.zFS = None
-        self.x = None
-        self.xBar = None
-        self.xHist = None
-        self.storeLen = None
-        self.max_len = None
+        self.xBar: Optional[float] = None
 
         self.planing_surfaces: List[PlaningSurface] = []
         self.pressure_cushions: List[PressureCushion] = []
@@ -51,6 +44,7 @@ class PotentialPlaningSolver:
         self.solver: Optional[solver.RootFinder] = None
 
         self.min_len = None
+        self.max_len = None
         self.init_len = None
 
     @property
@@ -134,22 +128,18 @@ class PotentialPlaningSolver:
         for el in nan_el:
             el.pressure = 0.0
 
-    def get_residual(self, Lw: np.ndarray) -> np.array:
-        """Return array of residuals of each planing surface to satisfy Kutta
-        condition.
+    def _calculate_residual(self, wetted_length: np.ndarray) -> np.ndarray:
+        """Return array of residuals of each planing surface to satisfy Kutta condition.
 
-        Args
-        ----
-        Lw : np.ndarray
-            Array of wetted lengths of planing surfaces.
+        Args:
+            wetted_length: Array of wetted lengths of planing surfaces.
 
-        Returns
-        -------
-        np.ndarray
+        Returns:
             Array of trailing edge residuals of each planing surface.
+
         """
         # Set length of each planing surface
-        for Lwi, planing_surface in zip(Lw, self.planing_surfaces):
+        for Lwi, planing_surface in zip(wetted_length, self.planing_surfaces):
             planing_surface.length = np.min([Lwi, planing_surface.maximum_length])
 
         # Update bounds of pressure cushions
@@ -159,17 +149,17 @@ class PotentialPlaningSolver:
         # Solve for unknown pressures and output residual
         self.calculate_pressure()
 
-        res = np.array([p.get_residual() for p in self.planing_surfaces])
+        residual = np.array([p.get_residual() for p in self.planing_surfaces])
 
         def array_to_string(array: np.ndarray) -> str:
             """Convert an array to a string."""
             return ", ".join(["{0:11.4e}".format(a) for a in array]).join("[]")
 
-        print(f"      Lw:       {array_to_string(Lw)}")
-        print(f"      Residual: {array_to_string(res)}")
-        print()
+        logger.info(f"      Lw:       {array_to_string(wetted_length)}")
+        logger.info(f"      Residual: {array_to_string(residual)}")
+        logger.info("\n")
 
-        return res
+        return residual
 
     def calculate_response(self) -> None:
         """Calculate response, including pressure and free-surface profiles.
@@ -188,7 +178,6 @@ class PotentialPlaningSolver:
         # Reset results so they will be recalculated after new solution
         self.xFS = None
         self.X = None
-        self.xHist = []
 
         # Initialize planing surface lengths and then solve until residual is
         # *zero*
@@ -221,7 +210,7 @@ class PotentialPlaningSolver:
 
             if self.solver is None:
                 self.solver = solver.RootFinder(
-                    self.get_residual,
+                    self._calculate_residual,
                     self.init_len * 1.0,
                     config.solver.wetted_length_solver,
                     xMin=self.min_len,
@@ -427,11 +416,11 @@ class PotentialPlaningSolver:
 
     def load_pressure_and_shear(self) -> None:
         """Load pressure and shear stress from file."""
-        self.x, self.p, self.shear_stress = np.loadtxt(
+        self.X, self.p, self.shear_stress = np.loadtxt(
             str(self.simulation.it_dir / f"pressureAndShear.{config.io.data_format}"), unpack=True,
         )
         for el in [el for patch in self.planing_surfaces for el in patch.pressure_elements]:
-            compare = np.abs(self.x - el.get_xloc()) < 1e-6
+            compare = np.abs(self.X - el.get_xloc()) < 1e-6
             if any(compare):
                 el.set_pressure(self.p[compare][0])
                 el.set_shear_stress(self.shear_stress[compare][0])
