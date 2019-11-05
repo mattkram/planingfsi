@@ -111,7 +111,8 @@ class FlowConfig(SubConfig):
         kinematic_viscosity (float): Kinematic viscosity of the fluid.
         waterline_height (float): Height of the waterline above the reference.
         num_dim (int): Number of dimensions.
-        include_friction (bool): If True, include a flat-plate estimation for the frictional drag component.
+        include_friction (bool): If True, include a flat-plate estimation for the frictional drag
+            component.
 
     """
 
@@ -191,9 +192,9 @@ class BodyConfig(SubConfig):
         mass (float): Mass of the rigid body.
         reference_length (float): Reference length of the body.
         time_step (float): Time step to use when solving time-domain rigid body motion.
-        relax_rigid_body (float): Under-relaxation factor to use for static rigid body motion solver.
+        relax_rigid_body (float): Under-relaxation factor for static rigid body motion solver.
         motion_method (str): Motion method to use for rigid body solver.
-        motion_jacobian_first_step (float): Step length to use for first step in Jacobian calculation.
+        motion_jacobian_first_step (float): Step length for first step in Jacobian calculation.
         bow_seal_tip_load (float): Fixed load to apply to bow seal tip.
         tip_constraint_ht (float): Height of constraint for seal tip.
         seal_load_pct (float): Contribution of seals as percentage of total weight.
@@ -469,7 +470,7 @@ class IOConfig(SubConfig):
     Attributes:
         data_format (str): Format of text files to save data in.
         write_interval (int): Interval in iterations for which to write result files.
-        write_time_histories (bool): If True, time histories of rigid-body motion will be written to files.
+        write_time_histories (bool): If True, time histories of motion will be written to files.
         results_from_file (bool): If True, load the results from previously-saved files.
 
     """
@@ -488,9 +489,10 @@ class SolverConfig(SubConfig):
         wetted_length_tol (float): Tolerance to use for wetted-length solver.
         wetted_length_relax (float): Under-relaxation factor to use for wetted-length solver.
         wetted_length_max_it (int): Maximum number of iterations to use for wetted-length solver.
-        wetted_length_max_it_0 (int): Maximum number of iterations to use for wetted-length solver in first rigid body
-            iteration.
-        wetted_length_max_step_pct (float): Maximum allowable change in wetted length as fraction of wetted length.
+        wetted_length_max_it_0 (int): Maximum number of iterations for wetted-length solver in first
+            rigid body iteration.
+        wetted_length_max_step_pct (float): Maximum allowable change in wetted length as fraction of
+            wetted length.
 
 
     """
