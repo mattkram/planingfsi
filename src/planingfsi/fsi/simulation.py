@@ -1,5 +1,6 @@
 import os
 from pathlib import Path
+from typing import Optional
 
 import numpy as np
 
@@ -19,14 +20,13 @@ class Simulation:
     Attributes:
         solid_solver (FEStructure): The structural solver.
         fluid_solver (PotentialPlaningSolver): The fluid solver.
-        figure (Optional[FSIFigure]): A figure object for visualizing the solution.
 
     """
 
     def __init__(self) -> None:
         self.solid_solver = FEStructure()
         self.fluid_solver = PotentialPlaningSolver(self)
-        self._figure = None
+        self._figure: Optional[FSIFigure] = None
         self.it = 0
 
     #     def setFluidPressureFunc(self, func):
@@ -36,7 +36,7 @@ class Simulation:
     #         self.solidPositionFunc = func
 
     @property
-    def figure(self):
+    def figure(self) -> Optional[FSIFigure]:
         """Use a property for the figure object to initialize lazily."""
         if self._figure is None and config.plotting.plot_any:
             self._figure = FSIFigure(self)
@@ -52,8 +52,9 @@ class Simulation:
         self.solid_solver.calculate_response()
 
     @property
-    def it_dir(self):
-        return os.path.join(config.path.case_dir, "{0}".format(self.it))
+    def it_dir(self) -> Path:
+        """A path to the directory for the current iteration."""
+        return Path(config.path.case_dir, str(self.it))
 
     def create_dirs(self) -> None:
         config.path.fig_dir_name = os.path.join(

@@ -17,7 +17,7 @@ from .fsi.simulation import Simulation
 
 
 @click.group(name="planingfsi", help="Run the PlaningFSI program")
-def cli():
+def cli() -> None:
     pass
 
 
