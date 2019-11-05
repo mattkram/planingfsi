@@ -84,14 +84,14 @@ class SubConfig:
     different sections. Also useful in helping define the namespace scopes.
     """
 
-    def load_from_dict(self, dict_name: str) -> None:
+    def load_from_file(self, filename: str) -> None:
         """Load the configuration from a dictionary file.
 
         Args:
-            dict_name: The path to the dictionary file.
+            filename: The path to the dictionary file.
 
         """
-        dict_ = load_dict_from_file(dict_name)
+        dict_ = load_dict_from_file(filename)
         for key, config_item in self.__class__.__dict__.items():
             if isinstance(config_item, ConfigItem):
                 try:
@@ -554,7 +554,7 @@ def load_from_file(filename: str) -> None:
     """
     logger.info(f"Loading values from {filename}")
     for c in [flow, body, plotting, path, io, solver]:
-        c.load_from_dict(filename)
+        c.load_from_file(filename)
 
 
 # Load the default config dict file
