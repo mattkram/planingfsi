@@ -8,7 +8,6 @@ from scipy.optimize import fmin
 from .pressureelement import PressureElement
 from .pressurepatch import PlaningSurface, PressureCushion, PressurePatch
 from .. import solver, config, general, logger
-from ..dictionary import load_dict_from_file
 from ..fsi import simulation as fsi_simulation, figure
 
 
@@ -34,16 +33,6 @@ class PotentialPlaningSolver:
         self.x_coord_fs = np.array([])
         self.z_coord_fs = np.array([])
 
-        self.drag_total = np.nan
-        self.drag_wave = np.nan
-        self.drag_pressure = np.nan
-        self.drag_friction = np.nan
-        self.lift_total = np.nan
-        self.lift_pressure = np.nan
-        self.lift_friction = np.nan
-        self.moment_total = np.nan
-        self.x_bar = np.nan
-
         self.solver: Optional[solver.RootFinder] = None
         self.fluid_it = 0
 
@@ -58,6 +47,35 @@ class PotentialPlaningSolver:
         if simulation is None:
             raise ReferenceError("Simulation object cannot be accessed.")
         return simulation
+
+    @property
+    def drag_wave(self) -> float:
+        """The wave drag, calculated from downstream wave amplitude."""
+        f = self.get_free_surface_height
+        x_init = -10 * config.flow.lam
+        (x_trough,) = fmin(f, x_init, disp=False)
+        (x_crest,) = fmin(lambda x: -f(x), x_init, disp=False)
+        return 0.0625 * config.flow.density * config.flow.gravity * (f(x_crest) - f(x_trough)) ** 2
+
+    @property
+    def x_bar(self) -> float:
+        """The center of lift."""
+        return general.integrate(self.x_coord, self.pressure * self.x_coord) / self.lift_total
+
+    def __getattr__(self, item: str) -> Any:
+        """Calculate total forces as sum of forces on each patch."""
+        if item in [
+            "drag_total",
+            "drag_pressure",
+            "drag_friction",
+            "drag_wave",
+            "lift_total",
+            "lift_pressure",
+            "lift_friction",
+            "moment_total",
+        ]:
+            return sum([getattr(p, item) for p in self.pressure_patches])
+        raise AttributeError
 
     def _add_pressure_patch(self, instance: PressurePatch) -> None:
         """Add pressure patch to the calculation.
@@ -101,6 +119,7 @@ class PotentialPlaningSolver:
 
     def calculate_pressure(self) -> None:
         """Calculate pressure of each element to satisfy body boundary conditions."""
+        # TODO: This calculation may be sped up by using vectorized functions
         # Form lists of unknown and source elements
         unknown_el = [el for el in self.pressure_elements if not el.is_source and el.width > 0.0]
         nan_el = [el for el in self.pressure_elements if el.width <= 0.0]
@@ -234,6 +253,10 @@ class PotentialPlaningSolver:
         self.calculate_free_surface_profile()
         self.calculate_pressure_and_shear_profile()
 
+        # Plot the pressure profile if specified
+        if config.plotting.show_pressure:
+            figure.plot_pressure(self)
+
     def calculate_pressure_and_shear_profile(self) -> None:
         """Calculate pressure and shear stress profiles over plate surface."""
         # Calculate forces on each patch
@@ -255,32 +278,6 @@ class PotentialPlaningSolver:
                 ind = el.x_coord == self.x_coord
                 self.pressure[ind] += el.pressure
                 self.shear_stress[ind] += el.shear_stress
-
-        # Calculate total forces as sum of forces on each patch
-        for var in [
-            "drag_total",
-            "drag_pressure",
-            "drag_friction",
-            "drag_wave",
-            "lift_total",
-            "lift_pressure",
-            "lift_friction",
-            "moment_total",
-        ]:
-            setattr(self, var, sum([getattr(p, var) for p in self.pressure_patches]))
-
-        f = self.get_free_surface_height
-        xo = -10.1 * config.flow.lam
-        (xTrough,) = fmin(f, xo, disp=False)
-        (xCrest,) = fmin(lambda x: -f(x), xo, disp=False)
-        self.drag_wave = (
-            0.0625 * config.flow.density * config.flow.gravity * (f(xCrest) - f(xTrough)) ** 2
-        )
-
-        # Calculate center of pressure
-        self.x_bar = general.integrate(self.x_coord, self.pressure * self.x_coord) / self.lift_total
-        if config.plotting.show_pressure:
-            figure.plot_pressure(self)
 
     def calculate_free_surface_profile(self) -> None:
         """Calculate free surface profile."""
@@ -346,40 +343,37 @@ class PotentialPlaningSolver:
 
     def _write_forces(self) -> None:
         """Write forces to file."""
-        if self.pressure_elements:
-            general.writeasdict(
-                self.simulation.it_dir / f"forces_total.{config.io.data_format}",
-                ["Drag", self.drag_total],
-                ["WaveDrag", self.drag_wave],
-                ["PressDrag", self.drag_pressure],
-                ["FricDrag", self.drag_friction],
-                ["Lift", self.lift_total],
-                ["PressLift", self.lift_pressure],
-                ["FricLift", self.lift_friction],
-                ["Moment", self.moment_total],
-            )
+        general.writeasdict(
+            self.simulation.it_dir / f"forces_total.{config.io.data_format}",
+            ["Drag", self.drag_total],
+            ["WaveDrag", self.drag_wave],
+            ["PressDrag", self.drag_pressure],
+            ["FricDrag", self.drag_friction],
+            ["Lift", self.lift_total],
+            ["PressLift", self.lift_pressure],
+            ["FricLift", self.lift_friction],
+            ["Moment", self.moment_total],
+        )
 
         for patch in self.pressure_patches:
             patch.write_forces()
 
     def _write_pressure_and_shear(self) -> None:
         """Write pressure and shear stress profiles to data file."""
-        if self.pressure_elements:
-            general.writeaslist(
-                self.simulation.it_dir / f"pressureAndShear.{config.io.data_format}",
-                ["x [m]", self.x_coord],
-                ["p [Pa]", self.pressure],
-                ["shear_stress [Pa]", self.shear_stress],
-            )
+        general.writeaslist(
+            self.simulation.it_dir / f"pressureAndShear.{config.io.data_format}",
+            ["x [m]", self.x_coord],
+            ["p [Pa]", self.pressure],
+            ["shear_stress [Pa]", self.shear_stress],
+        )
 
     def _write_free_surface(self) -> None:
         """Write free-surface profile to file."""
-        if self.pressure_elements:
-            general.writeaslist(
-                self.simulation.it_dir / f"freeSurface.{config.io.data_format}",
-                ["x [m]", self.x_coord_fs],
-                ["y [m]", self.z_coord_fs],
-            )
+        general.writeaslist(
+            self.simulation.it_dir / f"freeSurface.{config.io.data_format}",
+            ["x [m]", self.x_coord_fs],
+            ["y [m]", self.z_coord_fs],
+        )
 
     def load_results(self) -> None:
         """Load results from file."""
@@ -389,18 +383,6 @@ class PotentialPlaningSolver:
 
     def _load_forces(self) -> None:
         """Load forces from file."""
-        dict_ = load_dict_from_file(
-            self.simulation.it_dir / f"forces_total.{config.io.data_format}"
-        )
-        self.drag_total = dict_.get("Drag", 0.0)
-        self.drag_wave = dict_.get("WaveDrag", 0.0)
-        self.drag_pressure = dict_.get("PressDrag", 0.0)
-        self.drag_friction = dict_.get("FricDrag", 0.0)
-        self.lift_total = dict_.get("Lift", 0.0)
-        self.lift_pressure = dict_.get("PressLift", 0.0)
-        self.lift_friction = dict_.get("FricLift", 0.0)
-        self.moment_total = dict_.get("Moment", 0.0)
-
         for patch in self.pressure_patches:
             patch.load_forces()
 
@@ -421,8 +403,8 @@ class PotentialPlaningSolver:
     def _load_free_surface(self) -> None:
         """Load free surface coordinates from file."""
         try:
-            data = np.loadtxt(str(self.simulation.it_dir / f"freeSurface.{config.io.data_format}"))
-            self.x_coord_fs = data[:, 0]
-            self.z_coord_fs = data[:, 1]
+            self.x_coord_fs, self.z_coord_fs = np.loadtxt(
+                str(self.simulation.it_dir / f"freeSurface.{config.io.data_format}"), unpack=True
+            )
         except IOError:
             self.z_coord_fs = np.zeros_like(self.x_coord_fs)
