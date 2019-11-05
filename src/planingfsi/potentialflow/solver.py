@@ -214,7 +214,7 @@ class PotentialPlaningSolver:
 
         """
         if config.io.results_from_file:
-            self.load_response()
+            self.load_results()
             return
 
         if not self.planing_surfaces:
@@ -330,7 +330,7 @@ class PotentialPlaningSolver:
             self.x_coord_fs = np.sort(np.unique(np.hstack(xFS)))
             self.z_coord_fs = np.array(list(map(self.get_free_surface_height, self.x_coord_fs)))
         else:
-            self.x_coord_fs = np.array([config.plotting.xFSMin, config.plotting.xFSMax])
+            self.x_coord_fs = np.array([config.plotting.x_fs_min, config.plotting.x_fs_max])
             self.z_coord_fs = np.zeros_like(self.x_coord_fs)
 
     def get_free_surface_height(self, x: float) -> float:
@@ -361,30 +361,11 @@ class PotentialPlaningSolver:
 
     def write_results(self) -> None:
         """Write results to files."""
-        self.write_forces()
-        self.write_pressure_and_shear()
-        self.write_free_surface()
+        self._write_forces()
+        self._write_pressure_and_shear()
+        self._write_free_surface()
 
-    def write_pressure_and_shear(self) -> None:
-        """Write pressure and shear stress profiles to data file."""
-        if self.pressure_elements:
-            general.writeaslist(
-                self.simulation.it_dir / f"pressureAndShear.{config.io.data_format}",
-                ["x [m]", self.x_coord],
-                ["p [Pa]", self.pressure],
-                ["shear_stress [Pa]", self.shear_stress],
-            )
-
-    def write_free_surface(self) -> None:
-        """Write free-surface profile to file."""
-        if self.pressure_elements:
-            general.writeaslist(
-                self.simulation.it_dir / f"freeSurface.{config.io.data_format}",
-                ["x [m]", self.x_coord_fs],
-                ["y [m]", self.z_coord_fs],
-            )
-
-    def write_forces(self) -> None:
+    def _write_forces(self) -> None:
         """Write forces to file."""
         if self.pressure_elements:
             general.writeasdict(
@@ -402,36 +383,32 @@ class PotentialPlaningSolver:
         for patch in self.pressure_patches:
             patch.write_forces()
 
-    def load_response(self) -> None:
+    def _write_pressure_and_shear(self) -> None:
+        """Write pressure and shear stress profiles to data file."""
+        if self.pressure_elements:
+            general.writeaslist(
+                self.simulation.it_dir / f"pressureAndShear.{config.io.data_format}",
+                ["x [m]", self.x_coord],
+                ["p [Pa]", self.pressure],
+                ["shear_stress [Pa]", self.shear_stress],
+            )
+
+    def _write_free_surface(self) -> None:
+        """Write free-surface profile to file."""
+        if self.pressure_elements:
+            general.writeaslist(
+                self.simulation.it_dir / f"freeSurface.{config.io.data_format}",
+                ["x [m]", self.x_coord_fs],
+                ["y [m]", self.z_coord_fs],
+            )
+
+    def load_results(self) -> None:
         """Load results from file."""
-        self.load_forces()
-        self.load_pressure_and_shear()
-        self.load_free_surface()
+        self._load_forces()
+        self._load_pressure_and_shear()
+        self._load_free_surface()
 
-    def load_pressure_and_shear(self) -> None:
-        """Load pressure and shear stress from file."""
-        self.x_coord, self.pressure, self.shear_stress = np.loadtxt(
-            str(self.simulation.it_dir / f"pressureAndShear.{config.io.data_format}"), unpack=True,
-        )
-        for el in [el for patch in self.planing_surfaces for el in patch.pressure_elements]:
-            compare = np.abs(self.x_coord - el.get_xloc()) < 1e-6
-            if any(compare):
-                el.set_pressure(self.pressure[compare][0])
-                el.set_shear_stress(self.shear_stress[compare][0])
-
-        for p in self.planing_surfaces:
-            p.calculate_forces()
-
-    def load_free_surface(self) -> None:
-        """Load free surface coordinates from file."""
-        try:
-            data = np.loadtxt(str(self.simulation.it_dir / f"freeSurface.{config.io.data_format}"))
-            self.x_coord_fs = data[:, 0]
-            self.z_coord_fs = data[:, 1]
-        except IOError:
-            self.z_coord_fs = np.zeros_like(self.x_coord_fs)
-
-    def load_forces(self) -> None:
+    def _load_forces(self) -> None:
         """Load forces from file."""
         dict_ = load_dict_from_file(
             self.simulation.it_dir / f"forces_total.{config.io.data_format}"
@@ -447,3 +424,26 @@ class PotentialPlaningSolver:
 
         for patch in self.pressure_patches:
             patch.load_forces()
+
+    def _load_pressure_and_shear(self) -> None:
+        """Load pressure and shear stress from file."""
+        self.x_coord, self.pressure, self.shear_stress = np.loadtxt(
+            str(self.simulation.it_dir / f"pressureAndShear.{config.io.data_format}"), unpack=True,
+        )
+        for el in [el for patch in self.planing_surfaces for el in patch.pressure_elements]:
+            compare = np.abs(self.x_coord - el.get_xloc()) < 1e-6
+            if any(compare):
+                el.set_pressure(self.pressure[compare][0])
+                el.set_shear_stress(self.shear_stress[compare][0])
+
+        for p in self.planing_surfaces:
+            p.calculate_forces()
+
+    def _load_free_surface(self) -> None:
+        """Load free surface coordinates from file."""
+        try:
+            data = np.loadtxt(str(self.simulation.it_dir / f"freeSurface.{config.io.data_format}"))
+            self.x_coord_fs = data[:, 0]
+            self.z_coord_fs = data[:, 1]
+        except IOError:
+            self.z_coord_fs = np.zeros_like(self.x_coord_fs)
