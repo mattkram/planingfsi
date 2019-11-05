@@ -125,11 +125,7 @@ class FlowConfig(SubConfig):
 
         """
         if self._froude_num is not None:
-            try:
-                _ = self._flow_speed
-            except AttributeError:
-                pass
-            else:
+            if self._flow_speed is not None:
                 raise ValueError(
                     "Only one flow speed variable (either Froude number or flow "
                     "speed) must be set in {0}".format(DICT_NAME)
