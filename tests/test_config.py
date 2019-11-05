@@ -12,7 +12,7 @@ def config_instance():
 
     class TestClass(SubConfig):
         float_attr = ConfigItem(default=0.0)
-        int_attr = ConfigItem(type_=int)
+        int_attr = ConfigItem(type=int)
 
     return TestClass()
 

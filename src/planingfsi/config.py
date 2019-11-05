@@ -9,7 +9,7 @@ The global attributes can then be simply accessed via config.attribute_name
 """
 import math
 from pathlib import Path
-from typing import Any, List, Type, Dict
+from typing import Any, List, Type, Dict, Optional
 
 from . import logger
 from .dictionary import load_dict_from_file
@@ -35,7 +35,7 @@ class ConfigItem:
             # If default not specified, leave undefined. Handled in __get__.
             # Allows None to be the default value.
             pass
-        self.type_ = kwargs.get("type_")
+        self.type_: Optional[Type] = kwargs.get("type")
 
     def __get__(self, instance: "SubConfig", _: Any) -> Any:
         """Retrieve the value from the instance dictionary or return the default.
@@ -116,8 +116,8 @@ class FlowConfig(SubConfig):
     num_dim = ConfigItem("dim", default=2)
     include_friction = ConfigItem("shearCalc", default=False)
 
-    _froude_num = ConfigItem("Fr", default=None, type_=float)
-    _flow_speed = ConfigItem("U", default=None, type_=float)
+    _froude_num = ConfigItem("Fr", default=None, type=float)
+    _flow_speed = ConfigItem("U", default=None, type=float)
 
     @property
     def reference_length(self) -> float:
@@ -170,8 +170,8 @@ class FlowConfig(SubConfig):
 class BodyConfig(SubConfig):
     xCofG = ConfigItem(default=0.0)
     yCofG = ConfigItem(default=0.0)
-    _xCofR = ConfigItem(type_=float)
-    _yCofR = ConfigItem(type_=float)
+    _xCofR = ConfigItem(type=float)
+    _yCofR = ConfigItem(type=float)
 
     mass = ConfigItem("m", default=1.0)
     _weight = ConfigItem("W")
@@ -188,7 +188,7 @@ class BodyConfig(SubConfig):
     motion_jacobian_first_step = ConfigItem("motionJacobianFirstStep", default=1e-6)
 
     bow_seal_tip_load = ConfigItem("bowSealTipLoad", default=0.0)
-    tip_constraint_ht = ConfigItem("tipConstraintHt", type_=float)
+    tip_constraint_ht = ConfigItem("tipConstraintHt", type=float)
 
     seal_load_pct = ConfigItem("sealLoadPct", default=1.0)
     cushion_force_method = ConfigItem("cushionForceMethod", default="Fixed")
@@ -208,8 +208,8 @@ class BodyConfig(SubConfig):
     draft_damping = ConfigItem("draftDamping", default=1000.0)
     trim_damping = ConfigItem("trimDamping", default=500.0)
 
-    _relax_draft = ConfigItem("draftRelax", type_=float)
-    _relax_trim = ConfigItem("trimRelax", type_=float)
+    _relax_draft = ConfigItem("draftRelax", type=float)
+    _relax_trim = ConfigItem("trimRelax", type=float)
 
     @property
     def relax_draft(self) -> float:
@@ -294,16 +294,16 @@ class PlotConfig(SubConfig):
     ext_n = ConfigItem("extN", default=0.1)
     ext_s = ConfigItem("extS", default=0.1)
 
-    xmin = ConfigItem("plotXMin", type_=float)
-    xmax = ConfigItem("plotXMax", type_=float)
-    ymin = ConfigItem("plotYMin", type_=float)
-    ymax = ConfigItem("plotYMax", type_=float)
+    xmin = ConfigItem("plotXMin", type=float)
+    xmax = ConfigItem("plotXMax", type=float)
+    ymin = ConfigItem("plotYMin", type=float)
+    ymax = ConfigItem("plotYMax", type=float)
 
     lambda_min = ConfigItem("lamMin", default=-1.0)
     lambda_max = ConfigItem("lamMax", default=1.0)
 
-    _x_fs_min = ConfigItem("xFSMin", type_=float)
-    _x_fs_max = ConfigItem("xFSMax", type_=float)
+    _x_fs_min = ConfigItem("xFSMin", type=float)
+    _x_fs_max = ConfigItem("xFSMax", type=float)
 
     # Whether to save, show, or watch plots
     save = ConfigItem("plotSave", default=False)
@@ -387,10 +387,10 @@ class SolverConfig(SubConfig):
     wetted_length_max_it_0 = ConfigItem("wettedLengthMaxIt0", default=100)
     wetted_length_max_step_pct = ConfigItem("wettedLengthMaxStepPct", default=0.2)
     _wetted_length_max_step_pct_inc = ConfigItem(
-        "wettedLengthMaxStepPctInc", type_=float
+        "wettedLengthMaxStepPctInc", type=float
     )
     _wetted_length_max_step_pct_dec = ConfigItem(
-        "wettedLengthMaxStepPctDec", type_=float
+        "wettedLengthMaxStepPctDec", type=float
     )
     wetted_length_max_jacobian_reset_step = ConfigItem(
         "wettedLengthMaxJacobianResetStep", default=100
