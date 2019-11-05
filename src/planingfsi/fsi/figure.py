@@ -3,12 +3,12 @@ import os
 import numpy as np
 import matplotlib.pyplot as plt
 
-from .. import config
+from .. import config, trig
 
 from ..fe.structure import FEStructure
 from ..potentialflow.solver import PotentialPlaningSolver
 
-from ..krampy_old import minMax, rotateVec
+from ..general import minMax
 
 
 class FSIFigure:
@@ -439,8 +439,8 @@ class CofRPlot:
     def update(self):
         l = config.plotting.CofR_grid_len
         c = np.array([self.body.xCofR, self.body.yCofR])
-        hvec = rotateVec(np.array([0.5 * l, 0.0]), self.body.trim)
-        vvec = rotateVec(np.array([0.0, 0.5 * l]), self.body.trim)
+        hvec = trig.rotate_vec_2d(np.array([0.5 * l, 0.0]), self.body.trim)
+        vvec = trig.rotate_vec_2d(np.array([0.0, 0.5 * l]), self.body.trim)
         pts = [c - hvec, c + hvec, np.ones(2) * np.nan, c - vvec, c + vvec]
         self.line.set_data(list(zip(*pts)))
         self.lineCofG.set_data(self.body.xCofG, self.body.yCofG)

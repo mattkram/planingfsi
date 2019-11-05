@@ -112,7 +112,7 @@ def atand(slope):
        An angle, in degrees.
 
     """
-    return rad2deg(math.atan(slope))
+    return rad2deg(numpy.arctan(slope))
 
 
 def atand2(delta_y, delta_x):

@@ -4,6 +4,7 @@ import sys
 from fnmatch import fnmatch
 
 import numpy as np
+from planingfsi import trig
 
 """General utilities."""
 import errno
@@ -89,6 +90,38 @@ def index_match(index_list, match_list, search_str, **kwargs):
     if not isinstance(index, int):
         return kwargs.get("default")
     return index_list[index]
+
+
+def find_files(path=".", pattern="*"):
+    """Return list of files in path matching the pattern.
+
+    Args
+    ----
+    path : str, optional
+        Path to search. Default is current directory.
+
+    pattern : str
+        Wildcard pattern to match.
+    """
+    return [d for d in os.listdir(path) if fnmatch(d, pattern)]
+
+
+def sign(x):
+    if x > 0:
+        return 1.0
+    elif x < 0:
+        return -1.0
+    else:
+        return 0.0
+
+
+def heaviside(x):
+    if x > 0:
+        return 1.0
+    elif x < 0:
+        return 0.0
+    else:
+        return 0.5
 
 
 # def str2bool(str):
@@ -231,38 +264,38 @@ def index_match(index_list, match_list, search_str, **kwargs):
 #     return indexList[index]
 
 
-# def trapz(x, f):
-#     # Trapezoidal integration
-#     I = np.argsort(x)
-#     x = x[I]
-#     f = f[I]
-#     f[np.nonzero(np.abs(f) == float('Inf'))] = 0.0
-#
-#     return 0.5 * np.sum((x[1:] - x[0:-1]) * (f[1:] + f[0:-1]))
-#
-#
-# def integrate(x, f):
-#     return trapz(x, f)
-#
-#
-# def growPoints(x0, x1, xMax, rate=1.1):
-#     dx = x1 - x0
-#     x = [x1]
-#
-#     if dx > 0:
-#         done = lambda xt: xt > xMax
-#     elif dx < 0:
-#         done = lambda xt: xt < xMax
-#     else:
-#         done = lambda xt: True
-#
-#     while not done(x[-1]):
-#         x.append(x[-1] + dx)
-#         dx *= rate
-#
-#     return np.array(x[1:])
-#
-#
+def trapz(x, f):
+    # Trapezoidal integration
+    I = np.argsort(x)
+    x = x[I]
+    f = f[I]
+    f[np.nonzero(np.abs(f) == float("Inf"))] = 0.0
+
+    return 0.5 * np.sum((x[1:] - x[0:-1]) * (f[1:] + f[0:-1]))
+
+
+def integrate(x, f):
+    return trapz(x, f)
+
+
+def growPoints(x0, x1, xMax, rate=1.1):
+    dx = x1 - x0
+    x = [x1]
+
+    if dx > 0:
+        done = lambda xt: xt > xMax
+    elif dx < 0:
+        done = lambda xt: xt < xMax
+    else:
+        done = lambda xt: True
+
+    while not done(x[-1]):
+        x.append(x[-1] + dx)
+        dx *= rate
+
+    return np.array(x[1:])
+
+
 # def fillPoints(x0, x1, L, pctLast, targetRate=1.1):
 #     dxLast = pctLast * L
 #     x2 = x1 + np.sign(x1 - x0) * (L - 0.5 * dxLast)
@@ -274,27 +307,35 @@ def index_match(index_list, match_list, search_str, **kwargs):
 #     return func(fzero(res2, fzero(res1, targetRate)))
 #
 #
-# def getDerivative(f, x, direction='c'):
-#     dx = 1e-6
-#     fr = f(x + dx)
-#     fl = f(x - dx)
-#
-#     if direction[0].lower() == 'r' or np.isnan(fl):
-#         return (fr - f(x)) / dx
-#     elif direction[0].lower() == 'l' or np.isnan(fr):
-#         return (f(x) - fl) / dx
-#     else:
-#         return (f(x + dx) - f(x - dx)) / (2 * dx)
-#
-#
-# def rotatePt(oldPt, basePt, ang):
-#     relPos = np.array(oldPt) - np.array(basePt)
-#     newPos = rotateVec(relPos, ang)
-#     newPt = basePt + newPos
-#
-#     return newPt
-#
-#
+def getDerivative(f, x, direction="c"):
+    dx = 1e-6
+    fr = f(x + dx)
+    fl = f(x - dx)
+
+    if direction[0].lower() == "r" or np.isnan(fl):
+        return (fr - f(x)) / dx
+    elif direction[0].lower() == "l" or np.isnan(fr):
+        return (f(x) - fl) / dx
+    else:
+        return (f(x + dx) - f(x - dx)) / (2 * dx)
+
+
+def cross2(a, b):
+    return a[0] * b[1] - a[1] * b[0]
+
+
+def cumdiff(x):
+    return np.sum(np.diff(x))
+
+
+def rotatePt(oldPt, basePt, ang):
+    relPos = np.array(oldPt) - np.array(basePt)
+    newPos = trig.rotate_vec_2d(relPos, ang)
+    newPt = basePt + newPos
+
+    return newPt
+
+
 # def forceExtension(fileName, ext):
 #     '''Force a file extension to be replaced in fileName'''
 #     # Remove existing extension
@@ -323,8 +364,10 @@ def index_match(index_list, match_list, search_str, **kwargs):
 #
 #  return pointwise
 #
-# def minMax(x):
-#  return min(x), max(x)
+def minMax(x):
+    return min(x), max(x)
+
+
 #
 # def sign(x):
 #  if x > 0:
@@ -352,13 +395,14 @@ def index_match(index_list, match_list, search_str, **kwargs):
 #  if not os.path.exists(dirName):
 #    os.makedirs(dirName)#, 0755)
 #
-# def writeasdict(filename, *args, **kwargs):
-#  dataFormat   = kwargs.get('dataFormat', '>+10.8e')
-#  ff = open(filename, 'w')
-#  for name, value in args:
-#    ff.write('{2:{0}} : {3:{1}}\n'.format('<14', dataFormat, name, value))
-#  ff.close()
-#
+def writeasdict(filename, *args, **kwargs):
+    dataFormat = kwargs.get("dataFormat", ">+10.8e")
+    ff = open(filename, "w")
+    for name, value in args:
+        ff.write("{2:{0}} : {3:{1}}\n".format("<14", dataFormat, name, value))
+    ff.close()
+
+
 def writeaslist(filename, *args, **kwargs):
     headerFormat = kwargs.get("headerFormat", "<15")
     dataFormat = kwargs.get("dataFormat", ">+10.8e")
@@ -377,14 +421,20 @@ def write(ff, writeFormat, items):
     ff.write("".join("{1:{0}} ".format(writeFormat, item) for item in items) + "\n")
 
 
-# def sortDirByNum(dirStr, direction='forward'):
-#  num = np.array([float(''.join(i for i in dir.lower() if i.isdigit() or i == '.').strip('.')) for dir in dirStr])
-#  if direction == 'reverse':
-#    ind = np.argsort(num)[::-1]
-#  else:
-#    ind = np.argsort(num)
-#  return [dirStr[i] for i in ind], num[ind]
-#
+def sortDirByNum(dirStr, direction="forward"):
+    num = np.array(
+        [
+            float("".join(i for i in dir.lower() if i.isdigit() or i == ".").strip("."))
+            for dir in dirStr
+        ]
+    )
+    if direction == "reverse":
+        ind = np.argsort(num)[::-1]
+    else:
+        ind = np.argsort(num)
+    return [dirStr[i] for i in ind], num[ind]
+
+
 # def getFG(x):
 #  txMax = 5.0
 #  N = 20

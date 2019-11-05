@@ -5,7 +5,8 @@ import numpy as np
 from scipy.interpolate import interp1d
 
 from . import felib as fe
-from .. import config, solver, krampy_old as kp
+from .. import config, solver, general, trig
+from ..dictionary import load_dict_from_file
 
 
 class FEStructure:
@@ -293,13 +294,13 @@ class RigidBody:
 
         for nd in self.node:
             xo, yo = nd.get_coordinates()
-            newPos = kp.rotatePt([xo, yo], [self.xCofR, self.yCofR], dTrim)
+            newPos = general.rotatePt([xo, yo], [self.xCofR, self.yCofR], dTrim)
             nd.move_coordinates(newPos[0] - xo, newPos[1] - yo - dDraft)
 
         for s in self.substructure:
             s.update_geometry()
 
-        self.xCofG, self.yCofG = kp.rotatePt(
+        self.xCofG, self.yCofG = general.rotatePt(
             [self.xCofG, self.yCofG], [self.xCofR, self.yCofR], dTrim
         )
         self.yCofG -= dDraft
@@ -340,7 +341,7 @@ class RigidBody:
         self.M *= 0.0
         if config.body.cushion_force_method.lower() == "assumed":
             self.L += (
-                config.body.Pc * config.body.reference_length * kp.cosd(config.trim)
+                config.body.Pc * config.body.reference_length * trig.cosd(config.trim)
             )
 
     def get_disp_physical(self):
@@ -650,25 +651,25 @@ class RigidBody:
         #         ss.writeDeformation()
 
     def load_motion(self):
-        K = kp.dict_ionary(
+        K = load_dict_from_file(
             os.path.join(
                 config.it_dir, "motion_{0}.{1}".format(self.name, config.io.data_format)
             )
         )
-        self.xCofR = K.read("xCofR", np.nan)
-        self.yCofR = K.read("yCofR", np.nan)
-        self.xCofG = K.read("xCofG", np.nan)
-        self.yCofG = K.read("yCofG", np.nan)
-        self.draft = K.read("draft", np.nan)
-        self.trim = K.read("trim", np.nan)
-        self.res_l = K.read("liftRes", np.nan)
-        self.res_m = K.read("momentRes", np.nan)
-        self.L = K.read("Lift", np.nan)
-        self.D = K.read("Drag", np.nan)
-        self.M = K.read("Moment", np.nan)
-        self.La = K.read("LiftAir", np.nan)
-        self.Da = K.read("DragAir", np.nan)
-        self.Ma = K.read("MomentAir", np.nan)
+        self.xCofR = K.get("xCofR", np.nan)
+        self.yCofR = K.get("yCofR", np.nan)
+        self.xCofG = K.get("xCofG", np.nan)
+        self.yCofG = K.get("yCofG", np.nan)
+        self.draft = K.get("draft", np.nan)
+        self.trim = K.get("trim", np.nan)
+        self.res_l = K.get("liftRes", np.nan)
+        self.res_m = K.get("momentRes", np.nan)
+        self.L = K.get("Lift", np.nan)
+        self.D = K.get("Drag", np.nan)
+        self.M = K.get("Moment", np.nan)
+        self.La = K.get("LiftAir", np.nan)
+        self.Da = K.get("DragAir", np.nan)
+        self.Ma = K.get("MomentAir", np.nan)
 
 
 class Substructure:
@@ -933,20 +934,22 @@ class Substructure:
 
             # Integrate pressure profile, calculate center of pressure and
             # distribute force to nodes
-            integral = kp.integrate(s, pressure_total)
+            integral = general.integrate(s, pressure_total)
             if integral == 0.0:
                 qp = np.zeros(2)
             else:
                 pct = (
-                    kp.integrate(s, s * pressure_total) / integral - s[0]
-                ) / kp.cumdiff(s)
+                    general.integrate(s, s * pressure_total) / integral - s[0]
+                ) / general.cumdiff(s)
                 qp = integral * np.array([1 - pct, pct])
 
-            integral = kp.integrate(s, tau)
+            integral = general.integrate(s, tau)
             if integral == 0.0:
                 qs = np.zeros(2)
             else:
-                pct = (kp.integrate(s, s * tau) / integral - s[0]) / kp.cumdiff(s)
+                pct = (
+                    general.integrate(s, s * tau) / integral - s[0]
+                ) / general.cumdiff(s)
                 qs = -integral * np.array([1 - pct, pct])
 
             el.set_pressure_and_shear(qp, qs)
@@ -962,7 +965,7 @@ class Substructure:
                     integrand = pressure_fluid
 
                 n = list(map(self.get_normal_vector, s))
-                t = [kp.rotateVec(ni, -90) for ni in n]
+                t = [trig.rotate_vec_2d(ni, -90) for ni in n]
 
                 f = [
                     -pi * ni + taui * ti
@@ -974,11 +977,11 @@ class Substructure:
                     for pt in map(self.get_coordinates, s)
                 ]
 
-                m = [kp.cross2(ri, fi) for ri, fi in zip(r, f)]
+                m = [general.cross2(ri, fi) for ri, fi in zip(r, f)]
 
-                self.D -= kp.integrate(s, np.array(zip(*f)[0]))
-                self.L += kp.integrate(s, np.array(zip(*f)[1]))
-                self.M += kp.integrate(s, np.array(m))
+                self.D -= general.integrate(s, np.array(zip(*f)[0]))
+                self.L += general.integrate(s, np.array(zip(*f)[1]))
+                self.M += general.integrate(s, np.array(m))
             else:
                 if self.interpolator is not None:
                     self.D = self.interpolator.fluid.D
@@ -988,7 +991,7 @@ class Substructure:
             integrand = pressure_cushion
 
             n = list(map(self.get_normal_vector, s))
-            t = [kp.rotateVec(ni, -90) for ni in n]
+            t = [trig.rotate_vec_2d(ni, -90) for ni in n]
 
             f = [-pi * ni + taui * ti for pi, taui, ni, ti in zip(integrand, tau, n, t)]
 
@@ -997,17 +1000,17 @@ class Substructure:
                 for pt in map(self.get_coordinates, s)
             ]
 
-            m = [kp.cross2(ri, fi) for ri, fi in zip(r, f)]
+            m = [general.cross2(ri, fi) for ri, fi in zip(r, f)]
 
-            self.Da -= kp.integrate(s, np.array(list(zip(*f))[0]))
-            self.La += kp.integrate(s, np.array(list(zip(*f))[1]))
-            self.Ma += kp.integrate(s, np.array(m))
+            self.Da -= general.integrate(s, np.array(list(zip(*f))[0]))
+            self.La += general.integrate(s, np.array(list(zip(*f))[1]))
+            self.Ma += general.integrate(s, np.array(m))
 
     def get_normal_vector(self, s):
-        dxds = kp.getDerivative(lambda si: self.get_coordinates(si)[0], s)
-        dyds = kp.getDerivative(lambda si: self.get_coordinates(si)[1], s)
+        dxds = general.getDerivative(lambda si: self.get_coordinates(si)[0], s)
+        dyds = general.getDerivative(lambda si: self.get_coordinates(si)[1], s)
 
-        return kp.rotateVec(kp.ang2vecd(kp.atand2(dyds, dxds)), -90)
+        return trig.rotate_vec_2d(trig.angd2vec2d(trig.atand2(dyds, dxds)), -90)
 
     def plot_pressure_profiles(self):
         if self.line_fluid_pressure is not None:
@@ -1350,7 +1353,7 @@ class TorsionalSpringSubstructure(FlexibleSubstructure, RigidSubstructure):
                     integrand = pressure_fluid
 
                 n = list(map(self.get_normal_vector, s))
-                t = [kp.rotateVec(ni, -90) for ni in n]
+                t = [trig.rotate_vec_2d(ni, -90) for ni in n]
 
                 fC = [
                     -pi * ni + taui * ti
@@ -1370,11 +1373,11 @@ class TorsionalSpringSubstructure(FlexibleSubstructure, RigidSubstructure):
                     for pt in map(self.get_coordinates, s)
                 ]
 
-                m = [kp.cross2(ri, fi) for ri, fi in zip(r, f)]
+                m = [general.cross2(ri, fi) for ri, fi in zip(r, f)]
 
-                self.D -= kp.integrate(s, np.array(zip(*f)[0]))
-                self.L += kp.integrate(s, np.array(zip(*f)[1]))
-                self.M += kp.integrate(s, np.array(m))
+                self.D -= general.integrate(s, np.array(zip(*f)[0]))
+                self.L += general.integrate(s, np.array(zip(*f)[1]))
+                self.M += general.integrate(s, np.array(m))
             else:
                 if self.interpolator is not None:
                     self.D = self.interpolator.fluid.D
@@ -1385,7 +1388,7 @@ class TorsionalSpringSubstructure(FlexibleSubstructure, RigidSubstructure):
             #      integrand = pFl
             integrand = pressure_total
             n = list(map(self.get_normal_vector, s))
-            t = [kp.rotateVec(ni, -90) for ni in n]
+            t = [trig.rotate_vec_2d(ni, -90) for ni in n]
 
             f = [-pi * ni + taui * ti for pi, taui, ni, ti in zip(integrand, tau, n, t)]
             r = [
@@ -1393,17 +1396,17 @@ class TorsionalSpringSubstructure(FlexibleSubstructure, RigidSubstructure):
                 for pt in map(self.get_coordinates, s)
             ]
 
-            m = [kp.cross2(ri, fi) for ri, fi in zip(r, f)]
+            m = [general.cross2(ri, fi) for ri, fi in zip(r, f)]
             fx, fy = list(zip(*f))
 
-            self.Dt += kp.integrate(s, np.array(fx))
-            self.Lt += kp.integrate(s, np.array(fy))
-            self.Mt += kp.integrate(s, np.array(m))
+            self.Dt += general.integrate(s, np.array(fx))
+            self.Lt += general.integrate(s, np.array(fy))
+            self.Mt += general.integrate(s, np.array(m))
 
             integrand = pressure_cushion
 
             n = list(map(self.get_normal_vector, s))
-            t = [kp.rotateVec(ni, -90) for ni in n]
+            t = [trig.rotate_vec_2d(ni, -90) for ni in n]
 
             f = [-pi * ni + taui * ti for pi, taui, ni, ti in zip(integrand, tau, n, t)]
 
@@ -1412,17 +1415,17 @@ class TorsionalSpringSubstructure(FlexibleSubstructure, RigidSubstructure):
                 for pt in map(self.get_coordinates, s)
             ]
 
-            m = [kp.cross2(ri, fi) for ri, fi in zip(r, f)]
+            m = [general.cross2(ri, fi) for ri, fi in zip(r, f)]
 
-            self.Da -= kp.integrate(s, np.array(zip(*f)[0]))
-            self.La += kp.integrate(s, np.array(zip(*f)[1]))
-            self.Ma += kp.integrate(s, np.array(m))
+            self.Da -= general.integrate(s, np.array(zip(*f)[0]))
+            self.La += general.integrate(s, np.array(zip(*f)[1]))
+            self.Ma += general.integrate(s, np.array(m))
 
         # Apply tip load
         tipC = self.get_coordinates(self.tip_load_pct * self.get_arc_length())
         tipR = np.array([tipC[i] - self.base_pt[i] for i in [0, 1]])
         tipF = np.array([0.0, self.tip_load]) * config.ramp
-        tipM = kp.cross2(tipR, tipF)
+        tipM = general.cross2(tipR, tipF)
         self.Lt += tipF[1]
         self.Mt += tipM
 
@@ -1467,7 +1470,7 @@ class TorsionalSpringSubstructure(FlexibleSubstructure, RigidSubstructure):
         basePt = np.array([c for c in self.node[-1].get_coordinates()])
         for nd in self.node + attNd:
             oldPt = np.array([c for c in nd.get_coordinates()])
-            newPt = kp.rotatePt(oldPt, basePt, -dTheta)
+            newPt = general.rotatePt(oldPt, basePt, -dTheta)
             nd.set_coordinates(newPt[0], newPt[1])
 
         self.theta += dTheta
@@ -1481,7 +1484,7 @@ class TorsionalSpringSubstructure(FlexibleSubstructure, RigidSubstructure):
     #    return self.theta + self.Mt / self.spring_constant
 
     def writeDeformation(self):
-        kp.writeasdict(
+        general.writeasdict(
             os.path.join(
                 config.it_dir,
                 "deformation_{0}.{1}".format(self.name, config.io.data_format),

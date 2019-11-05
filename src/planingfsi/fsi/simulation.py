@@ -8,7 +8,7 @@ from .interpolator import Interpolator
 from .. import config, logger
 from ..dictionary import load_dict_from_file
 from ..fe.structure import FEStructure
-from ..krampy_old import sortDirByNum, find_files, writeasdict
+from ..general import sortDirByNum, find_files, writeasdict
 from ..potentialflow.solver import PotentialPlaningSolver
 
 

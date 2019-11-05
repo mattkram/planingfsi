@@ -5,9 +5,10 @@ problems
 from os.path import join
 
 import numpy as np
+from planingfsi import general
 from scipy.optimize import fmin
 
-from .. import solver, config, krampy_old as kp
+from .. import solver, config
 from ..dictionary import load_dict_from_file
 from ..potentialflow.pressurepatch import PlaningSurface, PressureCushion
 
@@ -391,7 +392,7 @@ class PotentialPlaningSolver(object):
             )
 
             # Calculate center of pressure
-            self.xBar = kp.integrate(self.X, self.p * self.X) / self.L
+            self.xBar = general.integrate(self.X, self.p * self.X) / self.L
             if config.plotting.show_pressure:
                 self.plot_pressure()
 
@@ -404,7 +405,7 @@ class PotentialPlaningSolver(object):
                 if surf.length > 0:
                     pts = surf._get_element_coords()
                     xFS.append(
-                        kp.growPoints(
+                        general.growPoints(
                             pts[1],
                             pts[0],
                             config.plotting.x_fs_min,
@@ -412,7 +413,7 @@ class PotentialPlaningSolver(object):
                         )
                     )
                     xFS.append(
-                        kp.growPoints(
+                        general.growPoints(
                             pts[-2],
                             pts[-1],
                             config.plotting.x_fs_max,
@@ -490,7 +491,9 @@ class PotentialPlaningSolver(object):
         float
             Derivative or slope of free-surface profile
         """
-        ddx = kp.getDerivative(self.get_free_surface_height, x, direction=direction)
+        ddx = general.getDerivative(
+            self.get_free_surface_height, x, direction=direction
+        )
         return ddx
 
     def write_results(self):
@@ -509,7 +512,7 @@ class PotentialPlaningSolver(object):
     def write_pressure_and_shear(self):
         """Write pressure and shear stress profiles to data file."""
         if len(self.pressure_elements) > 0:
-            kp.writeaslist(
+            general.writeaslist(
                 join(
                     self.simulation.it_dir,
                     "pressureAndShear.{0}".format(config.io.data_format),
@@ -522,7 +525,7 @@ class PotentialPlaningSolver(object):
     def write_free_surface(self):
         """Write free-surface profile to file."""
         if len(self.pressure_elements) > 0:
-            kp.writeaslist(
+            general.writeaslist(
                 join(
                     self.simulation.it_dir,
                     "freeSurface.{0}".format(config.io.data_format),
@@ -534,7 +537,7 @@ class PotentialPlaningSolver(object):
     def write_forces(self):
         """Write forces to file."""
         if len(self.pressure_elements) > 0:
-            kp.writeasdict(
+            general.writeasdict(
                 join(
                     self.simulation.it_dir,
                     "forces_total.{0}".format(config.io.data_format),

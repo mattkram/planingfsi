@@ -1,6 +1,6 @@
 import numpy as np
 
-from .. import config, krampy_old as kp
+from .. import config, trig, general
 
 
 class Node:
@@ -101,7 +101,7 @@ class Element:
         self.length = ((x[1] - x[0]) ** 2 + (y[1] - y[0]) ** 2) ** 0.5
         if self.initial_length is None:
             self.initial_length = self.length
-        self.gamma = kp.atand2(y[1] - y[0], x[1] - x[0])
+        self.gamma = trig.atand2(y[1] - y[0], x[1] - x[0])
 
     def set_pressure_and_shear(self, qp, qs):
         self.qp = qp
@@ -114,7 +114,7 @@ class Element:
         if self.lineEl0 is not None and self.plot_on:
             basePt = [self.parent.parent.xCofR0, self.parent.parent.yCofR0]
             pos = [
-                kp.rotatePt(pos, basePt, self.parent.parent.trim)
+                general.rotatePt(pos, basePt, self.parent.parent.trim)
                 - np.array([0, self.parent.parent.draft])
                 for pos in self.init_pos
             ]
@@ -152,8 +152,8 @@ class TrussElement(Element):
         F = FL + FNL
 
         # Rotate stiffness and force matrices into global coordinates
-        C = kp.cosd(self.gamma)
-        S = kp.sind(self.gamma)
+        C = trig.cosd(self.gamma)
+        S = trig.sind(self.gamma)
 
         TM = np.array([[C, S, 0, 0], [-S, C, 0, 0], [0, 0, C, S], [0, 0, -S, C]])
 

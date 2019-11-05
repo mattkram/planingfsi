@@ -2,11 +2,13 @@
 import os
 
 import numpy as np
+from planingfsi import trig, general
+from planingfsi.dictionary import load_dict_from_file
 from scipy.interpolate import interp1d
 from scipy.optimize import fmin
 
 from . import pressureelement as pe
-from .. import config, krampy_old as kp
+from .. import config
 
 
 class PressurePatch(object):
@@ -174,22 +176,22 @@ class PressurePatch(object):
 
     def load_forces(self):
         """Load forces from file."""
-        K = kp.Dictionary(
+        K = load_dict_from_file(
             os.path.join(
                 config.it_dir,
                 "forces_{0}.{1}".format(self.patch_name, config.io.data_format),
             )
         )
-        self.D = K.read("Drag", 0.0)
-        self.Dw = K.read("WaveDrag", 0.0)
-        self.Dp = K.read("PressDrag", 0.0)
-        self.Df = K.read("FricDrag", 0.0)
-        self.L = K.read("Lift", 0.0)
-        self.Lp = K.read("PressLift", 0.0)
-        self.Lf = K.read("FricLift", 0.0)
-        self.M = K.read("Moment", 0.0)
-        self.base_pt = K.read("BasePt", 0.0)
-        self.length = K.read("Length", 0.0)
+        self.D = K.get("Drag", 0.0)
+        self.Dw = K.get("WaveDrag", 0.0)
+        self.Dp = K.get("PressDrag", 0.0)
+        self.Df = K.get("FricDrag", 0.0)
+        self.L = K.get("Lift", 0.0)
+        self.Lp = K.get("PressLift", 0.0)
+        self.Lf = K.get("FricLift", 0.0)
+        self.M = K.get("Moment", 0.0)
+        self.base_pt = K.get("BasePt", 0.0)
+        self.length = K.get("Length", 0.0)
 
 
 class PressureCushion(PressurePatch):
@@ -421,7 +423,7 @@ class PlaningSurface(PressurePatch):
 
         # Define point spacing
         if self.point_spacing == "cosine":
-            self.pct = 0.5 * (1 - kp.cosd(np.linspace(0, 180, Nfl + 1)))
+            self.pct = 0.5 * (1 - trig.cosd(np.linspace(0, 180, Nfl + 1)))
         else:
             self.pct = np.linspace(0.0, 1.0, Nfl + 1)
         self.pct /= self.pct[-2]
@@ -502,16 +504,16 @@ class PlaningSurface(PressurePatch):
                 self.x, self.shear_stress, bounds_error=False, fill_value=0.0
             )
 
-            AOA = kp.atand(self._get_body_derivative(self.x))
+            AOA = trig.atand(self._get_body_derivative(self.x))
 
-            self.Dp = kp.integrate(self.s, self.p * kp.sind(AOA))
-            self.Df = kp.integrate(self.s, self.shear_stress * kp.cosd(AOA))
-            self.Lp = kp.integrate(self.s, self.p * kp.cosd(AOA))
-            self.Lf = -kp.integrate(self.s, self.shear_stress * kp.sind(AOA))
+            self.Dp = general.integrate(self.s, self.p * trig.sind(AOA))
+            self.Df = general.integrate(self.s, self.shear_stress * trig.cosd(AOA))
+            self.Lp = general.integrate(self.s, self.p * trig.cosd(AOA))
+            self.Lf = -general.integrate(self.s, self.shear_stress * trig.sind(AOA))
             self.D = self.Dp + self.Df
             self.L = self.Lp + self.Lf
-            self.M = kp.integrate(
-                self.x, self.p * kp.cosd(AOA) * (self.x - config.body.xCofR)
+            self.M = general.integrate(
+                self.x, self.p * trig.cosd(AOA) * (self.x - config.body.xCofR)
             )
         else:
             self.Dp = 0.0
@@ -581,7 +583,7 @@ class PlaningSurface(PressurePatch):
             x = [x]
         return np.array(
             [
-                kp.getDerivative(self.interpolator.get_body_height, xx, direction)
+                general.getDerivative(self.interpolator.get_body_height, xx, direction)
                 for xx in x
             ]
         )

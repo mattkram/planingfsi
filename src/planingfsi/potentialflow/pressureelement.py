@@ -10,8 +10,7 @@ except ImportError:
     plt = None
     pass
 
-from .. import krampy_old as kp
-from .. import config
+from .. import config, general
 
 _PLOT_INFINITY = 50.0
 
@@ -66,7 +65,9 @@ def _get_gamma2(lam, aux_f):
     float
 
     """
-    return kp.sign(lam) * aux_f / np.pi + kp.heaviside(-lam) * (2 * np.cos(lam) - 1)
+    return general.sign(lam) * aux_f / np.pi + general.heaviside(-lam) * (
+        2 * np.cos(lam) - 1
+    )
 
 
 def _get_gamma3(lam, aux_f):
