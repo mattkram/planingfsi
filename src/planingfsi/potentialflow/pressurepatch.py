@@ -24,7 +24,8 @@ class PressurePatch(abc.ABC):
 
     """
 
-    def __init__(self) -> None:
+    def __init__(self, parent: "solver.PotentialPlaningSolver") -> None:
+        self.parent = parent
         self.patch_name = "AbstractPressurePatch"
         self.pressure_elements: List[pe.PressureElement] = []
         self._end_pts = np.zeros(2)
@@ -32,7 +33,6 @@ class PressurePatch(abc.ABC):
         self._neighbor_up: Optional["PressurePatch"] = None
         self._neighbor_down: Optional["PressurePatch"] = None
         self.interpolator: Optional[Interpolator] = None
-        self.parent: Optional[solver.PotentialPlaningSolver] = None
 
         self.drag_total = np.nan
         self.drag_pressure = np.nan
@@ -192,8 +192,8 @@ class PressureCushion(PressurePatch):
 
     _count = 0
 
-    def __init__(self, dict_: Dict[str, Any]) -> None:
-        super().__init__()
+    def __init__(self, parent: "solver.PotentialPlaningSolver", dict_: Dict[str, Any]) -> None:
+        super().__init__(parent)
         PressureCushion._count += 1
         self.patch_name = dict_.get(
             "pressureCushionName", f"pressureCushion{PressureCushion._count}"
@@ -335,8 +335,8 @@ class PlaningSurface(PressurePatch):
                     return obj
         return None
 
-    def __init__(self, dict_: Dict[str, Any]) -> None:
-        super().__init__()
+    def __init__(self, parent: "solver.PotentialPlaningSolver", dict_: Dict[str, Any]) -> None:
+        super().__init__(parent)
         PlaningSurface._all.append(self)
 
         self.patch_name = dict_.get("substructureName", "")
@@ -523,7 +523,7 @@ class PlaningSurface(PressurePatch):
             ind = []
 
         # Output all values within range
-        if ind:
+        if not ind == []:
             interp_p = interp1d(self.x_coords, self.pressure, bounds_error=False, fill_value=0.0)
             interp_tau = interp1d(
                 self.x_coords, self.shear_stress, bounds_error=False, fill_value=0.0

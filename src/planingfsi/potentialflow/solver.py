@@ -97,7 +97,7 @@ class PotentialPlaningSolver:
             Instance created from dictionary.
 
         """
-        instance = PlaningSurface(dict_)
+        instance = PlaningSurface(self, dict_)
         self.planing_surfaces.append(instance)
         self._add_pressure_patch(instance)
         return instance
@@ -112,7 +112,7 @@ class PotentialPlaningSolver:
             Instance created from dictionary.
 
         """
-        instance = PressureCushion(dict_)
+        instance = PressureCushion(self, dict_)
         self.pressure_cushions.append(instance)
         self._add_pressure_patch(instance)
         return instance
@@ -392,10 +392,10 @@ class PotentialPlaningSolver:
             str(self.simulation.it_dir / f"pressureAndShear.{config.io.data_format}"), unpack=True,
         )
         for el in [el for patch in self.planing_surfaces for el in patch.pressure_elements]:
-            compare = np.abs(self.x_coord - el.get_xloc()) < 1e-6
+            compare = np.abs(self.x_coord - el.x_coord) < 1e-6
             if any(compare):
-                el.set_pressure(self.pressure[compare][0])
-                el.set_shear_stress(self.shear_stress[compare][0])
+                el.pressure = self.pressure[compare][0]
+                el.shear_stress = self.shear_stress[compare][0]
 
         for p in self.planing_surfaces:
             p.calculate_forces()
