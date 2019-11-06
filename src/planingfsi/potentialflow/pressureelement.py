@@ -1,6 +1,6 @@
 """Module containing definitions of different types of pressure element."""
 import abc
-from typing import Callable, Tuple, Any, Union
+from typing import Tuple, Any, Union
 
 import numpy as np
 from matplotlib.axes import Axes
