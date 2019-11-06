@@ -57,9 +57,9 @@ class PressurePatch(abc.ABC):
         return self._neighbor_up
 
     @neighbor_up.setter
-    def neighbor_up(self, obj: "PressurePatch") -> None:
-        if obj is not None:
-            self._neighbor_up = obj
+    def neighbor_up(self, obj: Optional["PressurePatch"]) -> None:
+        self._neighbor_up = obj
+        if self._neighbor_up is not None:
             self._neighbor_up.neighbor_down = self
 
     @property
@@ -72,9 +72,9 @@ class PressurePatch(abc.ABC):
         return self._neighbor_down
 
     @neighbor_down.setter
-    def neighbor_down(self, obj: "PressurePatch") -> None:
-        if obj is not None:
-            self._neighbor_down = obj
+    def neighbor_down(self, obj: Optional["PressurePatch"]) -> None:
+        self._neighbor_down = obj
+        if self._neighbor_down is not None:
             self._neighbor_down.neighbor_up = self
 
     def _reset_element_coords(self) -> None:
@@ -417,7 +417,7 @@ class PlaningSurface(PressurePatch):
                 self.length = self.initial_length
             self.is_initialized = True
 
-    def _reset_element_coords(self) -> none:
+    def _reset_element_coords(self) -> None:
         """Set width of first element to be twice as wide."""
         PressurePatch._reset_element_coords(self)
         x = self.get_element_coords()
