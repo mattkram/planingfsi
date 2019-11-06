@@ -77,22 +77,6 @@ def _get_gamma3(lam: float, aux_f: float) -> float:
     )
 
 
-def _eval_left_right(f: Callable[[float], float], x: float, dx: float = 1e-6) -> float:
-    """Evaluate a function by taking the average of the values just above and
-    below the x value. Used to avoid singularity/Inf/NaN.
-
-    Args:
-        f: Function handle.
-        x: Argument of function.
-        dx: Step size.
-
-    Returns:
-        Function value.
-
-    """
-    return (f(x + dx) + f(x - dx)) / 2
-
-
 class PressureElement(abc.ABC):
     """Abstract base class to represent all different types of pressure elements.
 
@@ -167,16 +151,19 @@ class PressureElement(abc.ABC):
     def get_influence_coefficient(self, x_coord: float) -> float:
         """Return _get_local_influence_coefficient coefficient of element.
 
-        Args
-        ----
-        x_coord : float
-            Dimensional x-coordinate.
+        Args:
+            x_coord: Dimensional x-coordinate.
+
         """
         x_rel = x_coord - self.x_coord
         if self.width == 0.0:
             return 0.0
         elif x_rel == 0.0 or x_rel == self._width[1] or x_rel == -self._width[0]:
-            influence = _eval_left_right(self._get_local_influence_coefficient, x_rel)
+            dx = 1e-6
+            influence = 0.5 * (
+                self._get_local_influence_coefficient(x_rel + dx)
+                + self._get_local_influence_coefficient(x_rel - dx)
+            )
         else:
             influence = self._get_local_influence_coefficient(x_rel)
         return influence / (config.flow.density * config.flow.gravity)
