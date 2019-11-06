@@ -400,29 +400,29 @@ class CofRPlot:
         self.lineCofG.set_data(self.body.xCofG, self.body.yCofG)
 
 
-def plot_pressure(solver) -> None:
+def plot_pressure(solver: PotentialPlaningSolver) -> None:
     """Create a plot of the pressure and shear stress profiles."""
-    plt.figure(figsize=(5.0, 5.0))
-    plt.xlabel(r"$x/L_i$")
-    plt.ylabel(r"$p/(1/2\rho U^2)$")
+    fig, ax = plt.subplots(1, 1, figsize=(5.0, 5.0))
 
     for el in solver.pressure_elements:
-        el.plot()
+        el.plot(ax)
 
-    plt.plot(solver.X, solver.p, "k-")
-    plt.plot(solver.X, solver.shear_stress * 1000, "c--")
+    ax.plot(solver.x_coord, solver.pressure, "k-")
+    # ax.plot(solver.x_coord, solver.shear_stress * 1000, "c--")
 
-    # Scale y axis by stagnation pressure
-    for line in plt.gca().lines:
-        x, y = line.get_data()
-        line.set_data(
-            x / config.body.reference_length * 2, y / config.flow.stagnation_pressure,
-        )
+    # Scale x and y axes
+    # for line in ax.lines:
+    #     x, y = line.get_data()
+    #     line.set_data(
+    #         x / (config.body.reference_length * 2), y / config.flow.stagnation_pressure,
+    #     )
 
-    plt.xlim([-1.0, 1.0])
-    #    plt.xlim(kp.minMax(self.X / config.Lref * 2))
-    plt.ylim([0.0, np.min([1.0, 1.2 * np.max(solver.p / config.flow.stagnation_pressure)])])
-    plt.savefig(
+    ax.set_xlabel(r"$x\,\mathrm{[m]}$")
+    ax.set_ylabel(r"$p\,\mathrm{[kPa]}$")
+    # ax.set_xlabel(r"$x/L_i$")
+    # ax.set_ylabel(r"$p/(1/2\rho U^2)$")
+    ax.set_ylim(ymin=0.0)
+
+    fig.savefig(
         f"pressureElements.{config.plotting.fig_format}", format=config.plotting.fig_format,
     )
-    plt.figure(1)
