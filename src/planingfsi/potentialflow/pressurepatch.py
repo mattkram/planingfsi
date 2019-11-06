@@ -1,6 +1,6 @@
 """Classes representing a pressure patch on the free surface."""
 import abc
-import os
+from pathlib import Path
 from typing import List, Optional, Any, Dict
 
 import numpy as np
@@ -25,6 +25,7 @@ class PressurePatch(abc.ABC):
     """
 
     def __init__(self) -> None:
+        self.patch_name = "AbstractPressurePatch"
         self.pressure_elements: List[pe.PressureElement] = []
         self._end_pts = np.zeros(2)
         self.is_kutta_unknown = False
@@ -32,6 +33,15 @@ class PressurePatch(abc.ABC):
         self._neighbor_down: Optional["PressurePatch"] = None
         self.interpolator: Optional[Interpolator] = None
         self.parent: Optional[solver.PotentialPlaningSolver] = None
+
+        self.drag_total = np.nan
+        self.drag_pressure = np.nan
+        self.drag_friction = np.nan
+        self.drag_wave = np.nan
+        self.lift_total = np.nan
+        self.lift_pressure = np.nan
+        self.lift_friction = np.nan
+        self.moment_total = np.nan
 
     @property
     def base_pt(self) -> float:
@@ -46,6 +56,10 @@ class PressurePatch(abc.ABC):
     def length(self) -> float:
         """Length of pressure patch, which is the distance between end points."""
         return self._end_pts[1] - self._end_pts[0]
+
+    @length.setter
+    def length(self, value: float) -> None:
+        raise NotImplementedError
 
     @property
     def neighbor_up(self) -> Optional["PressurePatch"]:
@@ -77,6 +91,11 @@ class PressurePatch(abc.ABC):
         if self._neighbor_down is not None:
             self._neighbor_down.neighbor_up = self
 
+    @abc.abstractmethod
+    def get_element_coords(self) -> np.ndarray:
+        """Get the x-position of pressure elements."""
+        return NotImplemented
+
     def _reset_element_coords(self) -> None:
         """Re-distribute pressure element positions along the patch."""
         x = self.get_element_coords()
@@ -107,64 +126,55 @@ class PressurePatch(abc.ABC):
 
     @abc.abstractmethod
     def calculate_forces(self) -> None:
+        """Calculate the force components for this pressure patch."""
         return NotImplemented
 
-    @abc.abstractmethod
-    def get_element_coords(self):
-        return NotImplemented
-
-    def calculate_wave_drag(self) -> None:
-        """Calculate wave drag of patch.
-
-        Returns
-        -------
-        None
-        """
-        xo = -10.1 * config.flow.lam
+    def _calculate_wave_drag(self) -> float:
+        """Calculate wave drag of patch."""
+        xo = -10 * config.flow.lam
         (xTrough,) = fmin(self.get_free_surface_height, xo, disp=False)
         (xCrest,) = fmin(lambda x: -self.get_free_surface_height(x), xo, disp=False)
-        self.drag_wave = (
+        return (
             0.0625
             * config.flow.density
             * config.flow.gravity
             * (self.get_free_surface_height(xCrest) - self.get_free_surface_height(xTrough)) ** 2
         )
 
+    @property
+    def _force_file_save_path(self) -> Path:
+        """A path to the force file."""
+        assert self.parent is not None
+        return self.parent.simulation.it_dir / f"forces_{self.patch_name}.{config.io.data_format}"
+
     def write_forces(self) -> None:
         """Write forces to file."""
-        # general.writeasdict(
-        #     os.path.join(
-        #         config.it_dir,
-        #         "forces_{0}.{1}".format(self.patch_name, config.io.data_format),
-        #     ),
-        #     ["Drag", self.D],
-        #     ["WaveDrag", self.Dw],
-        #     ["PressDrag", self.Dp],
-        #     ["FricDrag", self.Df],
-        #     ["Lift", self.L],
-        #     ["PressLift", self.Lp],
-        #     ["FricLift", self.Lf],
-        #     ["Moment", self.M],
-        #     ["BasePt", self.base_pt],
-        #     ["Length", self.length],
-        # )
-
-    def load_forces(self):
-        """Load forces from file."""
-        K = load_dict_from_file(
-            os.path.join(
-                config.it_dir, "forces_{0}.{1}".format(self.patch_name, config.io.data_format),
-            )
+        general.writeasdict(
+            self._force_file_save_path,
+            ["Drag", self.drag_total],
+            ["WaveDrag", self.drag_wave],
+            ["PressDrag", self.drag_pressure],
+            ["FricDrag", self.drag_friction],
+            ["Lift", self.lift_total],
+            ["PressLift", self.lift_pressure],
+            ["FricLift", self.lift_friction],
+            ["Moment", self.moment_total],
+            ["BasePt", self.base_pt],
+            ["Length", self.length],
         )
-        self.drag_total = K.get("Drag", 0.0)
-        self.drag_pressure = K.get("PressDrag", 0.0)
-        self.drag_friction = K.get("FricDrag", 0.0)
-        self.lift_total = K.get("Lift", 0.0)
-        self.lift_pressure = K.get("PressLift", 0.0)
-        self.lift_friction = K.get("FricLift", 0.0)
-        self.moment_total = K.get("Moment", 0.0)
-        self.base_pt = K.get("BasePt", 0.0)
-        self.length = K.get("Length", 0.0)
+
+    def load_forces(self) -> None:
+        """Load forces from file."""
+        dict_ = load_dict_from_file(self._force_file_save_path)
+        self.drag_total = dict_.get("Drag", 0.0)
+        self.drag_pressure = dict_.get("PressDrag", 0.0)
+        self.drag_friction = dict_.get("FricDrag", 0.0)
+        self.lift_total = dict_.get("Lift", 0.0)
+        self.lift_pressure = dict_.get("PressLift", 0.0)
+        self.lift_friction = dict_.get("FricLift", 0.0)
+        self.moment_total = dict_.get("Moment", 0.0)
+        self.base_pt = dict_.get("BasePt", 0.0)
+        self.length = dict_.get("Length", 0.0)
 
 
 class PressureCushion(PressurePatch):
@@ -298,7 +308,7 @@ class PressureCushion(PressurePatch):
         self._end_pts[0] = self._end_pts[1] - length
 
     def calculate_forces(self):
-        self.calculate_wave_drag()
+        self.drag_wave = self._calculate_wave_drag()
 
 
 class PlaningSurface(PressurePatch):
@@ -471,7 +481,7 @@ class PlaningSurface(PressurePatch):
         if config.flow.include_friction:
             self._calculate_shear_stress()
 
-        self.calculate_wave_drag()
+        self.drag_wave = self._calculate_wave_drag()
 
     def get_loads_in_range(self, x0, x1):
         """Return pressure and shear stress values at points between two
