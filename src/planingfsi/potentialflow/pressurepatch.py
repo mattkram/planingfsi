@@ -180,81 +180,78 @@ class PressurePatch(abc.ABC):
 class PressureCushion(PressurePatch):
     """Pressure Cushion consisting solely of source elements.
 
-    Args
-    ----
-    dict_ : krampy.Dictionary or str
-        Dictionary instance or string with dictionary path to load properties.
+    Args:
+        dict_: Dictionary containing patch definitions.
 
-    **kwargs : dict
-        Keyword arguments.
+    Attributes:
+        patch_name (str): Name of patch
+        cushion_type (str): The type of pressure cushion.
+        cushion_pressure (float): The value of the pressure in the cushion.
 
-    Attributes
-    ----------
-    patch_name : str
-        Name of patch
-
-    base_pt : float
-        Right end of `PressurePatch`.
     """
 
     count = 0
 
-    def __init__(self, dict_: Dict[str, Any], **kwargs: Any) -> None:
+    def __init__(self, dict_: Dict[str, Any]) -> None:
         super().__init__()
-        self.index = PressureCushion.count
         PressureCushion.count += 1
+        self.patch_name = dict_.get(
+            "pressureCushionName", f"pressureCushion{PressureCushion.count}"
+        )
 
-        self.patch_name = dict_.get("pressureCushionName", f"pressureCushion{self.index}")
+        self.cushion_pressure = dict_.get("cushionPressure")
+        if self.cushion_pressure is None:
+            self.cushion_pressure = getattr(config, "cushionPressure", 0.0)
 
-        # TODO: cushion_type variability should be managed by sub-classing
-        # PressurePatch
-        self.cushion_type = dict_.get("cushionType", "")
-        self.cushion_pressure = kwargs.get("Pc", dict_.read_load_or_default("cushionPressure", 0.0))
-
-        self.neighbor_up = PlaningSurface.find_by_name(dict_.get("upstreamPlaningSurface", ""))
-        self.neighbor_down = PlaningSurface.find_by_name(dict_.get("downstreamPlaningSurface", ""))
+        self.neighbor_up = PlaningSurface.find_by_name(dict_.get("upstreamPlaningSurface"))
+        self.neighbor_down = PlaningSurface.find_by_name(dict_.get("downstreamPlaningSurface"))
 
         if self.neighbor_down is not None:
             self.neighbor_down.upstream_pressure = self.cushion_pressure
         if self.neighbor_up is not None:
             self.neighbor_up.kutta_pressure = self.cushion_pressure
 
+        # TODO: cushion_type variability should be managed by sub-classing PressurePatch
+        self.cushion_type = dict_.get("cushionType", "")
         if self.cushion_type == "infinite":
             # Dummy element, will have 0 pressure
-            self.pressure_elements += [
+            self.pressure_elements.append(
                 pe.AftSemiInfinitePressureBand(is_source=True, is_on_body=False)
-            ]
-            self.pressure_elements += [
+            )
+            self.pressure_elements.append(
                 pe.AftSemiInfinitePressureBand(is_source=True, is_on_body=False)
-            ]
+            )
             self._end_pts[0] = -1000.0  # doesn't matter where
-
         else:
-            self.pressure_elements += [
+            self.pressure_elements.append(
                 pe.ForwardHalfTriangularPressureElement(is_source=True, is_on_body=False)
-            ]
+            )
 
-            Nfl = dict_.get("numElements", 10)
             self.smoothing_factor = dict_.get("smoothingFactor", np.nan)
+            # TODO: Are we adding these elements twice?
             for n in [self.neighbor_down, self.neighbor_up]:
                 if n is None and ~np.isnan(self.smoothing_factor):
-                    self.pressure_elements += [
-                        pe.CompleteTriangularPressureElement(is_source=True, is_on_body=False)
-                        for __ in range(Nfl)
-                    ]
+                    self.pressure_elements.extend(
+                        [
+                            pe.CompleteTriangularPressureElement(is_source=True, is_on_body=False)
+                            for _ in range(dict_.get("numElements", 10))
+                        ]
+                    )
 
-            self.end_pts = [
-                dict_.read_load_or_default(key, 0.0) for key in ["downstreamLoc", "upstreamLoc"]
-            ]
+            for i, key in enumerate(["downstreamLoc", "upstreamLoc"]):
+                value = dict_.get(key)
+                if value is None:
+                    value = getattr(config, key, 0.0)
+                self._end_pts[i] = value
 
-            self.pressure_elements += [
+            self.pressure_elements.append(
                 pe.AftHalfTriangularPressureElement(is_source=True, is_on_body=False)
-            ]
-
+            )
         self.update_end_pts()
 
     @property
     def base_pt(self) -> float:
+        """The x-coordinate of the base point at the upstream edge of the pressure cushion."""
         if self.neighbor_up is None:
             return self._end_pts[1]
         else:
@@ -264,30 +261,35 @@ class PressureCushion(PressurePatch):
     def base_pt(self, x: float) -> None:
         self._end_pts[1] = x
 
+    @PressurePatch.length.setter
+    def length(self, length):
+        """Set the length by moving the left end point relative to the right one."""
+        self._end_pts[0] = self.base_pt - length
+
     def get_element_coords(self) -> np.ndarray:
         """Return x-locations of all elements."""
         if self.cushion_type != "smoothed" or np.isnan(self.smoothing_factor):
-            return self.end_pts
+            return self._end_pts
         else:
             add_width = np.arctanh(0.99) * self.length / (2 * self.smoothing_factor)
-            addL = np.linspace(-add_width, add_width, len(self.pressure_elements) // 2 + 1)
-            x = np.hstack((self.end_pts[0] + addL, self.end_pts[1] + addL))
-            return x
+            dx = np.linspace(-add_width, add_width, len(self.pressure_elements) // 2 + 1)
+            return np.hstack((self._end_pts[0] + dx, self._end_pts[1] + dx))
 
-    def update_end_pts(self):
+    def update_end_pts(self) -> None:
+        """Update the end coordinates."""
         if self.neighbor_down is not None:
-            self._end_pts[0] = self.neighbor_down.end_pts[1]
+            self._end_pts[0] = self.neighbor_down._end_pts[1]
         if self.neighbor_up is not None:
-            self._end_pts[1] = self.neighbor_up.end_pts[0]
+            self._end_pts[1] = self.neighbor_up._end_pts[0]
 
         self._reset_element_coords()
 
         # Set source pressure of elements
-        for elNum, el in enumerate(self.pressure_elements):
+        for el_num, el in enumerate(self.pressure_elements):
             el.is_source = True
             if self.cushion_type == "smoothed" and not np.isnan(self.smoothing_factor):
                 alf = 2 * self.smoothing_factor / self.length
-                el.set_source_pressure(
+                el.pressure = (
                     0.5
                     * self.cushion_pressure
                     * (np.tanh(alf * el.x_coord) - np.tanh(alf * (el.x_coord - self.length)))
@@ -296,18 +298,12 @@ class PressureCushion(PressurePatch):
             # zero, second is semiInfinitePressureBand and set to cushion
             # pressure
             elif self.cushion_type == "infinite":
-                if elNum == 0:
-                    el.pressure = 0.0
-                else:
-                    el.pressure = self.cushion_pressure
+                el.pressure = 0.0 if el_num == 0 else self.cushion_pressure
             else:
                 el.pressure = self.cushion_pressure
 
-    @PressurePatch.length.setter
-    def length(self, length):
-        self._end_pts[0] = self._end_pts[1] - length
-
-    def calculate_forces(self):
+    def calculate_forces(self) -> None:
+        """Calculate the wave drag of the pressure cushion."""
         self.drag_wave = self._calculate_wave_drag()
 
 
@@ -318,17 +314,17 @@ class PlaningSurface(PressurePatch):
     all = []
 
     @classmethod
-    def find_by_name(cls, name):
+    def find_by_name(cls, name: Optional[str]) -> Optional["PlaningSurface"]:
         """Return first planing surface matching provided name.
 
         Returns
         -------
         PlaningSurface instance or None of no match found
         """
-        if not name == "":
-            matches = [o for o in cls.all if o.patch_name == name]
-            if len(matches) > 0:
-                return matches[0]
+        if name:
+            for o in cls.all:
+                if o.patch_name == name:
+                    return o
         return None
 
     def __init__(self, dict_, **kwargs):
