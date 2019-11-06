@@ -162,8 +162,13 @@ class PressureElement(object):
         self.parent = parent
 
     @property
-    def width(self):
-        return sum(self._width)
+    def width(self) -> float:
+        """The total width of the pressure element."""
+        return self._width.sum()
+
+    @width.setter
+    def width(self, width: float) -> None:
+        self._width[0] = width
 
     @property
     def pressure(self):
