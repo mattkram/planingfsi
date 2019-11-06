@@ -1,97 +1,83 @@
 """Classes representing a pressure patch on the free surface."""
 import abc
 import os
+from typing import List, Optional, Any, Dict
 
 import numpy as np
-from planingfsi import trig, general
-from planingfsi.dictionary import load_dict_from_file
 from scipy.interpolate import interp1d
 from scipy.optimize import fmin
 
-from . import pressureelement as pe
-from .. import config
+from . import pressureelement as pe, solver
+from .. import config, trig, general
+from ..dictionary import load_dict_from_file
+from ..fsi.interpolator import Interpolator
 
 
 class PressurePatch(abc.ABC):
-    """Abstract base class representing a patch of pressure elements on the
-    free surface.
+    """Abstract base class representing a patch of pressure elements on the free surface.
 
-    Attributes
-    ----------
-    pressure_elements : list
-        List of pressure elements.
+    Attributes:
+        pressure_elements: List of pressure elements.
+        is_kutta_unknown: True of trailing edge pressure unknown.
+        interpolator: Object to get interpolated body position if a `PlaningSurface`
+        parent: Parent solver this patch belongs to.
 
-    base_pt : float
-        x-location of base point.
-
-    length : float
-        Length of pressure patch.
-
-    is_kutta_unknown : bool
-        True of trailing edge pressure unknown
-
-    neighbor_up : PressurePatch
-        PressurePatch instance upstream of this one.
-
-    neighbor_down : PressurePatch
-        PressurePatch instance downstream of this one.
-
-    interpolator : FSIInterpolator
-        Object to get interpolated body position if a `PlaningSurface`
-
-    force_dict : dict
-        Dictionary of global force values derived from element pressure/shear
-        stress.
-
-    parent : PotentialPlaningCalculation
-        Parent solver this patch belongs to.
     """
 
-    def __init__(self, neighbor_up=None, neighbor_down=None, parent=None):
-        self.pressure_elements = []
+    def __init__(self) -> None:
+        self.pressure_elements: List[pe.PressureElement] = []
         self._end_pts = np.zeros(2)
         self.is_kutta_unknown = False
-        self._neighbor_up = None
-        self._neighbor_down = None
-        self.neighbor_up = neighbor_up
-        self.neighbor_down = neighbor_down
-        self.interpolator = None
-        self.force_dict = {}
-        self.parent = parent
+        self._neighbor_up: Optional["PressurePatch"] = None
+        self._neighbor_down: Optional["PressurePatch"] = None
+        self.interpolator: Optional[Interpolator] = None
+        self.parent: Optional[solver.PotentialPlaningSolver] = None
 
     @property
-    def base_pt(self):
+    def base_pt(self) -> float:
+        """The x-location of the base point."""
         return self._end_pts[0]
 
     @base_pt.setter
-    def base_pt(self, x):
+    def base_pt(self, x: float) -> None:
         self._end_pts[0] = x
 
     @property
-    def length(self):
+    def length(self) -> float:
+        """Length of pressure patch, which is the distance between end points."""
         return self._end_pts[1] - self._end_pts[0]
 
     @property
-    def neighbor_up(self):
+    def neighbor_up(self) -> Optional["PressurePatch"]:
+        """PressurePatch instance upstream of this one.
+
+        When setting, this patch is set as the other's downstream neighbor.
+
+        """
         return self._neighbor_up
 
     @neighbor_up.setter
-    def neighbor_up(self, obj):
+    def neighbor_up(self, obj: "PressurePatch") -> None:
         if obj is not None:
             self._neighbor_up = obj
             self._neighbor_up.neighbor_down = self
 
     @property
-    def neighbor_down(self):
+    def neighbor_down(self) -> Optional["PressurePatch"]:
+        """PressurePatch instance downstream of this one.
+
+        When setting, this patch is set as the other's upstream neighbor.
+
+        """
         return self._neighbor_down
 
     @neighbor_down.setter
-    def neighbor_down(self, obj):
+    def neighbor_down(self, obj: "PressurePatch") -> None:
         if obj is not None:
             self._neighbor_down = obj
             self._neighbor_down.neighbor_up = self
 
-    def _reset_element_coords(self):
+    def _reset_element_coords(self) -> None:
         """Re-distribute pressure element positions given the length and end
         points of this patch.
         """
@@ -99,7 +85,7 @@ class PressurePatch(abc.ABC):
         for i, el in enumerate(self.pressure_elements):
             el.x_coord = x[i]
             if not el.is_source:
-                el.z_coord = self.interpolator.get_body_height(x[i])
+                el.z_coord = self.interpolator.get_surface_height_fixed_x(x[i])
 
             if isinstance(el, pe.CompleteTriangularPressureElement):
                 el.width = [x[i] - x[i - 1], x[i + 1] - x[i]]
@@ -112,26 +98,24 @@ class PressurePatch(abc.ABC):
             else:
                 raise ValueError("Invalid Element Type!")
 
-    def get_free_surface_height(self, x):
-        """Get free surface height at a position x due to the elements on this
-        patch.
+    def get_free_surface_height(self, x: float) -> float:
+        """Get free surface height at a position x due to the elements on this patch.
 
-        Args
-        ----
-        x : float
-            x-position at which to calculate free-surface height.
+        Args:
+            x: x-position at which to calculate free-surface height.
+
         """
         return sum([el.get_influence(x) for el in self.pressure_elements])
 
     @abc.abstractmethod
-    def calculate_forces(self):
+    def calculate_forces(self) -> None:
         return NotImplemented
 
     @abc.abstractmethod
     def get_element_coords(self):
         return NotImplemented
 
-    def calculate_wave_drag(self):
+    def calculate_wave_drag(self) -> None:
         """Calculate wave drag of patch.
 
         Returns
@@ -148,21 +132,9 @@ class PressurePatch(abc.ABC):
             * (self.get_free_surface_height(xCrest) - self.get_free_surface_height(xTrough)) ** 2
         )
 
-    def print_forces(self):
-        """Print forces to screen."""
-        print(("Forces and Moment for {0}:".format(self.patch_name)))
-        print(("    Total Drag [N]      : {0:6.4e}".format(self.drag_total)))
-        print(("    Wave Drag [N]       : {0:6.4e}".format(self.drag_wave)))
-        print(("    Pressure Drag [N]   : {0:6.4e}".format(self.drag_pressure)))
-        print(("    Frictional Drag [N] : {0:6.4e}".format(self.drag_friction)))
-        print(("    Total Lift [N]      : {0:6.4e}".format(self.lift_total)))
-        print(("    Pressure Lift [N]   : {0:6.4e}".format(self.lift_pressure)))
-        print(("    Frictional Lift [N] : {0:6.4e}".format(self.lift_friction)))
-        print(("    Moment [N-m]        : {0:6.4e}".format(self.moment_total)))
-
-    def write_forces(self):
+    def write_forces(self) -> None:
         """Write forces to file."""
-        # kp.writeasdict(
+        # general.writeasdict(
         #     os.path.join(
         #         config.it_dir,
         #         "forces_{0}.{1}".format(self.patch_name, config.io.data_format),
@@ -187,7 +159,6 @@ class PressurePatch(abc.ABC):
             )
         )
         self.drag_total = K.get("Drag", 0.0)
-        self.drag_wave = K.get("WaveDrag", 0.0)
         self.drag_pressure = K.get("PressDrag", 0.0)
         self.drag_friction = K.get("FricDrag", 0.0)
         self.lift_total = K.get("Lift", 0.0)
@@ -220,20 +191,20 @@ class PressureCushion(PressurePatch):
 
     count = 0
 
-    def __init__(self, dict_, **kwargs):
-        super(self.__class__, self).__init__(self, **kwargs)
+    def __init__(self, dict_: Dict[str, Any], **kwargs: Any) -> None:
+        super().__init__()
         self.index = PressureCushion.count
         PressureCushion.count += 1
 
-        self.patch_name = dict_.read("pressureCushionName", "pressureCushion{0}".format(self.index))
+        self.patch_name = dict_.get("pressureCushionName", f"pressureCushion{self.index}")
 
         # TODO: cushion_type variability should be managed by sub-classing
         # PressurePatch
-        self.cushion_type = dict_.read("cushionType", "")
+        self.cushion_type = dict_.get("cushionType", "")
         self.cushion_pressure = kwargs.get("Pc", dict_.read_load_or_default("cushionPressure", 0.0))
 
-        self.neighbor_up = PlaningSurface.find_by_name(dict_.read("upstreamPlaningSurface", ""))
-        self.neighbor_down = PlaningSurface.find_by_name(dict_.read("downstreamPlaningSurface", ""))
+        self.neighbor_up = PlaningSurface.find_by_name(dict_.get("upstreamPlaningSurface", ""))
+        self.neighbor_down = PlaningSurface.find_by_name(dict_.get("downstreamPlaningSurface", ""))
 
         if self.neighbor_down is not None:
             self.neighbor_down.upstream_pressure = self.cushion_pressure
@@ -255,8 +226,8 @@ class PressureCushion(PressurePatch):
                 pe.ForwardHalfTriangularPressureElement(is_source=True, is_on_body=False)
             ]
 
-            Nfl = dict_.read("numElements", 10)
-            self.smoothing_factor = dict_.read("smoothingFactor", np.nan)
+            Nfl = dict_.get("numElements", 10)
+            self.smoothing_factor = dict_.get("smoothingFactor", np.nan)
             for n in [self.neighbor_down, self.neighbor_up]:
                 if n is None and ~np.isnan(self.smoothing_factor):
                     self.pressure_elements += [
@@ -275,23 +246,23 @@ class PressureCushion(PressurePatch):
         self.update_end_pts()
 
     @property
-    def base_pt(self):
+    def base_pt(self) -> float:
         if self.neighbor_up is None:
             return self._end_pts[1]
         else:
             return self.neighbor_up.base_pt
 
     @base_pt.setter
-    def base_pt(self, x):
+    def base_pt(self, x: float) -> None:
         self._end_pts[1] = x
 
-    def get_element_coords(self):
+    def get_element_coords(self) -> np.ndarray:
         """Return x-locations of all elements."""
-        if not self.cushion_type == "smoothed" or np.isnan(self.smoothing_factor):
+        if self.cushion_type != "smoothed" or np.isnan(self.smoothing_factor):
             return self.end_pts
         else:
             add_width = np.arctanh(0.99) * self.length / (2 * self.smoothing_factor)
-            addL = np.linspace(-add_width, add_width, len(self.pressure_elements) / 2 + 1)
+            addL = np.linspace(-add_width, add_width, len(self.pressure_elements) // 2 + 1)
             x = np.hstack((self.end_pts[0] + addL, self.end_pts[1] + addL))
             return x
 
@@ -446,17 +417,17 @@ class PlaningSurface(PressurePatch):
                 self.length = self.initial_length
             self.is_initialized = True
 
-    def _reset_element_coords(self):
+    def _reset_element_coords(self) -> none:
         """Set width of first element to be twice as wide."""
         PressurePatch._reset_element_coords(self)
         x = self.get_element_coords()
         self.pressure_elements[0].width = x[2] - x[0]
 
-    def get_element_coords(self):
+    def get_element_coords(self) -> np.ndarray:
         """Get position of pressure elements."""
         return self.pct * self.length + self._end_pts[0]
 
-    def get_residual(self):
+    def get_residual(self) -> float:
         """Get residual to drive first element pressure to zero."""
         if self.length <= 0.0:
             return 0.0
