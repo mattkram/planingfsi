@@ -405,7 +405,8 @@ def plot_pressure(solver: PotentialPlaningSolver) -> None:
     fig, ax = plt.subplots(1, 1, figsize=(5.0, 5.0))
 
     for el in solver.pressure_elements:
-        el.plot(ax)
+        ax.plot(*el.plot_coords, color=el.plot_color, linestyle="-")
+        ax.plot(el.x_coord * np.ones(2), [0.0, el.pressure], color=el.plot_color, linestyle="--")
 
     ax.plot(solver.x_coord, solver.pressure, "k-")
     # ax.plot(solver.x_coord, solver.shear_stress * 1000, "c--")

@@ -3,7 +3,6 @@ import abc
 from typing import Tuple, Any, Union
 
 import numpy as np
-from matplotlib.axes import Axes
 from scipy.special import sici
 
 from .pressurepatch import PressurePatch
@@ -108,6 +107,8 @@ class PressureElement(abc.ABC):
 
     """
 
+    plot_color = "b"
+
     def __init__(
         self,
         x_coord: float = np.nan,
@@ -206,15 +207,11 @@ class PressureElement(abc.ABC):
         """Coordinates for pressure plot."""
         return np.array([]), np.array([])
 
-    def plot(self, ax: Axes, color: str = "b") -> None:
-        """Plot pressure element shape."""
-        # TODO: Move all plotting commands to its own module
-        ax.plot(*self.plot_coords, color=color, linestyle="-")
-        ax.plot(self.x_coord * np.ones(2), [0.0, self.pressure], color=color, linestyle="--")
-
 
 class AftHalfTriangularPressureElement(PressureElement):
     """Pressure element that is triangular in profile but towards aft direction."""
+
+    plot_color = "g"
 
     def __init__(self, is_on_body: bool = True, **kwargs: Any) -> None:
         # By default, this element is on the body.
@@ -245,10 +242,6 @@ class AftHalfTriangularPressureElement(PressureElement):
     def plot_coords(self) -> Tuple[np.ndarray, np.ndarray]:
         """Coordinates for pressure plot."""
         return self.x_coord - np.array([self.width, 0]), np.array([0.0, self.pressure])
-
-    def plot(self, ax: Axes, color: str = "g") -> None:
-        """Plot pressure element shape."""
-        super().plot(ax, color=color)
 
 
 class ForwardHalfTriangularPressureElement(PressureElement):
@@ -298,10 +291,6 @@ class ForwardHalfTriangularPressureElement(PressureElement):
         """Coordinates for pressure plot."""
         return self.x_coord + np.array([0.0, self.width]), np.array([self.pressure, 0.0])
 
-    def plot(self, ax: Axes, color: str = "b") -> None:
-        """Plot pressure element shape."""
-        super().plot(ax, color)
-
 
 class CompleteTriangularPressureElement(PressureElement):
     """Pressure element that is triangular in profile towards both
@@ -314,6 +303,8 @@ class CompleteTriangularPressureElement(PressureElement):
         overridden:
             is_on_body : True
     """
+
+    plot_color = "r"
 
     def __init__(
         self, is_on_body: bool = True, width: np.ndarray = np.zeros(2), **kwargs: Any
@@ -363,10 +354,6 @@ class CompleteTriangularPressureElement(PressureElement):
             np.array([0.0, self.pressure, 0.0]),
         )
 
-    def plot(self, ax: Axes, color: str = "r") -> None:
-        """Plot pressure element shape."""
-        super().plot(ax, color)
-
 
 class AftSemiInfinitePressureBand(PressureElement):
     """Semi-infinite pressure band in aft direction."""
@@ -393,13 +380,11 @@ class AftSemiInfinitePressureBand(PressureElement):
             np.array([self.pressure, self.pressure]),
         )
 
-    def plot(self, ax: Axes, color: str = "r") -> None:
-        """Plot pressure element shape."""
-        super().plot(ax=ax, color=color)
-
 
 class ForwardSemiInfinitePressureBand(PressureElement):
     """Semi-infinite pressure band in forward direction."""
+
+    plot_color = "r"
 
     def _get_local_influence_coefficient(self, x_coord: float) -> float:
         """Return _get_local_influence_coefficient coefficient in iso-geometric
@@ -422,7 +407,3 @@ class ForwardSemiInfinitePressureBand(PressureElement):
             np.array([self.x_coord, config.plotting.x_fs_max]),
             np.array([self.pressure, self.pressure]),
         )
-
-    def plot(self, ax: Axes, color: str = "r") -> None:
-        """Plot pressure element shape."""
-        super().plot(ax=ax, color=color)
