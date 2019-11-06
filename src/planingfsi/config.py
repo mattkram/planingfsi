@@ -359,7 +359,7 @@ class PlotConfig(SubConfig):
     _pScaleHead = ConfigItem("pScaleHead", default=1.0)
     growth_rate = ConfigItem("growthRate", default=1.1)
     CofR_grid_len = ConfigItem("CofRGridLen", default=0.5)
-    fig_format = ConfigItem("figFormat", default="eps")
+    fig_format = ConfigItem("figFormat", default="png")
 
     pressure_limiter = ConfigItem("pressureLimiter", default=False)
 

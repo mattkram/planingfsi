@@ -44,3 +44,4 @@ writeInterval : 50
 plotSave  : True
 plotShow  : True
 plotWatch : True
+plotPressure : True
