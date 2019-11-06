@@ -158,7 +158,7 @@ class PressureElement(abc.ABC):
         x_rel = x_coord - self.x_coord
         if self.width == 0.0:
             return 0.0
-        elif x_rel == 0.0 or x_rel == self._width[1] or x_rel == -self._width[0]:
+        elif x_rel in [-self._width[0], 0.0, self._width[1]]:
             dx = 1e-6
             influence = 0.5 * (
                 self._get_local_influence_coefficient(x_rel + dx)
