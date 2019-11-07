@@ -24,17 +24,11 @@ class Simulation:
     """
 
     def __init__(self) -> None:
-        self.solid_solver = FEStructure()
+        self.solid_solver = FEStructure(self)
         self.fluid_solver = PotentialPlaningSolver(self)
         self._figure: Optional[FSIFigure] = None
         self.it = 0
         self.ramp = 1.0
-
-    #     def setFluidPressureFunc(self, func):
-    #         self.fluidPressureFunc = func
-    #
-    #     def setSolidPositionFunc(self, func):
-    #         self.solidPositionFunc = func
 
     @property
     def figure(self) -> Optional[FSIFigure]:
