@@ -1,3 +1,4 @@
+"""Solvers for single and multi-dimensional nonlinear problems."""
 from typing import Callable, Any
 
 import numpy
@@ -53,12 +54,14 @@ class RootFinder:
 
         self.jacobian_step = 0
 
+        # TODO: Replace with factory method and method overloading
         if method.lower() == "broyden":
             self.get_step = self.get_step_broyden
         else:
             self.get_step = self.get_step_secant
 
     def reinitialize(self, xo: numpy.array) -> None:
+        """Re-initialize the solver for a new solution."""
         self.err = 1.0
         self.it = 0
         self.jacobian = None
@@ -92,10 +95,12 @@ class RootFinder:
         return dx
 
     def store_previous_step(self) -> None:
+        """Store the results from the previous step."""
         self.x_prev = self.x * 1.0
         self.f_prev = self.f * 1.0
 
     def evaluate_error(self) -> None:
+        """Evaluate the error residual."""
         self.err = numpy.max(numpy.abs(self.dx + 1e-8))
         if self.df is not None:
             self.err += numpy.max(numpy.abs(self.df + 1e-8))
@@ -103,6 +108,7 @@ class RootFinder:
             self.err += numpy.max(numpy.abs(self.f))
 
     def evaluate_function(self) -> None:
+        """Evaluate the function and calculated the change."""
         self.f = self.func(self.x)
         if self.f_prev is not None:
             self.df = self.f - self.f_prev
@@ -110,6 +116,7 @@ class RootFinder:
             self.df = None
 
     def get_step_secant(self) -> numpy.array:
+        """Get the step using the Secant method."""
         if self.it == 0:
             self.dx = numpy.ones_like(self.x) * self.dx_init
         else:
@@ -117,6 +124,7 @@ class RootFinder:
         return self.dx
 
     def take_step(self, dx: numpy.array = None) -> None:
+        """Take the step in the solution."""
         if dx is not None:
             self.dx = dx
         self.store_previous_step()
@@ -125,6 +133,7 @@ class RootFinder:
         self.it += 1
 
     def reset_jacobian(self) -> None:
+        """Reset the Jacobian."""
         fo = self.f * 1.0
         xo = self.x * 1.0
 
@@ -140,6 +149,7 @@ class RootFinder:
         self.jacobian_step = 0
 
     def get_step_broyden(self) -> numpy.array:
+        """Get the next step using Broyden's method."""
         if self.it == 0 or self.jacobian is None:
             self.reset_jacobian()
 
@@ -171,6 +181,7 @@ class RootFinder:
         return self.dx
 
     def solve(self) -> numpy.array:
+        """Solve the nonlinear problem."""
         while self.err >= self.error_limit and self.it < self.max_it:
             self.get_step()
             self._limit_step()
