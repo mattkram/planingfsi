@@ -1,5 +1,6 @@
 import os
-from typing import Dict, Any
+import weakref
+from typing import Dict, Any, List
 
 import numpy as np
 from scipy.interpolate import interp1d
@@ -7,6 +8,7 @@ from scipy.interpolate import interp1d
 from . import felib as fe
 from .. import config, solver, general, trig
 from ..dictionary import load_dict_from_file
+from ..fsi import simulation as fsi_simulation
 
 
 class FEStructure:
@@ -14,11 +16,20 @@ class FEStructure:
     several rigid bodies and substructures.
     """
 
-    def __init__(self):
-        self.rigid_body = []
-        self.substructure = []
+    def __init__(self, simulation: "fsi_simulation.Simulation") -> None:
+        self._simulation = weakref.ref(simulation)
+        self.rigid_body: List["RigidBody"] = []
+        self.substructure: List["Substructure"] = []
         self.node = []
         self.res = 1.0
+
+    @property
+    def simulation(self) -> "fsi_simulation.Simulation":
+        """A reference to the simulation object by resolving the weak reference."""
+        simulation = self._simulation()
+        if simulation is None:
+            raise ReferenceError("Simulation object cannot be accessed.")
+        return simulation
 
     def add_rigid_body(self, dict_: Dict[str, Any] = None) -> "RigidBody":
         """Add a rigid body to the structure.
