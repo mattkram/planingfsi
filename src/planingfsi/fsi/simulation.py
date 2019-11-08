@@ -8,7 +8,7 @@ from .figure import FSIFigure
 from .interpolator import Interpolator
 from .. import config, logger
 from ..dictionary import load_dict_from_file
-from ..fe.structure import FEStructure
+from ..fe.structure import StructuralSolver
 from ..general import writeasdict
 from ..potentialflow.solver import PotentialPlaningSolver
 
@@ -18,13 +18,13 @@ class Simulation:
     between the fluid and solid solvers.
 
     Attributes:
-        solid_solver (FEStructure): The structural solver.
+        solid_solver (StructuralSolver): The structural solver.
         fluid_solver (PotentialPlaningSolver): The fluid solver.
 
     """
 
     def __init__(self) -> None:
-        self.solid_solver = FEStructure(self)
+        self.solid_solver = StructuralSolver(self)
         self.fluid_solver = PotentialPlaningSolver(self)
         self._figure: Optional[FSIFigure] = None
         self.it = 0

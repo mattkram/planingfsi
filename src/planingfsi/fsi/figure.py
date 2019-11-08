@@ -4,7 +4,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 
 from .. import config, trig
-from ..fe.structure import FEStructure
+from ..fe.structure import StructuralSolver
 from ..potentialflow.solver import PotentialPlaningSolver
 
 
@@ -96,7 +96,7 @@ class FSIFigure:
         self.subplot.append(ResidualSubplot([0.40, 0.05, 0.25, 0.45], self.solid))
 
     @property
-    def solid(self) -> FEStructure:
+    def solid(self) -> StructuralSolver:
         return self.simulation.solid_solver
 
     @property
