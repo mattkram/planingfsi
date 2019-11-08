@@ -45,6 +45,7 @@ class Substructure(abc.ABC):
         self.airS = []
         self.airP = []
         self.U = 0.0
+        self.node = []
 
     def add_parent(self, parent):
         self.parent = parent

@@ -24,8 +24,6 @@ class StructuralSolver:
     def __init__(self, simulation: "fsi_simulation.Simulation") -> None:
         self._simulation = weakref.ref(simulation)
         self.rigid_body: List["RigidBody"] = []
-        self.substructure: List["Substructure"] = []
-        self.node: List[fe.Node] = []
         self.res = 1.0  # TODO: Can this be a property instead?
 
     @property
@@ -35,6 +33,16 @@ class StructuralSolver:
         if simulation is None:
             raise ReferenceError("Simulation object cannot be accessed.")
         return simulation
+
+    @property
+    def substructure(self) -> List[Substructure]:
+        """A combined list of substructures from all rigid bodies."""
+        return [ss for body in self.rigid_body for ss in body.substructure]
+
+    @property
+    def node(self) -> List[fe.Node]:
+        """A combined list of nodes from all substructures."""
+        return [nd for ss in self.substructure for nd in ss.node]
 
     def add_rigid_body(self, dict_: Dict[str, Any] = None) -> "RigidBody":
         """Add a rigid body to the structure.
