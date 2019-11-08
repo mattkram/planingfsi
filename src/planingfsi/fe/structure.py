@@ -1,3 +1,4 @@
+import abc
 import os
 import weakref
 from typing import Dict, Any, List
@@ -6,7 +7,7 @@ import numpy as np
 from scipy.interpolate import interp1d
 
 from . import felib as fe
-from .. import config, solver, general, trig
+from .. import config, solver, general, trig, logger
 from ..dictionary import load_dict_from_file
 from ..fsi import simulation as fsi_simulation
 
@@ -20,8 +21,8 @@ class FEStructure:
         self._simulation = weakref.ref(simulation)
         self.rigid_body: List["RigidBody"] = []
         self.substructure: List["Substructure"] = []
-        self.node = []
-        self.res = 1.0
+        self.node: List[fe.Node] = []
+        self.res = 1.0  # TODO: Can this be a property instead?
 
     @property
     def simulation(self) -> "fsi_simulation.Simulation":
@@ -57,6 +58,7 @@ class FEStructure:
             dict_ = {}
         # TODO: This logic is better handled by the factory pattern
         ss_type = dict_.get("substructureType", "rigid")
+        ss: Substructure
         if ss_type.lower() == "flexible" or ss_type.lower() == "truss":
             ss = FlexibleSubstructure(dict_)
             FlexibleSubstructure.obj.append(ss)
@@ -66,41 +68,41 @@ class FEStructure:
             ss = RigidSubstructure(dict_)
         self.substructure.append(ss)
 
-        # Find parent body and add substructure to it
-        body = [b for b in self.rigid_body if b.name == dict_.get("bodyName", "default")]
-        if len(body) > 0:
-            body = body[0]
-        else:
-            body = self.rigid_body[0]
-        body.add_substructure(ss)
-        ss.add_parent(body)
-        print(
-            (
-                "Adding Substructure {0} of type {1} to rigid body {2}".format(
-                    ss.name, ss.type_, body.name
-                )
-            )
-        )
+        self._assign_substructure_to_body(dict_, ss)
 
         return ss
 
-    def initialize_rigid_bodies(self):
+    def _assign_substructure_to_body(self, dict_: Dict[str, Any], ss: "Substructure") -> None:
+        """Find parent body and add substructure to it."""
+        bodies = [b for b in self.rigid_body if b.name == dict_.get("bodyName", "default")]
+        if bodies:
+            body = bodies[0]
+        else:
+            body = self.rigid_body[0]
+        body.add_substructure(ss)
+        logger.info(f"Adding Substructure {ss.name} of type {ss.type_} to rigid body {body.name}")
+
+    def initialize_rigid_bodies(self) -> None:
+        """Initialize the position of all rigid bodies."""
         for bd in self.rigid_body:
             bd.initialize_position()
 
-    def update_fluid_forces(self):
+    def update_fluid_forces(self) -> None:
+        """Update fluid forces on all rigid bodies."""
         for bd in self.rigid_body:
             bd.update_fluid_forces()
 
-    def calculate_response(self):
+    def calculate_response(self) -> None:
+        """Calculate the structural response, or load from files."""
         if config.io.results_from_file:
-            self.load_response()
+            self._load_response()
         else:
             for bd in self.rigid_body:
                 bd.update_position()
                 bd.update_substructure_positions()
 
-    def get_residual(self):
+    def get_residual(self) -> None:
+        """Calculate the residual."""
         self.res = 0.0
         for bd in self.rigid_body:
             if bd.free_in_draft or bd.free_in_trim:
@@ -108,7 +110,8 @@ class FEStructure:
                 self.res = np.max([np.abs(bd.res_m), self.res])
             self.res = np.max([FlexibleSubstructure.res, self.res])
 
-    def load_response(self):
+    def _load_response(self) -> None:
+        """Load the response from files."""
         self.update_fluid_forces()
 
         for bd in self.rigid_body:
@@ -117,18 +120,22 @@ class FEStructure:
                 ss.load_coordinates()
                 ss.update_geometry()
 
-    def write_results(self):
+    def write_results(self) -> None:
+        """Write the results to file."""
         for bd in self.rigid_body:
             bd.write_motion()
             for ss in bd.substructure:
                 ss.write_coordinates()
 
-    def plot(self):
+    def plot(self) -> None:
+        """Plot the results."""
+        # TODO: Move to figure module
         for body in self.rigid_body:
             for struct in body.substructure:
                 struct.plot()
 
-    def load_mesh(self):
+    def load_mesh(self) -> None:
+        """Load the mesh from files."""
         # Create all nodes
         x, y = np.loadtxt(os.path.join(config.path.mesh_dir, "nodes.txt"), unpack=True)
         xf, yf = np.loadtxt(os.path.join(config.path.mesh_dir, "fixedDOF.txt"), unpack=True)
@@ -155,6 +162,26 @@ class FEStructure:
 
 
 class RigidBody:
+    # TODO: Yuck
+    max_draft_step: float
+    max_trim_step: float
+    free_in_draft: bool
+    free_in_trim: bool
+    draft_damping: float
+    trim_damping: float
+    max_draft_acc: float
+    max_trim_acc: float
+    xCofG: float
+    yCofG: float
+    xCofR: float
+    yCofR: float
+    initial_draft: float
+    initial_trim: float
+    relax_draft: float
+    relax_trim: float
+    time_step: float
+    num_damp: int
+
     def __init__(self, dict_: Dict[str, Any]):
         self.dict_ = dict_
         self.num_dim = 2
@@ -215,10 +242,10 @@ class RigidBody:
         if self.free_in_draft or self.free_in_trim:
             config.has_free_structure = True
 
-        self.v = np.zeros((self.num_dim))
-        self.a = np.zeros((self.num_dim))
-        self.v_old = np.zeros((self.num_dim))
-        self.a_old = np.zeros((self.num_dim))
+        self.v = np.zeros((self.num_dim,))
+        self.a = np.zeros((self.num_dim,))
+        self.v_old = np.zeros((self.num_dim,))
+        self.a_old = np.zeros((self.num_dim,))
 
         self.beta = self.dict_.get("beta", 0.25)
         self.gamma = self.dict_.get("gamma", 0.5)
@@ -259,72 +286,76 @@ class RigidBody:
             elif config.body.motion_method == "PhysicalNoMass":
                 self.get_disp = self.get_disp_physical_no_mass
             elif config.body.motion_method == "Sep":
-                self.get_disp = self.getDispSep
+                self.get_disp = self.get_disp_secant
                 self.trim_solver = None
                 self.draft_solver = None
 
-        self.substructure = []
-        self.node = None
+        self.substructure: List["Substructure"] = []
+        self.node: List[fe.Node] = []
 
         print(("Adding Rigid Body: {0}".format(self.name)))
 
-    def add_substructure(self, ss):
+    def add_substructure(self, ss: "Substructure") -> None:
+        """Add a substructure to the rigid body."""
         self.substructure.append(ss)
+        ss.add_parent(self)
 
-    def store_nodes(self):
-        self.node = []
+    def store_nodes(self) -> None:
+        """Store references to all nodes in each substructure."""
         for ss in self.substructure:
             for nd in ss.node:
                 if not any([n.node_num == nd.node_num for n in self.node]):
                     self.node.append(nd)
 
-    def initialize_position(self):
+    def initialize_position(self) -> None:
+        """Initialize the position of the rigid body."""
         self.set_position(self.initial_draft, self.initial_trim)
 
-    def set_position(self, draft, trim):
+    def set_position(self, draft: float, trim: float) -> None:
+        """Set the position of the rigid body."""
         self.update_position(draft - self.draft, trim - self.trim)
 
-    def update_position(self, dDraft=None, dTrim=None):
-        if dDraft is None:
-            dDraft, dTrim = self.get_disp()
-            if np.isnan(dDraft):
-                dDraft = 0.0
-            if np.isnan(dTrim):
-                dTrim = 0.0
+    def update_position(self, draft_delta: float=None, trim_delta: float=None) -> None:
+        """Update the position of the rigid body by passing the change in draft and trim."""
+        if draft_delta is None:
+            draft_delta, trim_delta = self.get_disp()
+            if np.isnan(draft_delta):
+                draft_delta = 0.0
+            if np.isnan(trim_delta):
+                trim_delta = 0.0
 
-        if self.node is None:
+        if not self.node:
             self.store_nodes()
 
         for nd in self.node:
             xo, yo = nd.get_coordinates()
-            newPos = general.rotatePt([xo, yo], [self.xCofR, self.yCofR], dTrim)
-            nd.move_coordinates(newPos[0] - xo, newPos[1] - yo - dDraft)
+            new_pos = general.rotatePt(np.array([xo, yo]), np.array([self.xCofR, self.yCofR]), trim_delta)
+            nd.move_coordinates(new_pos[0] - xo, new_pos[1] - yo - draft_delta)
 
         for s in self.substructure:
             s.update_geometry()
 
         self.xCofG, self.yCofG = general.rotatePt(
-            [self.xCofG, self.yCofG], [self.xCofR, self.yCofR], dTrim
+            [self.xCofG, self.yCofG], [self.xCofR, self.yCofR], trim_delta
         )
-        self.yCofG -= dDraft
-        self.yCofR -= dDraft
+        self.yCofG -= draft_delta
+        self.yCofR -= draft_delta
 
-        self.draft += dDraft
-        self.trim += dTrim
+        self.draft += draft_delta
+        self.trim += trim_delta
 
         self.print_motion()
 
-    def update_substructure_positions(self):
+    def update_substructure_positions(self) -> None:
+        """Update the positions of all substructures."""
         FlexibleSubstructure.update_all()
         for ss in self.substructure:
-            print(("Updating position for substructure: {0}".format(ss.name)))
-            #             if ss.type.lower() == 'flexible':
-            #                 ss.getPtDispFEM()
-
+            logger.info(f"Updating position for substructure: {ss.name}")
             if ss.type_.lower() == "torsionalspring" or ss.type_.lower() == "rigid":
                 ss.updateAngle()
 
     def update_fluid_forces(self):
+        """Update the fluid forces by summing the force from each substructure."""
         self.reset_loads()
         for ss in self.substructure:
             ss.update_fluid_forces()
@@ -645,7 +676,7 @@ class RigidBody:
         self.Ma = K.get("MomentAir", np.nan)
 
 
-class Substructure:
+class Substructure(abc.ABC):
     count = 0
     obj = []
 
@@ -1020,6 +1051,10 @@ class Substructure:
         if isinstance(value, str):
             value = getattr(config, value)
         return value
+
+    @abc.abstractmethod
+    def set_fixed_dof(self) -> None:
+        return NotImplemented
 
 
 class FlexibleSubstructure(Substructure):
