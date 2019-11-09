@@ -201,7 +201,7 @@ class RigidBody:
         for ss in self.substructure:
             logger.info(f"Updating position for substructure: {ss.name}")
             if ss.type_.lower() == "torsionalspring" or ss.type_.lower() == "rigid":
-                ss.updateAngle()
+                ss.update_angle()
 
     def update_fluid_forces(self):
         """Update the fluid forces by summing the force from each substructure."""

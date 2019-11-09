@@ -517,7 +517,7 @@ class RigidSubstructure(Substructure):
     def set_attachments(self):
         return None
 
-    def updateAngle(self):
+    def update_angle(self):
         return None
 
     def set_fixed_dof(self):
@@ -752,7 +752,7 @@ class TorsionalSpringSubstructure(FlexibleSubstructure, RigidSubstructure):
     ##      attM = attM * np.abs(tipM) / np.abs(attM)
     #    self.Mt += attM
 
-    def updateAngle(self):
+    def update_angle(self):
 
         if np.isnan(self.Mt):
             theta = 0.0
