@@ -390,6 +390,7 @@ class Substructure(abc.ABC):
 
 
 class FlexibleSubstructure(Substructure):
+
     obj = []
     res = 0.0
 
@@ -498,6 +499,9 @@ class FlexibleSubstructure(Substructure):
         Substructure.set_element_properties(self)
         for el in self.el:
             el.set_properties(axialForce=-self.pretension, EA=self.EA)
+
+    def set_fixed_dof(self) -> None:
+        pass
 
     def update_geometry(self):
         for el in self.el:
