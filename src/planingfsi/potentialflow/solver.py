@@ -126,23 +126,27 @@ class PotentialPlaningSolver:
         source_el = [el for el in self.pressure_elements if el.is_source]
         # Form arrays to build linear system
         # x location of unknown elements
-        X = np.array([el.x_coord for el in unknown_el])
+        x_array = np.array([el.x_coord for el in unknown_el])
 
         # influence coefficient matrix (to be reshaped)
-        A = np.array([el.get_influence_coefficient(x) for x in X for el in unknown_el])
+        influence_matrix = np.array(
+            [el.get_influence_coefficient(x) for x in x_array for el in unknown_el]
+        )
 
         # height of each unknown element above waterline
-        Z = np.array([el.z_coord for el in unknown_el]) - config.flow.waterline_height
+        z_array = np.array([el.z_coord for el in unknown_el]) - config.flow.waterline_height
 
         # subtract contribution from source elements
-        Z -= np.array([np.sum([el.get_influence(x) for el in source_el]) for x in X])
+        z_array -= np.array([np.sum([el.get_influence(x) for el in source_el]) for x in x_array])
 
         # Solve linear system
         dim = len(unknown_el)
         if not dim == 0:
-            p = np.linalg.solve(np.reshape(A, (dim, dim)), np.reshape(Z, (dim, 1)))[:, 0]
+            p = np.linalg.solve(
+                np.reshape(influence_matrix, (dim, dim)), np.reshape(z_array, (dim, 1))
+            )[:, 0]
         else:
-            p = np.zeros_like(Z)
+            p = np.zeros_like(z_array)
 
         # Apply calculated pressure to the elements
         for pi, el in zip(p, unknown_el):
