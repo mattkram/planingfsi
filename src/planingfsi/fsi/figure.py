@@ -395,8 +395,8 @@ class CofRPlot:
         c = np.array([self.body.xCofR, self.body.yCofR])
         hvec = trig.rotate_vec_2d(np.array([0.5 * l, 0.0]), self.body.trim)
         vvec = trig.rotate_vec_2d(np.array([0.0, 0.5 * l]), self.body.trim)
-        pts = [c - hvec, c + hvec, np.ones(2) * np.nan, c - vvec, c + vvec]
-        self.line.set_data(list(zip(*pts)))
+        pts = np.array([c - hvec, c + hvec, c, c - vvec, c + vvec])
+        self.line.set_data(pts.T)
         self.lineCofG.set_data(self.body.xCofG, self.body.yCofG)
 
 
