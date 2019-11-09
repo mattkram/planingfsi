@@ -21,13 +21,13 @@ class StructuralSolver:
     several rigid bodies and substructures.
     """
 
-    def __init__(self, simulation: fsi_simulation.Simulation) -> None:
+    def __init__(self, simulation: "fsi_simulation.Simulation") -> None:
         self._simulation = weakref.ref(simulation)
-        self.rigid_body: List[RigidBody] = []
+        self.rigid_body: List["RigidBody"] = []
         self.res = 1.0  # TODO: Can this be a property instead?
 
     @property
-    def simulation(self) -> fsi_simulation.Simulation:
+    def simulation(self) -> "fsi_simulation.Simulation":
         """A reference to the simulation object by resolving the weak reference."""
         simulation = self._simulation()
         if simulation is None:
@@ -44,7 +44,7 @@ class StructuralSolver:
         """A combined list of nodes from all substructures."""
         return [nd for ss in self.substructure for nd in ss.node]
 
-    def add_rigid_body(self, dict_: Dict[str, Any] = None) -> RigidBody:
+    def add_rigid_body(self, dict_: Dict[str, Any] = None) -> "RigidBody":
         """Add a rigid body to the structure.
 
         Args
@@ -58,7 +58,7 @@ class StructuralSolver:
         self.rigid_body.append(rigid_body)
         return rigid_body
 
-    def add_substructure(self, dict_: Dict[str, Any] = None) -> Substructure:
+    def add_substructure(self, dict_: Dict[str, Any] = None) -> "Substructure":
         """Add a substructure to the structure, whose type is determined at run-time.
 
         Args
@@ -84,7 +84,7 @@ class StructuralSolver:
 
         return ss
 
-    def _assign_substructure_to_body(self, dict_: Dict[str, Any], ss: Substructure) -> None:
+    def _assign_substructure_to_body(self, dict_: Dict[str, Any], ss: "Substructure") -> None:
         """Find parent body and add substructure to it."""
         bodies = [b for b in self.rigid_body if b.name == dict_.get("bodyName", "default")]
         if bodies:
