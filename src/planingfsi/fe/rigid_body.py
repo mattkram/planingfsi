@@ -31,18 +31,17 @@ class RigidBody:
     num_damp: int
 
     def __init__(self, dict_: Dict[str, Any], parent: "structure.StructuralSolver"):
-        self.dict_ = dict_
         self.parent = parent
         self.num_dim = 2
         self.draft = 0.0
         self.trim = 0.0
 
-        self.name = self.dict_.get("bodyName", "default")
-        self.weight = self.dict_.get("W", self.dict_.get("loadPct", 1.0) * config.body.weight)
+        self.name = dict_.get("bodyName", "default")
+        self.weight = dict_.get("W", dict_.get("loadPct", 1.0) * config.body.weight)
         self.weight *= config.body.seal_load_pct
-        self.m = self.dict_.get("m", self.weight / config.flow.gravity)
-        self.Iz = self.dict_.get("Iz", self.m * config.body.reference_length ** 2 / 12)
-        self.has_planing_surface = self.dict_.get("hasPlaningSurface", False)
+        self.m = dict_.get("m", self.weight / config.flow.gravity)
+        self.Iz = dict_.get("Iz", self.m * config.body.reference_length ** 2 / 12)
+        self.has_planing_surface = dict_.get("hasPlaningSurface", False)
 
         var = [
             "max_draft_step",
@@ -65,8 +64,8 @@ class RigidBody:
             "num_damp",
         ]
         for v in var:
-            if v in self.dict_:
-                setattr(self, v, self.dict_.get(v))
+            if v in dict_:
+                setattr(self, v, dict_.get(v))
             elif hasattr(config.body, v):
                 setattr(self, v, getattr(config.body, v))
             elif hasattr(config.solver, v):
@@ -75,10 +74,10 @@ class RigidBody:
                 setattr(self, v, getattr(config, v))
             else:
                 raise ValueError("Cannot find symbol: {0}".format(v))
-            # setattr(self, v, self.dict_.read(v, getattr(config.body, getattr(config, v))))
+            # setattr(self, v, dict_.read(v, getattr(config.body, getattr(config, v))))
 
-        #    self.xCofR = self.dict_.read('xCofR', self.xCofG)
-        #    self.yCofR = self.dict_.read('yCofR', self.yCofG)
+        #    self.xCofR = dict_.read('xCofR', self.xCofG)
+        #    self.yCofR = dict_.read('yCofR', self.yCofG)
 
         self.xCofR0 = self.xCofR
         self.yCofR0 = self.yCofR
@@ -96,8 +95,8 @@ class RigidBody:
         self.v_old = np.zeros((self.num_dim,))
         self.a_old = np.zeros((self.num_dim,))
 
-        self.beta = self.dict_.get("beta", 0.25)
-        self.gamma = self.dict_.get("gamma", 0.5)
+        self.beta = dict_.get("beta", 0.25)
+        self.gamma = dict_.get("gamma", 0.5)
 
         self.D = 0.0
         self.L = 0.0
