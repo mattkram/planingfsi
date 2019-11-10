@@ -1,12 +1,13 @@
-from typing import Dict, Any, List, Optional
+from typing import Dict, Any, List, Optional, Callable
 
 import numpy as np
 
 from . import felib as fe
 from . import structure
-from .substructure import Substructure, FlexibleSubstructure, RigidSubstructure
+from .substructure import Substructure, FlexibleSubstructure, RigidSubstructure, TorsionalSpringSubstructure
 from .. import config, general, logger, trig, solver
 from ..dictionary import load_dict_from_file
+from ..general import writeasdict
 
 
 class RigidBody:
@@ -37,8 +38,10 @@ class RigidBody:
         self.trim = 0.0
 
         self.name = dict_.get("bodyName", "default")
-        self.weight = dict_.get("W", dict_.get("loadPct", 1.0) * config.body.weight)
-        self.weight *= config.body.seal_load_pct
+        self.weight = (
+            dict_.get("W", dict_.get("loadPct", 1.0) * config.body.weight)
+            * config.body.seal_load_pct
+        )
         self.m = dict_.get("m", self.weight / config.flow.gravity)
         self.Iz = dict_.get("Iz", self.m * config.body.reference_length ** 2 / 12)
         self.has_planing_surface = dict_.get("hasPlaningSurface", False)
@@ -87,6 +90,8 @@ class RigidBody:
         self.c_damp = np.array([self.draft_damping, self.trim_damping])
         self.max_acc = np.array([self.max_draft_acc, self.max_trim_acc])
         self.relax = np.array([self.relax_draft, self.relax_trim])
+
+        # TODO: The config.has_free_structure variable should be factored out
         if self.free_in_draft or self.free_in_trim:
             config.has_free_structure = True
 
@@ -106,17 +111,23 @@ class RigidBody:
         self.Ma = 0.0
 
         self.solver: Optional[solver.RootFinder] = None
-        self.disp_old = 0.0
-        self.res_old = None
-        self.two_ago_disp = 0.0
+        self.disp_old: Optional[np.ndarray] = None
+        self.res_old: Optional[np.ndarray] = None
+        self.two_ago_disp: Optional[np.ndarray] = None
         self.predictor = True
-        self.f_old = 0.0
-        self.two_ago_f = 0.0
+        self.f_old: Optional[np.ndarray] = None
+        self.two_ago_f: Optional[np.ndarray] = None
         self.res_l = 1.0
         self.res_m = 1.0
 
-        self.J = None
-        self.J_tmp = None
+        self.J: Optional[np.ndarray] = None
+        self.J_tmp: Optional[np.ndarray] = None
+        self.Jfo: Optional[np.ndarray] = None
+        self.Jit = 0
+        self.x: Optional[np.ndarray] = None
+        self.f: Optional[np.ndarray] = None
+        self.step = 0
+        self.resFun: Optional[Callable[[np.ndarray], np.ndarray]] = None
 
         # Assign displacement function depending on specified method
         self.get_disp = lambda: (0.0, 0.0)
@@ -289,16 +300,16 @@ class RigidBody:
 
     def get_disp_physical_no_mass(self) -> np.ndarray:
         """Get the rigid body displacement using a time-domain model without inertia."""
-        F = np.array(
-            [self.weight - self.L, self.M - self.weight * (config.body.xCofG - config.body.xCofR),]
+        force_moment = np.array(
+            [self.weight - self.L, self.M - self.weight * (config.body.xCofG - config.body.xCofR)]
         )
         #    F -= self.Cdamp * self.v
 
         if self.predictor:
-            disp = F / self.c_damp * self.time_step
+            disp = force_moment / self.c_damp * self.time_step
             self.predictor = False
         else:
-            disp = 0.5 * self.time_step / self.c_damp * (F - self.two_ago_f)
+            disp = 0.5 * self.time_step / self.c_damp * (force_moment - self.two_ago_f)
             self.predictor = True
 
         disp *= self.relax * config.ramp
@@ -327,11 +338,11 @@ class RigidBody:
                 dxMax=self.max_disp * self.free_dof,
             )
 
-        if not self.disp_old is None:
+        if self.disp_old is not None:
             self.solver.take_step(self.disp_old)
 
         # Solve for limited displacement
-        disp = self.solver._limit_step(self.solver.get_step())
+        disp = self.solver.limit_step(self.solver.get_step())
 
         self.two_ago_disp = self.disp_old
         self.disp_old = disp
@@ -352,7 +363,7 @@ class RigidBody:
             self.J_tmp[:, self.Jit] = (f - self.Jfo) / self.disp_old[self.Jit]
             self.Jit += 1
 
-        disp = np.zeros((self.num_dim))
+        disp = np.zeros((self.num_dim,))
         if self.Jit < self.num_dim:
             disp[self.Jit] = config.body.motion_jacobian_first_step
 
@@ -360,7 +371,7 @@ class RigidBody:
             disp[self.Jit - 1] = -config.body.motion_jacobian_first_step
         self.disp_old = disp
         if self.Jit >= self.num_dim:
-            self.J = self.J_tmp * 1.0
+            self.J[:] = self.J_tmp
             self.J_tmp = None
             self.disp_old = None
 
@@ -383,18 +394,18 @@ class RigidBody:
                     if free_dof
                 ]
             )
-            maxDisp = [m for m, free_dof in zip(self.max_disp, self.free_dof) if free_dof]
+            max_disp = [m for m, free_dof in zip(self.max_disp, self.free_dof) if free_dof]
 
             self.x = np.array(
                 [f for f, free_dof in zip([self.draft, self.trim], self.free_dof) if free_dof]
             )
-            self.solver = solver.RootFinder(self.resFun, self.x, "broyden", dxMax=maxDisp)
+            self.solver = solver.RootFinder(self.resFun, self.x, "broyden", dxMax=max_disp)
 
-        if not self.disp_old is None:
+        if self.disp_old is not None:
             self.solver.take_step(self.disp_old)
 
         # Solve for limited displacement
-        disp = self.solver._limit_step(self.solver.get_step())
+        disp = self.solver.limit_step(self.solver.get_step())
 
         self.two_ago_disp = self.disp_old
         self.disp_old = disp
@@ -414,7 +425,7 @@ class RigidBody:
             disp = self.reset_jacobian()
         else:
             self.f = self.resFun(self.x)
-            if not self.disp_old is None:
+            if self.disp_old is not None:
                 self.x += self.disp_old
 
                 dx = np.reshape(self.disp_old, (self.num_dim, 1))
@@ -424,10 +435,9 @@ class RigidBody:
 
             dof = self.free_dof
             dx = np.zeros_like(self.x)
-            A = -self.J[np.ix_(dof, dof)]
-            b = self.f.reshape(self.num_dim, 1)[np.ix_(dof)]
-
-            dx[np.ix_(dof)] = np.linalg.solve(A, b)
+            dx[np.ix_(dof)] = np.linalg.solve(
+                -self.J[np.ix_(dof, dof)], self.f.reshape(self.num_dim, 1)[np.ix_(dof)]
+            )
 
             if self.res_old is not None:
                 if any(np.abs(self.f) - np.abs(self.res_old) > 0.0):
@@ -435,11 +445,9 @@ class RigidBody:
 
             if self.step >= 6:
                 print("\nResetting Jacobian for Motion\n")
-                disp = self.reset_jacobian()
+                self.reset_jacobian()
 
             disp = dx.reshape(self.num_dim)
-
-            #      disp = self.solver.getStep()
 
             disp *= self.relax
             disp = self.limit_disp(disp)
@@ -452,14 +460,14 @@ class RigidBody:
 
     def limit_disp(self, disp: np.ndarray) -> np.ndarray:
         """Limit the body displacement."""
-        dispLimPct = np.min(np.vstack((np.abs(disp), self.max_disp)), axis=0) * np.sign(disp)
+        disp_lim_pct = np.min(np.vstack((np.abs(disp), self.max_disp)), axis=0) * np.sign(disp)
         for i in range(len(disp)):
             if disp[i] == 0.0 or not self.free_dof[i]:
-                dispLimPct[i] = 1.0
+                disp_lim_pct[i] = 1.0
             else:
-                dispLimPct[i] /= disp[i]
+                disp_lim_pct[i] /= disp[i]
 
-        return disp * np.min(dispLimPct) * self.free_dof
+        return disp * np.min(disp_lim_pct) * self.free_dof
 
     def get_res_lift(self) -> float:
         """Get the residual of the vertical force balance."""
@@ -484,7 +492,7 @@ class RigidBody:
                 )
         return np.abs(res * self.free_in_trim)
 
-    def print_motion(self):
+    def print_motion(self) -> None:
         """Print the moment for debugging."""
         lines = [
             f"Rigid Body Motion: {self.name}",
@@ -506,30 +514,28 @@ class RigidBody:
 
     def write_motion(self):
         """"""
-        # kp.writeasdict(
-        #     os.path.join(
-        #         config.it_dir, "motion_{0}.{1}".format(self.name, config.io.data_format)
-        #     ),
-        #     ["xCofR", self.xCofR],
-        #     ["yCofR", self.yCofR],
-        #     ["xCofG", self.xCofG],
-        #     ["yCofG", self.yCofG],
-        #     ["draft", self.draft],
-        #     ["trim", self.trim],
-        #     ["liftRes", self.res_l],
-        #     ["momentRes", self.res_m],
-        #     ["Lift", self.L],
-        #     ["Drag", self.D],
-        #     ["Moment", self.M],
-        #     ["LiftAir", self.La],
-        #     ["DragAir", self.Da],
-        #     ["MomentAir", self.Ma],
-        # )
-        # for ss in self.substructure:
-        #     if ss.type_ == "torsionalSpring":
-        #         ss.writeDeformation()
+        writeasdict(
+            self.parent.simulation.it_dir / f"motion_{self.name}.{config.io.data_format}",
+            ["xCofR", self.xCofR],
+            ["yCofR", self.yCofR],
+            ["xCofG", self.xCofG],
+            ["yCofG", self.yCofG],
+            ["draft", self.draft],
+            ["trim", self.trim],
+            ["liftRes", self.res_l],
+            ["momentRes", self.res_m],
+            ["Lift", self.L],
+            ["Drag", self.D],
+            ["Moment", self.M],
+            ["LiftAir", self.La],
+            ["DragAir", self.Da],
+            ["MomentAir", self.Ma],
+        )
+        for ss in self.substructure:
+            if isinstance(ss, TorsionalSpringSubstructure):
+                ss.writeDeformation()
 
-    def load_motion(self):
+    def load_motion(self) -> None:
         dict_ = load_dict_from_file(
             self.parent.simulation.it_dir / f"motion_{self.name}.{config.io.data_format}"
         )

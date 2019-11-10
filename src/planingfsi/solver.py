@@ -70,7 +70,7 @@ class RootFinder:
         self.x = xo
         self.evaluate_function()
 
-    def _limit_step(self, dx: numpy.array = None) -> numpy.array:
+    def limit_step(self, dx: numpy.array = None) -> numpy.array:
         if dx is None:
             dx = self.dx
         dx *= self.relax
@@ -184,7 +184,7 @@ class RootFinder:
         """Solve the nonlinear problem."""
         while self.err >= self.error_limit and self.it < self.max_it:
             self.get_step()
-            self._limit_step()
+            self.limit_step()
             self.take_step()
             self.evaluate_error()
 
