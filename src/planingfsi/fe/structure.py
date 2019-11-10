@@ -54,7 +54,7 @@ class StructuralSolver:
         """
         if dict_ is None:
             dict_ = {}
-        rigid_body = RigidBody(dict_)
+        rigid_body = RigidBody(dict_, parent=self)
         self.rigid_body.append(rigid_body)
         return rigid_body
 

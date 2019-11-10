@@ -1,11 +1,12 @@
-import os
-from typing import Dict, Any, List
+from typing import Dict, Any, List, Optional
 
 import numpy as np
-from planingfsi import config, general, logger, trig, solver
-from planingfsi.dictionary import load_dict_from_file
-from planingfsi.fe import felib as fe
-from planingfsi.fe.substructure import FlexibleSubstructure
+
+from . import felib as fe
+from . import structure
+from .substructure import Substructure, FlexibleSubstructure, RigidSubstructure
+from .. import config, general, logger, trig, solver
+from ..dictionary import load_dict_from_file
 
 
 class RigidBody:
@@ -29,8 +30,9 @@ class RigidBody:
     time_step: float
     num_damp: int
 
-    def __init__(self, dict_: Dict[str, Any]):
+    def __init__(self, dict_: Dict[str, Any], parent: "structure.StructuralSolver"):
         self.dict_ = dict_
+        self.parent = parent
         self.num_dim = 2
         self.draft = 0.0
         self.trim = 0.0
@@ -104,7 +106,7 @@ class RigidBody:
         self.La = 0.0
         self.Ma = 0.0
 
-        self.solver = None
+        self.solver: Optional[solver.RootFinder] = None
         self.disp_old = 0.0
         self.res_old = None
         self.two_ago_disp = 0.0
@@ -164,7 +166,7 @@ class RigidBody:
 
     def update_position(self, draft_delta: float = None, trim_delta: float = None) -> None:
         """Update the position of the rigid body by passing the change in draft and trim."""
-        if draft_delta is None:
+        if draft_delta is None or trim_delta is None:
             draft_delta, trim_delta = self.get_disp()
             if np.isnan(draft_delta):
                 draft_delta = 0.0
@@ -200,10 +202,10 @@ class RigidBody:
         FlexibleSubstructure.update_all()
         for ss in self.substructure:
             logger.info(f"Updating position for substructure: {ss.name}")
-            if ss.type_.lower() == "torsionalspring" or ss.type_.lower() == "rigid":
+            if isinstance(ss, RigidSubstructure):
                 ss.update_angle()
 
-    def update_fluid_forces(self):
+    def update_fluid_forces(self) -> None:
         """Update the fluid forces by summing the force from each substructure."""
         self.reset_loads()
         for ss in self.substructure:
@@ -218,14 +220,18 @@ class RigidBody:
         self.res_l = self.get_res_lift()
         self.res_m = self.get_res_moment()
 
-    def reset_loads(self):
+    def reset_loads(self) -> None:
+        """Reset the loads to zero."""
         self.D *= 0.0
         self.L *= 0.0
         self.M *= 0.0
         if config.body.cushion_force_method.lower() == "assumed":
-            self.L += config.body.Pc * config.body.reference_length * trig.cosd(config.trim)
+            self.L += (
+                config.body.Pc * config.body.reference_length * trig.cosd(config.body.initial_trim)
+            )
 
-    def get_disp_physical(self):
+    def get_disp_physical(self) -> np.ndarray:
+        """Get the rigid body displacement using a time-domain model with inertia."""
         disp = self.limit_disp(self.time_step * self.v)
 
         for i in range(self.num_dim):
@@ -253,7 +259,8 @@ class RigidBody:
         disp *= config.ramp
         return disp
 
-    def get_disp_newmark_beta(self):
+    def get_disp_newmark_beta(self) -> np.ndarray:
+        """Get the rigid body displacement using the Newmark-Beta method."""
         self.a = np.array([self.weight - self.L, self.M - self.weight * (self.xCofG - self.xCofR)])
         #    self.a -= self.Cdamp * self.v * config.ramp
         self.a /= np.array([self.m, self.Iz])
@@ -263,7 +270,7 @@ class RigidBody:
 
         dv = (1 - self.gamma) * self.a_old + self.gamma * self.a
         dv *= self.time_step
-        dv *= 1 - self.numDamp
+        dv *= 1 - self.num_damp
         self.v += dv
 
         disp = 0.5 * (1 - 2 * self.beta) * self.a_old + self.beta * self.a
@@ -281,7 +288,8 @@ class RigidBody:
 
         return disp
 
-    def get_disp_physical_no_mass(self):
+    def get_disp_physical_no_mass(self) -> np.ndarray:
+        """Get the rigid body displacement using a time-domain model without inertia."""
         F = np.array(
             [self.weight - self.L, self.M - self.weight * (config.body.xCofG - config.body.xCofR),]
         )
@@ -304,7 +312,8 @@ class RigidBody:
 
         return disp
 
-    def get_disp_secant(self):
+    def get_disp_secant(self) -> np.ndarray:
+        """Get the rigid body displacement using the Secant method."""
         if self.solver is None:
             self.resFun = lambda x: np.array(
                 [
@@ -330,7 +339,8 @@ class RigidBody:
 
         return disp
 
-    def reset_jacobian(self):
+    def reset_jacobian(self) -> np.ndarray:
+        """Reset the solver Jacobian and modify displacement."""
         if self.J_tmp is None:
             self.Jit = 0
             self.J_tmp = np.zeros((self.num_dim, self.num_dim))
@@ -357,7 +367,13 @@ class RigidBody:
 
         return disp
 
-    def get_disp_broyden_new(self):
+    def get_disp_broyden_new(self) -> np.ndarray:
+        """Get the rigid body displacement using Broyden's method.
+
+        Todo:
+            There should only be one Broyden's method
+
+        """
         if self.solver is None:
             self.resFun = lambda x: np.array(
                 [
@@ -385,7 +401,8 @@ class RigidBody:
         self.disp_old = disp
         return disp
 
-    def get_disp_broyden(self):
+    def get_disp_broyden(self) -> np.ndarray:
+        """Get the rigid body displacement using Broyden's method."""
         if self.solver is None:
             self.resFun = lambda x: np.array(
                 [self.L - self.weight, self.M - self.weight * (self.xCofG - self.xCofR)]
@@ -434,7 +451,8 @@ class RigidBody:
             self.step += 1
         return disp
 
-    def limit_disp(self, disp):
+    def limit_disp(self, disp: np.ndarray) -> np.ndarray:
+        """Limit the body displacement."""
         dispLimPct = np.min(np.vstack((np.abs(disp), self.max_disp)), axis=0) * np.sign(disp)
         for i in range(len(disp)):
             if disp[i] == 0.0 or not self.free_dof[i]:
@@ -444,7 +462,8 @@ class RigidBody:
 
         return disp * np.min(dispLimPct) * self.free_dof
 
-    def get_res_lift(self):
+    def get_res_lift(self) -> float:
+        """Get the residual of the vertical force balance."""
         if np.isnan(self.L):
             res = 1.0
         else:
@@ -453,7 +472,8 @@ class RigidBody:
             )
         return np.abs(res * self.free_in_draft)
 
-    def get_res_moment(self):
+    def get_res_moment(self) -> float:
+        """Get the residual of the trim moment balance."""
         if np.isnan(self.M):
             res = 1.0
         else:
@@ -466,19 +486,24 @@ class RigidBody:
         return np.abs(res * self.free_in_trim)
 
     def print_motion(self):
-        print(("Rigid Body Motion: {0}".format(self.name)))
-        print(("  CofR: ({0}, {1})".format(self.xCofR, self.yCofR)))
-        print(("  CofG: ({0}, {1})".format(self.xCofG, self.yCofG)))
-        print(("  Draft:      {0:5.4e}".format(self.draft)))
-        print(("  Trim Angle: {0:5.4e}".format(self.trim)))
-        print(("  Lift Force: {0:5.4e}".format(self.L)))
-        print(("  Drag Force: {0:5.4e}".format(self.D)))
-        print(("  Moment:     {0:5.4e}".format(self.M)))
-        print(("  Lift Force Air: {0:5.4e}".format(self.La)))
-        print(("  Drag Force Air: {0:5.4e}".format(self.Da)))
-        print(("  Moment Air:     {0:5.4e}".format(self.Ma)))
-        print(("  Lift Res:   {0:5.4e}".format(self.res_l)))
-        print(("  Moment Res: {0:5.4e}".format(self.res_m)))
+        """Print the moment for debugging."""
+        lines = [
+            f"Rigid Body Motion: {self.name}",
+            f"  CofR: ({self.xCofR}, {self.yCofR})",
+            f"  CofG: ({self.xCofG}, {self.yCofG})",
+            f"  Draft:      {self.draft:5.4e}",
+            f"  Trim Angle: {self.trim:5.4e}",
+            f"  Lift Force: {self.L:5.4e}",
+            f"  Drag Force: {self.D:5.4e}",
+            f"  Moment:     {self.M:5.4e}",
+            f"  Lift Force Air: {self.La:5.4e}",
+            f"  Drag Force Air: {self.Da:5.4e}",
+            f"  Moment Air:     {self.Ma:5.4e}",
+            f"  Lift Res:   {self.res_l:5.4e}",
+            f"  Moment Res: {self.res_m:5.4e}",
+        ]
+        for line in lines:
+            logger.debug(line)
 
     def write_motion(self):
         """"""
@@ -506,20 +531,20 @@ class RigidBody:
         #         ss.writeDeformation()
 
     def load_motion(self):
-        K = load_dict_from_file(
-            os.path.join(config.it_dir, "motion_{0}.{1}".format(self.name, config.io.data_format))
+        dict_ = load_dict_from_file(
+            self.parent.simulation.it_dir / f"motion_{self.name}.{config.io.data_format}"
         )
-        self.xCofR = K.get("xCofR", np.nan)
-        self.yCofR = K.get("yCofR", np.nan)
-        self.xCofG = K.get("xCofG", np.nan)
-        self.yCofG = K.get("yCofG", np.nan)
-        self.draft = K.get("draft", np.nan)
-        self.trim = K.get("trim", np.nan)
-        self.res_l = K.get("liftRes", np.nan)
-        self.res_m = K.get("momentRes", np.nan)
-        self.L = K.get("Lift", np.nan)
-        self.D = K.get("Drag", np.nan)
-        self.M = K.get("Moment", np.nan)
-        self.La = K.get("LiftAir", np.nan)
-        self.Da = K.get("DragAir", np.nan)
-        self.Ma = K.get("MomentAir", np.nan)
+        self.xCofR = dict_.get("xCofR", np.nan)
+        self.yCofR = dict_.get("yCofR", np.nan)
+        self.xCofG = dict_.get("xCofG", np.nan)
+        self.yCofG = dict_.get("yCofG", np.nan)
+        self.draft = dict_.get("draft", np.nan)
+        self.trim = dict_.get("trim", np.nan)
+        self.res_l = dict_.get("liftRes", np.nan)
+        self.res_m = dict_.get("momentRes", np.nan)
+        self.L = dict_.get("Lift", np.nan)
+        self.D = dict_.get("Drag", np.nan)
+        self.M = dict_.get("Moment", np.nan)
+        self.La = dict_.get("LiftAir", np.nan)
+        self.Da = dict_.get("DragAir", np.nan)
+        self.Ma = dict_.get("MomentAir", np.nan)
