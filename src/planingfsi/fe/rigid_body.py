@@ -351,6 +351,7 @@ class RigidBody:
 
     def reset_jacobian(self) -> np.ndarray:
         """Reset the solver Jacobian and modify displacement."""
+        assert self.resFun is not None
         if self.J_tmp is None:
             self.Jit = 0
             self.J_tmp = np.zeros((self.num_dim, self.num_dim))
