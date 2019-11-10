@@ -294,12 +294,12 @@ class PotentialPlaningSolver:
         # Grow points upstream and downstream from first and last plate
         x_fs_u = np.unique(x_fs)
         x_fs.extend(
-            general.growPoints(
+            general.grow_points(
                 x_fs_u[-2], x_fs_u[-1], config.plotting.x_fs_max, config.plotting.growth_rate,
             )
         )
         x_fs.extend(
-            general.growPoints(
+            general.grow_points(
                 x_fs_u[1], x_fs_u[0], config.plotting.x_fs_min, config.plotting.growth_rate,
             )
         )

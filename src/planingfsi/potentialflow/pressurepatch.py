@@ -568,5 +568,5 @@ class PlaningSurface(PressurePatch):
         """Calculate the derivative of the body surface at a point."""
         assert self.interpolator is not None
         return np.array(
-            [general.getDerivative(self.interpolator.get_body_height, xx, direction) for xx in x]
+            [general.deriv(self.interpolator.get_body_height, xx, direction) for xx in x]
         )

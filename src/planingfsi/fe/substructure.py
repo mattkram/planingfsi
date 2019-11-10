@@ -327,8 +327,8 @@ class Substructure(abc.ABC):
             self.Ma += general.integrate(s, np.array(m))
 
     def get_normal_vector(self, s):
-        dxds = general.getDerivative(lambda si: self.get_coordinates(si)[0], s)
-        dyds = general.getDerivative(lambda si: self.get_coordinates(si)[1], s)
+        dxds = general.deriv(lambda si: self.get_coordinates(si)[0], s)
+        dyds = general.deriv(lambda si: self.get_coordinates(si)[1], s)
 
         return trig.rotate_vec_2d(trig.angd2vec2d(trig.atand2(dyds, dxds)), -90)
 

@@ -1,13 +1,14 @@
 """General utilities."""
 from pathlib import Path
-from typing import Union, Any
+from typing import Union, Any, Callable
 
 import numpy
 
 from . import trig
 
 
-def sign(x):
+def sign(x: float) -> float:
+    """Return the sign of the argument. Zero returns zero."""
     if x > 0:
         return 1.0
     elif x < 0:
@@ -16,39 +17,46 @@ def sign(x):
         return 0.0
 
 
-def heaviside(x):
-    if x > 0:
+def heaviside(x: float) -> float:
+    """The Heaviside step function returns one if argument is positive, zero if negative, and 0.5 if 0."""
+    if x > 0.0:
         return 1.0
-    elif x < 0:
+    elif x < 0.0:
         return 0.0
     else:
         return 0.5
 
 
-def trapz(x, f):
-    # Trapezoidal integration
-    I = numpy.argsort(x)
-    x = x[I]
-    f = f[I]
+def integrate(x: numpy.ndarray, f: numpy.ndarray) -> float:
+    """Integrate a function using Trapezoidal integration."""
+    ind = numpy.argsort(x)
+    x = x[ind]
+    f = f[ind]
     f[numpy.nonzero(numpy.abs(f) == float("Inf"))] = 0.0
 
-    return 0.5 * numpy.sum((x[1:] - x[0:-1]) * (f[1:] + f[0:-1]))
+    return 0.5 * numpy.sum((x[1:] - x[:-1]) * (f[1:] + f[:-1]))
 
 
-def integrate(x, f):
-    return trapz(x, f)
+def grow_points(x0, x1, x_max, rate=1.1):
+    """Grow points exponentially from two starting points assuming a growth rate.
 
+    Args:
+        x0: The first point.
+        x1: The second point.
+        x_max: The maximum distance.
+        rate: The growth rate of spacing between subsequent points.
 
-def growPoints(x0, x1, xMax, rate=1.1):
+    """
+    # TODO: Check this function, is first point included?
     dx = x1 - x0
     x = [x1]
 
     if dx > 0:
-        done = lambda xt: xt > xMax
+        def done(xt): return xt > x_max
     elif dx < 0:
-        done = lambda xt: xt < xMax
+        def done(xt): return xt < x_max
     else:
-        done = lambda xt: True
+        def done(_): return True
 
     while not done(x[-1]):
         x.append(x[-1] + dx)
@@ -57,7 +65,8 @@ def growPoints(x0, x1, xMax, rate=1.1):
     return numpy.array(x[1:])
 
 
-def getDerivative(f, x, direction="c"):
+def deriv(f: Callable[[float], float], x: float, direction: str = "c") -> float:
+    """Calculate the derivative of a function at a specific point."""
     dx = 1e-6
     fr = f(x + dx)
     fl = f(x - dx)
