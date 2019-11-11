@@ -202,7 +202,7 @@ class RigidBody:
             s.update_geometry()
 
         self.xCofG, self.yCofG = general.rotate_point(
-            [self.xCofG, self.yCofG], [self.xCofR, self.yCofR], trim_delta
+            np.array([self.xCofG, self.yCofG]), np.array([self.xCofR, self.yCofR]), trim_delta
         )
         self.yCofG -= draft_delta
         self.yCofR -= draft_delta
