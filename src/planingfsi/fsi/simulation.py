@@ -9,7 +9,7 @@ from .interpolator import Interpolator
 from .. import config, logger
 from ..dictionary import load_dict_from_file
 from ..fe.structure import StructuralSolver
-from ..general import writeasdict
+from ..general import write_as_dict
 from ..potentialflow.solver import PotentialPlaningSolver
 
 
@@ -249,7 +249,7 @@ class Simulation:
 
     def write_results(self) -> None:
         if self.check_output_interval() and not config.io.results_from_file:
-            writeasdict(
+            write_as_dict(
                 os.path.join(self.it_dir, "overallQuantities.txt"),
                 ["Ramp", config.ramp],
                 ["Residual", self.solid_solver.res],

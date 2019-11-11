@@ -347,7 +347,7 @@ class PotentialPlaningSolver:
 
     def _write_forces(self) -> None:
         """Write forces to file."""
-        general.writeasdict(
+        general.write_as_dict(
             self.simulation.it_dir / f"forces_total.{config.io.data_format}",
             ["Drag", self.drag_total],
             ["WaveDrag", self.drag_wave],
@@ -364,7 +364,7 @@ class PotentialPlaningSolver:
 
     def _write_pressure_and_shear(self) -> None:
         """Write pressure and shear stress profiles to data file."""
-        general.writeaslist(
+        general.write_as_list(
             self.simulation.it_dir / f"pressureAndShear.{config.io.data_format}",
             ["x [m]", self.x_coord],
             ["p [Pa]", self.pressure],
@@ -373,7 +373,7 @@ class PotentialPlaningSolver:
 
     def _write_free_surface(self) -> None:
         """Write free-surface profile to file."""
-        general.writeaslist(
+        general.write_as_list(
             self.simulation.it_dir / f"freeSurface.{config.io.data_format}",
             ["x [m]", self.x_coord_fs],
             ["y [m]", self.z_coord_fs],

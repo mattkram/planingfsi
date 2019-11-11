@@ -114,7 +114,7 @@ class Element:
         if self.lineEl0 is not None and self.plot_on:
             basePt = [self.parent.parent.xCofR0, self.parent.parent.yCofR0]
             pos = [
-                general.rotatePt(pos, basePt, self.parent.parent.trim)
+                general.rotate_point(pos, basePt, self.parent.parent.trim)
                 - np.array([0, self.parent.parent.draft])
                 for pos in self.init_pos
             ]

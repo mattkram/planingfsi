@@ -781,7 +781,7 @@ class TorsionalSpringSubstructure(FlexibleSubstructure, RigidSubstructure):
         basePt = np.array([c for c in self.node[-1].get_coordinates()])
         for nd in self.node + attNd:
             oldPt = np.array([c for c in nd.get_coordinates()])
-            newPt = general.rotatePt(oldPt, basePt, -dTheta)
+            newPt = general.rotate_point(oldPt, basePt, -dTheta)
             nd.set_coordinates(newPt[0], newPt[1])
 
         self.theta += dTheta
@@ -795,7 +795,7 @@ class TorsionalSpringSubstructure(FlexibleSubstructure, RigidSubstructure):
     #    return self.theta + self.Mt / self.spring_constant
 
     def writeDeformation(self):
-        general.writeasdict(
+        general.write_as_dict(
             os.path.join(
                 config.it_dir, "deformation_{0}.{1}".format(self.name, config.io.data_format),
             ),

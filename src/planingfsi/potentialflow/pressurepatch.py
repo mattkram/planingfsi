@@ -149,7 +149,7 @@ class PressurePatch(abc.ABC):
 
     def write_forces(self) -> None:
         """Write forces to file."""
-        general.writeasdict(
+        general.write_as_dict(
             self._force_file_save_path,
             ["Drag", self.drag_total],
             ["WaveDrag", self.drag_wave],

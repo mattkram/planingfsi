@@ -5,7 +5,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 
 from .. import config, trig
-from ..general import writeaslist
+from ..general import write_as_list
 from ..solver import fzero
 
 
@@ -129,24 +129,24 @@ class Mesh:
     def write(self):
         Path(config.path.mesh_dir).mkdir(exist_ok=True)
         x, y = list(zip(*[pt.get_position() for pt in Point.All()]))
-        writeaslist(os.path.join(config.path.mesh_dir, "nodes.txt"), ["x", x], ["y", y])
+        write_as_list(os.path.join(config.path.mesh_dir, "nodes.txt"), ["x", x], ["y", y])
 
         x, y = list(zip(*[pt.get_fixed_dof() for pt in Point.All()]))
-        writeaslist(
+        write_as_list(
             os.path.join(config.path.mesh_dir, "fixedDOF.txt"),
             ["x", x],
             ["y", y],
-            headerFormat=">1",
-            dataFormat=">1",
+            header_format=">1",
+            data_format=">1",
         )
 
         x, y = list(zip(*[pt.get_fixed_load() for pt in Point.All()]))
-        writeaslist(
+        write_as_list(
             os.path.join(config.path.mesh_dir, "fixedLoad.txt"),
             ["x", x],
             ["y", y],
-            headerFormat=">6",
-            dataFormat="6.4e",
+            header_format=">6",
+            data_format="6.4e",
         )
 
         for sm in self.submesh:
@@ -187,12 +187,12 @@ class Submesh(Mesh):
             ptL, ptR = list(
                 zip(*[[pt.get_index() for pt in l._get_element_coords()] for l in self.line])
             )
-            writeaslist(
+            write_as_list(
                 os.path.join(config.path.mesh_dir, "elements_{0}.txt".format(self.name)),
                 ["ptL", ptL],
                 ["ptR", ptR],
-                headerFormat="<4",
-                dataFormat=">4",
+                header_format="<4",
+                data_format=">4",
             )
 
 

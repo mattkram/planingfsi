@@ -1,10 +1,10 @@
 """General utilities."""
 from pathlib import Path
-from typing import Union, Any, Callable
+from typing import Union, Any, Callable, TextIO
 
 import numpy
 
-from . import trig
+from planingfsi import trig
 
 
 def sign(x: float) -> float:
@@ -37,7 +37,7 @@ def integrate(x: numpy.ndarray, f: numpy.ndarray) -> float:
     return 0.5 * numpy.sum((x[1:] - x[:-1]) * (f[1:] + f[:-1]))
 
 
-def grow_points(x0, x1, x_max, rate=1.1):
+def grow_points(x0: float, x1: float, x_max: float, rate: float = 1.1) -> numpy.ndarray:
     """Grow points exponentially from two starting points assuming a growth rate.
 
     Args:
@@ -52,11 +52,20 @@ def grow_points(x0, x1, x_max, rate=1.1):
     x = [x1]
 
     if dx > 0:
-        def done(xt): return xt > x_max
+
+        def done(xt: float) -> bool:
+            return xt > x_max
+
     elif dx < 0:
-        def done(xt): return xt < x_max
+
+        def done(xt: float) -> bool:
+            return xt < x_max
+
     else:
-        def done(_): return True
+
+        def done(xt: float) -> bool:
+            _ = xt
+            return True
 
     while not done(x[-1]):
         x.append(x[-1] + dx)
@@ -79,42 +88,44 @@ def deriv(f: Callable[[float], float], x: float, direction: str = "c") -> float:
         return (f(x + dx) - f(x - dx)) / (2 * dx)
 
 
-def cross2(a, b):
+def cross2(a: numpy.ndarray, b: numpy.ndarray) -> float:
+    """Calculate the cross product of two two-dimensional vectors."""
     return a[0] * b[1] - a[1] * b[0]
 
 
-def cumdiff(x):
-    return numpy.sum(numpy.diff(x))
+def cumdiff(x: numpy.ndarray) -> float:
+    """Calculate the cumulative difference of an array."""
+    return float(numpy.sum(numpy.diff(x)))
 
 
-def rotatePt(oldPt, basePt, ang):
-    relPos = numpy.array(oldPt) - numpy.array(basePt)
-    newPos = trig.rotate_vec_2d(relPos, ang)
-    newPt = basePt + newPos
-
-    return newPt
-
-
-def writeasdict(filename, *args, **kwargs):
-    dataFormat = kwargs.get("dataFormat", ">+10.8e")
-    ff = open(filename, "w")
-    for name, value in args:
-        ff.write("{2:{0}} : {3:{1}}\n".format("<14", dataFormat, name, value))
-    ff.close()
+def rotate_point(point: numpy.ndarray, about: numpy.ndarray, angle: float) -> numpy.ndarray:
+    """Rotate a point about another point by a specific angle in degrees."""
+    relative_pos = numpy.array(point) - numpy.array(about)
+    new_pos = trig.rotate_vec_2d(relative_pos, angle)
+    return about + new_pos
 
 
-def writeaslist(filename: Union[Path, str], *args: Any, **kwargs: Any) -> None:
-    headerFormat = kwargs.get("headerFormat", "<15")
-    dataFormat = kwargs.get("dataFormat", ">+10.8e")
+def write_as_dict(filename: Union[Path, str], *args: Any, data_format: str = ">+10.8e") -> None:
+    """Write arguments to a file as a dictionary."""
     with Path(filename).open("w") as ff:
-        write(ff, headerFormat, [item for item in [arg[0] for arg in args]])
+        for name, value in args:
+            ff.write(f"{name:<14} : {value:{data_format}}\n")
+
+
+def write_as_list(
+    filename: Union[Path, str], *args: Any, header_format: str = "<15", data_format: str = ">+10.8e"
+) -> None:
+    """Write the arguments to a file as a list."""
+    with Path(filename).open("w") as ff:
+        _write(ff, header_format, [item for item in [arg[0] for arg in args]])
         for value in zip(*[arg[1] for arg in args]):
-            write(ff, dataFormat, value)
+            _write(ff, data_format, value)
 
 
-def write(ff, writeFormat, items):
+def _write(ff: TextIO, write_format: str, items: Any) -> None:
+    """Write items to a file with a specific format."""
     if isinstance(items[0], str):
         ff.write("# ")
     else:
         ff.write("  ")
-    ff.write("".join("{1:{0}} ".format(writeFormat, item) for item in items) + "\n")
+    ff.write("".join("{1:{0}} ".format(write_format, item) for item in items) + "\n")

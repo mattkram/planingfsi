@@ -4,10 +4,15 @@ import numpy as np
 
 from . import felib as fe
 from . import structure
-from .substructure import Substructure, FlexibleSubstructure, RigidSubstructure, TorsionalSpringSubstructure
+from .substructure import (
+    Substructure,
+    FlexibleSubstructure,
+    RigidSubstructure,
+    TorsionalSpringSubstructure,
+)
 from .. import config, general, logger, trig, solver
 from ..dictionary import load_dict_from_file
-from ..general import writeasdict
+from ..general import write_as_dict
 
 
 class RigidBody:
@@ -188,7 +193,7 @@ class RigidBody:
 
         for nd in self.node:
             xo, yo = nd.get_coordinates()
-            new_pos = general.rotatePt(
+            new_pos = general.rotate_point(
                 np.array([xo, yo]), np.array([self.xCofR, self.yCofR]), trim_delta
             )
             nd.move_coordinates(new_pos[0] - xo, new_pos[1] - yo - draft_delta)
@@ -196,7 +201,7 @@ class RigidBody:
         for s in self.substructure:
             s.update_geometry()
 
-        self.xCofG, self.yCofG = general.rotatePt(
+        self.xCofG, self.yCofG = general.rotate_point(
             [self.xCofG, self.yCofG], [self.xCofR, self.yCofR], trim_delta
         )
         self.yCofG -= draft_delta
@@ -515,7 +520,7 @@ class RigidBody:
 
     def write_motion(self):
         """"""
-        writeasdict(
+        write_as_dict(
             self.parent.simulation.it_dir / f"motion_{self.name}.{config.io.data_format}",
             ["xCofR", self.xCofR],
             ["yCofR", self.yCofR],
