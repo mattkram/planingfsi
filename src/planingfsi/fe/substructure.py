@@ -449,6 +449,7 @@ class FlexibleSubstructure(Substructure):
 
     def __init__(self, dict_: Dict[str, Any]):
         super().__init__(dict_)
+        self.__all.append(self)
         self.element_type = fe.TrussElement
         self.pretension = dict_.get("pretension", -0.5)
         self.EA = dict_.get("EA", 5e7)

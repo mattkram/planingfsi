@@ -73,7 +73,6 @@ class StructuralSolver:
         ss: Substructure
         if ss_type.lower() == "flexible" or ss_type.lower() == "truss":
             ss = FlexibleSubstructure(dict_)
-            FlexibleSubstructure.obj.append(ss)
         elif ss_type.lower() == "torsionalspring":
             ss = TorsionalSpringSubstructure(dict_)
         else:
