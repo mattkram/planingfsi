@@ -1,6 +1,7 @@
 from typing import Dict, Any, List, Optional, Callable
 
 import numpy as np
+from planingfsi.solver import RootFinder
 
 from . import felib as fe
 from . import structure
@@ -365,18 +366,19 @@ class RigidBody:
             self.res_old = self.Jfo * 1.0
         else:
             f = self.resFun(self.x)
-
+            assert isinstance(self.disp_old, np.ndarray)
             self.J_tmp[:, self.Jit] = (f - self.Jfo) / self.disp_old[self.Jit]
             self.Jit += 1
 
         disp = np.zeros((self.num_dim,))
         if self.Jit < self.num_dim:
-            disp[self.Jit] = config.body.motion_jacobian_first_step
+            disp[self.Jit] = float(config.body.motion_jacobian_first_step)
 
         if self.Jit > 0:
-            disp[self.Jit - 1] = -config.body.motion_jacobian_first_step
+            disp[self.Jit - 1] = -float(config.body.motion_jacobian_first_step)
         self.disp_old = disp
         if self.Jit >= self.num_dim:
+            assert isinstance(self.J, np.ndarray)
             self.J[:] = self.J_tmp
             self.J_tmp = None
             self.disp_old = None
@@ -424,12 +426,13 @@ class RigidBody:
                 [self.L - self.weight, self.M - self.weight * (self.xCofG - self.xCofR)]
             )
             #      self.resFun = lambda x: np.array([self.get_res_moment(), self.get_res_lift()])
-            self.solver = 1.0
             self.x = np.array([self.draft, self.trim])
+            self.solver = RootFinder(self.resFun, self.x, method="Broyden")
 
         if self.J is None:
             disp = self.reset_jacobian()
         else:
+            assert self.resFun is not None
             self.f = self.resFun(self.x)
             if self.disp_old is not None:
                 self.x += self.disp_old
@@ -518,8 +521,8 @@ class RigidBody:
         for line in lines:
             logger.debug(line)
 
-    def write_motion(self):
-        """"""
+    def write_motion(self) -> None:
+        """Write the motion results to file."""
         write_as_dict(
             self.parent.simulation.it_dir / f"motion_{self.name}.{config.io.data_format}",
             ["xCofR", self.xCofR],

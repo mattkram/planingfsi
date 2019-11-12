@@ -16,8 +16,8 @@ class RootFinder:
 
     def __init__(
         self,
-        func: Callable[[numpy.array], numpy.array],
-        xo: numpy.array,
+        func: Callable[[numpy.ndarray], numpy.ndarray],
+        xo: numpy.ndarray,
         method: str,
         **kwargs: Any,
     ):
@@ -60,7 +60,7 @@ class RootFinder:
         else:
             self.get_step = self.get_step_secant
 
-    def reinitialize(self, xo: numpy.array) -> None:
+    def reinitialize(self, xo: numpy.ndarray) -> None:
         """Re-initialize the solver for a new solution."""
         self.err = 1.0
         self.it = 0
@@ -70,7 +70,7 @@ class RootFinder:
         self.x = xo
         self.evaluate_function()
 
-    def limit_step(self, dx: numpy.array = None) -> numpy.array:
+    def limit_step(self, dx: numpy.ndarray = None) -> numpy.ndarray:
         if dx is None:
             dx = self.dx
         dx *= self.relax
@@ -115,7 +115,7 @@ class RootFinder:
         else:
             self.df = None
 
-    def get_step_secant(self) -> numpy.array:
+    def get_step_secant(self) -> numpy.ndarray:
         """Get the step using the Secant method."""
         if self.it == 0:
             self.dx = numpy.ones_like(self.x) * self.dx_init
@@ -123,7 +123,7 @@ class RootFinder:
             self.dx = -self.f * (self.x - self.x_prev) / (self.f - self.f_prev + 1e-8)
         return self.dx
 
-    def take_step(self, dx: numpy.array = None) -> None:
+    def take_step(self, dx: numpy.ndarray = None) -> None:
         """Take the step in the solution."""
         if dx is not None:
             self.dx = dx
@@ -148,7 +148,7 @@ class RootFinder:
 
         self.jacobian_step = 0
 
-    def get_step_broyden(self) -> numpy.array:
+    def get_step_broyden(self) -> numpy.ndarray:
         """Get the next step using Broyden's method."""
         if self.it == 0 or self.jacobian is None:
             self.reset_jacobian()
@@ -180,7 +180,7 @@ class RootFinder:
 
         return self.dx
 
-    def solve(self) -> numpy.array:
+    def solve(self) -> numpy.ndarray:
         """Solve the nonlinear problem."""
         while self.err >= self.error_limit and self.it < self.max_it:
             self.get_step()
