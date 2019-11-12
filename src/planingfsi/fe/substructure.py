@@ -1,17 +1,21 @@
 import abc
 import os
-from typing import List, Dict, Any
+from pathlib import Path
+from typing import List, Dict, Any, Optional, Tuple, Type, Callable
 
 import numpy as np
 from scipy.interpolate import interp1d
 
 from . import felib as fe
+from . import rigid_body
 from .. import config, general, trig
 
 
 class Substructure(abc.ABC):
 
     __all: List["Substructure"] = []
+
+    element_type: Type[fe.Element]
 
     @classmethod
     def find_by_name(cls, name: str) -> "Substructure":
@@ -41,46 +45,44 @@ class Substructure(abc.ABC):
         self.struct_extrap = self.dict_.get("structExtrap", True)
         self.line_fluid_pressure = None
         self.line_air_pressure = None
-        self.fluidS = []
-        self.fluidP = []
-        self.airS = []
-        self.airP = []
+        self.fluidS: List[float] = []
+        self.fluidP: List[float] = []
+        self.airS: List[float] = []
+        self.airP: List[float] = []
         self.U = 0.0
-        self.node = []
+        self.node: List[fe.Node] = []
+        self.el: List[fe.Element] = []
+        self.parent: Optional[rigid_body.RigidBody] = None
+        self.node_arc_length = np.zeros(len(self.node))
 
-    def add_parent(self, parent):
-        self.parent = parent
-
-    def get_residual(self):
-        return 0.0
-
-    def set_element_properties(self):
+    def set_element_properties(self) -> None:
+        """Set the properties of each element."""
         for el in self.el:
-            el.set_properties(length=self.get_arc_length() / len(self.el))
+            el.set_properties(length=self.arc_length / len(self.el))
 
-    def load_mesh(self):
-        ndSt, ndEnd = np.loadtxt(
-            os.path.join(config.path.mesh_dir, "elements_{0}.txt".format(self.name)), unpack=True,
+    def load_mesh(self) -> None:
+        nd_st, nd_end = np.loadtxt(
+            str(Path(config.path.mesh_dir, f"elements_{self.name}.txt")), unpack=True,
         )
-        if isinstance(ndSt, float):
-            ndSt = [int(ndSt)]
-            ndEnd = [int(ndEnd)]
+        if isinstance(nd_st, float):
+            nd_st = [int(nd_st)]
+            nd_end = [int(nd_end)]
         else:
-            ndSt = [int(nd) for nd in ndSt]
-            ndEnd = [int(nd) for nd in ndEnd]
-        ndInd = ndSt + [ndEnd[-1]]
+            nd_st = [int(nd) for nd in nd_st]
+            nd_end = [int(nd) for nd in nd_end]
+        ndInd = nd_st + [nd_end[-1]]
 
         # Generate Element list
         self.node = [fe.Node.get_index(i) for i in ndInd]
 
         self.set_interp_function()
-        self.el = [self.element_type() for _ in ndSt]
+        self.el = [self.element_type() for _ in nd_st]
         self.set_element_properties()
-        for ndSti, ndEndi, el in zip(ndSt, ndEnd, self.el):
+        for ndSti, ndEndi, el in zip(nd_st, nd_end, self.el):
             el.set_nodes([fe.Node.get_index(ndSti), fe.Node.get_index(ndEndi)])
             el.set_parent(self)
 
-    def set_interp_function(self):
+    def set_interp_function(self) -> None:
         self.node_arc_length = np.zeros(len(self.node))
         for i, nd0, nd1 in zip(list(range(len(self.node) - 1)), self.node[:-1], self.node[1:]):
             self.node_arc_length[i + 1] = (
@@ -99,11 +101,13 @@ class Substructure(abc.ABC):
         )
 
         if self.struct_extrap:
-            self.interp_func_x, self.interp_func_y = self.extrap_coordinates(
+            self.interp_func_x, self.interp_func_y = self._extrap_coordinates(
                 self.interp_func_x, self.interp_func_y
             )
 
-    def extrap_coordinates(self, fxi, fyi):
+    def _extrap_coordinates(self, fxi: Callable, fyi: Callable) -> Tuple[Callable, Callable]:
+        """Return a new callable that provides extrapolation."""
+
         def extrap1d(interpolator):
             xs = interpolator.x
             ys = interpolator.y
@@ -123,32 +127,35 @@ class Substructure(abc.ABC):
 
         return extrap1d(fxi), extrap1d(fyi)
 
-    def get_coordinates(self, si):
+    def get_coordinates(self, si: float) -> Tuple[float, float]:
         return self.interp_func_x(si), self.interp_func_y(si)
 
-    def get_xcoordinates(self, s):
+    def get_x_coordinates(self, s: float) -> float:
         return self.get_coordinates(s)[0]
 
-    def get_ycoordinates(self, s):
+    def get_y_coordinates(self, s: float) -> float:
         return self.get_coordinates(s)[1]
 
-    def get_arc_length(self):
+    @property
+    def arc_length(self) -> float:
         return max(self.node_arc_length)
 
-    def write_coordinates(self):
-        """"""
-        # kp.writeaslist(
-        #     os.path.join(
-        #         config.it_dir, "coords_{0}.{1}".format(self.name, config.io.data_format)
-        #     ),
-        #     ["x [m]", [nd.x for nd in self.node]],
-        #     ["y [m]", [nd.y for nd in self.node]],
-        # )
+    @property
+    def it_dir(self) -> Path:
+        assert self.parent is not None
+        return self.parent.parent.simulation.it_dir
 
-    def load_coordinates(self):
+    def write_coordinates(self) -> None:
+        """Write the coordinates to file"""
+        general.write_as_list(
+            self.it_dir / f"coords_{self.name}.{config.io.data_format}",
+            ["x [m]", [nd.x for nd in self.node]],
+            ["y [m]", [nd.y for nd in self.node]],
+        )
+
+    def load_coordinates(self) -> None:
         x, y = np.loadtxt(
-            os.path.join(config.it_dir, "coords_{0}.{1}".format(self.name, config.io.data_format)),
-            unpack=True,
+            str(self.it_dir / f"coords_{self.name}.{config.io.data_format}"), unpack=True,
         )
         for xx, yy, nd in zip(x, y, self.node):
             nd.set_coordinates(xx, yy)
@@ -165,7 +172,7 @@ class Substructure(abc.ABC):
         self.La = 0.0
         self.Ma = 0.0
         if self.interpolator is not None:
-            sMin, sMax = self.interpolator.get_min_max_s()
+            s_min, s_max = self.interpolator.get_min_max_s()
 
         for i, el in enumerate(self.el):
             # Get pressure at end points and all fluid points along element
@@ -192,9 +199,9 @@ class Substructure(abc.ABC):
             ss = nodeS[1]
             Pc = 0.0
             if self.interpolator is not None:
-                if ss > sMax:
+                if ss > s_max:
                     Pc = self.interpolator.fluid.upstream_pressure
-                elif ss < sMin:
+                elif ss < s_min:
                     Pc = self.interpolator.fluid.downstream_pressure
             elif self.cushion_pressure_type == "Total":
                 Pc = config.body.Pc
@@ -230,9 +237,9 @@ class Substructure(abc.ABC):
             Pc = 0.0
             for ii, ss in enumerate(s):
                 if self.interpolator is not None:
-                    if ss > sMax:
+                    if ss > s_max:
                         Pc = self.interpolator.fluid.upstream_pressure
-                    elif ss < sMin:
+                    elif ss < s_min:
                         Pc = self.interpolator.fluid.downstream_pressure
                 elif self.cushion_pressure_type == "Total":
                     Pc = config.body.Pc
@@ -287,9 +294,13 @@ class Substructure(abc.ABC):
                     integrand = pressure_external
                 elif config.body.cushion_force_method.lower() == "assumed":
                     integrand = pressure_fluid
+                else:
+                    raise ValueError(
+                        'Cushion force method must be either "integrated" or "assumed"'
+                    )
 
-                n = list(map(self.get_normal_vector, s))
-                t = [trig.rotate_vec_2d(ni, -90) for ni in n]
+                n = [self.get_normal_vector(s_i) for s_i in s]
+                t = [trig.rotate_vec_2d(n_i, -90) for n_i in n]
 
                 f = [-pi * ni + taui * ti for pi, taui, ni, ti in zip(integrand, tau, n, t)]
 
@@ -404,7 +415,7 @@ class FlexibleSubstructure(Substructure):
         Ug = np.zeros((num_dof, 1))
 
         # Assemble global matrices for all substructures together
-        for ss in cls.obj:
+        for ss in cls.__all:
             ss.update_fluid_forces()
             ss.assemble_global_stiffness_and_force()
             Kg += ss.K
@@ -433,27 +444,24 @@ class FlexibleSubstructure(Substructure):
         for nd in fe.Node.All():
             nd.move_coordinates(Ug[nd.dof[0], 0], Ug[nd.dof[1], 0])
 
-        for ss in cls.obj:
+        for ss in cls.__all:
             ss.update_geometry()
 
-    def __init__(self, dict_):
-
-        #    FlexibleSubstructure.obj.append(self)
-
-        Substructure.__init__(self, dict_)
+    def __init__(self, dict_: Dict[str, Any]):
+        super().__init__(dict_)
         self.element_type = fe.TrussElement
-        self.pretension = self.dict_.get("pretension", -0.5)
-        self.EA = self.dict_.get("EA", 5e7)
+        self.pretension = dict_.get("pretension", -0.5)
+        self.EA = dict_.get("EA", 5e7)
 
-        self.K = None
-        self.F = None
-        #    self.U = None
+        self.K: Optional[np.ndarray] = None
+        self.F: Optional[np.ndarray] = None
+        self.U: Optional[np.ndarray] = None
         config.has_free_structure = True
 
-    def get_residual(self):
+    def get_residual(self) -> float:
         return np.max(np.abs(self.U))
 
-    def initialize_matrices(self):
+    def initialize_matrices(self) -> None:
         num_dof = fe.Node.count() * config.flow.num_dim
         self.K = np.zeros((num_dof, num_dof))
         self.F = np.zeros((num_dof, 1))
@@ -497,7 +505,7 @@ class FlexibleSubstructure(Substructure):
     #    self.update_geometry()
 
     def set_element_properties(self):
-        Substructure.set_element_properties(self)
+        super().set_element_properties()
         for el in self.el:
             el.set_properties(axialForce=-self.pretension, EA=self.EA)
 
@@ -507,7 +515,7 @@ class FlexibleSubstructure(Substructure):
     def update_geometry(self):
         for el in self.el:
             el.update_geometry()
-        Substructure.set_interp_function(self)
+        super().set_interp_function()
 
 
 class RigidSubstructure(Substructure):
@@ -553,7 +561,7 @@ class TorsionalSpringSubstructure(FlexibleSubstructure, RigidSubstructure):
         elif self.base_pt_pct == 0.0:
             self.base_pt = self.node[0].get_coordinates()
         else:
-            self.base_pt = self.get_coordinates(self.base_pt_pct * self.get_arc_length())
+            self.base_pt = self.get_coordinates(self.base_pt_pct * self.arc_length)
 
         self.set_element_properties()
 
@@ -734,7 +742,7 @@ class TorsionalSpringSubstructure(FlexibleSubstructure, RigidSubstructure):
             self.Ma += general.integrate(s, np.array(m))
 
         # Apply tip load
-        tipC = self.get_coordinates(self.tip_load_pct * self.get_arc_length())
+        tipC = self.get_coordinates(self.tip_load_pct * self.arc_length)
         tipR = np.array([tipC[i] - self.base_pt[i] for i in [0, 1]])
         tipF = np.array([0.0, self.tip_load]) * config.ramp
         tipM = general.cross2(tipR, tipF)

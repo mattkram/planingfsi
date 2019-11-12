@@ -163,7 +163,7 @@ class RigidBody:
     def add_substructure(self, ss: "Substructure") -> None:
         """Add a substructure to the rigid body."""
         self.substructure.append(ss)
-        ss.add_parent(self)
+        ss.parent = self
 
     def store_nodes(self) -> None:
         """Store references to all nodes in each substructure."""

@@ -41,19 +41,15 @@ class Interpolator:
         return [self.get_s_fixed_x(x) for x in [pts[0], pts[-1]]]
 
     def get_s_fixed_x(self, x, so_pct=0.5):
-        return fzero(
-            lambda s: self.get_coordinates(s)[0] - x, so_pct * self.solid.get_arc_length(),
-        )
+        return fzero(lambda s: self.get_coordinates(s)[0] - x, so_pct * self.solid.arc_length,)
 
     def get_s_fixed_y(self, y, so_pct):
-        return fzero(
-            lambda s: self.get_coordinates(s)[1] - y, so_pct * self.solid.get_arc_length(),
-        )
+        return fzero(lambda s: self.get_coordinates(s)[1] - y, so_pct * self.solid.arc_length,)
 
     @property
     def immersed_length(self):
         if not self.sImm:
-            self.sImm = self.sImmPctStart * self.solid.get_arc_length()
+            self.sImm = self.sImmPctStart * self.solid.arc_length
 
         self.sImm = fzero(
             lambda s: self.get_coordinates(s)[1] - config.flow.waterline_height, self.sImm,
@@ -66,7 +62,7 @@ class Interpolator:
             return self.get_coordinates(s[0])[1]
 
         if not self.sSep:
-            self.sSep = self.sSepPctStart * self.solid.get_arc_length()
+            self.sSep = self.sSepPctStart * self.solid.arc_length
 
         self.sSep = fmin(get_y_coords, np.array([self.sSep]), disp=False, xtol=1e-6)[0]
         self.sSep = np.max([self.sSep, 0.0])
