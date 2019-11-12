@@ -1,28 +1,29 @@
 import abc
 import os
+from typing import List, Dict, Any
 
 import numpy as np
-from planingfsi import config, general, trig
-from planingfsi.fe import felib as fe
 from scipy.interpolate import interp1d
+
+from . import felib as fe
+from .. import config, general, trig
 
 
 class Substructure(abc.ABC):
-    count = 0
-    obj = []
+
+    __all: List["Substructure"] = []
 
     @classmethod
-    def All(cls):
-        return [o for o in cls.obj]
+    def find_by_name(cls, name: str) -> "Substructure":
+        """Return a substructure whose name matches the argument."""
+        for o in cls.__all:
+            if o.name == name:
+                return o
+        raise NameError(f"Cannot find Substructure with name {name}")
 
-    @classmethod
-    def find_by_name(cls, name):
-        return [o for o in cls.obj if o.name == name][0]
-
-    def __init__(self, dict_):
-        self.index = Substructure.count
-        Substructure.count += 1
-        Substructure.obj.append(self)
+    def __init__(self, dict_: Dict[str, Any]):
+        self.index = len(self.__all)
+        Substructure.__all.append(self)
 
         self.dict_ = dict_
         self.name = self.dict_.get("substructureName", "")
@@ -391,7 +392,7 @@ class Substructure(abc.ABC):
 
 class FlexibleSubstructure(Substructure):
 
-    obj = []
+    __all = []
     res = 0.0
 
     @classmethod
