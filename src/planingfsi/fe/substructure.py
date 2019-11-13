@@ -8,6 +8,7 @@ from scipy.interpolate import interp1d
 from . import felib as fe
 from . import rigid_body
 from .. import config, general, trig
+from ..fsi.interpolator import Interpolator
 
 
 class Substructure(abc.ABC):
@@ -31,7 +32,7 @@ class Substructure(abc.ABC):
         self.dict_ = dict_
         self.name = self.dict_.get("substructureName", "")
         self.type_ = self.dict_.get("substructureType", "rigid")
-        self.interpolator = None
+        self.interpolator: Optional[Interpolator] = None
 
         self.seal_pressure = self.get_or_config("Ps", 0.0)
         self.seal_pressure_method = self.dict_.get("PsMethod", "constant")
@@ -660,9 +661,9 @@ class TorsionalSpringSubstructure(FlexibleSubstructure, RigidSubstructure):
             Pc = 0.0
             if self.interpolator is not None:
                 if ss > s_max:
-                    Pc = self.interpolator.fluid.get_upstream_pressure()
+                    Pc = self.interpolator.fluid.upstream_pressure
                 elif ss < s_min:
-                    Pc = self.interpolator.fluid.get_downstream_pressure()
+                    Pc = self.interpolator.fluid.downstream_pressure
             elif self.cushion_pressure_type == "Total":
                 Pc = config.body.Pc
 
@@ -688,9 +689,9 @@ class TorsionalSpringSubstructure(FlexibleSubstructure, RigidSubstructure):
             for ii, ss in enumerate(s):
                 if self.interpolator is not None:
                     if ss > s_max:
-                        Pc = self.interpolator.fluid.get_upstream_pressure()
+                        Pc = self.interpolator.fluid.upstream_pressure
                     elif ss < s_min:
-                        Pc = self.interpolator.fluid.get_downstream_pressure()
+                        Pc = self.interpolator.fluid.downstream_pressure
                 elif self.cushion_pressure_type == "Total":
                     Pc = config.body.Pc
 
@@ -733,9 +734,9 @@ class TorsionalSpringSubstructure(FlexibleSubstructure, RigidSubstructure):
                 self.M += general.integrate(s, np.array(m))
             else:
                 if self.interpolator is not None:
-                    self.D = self.interpolator.fluid.D
-                    self.L = self.interpolator.fluid.L
-                    self.M = self.interpolator.fluid.M
+                    self.D = self.interpolator.fluid.drag_total
+                    self.L = self.interpolator.fluid.lift_total
+                    self.M = self.interpolator.fluid.moment_total
 
             # Apply pressure loading for moment calculation
             #      integrand = pFl
