@@ -140,7 +140,7 @@ class Substructure(abc.ABC):
     def get_coordinates(self, si: float) -> np.ndarray:
         assert self.interp_func_x is not None
         assert self.interp_func_y is not None
-        return np.ndarray([self.interp_func_x(si), self.interp_func_y(si)])
+        return [self.interp_func_x(si), self.interp_func_y(si)]
 
     def get_x_coordinates(self, s: float) -> float:
         return self.get_coordinates(s)[0]

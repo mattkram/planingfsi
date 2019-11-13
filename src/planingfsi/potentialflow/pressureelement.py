@@ -5,7 +5,7 @@ from typing import Tuple, Any, Union
 import numpy as np
 from scipy.special import sici
 
-from .pressurepatch import PressurePatch
+from . import pressurepatch
 from .. import config, general
 
 
@@ -118,7 +118,7 @@ class PressureElement(abc.ABC):
         width: Union[np.ndarray, float] = np.nan,
         is_source: bool = False,
         is_on_body: bool = False,
-        parent: PressurePatch = None,
+        parent: "pressurepatch.PressurePatch" = None,
     ):
         # TODO: Replace x_coord with coord pointer to Coordinate object, (e.g. self.coords.x)
         self.x_coord = x_coord

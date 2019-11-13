@@ -10,7 +10,7 @@ from scipy.optimize import fmin
 from . import pressureelement as pe, solver
 from .. import config, trig, general
 from ..dictionary import load_dict_from_file
-from ..fsi.interpolator import Interpolator
+from ..fsi import interpolator
 
 
 class PressurePatch(abc.ABC):
@@ -32,7 +32,7 @@ class PressurePatch(abc.ABC):
         self.is_kutta_unknown = False
         self._neighbor_up: Optional["PressurePatch"] = None
         self._neighbor_down: Optional["PressurePatch"] = None
-        self.interpolator: Optional[Interpolator] = None
+        self.interpolator: Optional["interpolator.Interpolator"] = None
 
         self.drag_total = np.nan
         self.drag_pressure = np.nan

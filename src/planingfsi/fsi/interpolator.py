@@ -4,13 +4,13 @@ import numpy as np
 from scipy.optimize import fmin
 
 from .. import config
-from ..fe.substructure import Substructure
-from ..potentialflow.pressurepatch import PlaningSurface
+from ..fe import substructure
+from ..potentialflow import pressurepatch
 from ..solver import fzero
 
 
 class Interpolator:
-    def __init__(self, solid: Substructure, fluid: PlaningSurface, dict_: Dict[str, Any] = None):
+    def __init__(self, solid: "substructure.Substructure", fluid: "pressurepatch.PlaningSurface", dict_: Dict[str, Any] = None):
         self.solid = solid
         self.fluid = fluid
 
@@ -65,7 +65,7 @@ class Interpolator:
 
     def get_separation_point(self) -> np.ndarray:
         def get_y_coords(s: float) -> float:
-            return self.get_coordinates(s)[1]
+            return self.get_coordinates(s[0])[1]
 
         if self._separation_arclength is None:
             self._separation_arclength = self.sSepPctStart * self.solid.arc_length
