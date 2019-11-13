@@ -1,5 +1,4 @@
 import abc
-import os
 from pathlib import Path
 from typing import List, Dict, Any, Optional, Tuple, Type, Callable, Iterable
 
@@ -54,6 +53,10 @@ class Substructure(abc.ABC):
         self.el: List[fe.Element] = []
         self.parent: Optional[rigid_body.RigidBody] = None
         self.node_arc_length = np.zeros(len(self.node))
+
+        self.Da = 0.0
+        self.La = 0.0
+        self.Ma = 0.0
 
         self.interp_func_x: Optional[interp1d] = None
         self.interp_func_y: Optional[interp1d] = None
@@ -169,10 +172,10 @@ class Substructure(abc.ABC):
             nd.set_coordinates(xx, yy)
 
     def update_fluid_forces(self) -> None:
-        fluidS: List[float] = []
-        fluidP: List[float] = []
-        airS: List[float] = []
-        airP: List[float] = []
+        fluid_s: List[float] = []
+        fluid_p: List[float] = []
+        air_s: List[float] = []
+        air_p: List[float] = []
         self.D = 0.0
         self.L = 0.0
         self.M = 0.0
@@ -184,9 +187,9 @@ class Substructure(abc.ABC):
 
         for i, el in enumerate(self.el):
             # Get pressure at end points and all fluid points along element
-            nodeS = [self.node_arc_length[i], self.node_arc_length[i + 1]]
+            node_s = [self.node_arc_length[i], self.node_arc_length[i + 1]]
             if self.interpolator is not None:
-                s, pressure_fluid, tau = self.interpolator.get_loads_in_range(nodeS[0], nodeS[1])
+                s, pressure_fluid, tau = self.interpolator.get_loads_in_range(node_s[0], node_s[1])
                 # Limit pressure to be below stagnation pressure
                 if config.plotting.pressure_limiter:
                     pressure_fluid = np.min(
@@ -200,11 +203,11 @@ class Substructure(abc.ABC):
                     )
 
             else:
-                s = np.array(nodeS)
+                s = np.array(node_s)
                 pressure_fluid = np.zeros_like(s)
                 tau = np.zeros_like(s)
 
-            ss = nodeS[1]
+            ss = node_s[1]
             Pc = 0.0
             if self.interpolator is not None:
                 if ss > s_max:
@@ -217,26 +220,26 @@ class Substructure(abc.ABC):
             # Store fluid and air pressure components for element (for
             # plotting)
             if i == 0:
-                fluidS += [s[0]]
-                fluidP += [pressure_fluid[0]]
-                airS += [nodeS[0]]
-                airP += [Pc - self.seal_pressure]
+                fluid_s += [s[0]]
+                fluid_p += [pressure_fluid[0]]
+                air_s += [node_s[0]]
+                air_p += [Pc - self.seal_pressure]
 
-            fluidS += [ss for ss in s[1:]]
-            fluidP += [pp for pp in pressure_fluid[1:]]
-            airS += [ss for ss in nodeS[1:]]
+            fluid_s += [ss for ss in s[1:]]
+            fluid_p += [pp for pp in pressure_fluid[1:]]
+            air_s += [ss for ss in node_s[1:]]
             if self.seal_pressure_method.lower() == "hydrostatic":
                 assert self.interp_func_y is not None
-                airP += [
+                air_p += [
                     Pc
                     - self.seal_pressure
                     + config.flow.density
                     * config.flow.gravity
                     * (self.interp_func_y(si) - config.flow.waterline_height)
-                    for si in nodeS[1:]
+                    for si in node_s[1:]
                 ]
             else:
-                airP += [Pc - self.seal_pressure for _ in nodeS[1:]]
+                air_p += [Pc - self.seal_pressure for _ in node_s[1:]]
 
             # Apply ramp to hydrodynamic pressure
             pressure_fluid *= config.ramp ** 2
@@ -349,10 +352,10 @@ class Substructure(abc.ABC):
             self.Da -= general.integrate(s, np.array(list(zip(*f))[0]))
             self.La += general.integrate(s, np.array(list(zip(*f))[1]))
             self.Ma += general.integrate(s, np.array(m))
-            self.fluidP = np.array(fluidP)
-            self.fluidS = np.array(fluidS)
-            self.airP = np.array(airP)
-            self.airS = np.array(airS)
+            self.fluidP = np.array(fluid_p)
+            self.fluidS = np.array(fluid_s)
+            self.airP = np.array(air_p)
+            self.airS = np.array(air_s)
 
     def get_normal_vector(self, s: float) -> np.ndarray:
         """Calculate the normal vector at a specific arc length."""
@@ -427,6 +430,7 @@ class FlexibleSubstructure(Substructure):
 
     @classmethod
     def update_all(cls) -> None:
+        # TODO: This functionality should be moved to the rigid body
 
         num_dof = fe.Node.count() * config.flow.num_dim
         Kg = np.zeros((num_dof, num_dof))
