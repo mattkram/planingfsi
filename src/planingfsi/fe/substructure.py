@@ -1,7 +1,7 @@
 import abc
 import os
 from pathlib import Path
-from typing import List, Dict, Any, Optional, Tuple, Type, Callable
+from typing import List, Dict, Any, Optional, Tuple, Type, Callable, Iterable
 
 import numpy as np
 from scipy.interpolate import interp1d
@@ -45,15 +45,18 @@ class Substructure(abc.ABC):
         self.struct_extrap = self.dict_.get("structExtrap", True)
         self.line_fluid_pressure = None
         self.line_air_pressure = None
-        self.fluidS: List[float] = []
-        self.fluidP: List[float] = []
-        self.airS: List[float] = []
-        self.airP: List[float] = []
-        self.U = 0.0
+        self.fluidS: Optional[np.ndarray] = None
+        self.fluidP: Optional[np.ndarray] = None
+        self.airS: Optional[np.ndarray] = None
+        self.airP: Optional[np.ndarray] = None
+        self.U: Optional[np.ndarray] = None
         self.node: List[fe.Node] = []
         self.el: List[fe.Element] = []
         self.parent: Optional[rigid_body.RigidBody] = None
         self.node_arc_length = np.zeros(len(self.node))
+
+        self.interp_func_x: Optional[interp1d] = None
+        self.interp_func_y: Optional[interp1d] = None
 
     def set_element_properties(self) -> None:
         """Set the properties of each element."""
@@ -101,18 +104,21 @@ class Substructure(abc.ABC):
         )
 
         if self.struct_extrap:
+            assert self.interp_func_x is not None
+            assert self.interp_func_y is not None
             self.interp_func_x, self.interp_func_y = self._extrap_coordinates(
                 self.interp_func_x, self.interp_func_y
             )
 
-    def _extrap_coordinates(self, fxi: Callable, fyi: Callable) -> Tuple[Callable, Callable]:
+    @staticmethod
+    def _extrap_coordinates(fxi: Callable, fyi: Callable) -> Tuple[Callable, Callable]:
         """Return a new callable that provides extrapolation."""
 
-        def extrap1d(interpolator):
+        def extrap1d(interpolator: interp1d) -> Callable:
             xs = interpolator.x
             ys = interpolator.y
 
-            def pointwise(xi):
+            def pointwise(xi: float) -> float:
                 if xi < xs[0]:
                     return ys[0] + (xi - xs[0]) * (ys[1] - ys[0]) / (xs[1] - xs[0])
                 elif xi > xs[-1]:
@@ -120,15 +126,17 @@ class Substructure(abc.ABC):
                 else:
                     return interpolator(xi)
 
-            def ufunclike(xs):
+            def ufunclike(xs: float) -> np.ndarray:
                 return np.array(list(map(pointwise, np.array([xs]))))[0]
 
             return ufunclike
 
         return extrap1d(fxi), extrap1d(fyi)
 
-    def get_coordinates(self, si: float) -> Tuple[float, float]:
-        return self.interp_func_x(si), self.interp_func_y(si)
+    def get_coordinates(self, si: float) -> np.ndarray:
+        assert self.interp_func_x is not None
+        assert self.interp_func_y is not None
+        return np.ndarray([self.interp_func_x(si), self.interp_func_y(si)])
 
     def get_x_coordinates(self, s: float) -> float:
         return self.get_coordinates(s)[0]
@@ -160,11 +168,11 @@ class Substructure(abc.ABC):
         for xx, yy, nd in zip(x, y, self.node):
             nd.set_coordinates(xx, yy)
 
-    def update_fluid_forces(self):
-        self.fluidS = []
-        self.fluidP = []
-        self.airS = []
-        self.airP = []
+    def update_fluid_forces(self) -> None:
+        fluidS: List[float] = []
+        fluidP: List[float] = []
+        airS: List[float] = []
+        airP: List[float] = []
         self.D = 0.0
         self.L = 0.0
         self.M = 0.0
@@ -209,16 +217,17 @@ class Substructure(abc.ABC):
             # Store fluid and air pressure components for element (for
             # plotting)
             if i == 0:
-                self.fluidS += [s[0]]
-                self.fluidP += [pressure_fluid[0]]
-                self.airS += [nodeS[0]]
-                self.airP += [Pc - self.seal_pressure]
+                fluidS += [s[0]]
+                fluidP += [pressure_fluid[0]]
+                airS += [nodeS[0]]
+                airP += [Pc - self.seal_pressure]
 
-            self.fluidS += [ss for ss in s[1:]]
-            self.fluidP += [pp for pp in pressure_fluid[1:]]
-            self.airS += [ss for ss in nodeS[1:]]
+            fluidS += [ss for ss in s[1:]]
+            fluidP += [pp for pp in pressure_fluid[1:]]
+            airS += [ss for ss in nodeS[1:]]
             if self.seal_pressure_method.lower() == "hydrostatic":
-                self.airP += [
+                assert self.interp_func_y is not None
+                airP += [
                     Pc
                     - self.seal_pressure
                     + config.flow.density
@@ -227,7 +236,7 @@ class Substructure(abc.ABC):
                     for si in nodeS[1:]
                 ]
             else:
-                self.airP += [Pc - self.seal_pressure for _ in nodeS[1:]]
+                airP += [Pc - self.seal_pressure for _ in nodeS[1:]]
 
             # Apply ramp to hydrodynamic pressure
             pressure_fluid *= config.ramp ** 2
@@ -248,6 +257,7 @@ class Substructure(abc.ABC):
 
             # Calculate internal pressure
             if self.seal_pressure_method.lower() == "hydrostatic":
+                assert self.interp_func_y is not None
                 pressure_internal = (
                     self.seal_pressure
                     - config.flow.density
@@ -304,6 +314,7 @@ class Substructure(abc.ABC):
 
                 f = [-pi * ni + taui * ti for pi, taui, ni, ti in zip(integrand, tau, n, t)]
 
+                assert self.parent is not None
                 r = [
                     np.array([pt[0] - self.parent.xCofR, pt[1] - self.parent.yCofR])
                     for pt in map(self.get_coordinates, s)
@@ -311,8 +322,8 @@ class Substructure(abc.ABC):
 
                 m = [general.cross2(ri, fi) for ri, fi in zip(r, f)]
 
-                self.D -= general.integrate(s, np.array(zip(*f)[0]))
-                self.L += general.integrate(s, np.array(zip(*f)[1]))
+                self.D -= general.integrate(s, np.array(list(zip(*f))[0]))
+                self.L += general.integrate(s, np.array(list(zip(*f))[1]))
                 self.M += general.integrate(s, np.array(m))
             else:
                 if self.interpolator is not None:
@@ -327,6 +338,7 @@ class Substructure(abc.ABC):
 
             f = [-pi * ni + taui * ti for pi, taui, ni, ti in zip(integrand, tau, n, t)]
 
+            assert self.parent is not None
             r = [
                 np.array([pt[0] - self.parent.xCofR, pt[1] - self.parent.yCofR])
                 for pt in map(self.get_coordinates, s)
@@ -337,14 +349,20 @@ class Substructure(abc.ABC):
             self.Da -= general.integrate(s, np.array(list(zip(*f))[0]))
             self.La += general.integrate(s, np.array(list(zip(*f))[1]))
             self.Ma += general.integrate(s, np.array(m))
+            self.fluidP = np.array(fluidP)
+            self.fluidS = np.array(fluidS)
+            self.airP = np.array(airP)
+            self.airS = np.array(airS)
 
-    def get_normal_vector(self, s):
-        dxds = general.deriv(lambda si: self.get_coordinates(si)[0], s)
-        dyds = general.deriv(lambda si: self.get_coordinates(si)[1], s)
+    def get_normal_vector(self, s: float) -> np.ndarray:
+        """Calculate the normal vector at a specific arc length."""
+        dx_ds = general.deriv(lambda si: self.get_coordinates(si)[0], s)
+        dy_ds = general.deriv(lambda si: self.get_coordinates(si)[1], s)
 
-        return trig.rotate_vec_2d(trig.angd2vec2d(trig.atand2(dyds, dxds)), -90)
+        return trig.rotate_vec_2d(trig.angd2vec2d(trig.atand2(dy_ds, dx_ds)), -90)
 
-    def plot_pressure_profiles(self):
+    def plot_pressure_profiles(self) -> None:
+        # TODO: Move to plotting directory
         if self.line_fluid_pressure is not None:
             self.line_fluid_pressure.set_data(
                 self.get_pressure_plot_points(self.fluidS, self.fluidP)
@@ -352,7 +370,7 @@ class Substructure(abc.ABC):
         if self.line_air_pressure is not None:
             self.line_air_pressure.set_data(self.get_pressure_plot_points(self.airS, self.airP))
 
-    def get_pressure_plot_points(self, s0, p0):
+    def get_pressure_plot_points(self, s0: np.ndarray, p0: np.ndarray) -> Iterable[Iterable]:
 
         sp = [(s, p) for s, p in zip(s0, p0) if not np.abs(p) < 1e-4]
 
@@ -374,23 +392,24 @@ class Substructure(abc.ABC):
         else:
             return [], []
 
-    def update_geometry(self):
+    def update_geometry(self) -> None:
         self.set_interp_function()
 
-    def plot(self):
+    def plot(self) -> None:
+        # TODO: Move to plotting module
         for el in self.el:
             el.plot()
         #    for nd in [self.node[0],self.node[-1]]:
         #      nd.plot()
         self.plot_pressure_profiles()
 
-    def set_attachments(self):
+    def set_attachments(self) -> None:
         return None
 
-    def set_angle(self):
+    def set_angle(self, _: float) -> None:
         return None
 
-    def get_or_config(self, key, default):
+    def get_or_config(self, key: str, default: Any) -> Any:
         value = self.dict_.get(key, default)
         if isinstance(value, str):
             value = getattr(config, value)
@@ -403,11 +422,11 @@ class Substructure(abc.ABC):
 
 class FlexibleSubstructure(Substructure):
 
-    __all = []
+    __all: List["FlexibleSubstructure"] = []
     res = 0.0
 
     @classmethod
-    def update_all(cls):
+    def update_all(cls) -> None:
 
         num_dof = fe.Node.count() * config.flow.num_dim
         Kg = np.zeros((num_dof, num_dof))
@@ -468,7 +487,9 @@ class FlexibleSubstructure(Substructure):
         self.F = np.zeros((num_dof, 1))
         self.U = np.zeros((num_dof, 1))
 
-    def assemble_global_stiffness_and_force(self):
+    def assemble_global_stiffness_and_force(self) -> None:
+        assert self.K is not None
+        assert self.F is not None
         if self.K is None:
             self.initialize_matrices()
         else:
@@ -477,7 +498,10 @@ class FlexibleSubstructure(Substructure):
         for el in self.el:
             self.add_loads_from_element(el)
 
-    def add_loads_from_element(self, el):
+    def add_loads_from_element(self, el: fe.Element) -> None:
+        assert isinstance(el, fe.TrussElement)
+        assert self.K is not None
+        assert self.F is not None
         K, F = el.get_stiffness_and_force()
         self.K[np.ix_(el.dof, el.dof)] += K
         self.F[np.ix_(el.dof)] += F
@@ -505,7 +529,7 @@ class FlexibleSubstructure(Substructure):
     #
     #    self.update_geometry()
 
-    def set_element_properties(self):
+    def set_element_properties(self) -> None:
         super().set_element_properties()
         for el in self.el:
             el.set_properties(axialForce=-self.pretension, EA=self.EA)
@@ -513,48 +537,52 @@ class FlexibleSubstructure(Substructure):
     def set_fixed_dof(self) -> None:
         pass
 
-    def update_geometry(self):
+    def update_geometry(self) -> None:
         for el in self.el:
             el.update_geometry()
         super().set_interp_function()
 
 
 class RigidSubstructure(Substructure):
-    def __init__(self, dict_):
+    def __init__(self, dict_: Dict[str, Any]):
         Substructure.__init__(self, dict_)
         self.element_type = fe.RigidElement
 
-    def set_attachments(self):
+    def set_attachments(self) -> None:
         return None
 
-    def update_angle(self):
+    def update_angle(self) -> None:
         return None
 
-    def set_fixed_dof(self):
+    def set_fixed_dof(self) -> None:
         for nd in self.node:
             for j in range(config.flow.num_dim):
                 nd.is_dof_fixed[j] = True
 
 
 class TorsionalSpringSubstructure(FlexibleSubstructure, RigidSubstructure):
-    def __init__(self, dict_):
+    base_pt: np.ndarray
+
+    def __init__(self, dict_: Dict[str, Any]):
         FlexibleSubstructure.__init__(self, dict_)
         self.element_type = fe.RigidElement
-        self.tip_load_pct = self.dict_.read("tipLoadPct", 0.0)
-        self.base_pt_pct = self.dict_.read("basePtPct", 1.0)
-        self.spring_constant = self.dict_.read("spring_constant", 1000.0)
+        self.tip_load_pct = dict_.get("tipLoadPct", 0.0)
+        self.base_pt_pct = dict_.get("basePtPct", 1.0)
+        self.spring_constant = dict_.get("spring_constant", 1000.0)
         self.theta = 0.0
         self.Mt = 0.0  # TODO
-        self.MOld = None
-        self.relax = self.dict_.read("relaxAng", config.body.relax_rigid_body)
-        self.attach_pct = self.dict_.read("attachPct", 0.0)
-        self.attached_node = None
-        self.attached_element = None
-        self.minimum_angle = self.dict_.read("minimumAngle", -float("Inf"))
-        self.max_angle_step = self.dict_.read("maxAngleStep", float("Inf"))
+        self.MOld: Optional[float] = None
+        self.relax = dict_.get("relaxAng", config.body.relax_rigid_body)
+        self.attach_pct = dict_.get("attachPct", 0.0)
+        self.attached_node: Optional[fe.Node] = None
+        self.attached_element: Optional[fe.Element] = None
+        self.minimum_angle = dict_.get("minimumAngle", -float("Inf"))
+        self.max_angle_step = dict_.get("maxAngleStep", float("Inf"))
         config.has_free_structure = True
+        self.attached_ind = 0
+        self.attached_substructure: Optional[Substructure] = None
 
-    def load_mesh(self):
+    def load_mesh(self) -> None:
         Substructure.load_mesh(self)
         self.set_fixed_dof()
         if self.base_pt_pct == 1.0:
@@ -566,16 +594,16 @@ class TorsionalSpringSubstructure(FlexibleSubstructure, RigidSubstructure):
 
         self.set_element_properties()
 
-        self.set_angle(self.dict_.read("initialAngle", 0.0))
+        self.set_angle(self.dict_.get("initialAngle", 0.0))
 
-    def set_attachments(self):
-        attached_substructure_name = self.dict_.read("attachedSubstructure", None)
+    def set_attachments(self) -> None:
+        attached_substructure_name = self.dict_.get("attachedSubstructure", None)
         if attached_substructure_name is not None:
             self.attached_substructure = Substructure.find_by_name(attached_substructure_name)
         else:
             self.attached_substructure = None
 
-        if self.dict_.read("attachedSubstructureEnd", "End").lower() == "start":
+        if self.dict_.get("attachedSubstructureEnd", "End").lower() == "start":
             self.attached_ind = 0
         else:
             self.attached_ind = -1
@@ -584,11 +612,11 @@ class TorsionalSpringSubstructure(FlexibleSubstructure, RigidSubstructure):
             self.attached_node = self.attached_substructure.node[self.attached_ind]
             self.attached_element = self.attached_substructure.el[self.attached_ind]
 
-    def update_fluid_forces(self):
-        self.fluidS = []
-        self.fluidP = []
-        self.airS = []
-        self.airP = []
+    def update_fluid_forces(self) -> None:
+        fluidS: List[float] = []
+        fluidP: List[float] = []
+        airS: List[float] = []
+        airP: List[float] = []
         self.D = 0.0
         self.L = 0.0
         self.M = 0.0
@@ -637,15 +665,15 @@ class TorsionalSpringSubstructure(FlexibleSubstructure, RigidSubstructure):
             # Store fluid and air pressure components for element (for
             # plotting)
             if i == 0:
-                self.fluidS += [s[0]]
-                self.fluidP += [pressure_fluid[0]]
-                self.airS += [node_s[0]]
-                self.airP += [Pc - self.seal_pressure]
+                fluidS += [s[0]]
+                fluidP += [pressure_fluid[0]]
+                airS += [node_s[0]]
+                airP += [Pc - self.seal_pressure]
 
-            self.fluidS += [ss for ss in s[1:]]
-            self.fluidP += [pp for pp in pressure_fluid[1:]]
-            self.airS += [ss for ss in node_s[1:]]
-            self.airP += [Pc - self.seal_pressure for _ in node_s[1:]]
+            fluidS += [ss for ss in s[1:]]
+            fluidP += [pp for pp in pressure_fluid[1:]]
+            airS += [ss for ss in node_s[1:]]
+            airP += [Pc - self.seal_pressure for _ in node_s[1:]]
 
             # Apply ramp to hydrodynamic pressure
             pressure_fluid *= config.ramp ** 2
@@ -696,8 +724,8 @@ class TorsionalSpringSubstructure(FlexibleSubstructure, RigidSubstructure):
 
                 m = [general.cross2(ri, fi) for ri, fi in zip(r, f)]
 
-                self.D -= general.integrate(s, np.array(zip(*f)[0]))
-                self.L += general.integrate(s, np.array(zip(*f)[1]))
+                self.D -= general.integrate(s, np.array(list(zip(*f))[0]))
+                self.L += general.integrate(s, np.array(list(zip(*f))[1]))
                 self.M += general.integrate(s, np.array(m))
             else:
                 if self.interpolator is not None:
@@ -731,6 +759,7 @@ class TorsionalSpringSubstructure(FlexibleSubstructure, RigidSubstructure):
 
             f = [-pi * ni + taui * ti for pi, taui, ni, ti in zip(integrand, tau, n, t)]
 
+            assert self.parent is not None
             r = [
                 np.array([pt[0] - self.parent.xCofR, pt[1] - self.parent.yCofR])
                 for pt in map(self.get_coordinates, s)
@@ -738,8 +767,8 @@ class TorsionalSpringSubstructure(FlexibleSubstructure, RigidSubstructure):
 
             m = [general.cross2(ri, fi) for ri, fi in zip(r, f)]
 
-            self.Da -= general.integrate(s, np.array(zip(*f)[0]))
-            self.La += general.integrate(s, np.array(zip(*f)[1]))
+            self.Da -= general.integrate(s, np.array(list(zip(*f))[0]))
+            self.La += general.integrate(s, np.array(list(zip(*f))[1]))
             self.Ma += general.integrate(s, np.array(m))
 
         # Apply tip load
@@ -749,6 +778,10 @@ class TorsionalSpringSubstructure(FlexibleSubstructure, RigidSubstructure):
         tipM = general.cross2(tipR, tipF)
         self.Lt += tipF[1]
         self.Mt += tipM
+        self.fluidP = np.array(fluidP)
+        self.fluidS = np.array(fluidS)
+        self.airP = np.array(airP)
+        self.airS = np.array(airS)
 
         # Apply moment from attached substructure
 
@@ -762,7 +795,7 @@ class TorsionalSpringSubstructure(FlexibleSubstructure, RigidSubstructure):
     ##      attM = attM * np.abs(tipM) / np.abs(attM)
     #    self.Mt += attM
 
-    def update_angle(self):
+    def update_angle(self) -> None:
 
         if np.isnan(self.Mt):
             theta = 0.0
@@ -777,7 +810,7 @@ class TorsionalSpringSubstructure(FlexibleSubstructure, RigidSubstructure):
 
         self.set_angle(self.theta + dTheta)
 
-    def set_angle(self, ang):
+    def set_angle(self, ang: float) -> None:
         dTheta = np.max([ang, self.minimum_angle]) - self.theta
 
         if self.attached_node is not None and not any(
@@ -799,15 +832,12 @@ class TorsionalSpringSubstructure(FlexibleSubstructure, RigidSubstructure):
         self.update_geometry()
         print(("  Deformation for substructure {0}: {1}".format(self.name, self.theta)))
 
-    def get_residual(self):
+    def get_residual(self) -> float:
         return self.residual
 
     #    return self.theta + self.Mt / self.spring_constant
 
-    def writeDeformation(self):
+    def write_deformation(self) -> None:
         general.write_as_dict(
-            os.path.join(
-                config.it_dir, "deformation_{0}.{1}".format(self.name, config.io.data_format),
-            ),
-            ["angle", self.theta],
+            self.it_dir / f"deformation_{self.name}.{config.io.data_format}", ["angle", self.theta],
         )

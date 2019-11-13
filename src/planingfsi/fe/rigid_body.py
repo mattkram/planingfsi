@@ -542,7 +542,7 @@ class RigidBody:
         )
         for ss in self.substructure:
             if isinstance(ss, TorsionalSpringSubstructure):
-                ss.writeDeformation()
+                ss.write_deformation()
 
     def load_motion(self) -> None:
         dict_ = load_dict_from_file(
