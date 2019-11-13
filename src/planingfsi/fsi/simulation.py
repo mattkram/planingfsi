@@ -195,14 +195,14 @@ class Simulation:
         # simply incrementing by 1
         if config.io.results_from_file:
             if self.it < len(self.it_dirs) - 1:
-                self.it = int(self.it_dirs[self.it + 1])
+                self.it = int(str(self.it_dirs[self.it + 1]))
             else:
                 self.it = config.solver.max_it
             self.it += 1
         else:
             self.it += 1
 
-        config.res_l = self.solid_solver.rigid_body[0].get_res_l()
+        config.res_l = self.solid_solver.rigid_body[0].get_res_lift()
         config.res_m = self.solid_solver.rigid_body[0].get_res_moment()
 
         logger.info("Rigid Body Residuals:")

@@ -1,4 +1,4 @@
-from typing import Any, Dict, Optional, List, Tuple
+from typing import Any, Dict, Optional, List, Tuple, Callable
 
 import numpy as np
 from scipy.optimize import fmin
@@ -17,8 +17,8 @@ class Interpolator:
         self.solid.interpolator = self
         self.fluid.interpolator = self
 
-        self.solid_position_function = None
-        self.fluid_pressure_function = None
+        self.solid_position_function: Optional[Callable[[float], np.ndarray]] = None
+        self.fluid_pressure_function: Optional[Callable[[float, float], np.ndarray]] = None
         self.get_body_height = self.get_surface_height_fixed_x
 
         self._separation_arclength: Optional[float] = None
