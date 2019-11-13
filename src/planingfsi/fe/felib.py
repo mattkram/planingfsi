@@ -1,30 +1,28 @@
+from typing import List
+
 import numpy as np
 
 from .. import config, trig, general
 
 
 class Node:
-    obj = []
+    __all: List["Node"] = []
 
     @classmethod
-    def get_index(cls, ind):
-        return cls.obj[ind]
+    def get_index(cls, ind: int) -> "Node":
+        return cls.__all[ind]
 
     @classmethod
-    def All(cls):
-        return [o for o in cls.obj]
+    def all(cls) -> List["Node"]:
+        return list(cls.__all)
 
     @classmethod
-    def count(cls):
-        return len(cls.All())
-
-    @classmethod
-    def find_nearest(cls):
-        return [o for o in cls.obj]
+    def count(cls) -> int:
+        return len(cls.__all)
 
     def __init__(self):
-        self.node_num = len(Node.obj)
-        Node.obj.append(self)
+        self.node_num = len(Node.__all)
+        Node.__all.append(self)
 
         self.x = 0.0
         self.y = 0.0

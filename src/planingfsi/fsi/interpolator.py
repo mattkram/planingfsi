@@ -10,7 +10,12 @@ from ..solver import fzero
 
 
 class Interpolator:
-    def __init__(self, solid: "substructure.Substructure", fluid: "pressurepatch.PlaningSurface", dict_: Dict[str, Any] = None):
+    def __init__(
+        self,
+        solid: "substructure.Substructure",
+        fluid: "pressurepatch.PlaningSurface",
+        dict_: Dict[str, Any] = None,
+    ):
         self.solid = solid
         self.fluid = fluid
 

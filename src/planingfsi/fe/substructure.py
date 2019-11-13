@@ -445,14 +445,14 @@ class FlexibleSubstructure(Substructure):
             Kg += ss.K
             Fg += ss.F
 
-        for nd in fe.Node.All():
+        for nd in fe.Node.all():
             for i in range(2):
                 Fg[nd.dof[i]] += nd.fixed_load[i]
 
         # Determine fixed degrees of freedom
         dof = [False for _ in Fg]
 
-        for nd in fe.Node.All():
+        for nd in fe.Node.all():
             for dofi, fdofi in zip(nd.dof, nd.is_dof_fixed):
                 dof[dofi] = not fdofi
 
@@ -465,7 +465,7 @@ class FlexibleSubstructure(Substructure):
         Ug *= config.solver.relax_FEM
         Ug *= np.min([config.solver.max_FEM_disp / np.max(Ug), 1.0])
 
-        for nd in fe.Node.All():
+        for nd in fe.Node.all():
             nd.move_coordinates(Ug[nd.dof[0], 0], Ug[nd.dof[1], 0])
 
         for ss in cls.__all:
