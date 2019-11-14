@@ -5,7 +5,7 @@ from typing import Dict, Any, List
 import numpy as np
 
 from . import felib as fe
-from .rigid_body import RigidBody
+from . import rigid_body as rigid_body_mod
 from .substructure import (
     Substructure,
     FlexibleSubstructure,
@@ -23,7 +23,7 @@ class StructuralSolver:
 
     def __init__(self, simulation: "fsi_simulation.Simulation") -> None:
         self._simulation = weakref.ref(simulation)
-        self.rigid_body: List["RigidBody"] = []
+        self.rigid_body: List["rigid_body_mod.RigidBody"] = []
         self.res = 1.0  # TODO: Can this be a property instead?
 
     @property
@@ -44,7 +44,7 @@ class StructuralSolver:
         """A combined list of nodes from all substructures."""
         return [nd for ss in self.substructure for nd in ss.node]
 
-    def add_rigid_body(self, dict_: Dict[str, Any] = None) -> "RigidBody":
+    def add_rigid_body(self, dict_: Dict[str, Any] = None) -> "rigid_body_mod.RigidBody":
         """Add a rigid body to the structure.
 
         Args
@@ -54,7 +54,7 @@ class StructuralSolver:
         """
         if dict_ is None:
             dict_ = {}
-        rigid_body = RigidBody(dict_, parent=self)
+        rigid_body = rigid_body_mod.RigidBody(dict_, parent=self)
         self.rigid_body.append(rigid_body)
         return rigid_body
 
