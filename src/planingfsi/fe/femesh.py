@@ -281,14 +281,14 @@ class Shape:
 
 
 class Point(Shape):
-    __all = []
+    __all: List["Point"] = []
 
-    def __init__(self):
-        Shape.__init__(self)
+    def __init__(self) -> None:
+        super().__init__()
         Point.__all.append(self)
 
         self.pos = np.zeros(2)
-        self.is_dof_fixed = [True] * 2
+        self.is_dof_fixed = [True, True]
         self.fixed_load = np.zeros(2)
         self.is_used = False
 
@@ -303,24 +303,24 @@ class Point(Shape):
         """Add a fixed load to the point."""
         self.fixed_load[:] += load
 
-    def set_free_dof(self, *args):
+    def set_free_dof(self, *args: str) -> None:
         for arg in args:
             if arg == "x":
                 self.is_dof_fixed[0] = False
             if arg == "y":
                 self.is_dof_fixed[1] = False
 
-    def set_fixed_dof(self, *args):
+    def set_fixed_dof(self, *args: str) -> None:
         for arg in args:
             if arg == "x":
                 self.is_dof_fixed[0] = True
             if arg == "y":
                 self.is_dof_fixed[1] = True
 
-    def get_fixed_dof(self):
+    def get_fixed_dof(self) -> List[bool]:
         return self.is_dof_fixed
 
-    def move(self, dx, dy):
+    def move(self, dx: float, dy: float) -> None:
         self.set_position(self.get_position() + np.array([dx, dy]))
 
     def set_position(self, pos: np.ndarray) -> None:
@@ -339,17 +339,15 @@ class Point(Shape):
         base_pt = Point.find_by_id(base_pt_id).get_position()
         self.set_position(trig.rotate_vec_2d(self.get_position() - base_pt, angle) + base_pt)
 
-    def display(self):
-        print(
+    def display(self) -> None:
+        logger.info(
             (
-                "{0} {1}: ID = {2}, Pos = {3}".format(
-                    self.__class__.__name__, self.get_index(), self.get_id(), self.get_position(),
-                )
+                f"{self.__class__.__name__} {self.get_index()}: ID = {self.get_id()}, Pos = {self.get_position()}"
             )
         )
 
-    def plot(self):
-        if self.ID == -1:
+    def plot(self) -> None:
+        if self.ID is None:
             plt.plot(self.pos[0], self.pos[1], "r*")
         else:
             plt.plot(self.pos[0], self.pos[1], "ro")
@@ -357,40 +355,47 @@ class Point(Shape):
 
 
 class Curve(Shape):
-    __all = []
+    __all: List["Curve"] = []
 
-    def __init__(self, Nel=1):
-        Shape.__init__(self)
-        self.set_index(Curve.count())
-        Curve.obj.append(self)
-        self.pt = []
-        self.line = []
-        self._end_pts = []
+    def __init__(self, Nel: int = 1):
+        super().__init__()
+        Curve.__all.append(self)
+        self.pt: List[Point] = []
+        self.line: List["Line"] = []
+        self._end_pts: List[Point] = []
         self.Nel = Nel
         self.plot_sty = "m--"
 
-    def set_end_pts_by_id(self, pt_id1, pt_id2):
+        self.radius = 0.0
+        self.arc_length = 0.0
+        self.chord = 0.0
+
+    def set_end_pts_by_id(self, pt_id1: int, pt_id2: int) -> None:
         self.set_end_pts([Point.find_by_id(pid) for pid in [pt_id1, pt_id2]])
 
     def get_shape_func(self) -> Callable[[float], np.ndarray]:
         xy = [pt.get_position() for pt in self._end_pts]
+        assert self.radius is not None or self.arc_length is not None
         if self.radius == 0.0:
             return lambda s: xy[0] * (1 - s) + xy[1] * s
         else:
             x, y = list(zip(*xy))
             gam = np.arctan2(y[1] - y[0], x[1] - x[0])
+            assert self.radius is not None
+            assert self.arc_length is not None
             alf = self.arc_length / (2 * self.radius)
+            assert self.radius is not None
             return (
                 lambda s: self._end_pts[0].get_position()
-                + 2 * self.radius * np.sin(s * alf) * trig.ang2vec(gam + (s - 1) * alf)[:2]
+                + 2.0 * self.radius * np.sin(s * alf) * trig.ang2vec(gam + (s - 1.0) * alf)[:2]
             )
 
-    def set_radius(self, R):
-        self.radius = R
+    def set_radius(self, radius: float) -> None:
+        self.radius = radius
         self.calculate_chord()
         self.calculate_arc_length()
 
-    def set_arc_length(self, arc_length):
+    def set_arc_length(self, arc_length: float) -> None:
         self.calculate_chord()
         if self.chord >= arc_length:
             self.arc_length = 0.0
@@ -399,24 +404,27 @@ class Curve(Shape):
             self.arc_length = arc_length
             self.calculate_radius()
 
-    def calculate_radius(self):
+    def calculate_radius(self) -> None:
         self.radius = 1 / self.calculate_curvature()
 
-    def calculate_chord(self):
+    def calculate_chord(self) -> None:
         x, y = list(zip(*[pt.get_position() for pt in self._end_pts]))
         self.chord = ((x[1] - x[0]) ** 2 + (y[1] - y[0]) ** 2) ** 0.5
 
-    def calculate_arc_length(self):
+    def calculate_arc_length(self) -> None:
         if self.radius == 0:
             self.arc_length = self.chord
         else:
-            f = lambda s: self.chord / (2 * self.radius) - np.sin(s / (2 * self.radius))
+
+            def f(s: float) -> float:
+                return self.chord / (2 * self.radius) - np.sin(s / (2 * self.radius))
 
             # Keep increasing guess until fsolve finds the first non-zero root
             self.arc_length = fzero(f, self.chord + 1e-6)
 
-    def calculate_curvature(self):
-        f = lambda x: x * self.chord / 2 - np.sin(x * self.arc_length / 2)
+    def calculate_curvature(self) -> float:
+        def f(x: float) -> float:
+            return x * self.chord / 2 - np.sin(x * self.arc_length / 2)
 
         # Keep increasing guess until fsolve finds the first non-zero root
         kap = 0.0
@@ -427,7 +435,7 @@ class Curve(Shape):
 
         return kap
 
-    def distribute_points(self):
+    def distribute_points(self) -> None:
         self.pt.append(self._end_pts[0])
         if not self.Nel == 1:
             # Distribute N points along a parametric curve defined by f(s), s in [0,1]
@@ -439,50 +447,52 @@ class Curve(Shape):
         self.pt.append(self._end_pts[1])
         self.generate_lines()
 
-    def generate_lines(self):
+    def generate_lines(self) -> None:
         for ptSt, ptEnd in zip(self.pt[:-1], self.pt[1:]):
             L = Line()
             L.set_end_pts([ptSt, ptEnd])
             self.line.append(L)
 
-    def get_lines(self):
+    def get_lines(self) -> List["Line"]:
         return self.line
 
-    def set_pts(self, pt):
+    def set_pts(self, pt: List[Point]) -> None:
         self.pt = pt
 
-    def set_end_pts(self, end_pt):
+    def set_end_pts(self, end_pt: List[Point]) -> None:
         self._end_pts = end_pt
 
-    def get_element_coords(self):
+    def get_element_coords(self) -> List[Point]:
         return self.pt
 
-    def getPtIDs(self):
-        return [pt.get_id() for pt in self.pt]
+    def get_pt_ids(self) -> List[int]:
+        out: List[int] = []
+        for pt in self.pt:
+            id_ = pt.get_id()
+            if id_ is not None:
+                out.append(id_)
+        return out
 
-    def display(self):
-        print(
+    def display(self) -> None:
+        logger.info(
             (
-                "{0} {1}: ID = {2}, Pt IDs = {3}".format(
-                    self.__class__.__name__, self.get_index(), self.get_id(), self.getPtIDs(),
-                )
+                f"{self.__class__.__name__} {self.get_index()}: ID = {self.get_id()}, Pt IDs = {self.get_pt_ids()}"
             )
         )
 
-    def plot(self):
+    def plot(self) -> None:
         x, y = list(zip(*[pt.get_position() for pt in self.pt]))
         plt.plot(x, y, self.plot_sty)
 
 
 class Line(Curve):
-    __all = []
+    __all: List["Line"] = []
 
-    def __init__(self):
-        Curve.__init__(self)
-        self.set_index(Line.count())
-        Line.obj.append(self)
+    def __init__(self) -> None:
+        super().__init__()
+        Line.__all.append(self)
         self.plot_sty = "b-"
 
-    def set_end_pts(self, endPt):
-        Curve.set_end_pts(self, endPt)
-        self.set_pts(endPt)
+    def set_end_pts(self, end_pt: List[Point]) -> None:
+        super().set_end_pts(end_pt)
+        self.set_pts(end_pt)
