@@ -15,7 +15,7 @@ class Substructure(abc.ABC):
 
     __all: List["Substructure"] = []
 
-    element_type: Type[fe.Element]
+    element_type: Type["fe.Element"]
 
     @classmethod
     def find_by_name(cls, name: str) -> "Substructure":
@@ -87,7 +87,7 @@ class Substructure(abc.ABC):
         self.set_element_properties()
         for ndSti, ndEndi, el in zip(nd_st, nd_end, self.el):
             el.set_nodes([fe.Node.get_index(ndSti), fe.Node.get_index(ndEndi)])
-            el.set_parent(self)
+            el.parent = self
 
     def set_interp_function(self) -> None:
         self.node_arc_length = np.zeros(len(self.node))
@@ -297,7 +297,8 @@ class Substructure(abc.ABC):
                 pct = (general.integrate(s, s * tau) / integral - s[0]) / general.cumdiff(s)
                 qs = -integral * np.array([1 - pct, pct])
 
-            el.set_pressure_and_shear(qp, qs)
+            el.qp = qp
+            el.qs = qs
 
             # Calculate external force and moment for rigid body calculation
             if (
@@ -493,9 +494,7 @@ class FlexibleSubstructure(Substructure):
         self.U = np.zeros((num_dof, 1))
 
     def assemble_global_stiffness_and_force(self) -> None:
-        assert self.K is not None
-        assert self.F is not None
-        if self.K is None:
+        if self.K is None or self.F is None:
             self.initialize_matrices()
         else:
             self.K *= 0
@@ -503,7 +502,7 @@ class FlexibleSubstructure(Substructure):
         for el in self.el:
             self.add_loads_from_element(el)
 
-    def add_loads_from_element(self, el: fe.Element) -> None:
+    def add_loads_from_element(self, el: "fe.Element") -> None:
         assert isinstance(el, fe.TrussElement)
         assert self.K is not None
         assert self.F is not None

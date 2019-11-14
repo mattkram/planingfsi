@@ -5,12 +5,7 @@ from planingfsi.solver import RootFinder
 
 from . import felib as fe
 from . import structure
-from .substructure import (
-    Substructure,
-    FlexibleSubstructure,
-    RigidSubstructure,
-    TorsionalSpringSubstructure,
-)
+from . import substructure
 from .. import config, general, logger, trig, solver
 from ..dictionary import load_dict_from_file
 from ..general import write_as_dict
@@ -215,10 +210,10 @@ class RigidBody:
 
     def update_substructure_positions(self) -> None:
         """Update the positions of all substructures."""
-        FlexibleSubstructure.update_all()
+        substructure.FlexibleSubstructure.update_all()
         for ss in self.substructure:
             logger.info(f"Updating position for substructure: {ss.name}")
-            if isinstance(ss, RigidSubstructure):
+            if isinstance(ss, substructure.RigidSubstructure):
                 ss.update_angle()
 
     def update_fluid_forces(self) -> None:
@@ -541,7 +536,7 @@ class RigidBody:
             ["MomentAir", self.Ma],
         )
         for ss in self.substructure:
-            if isinstance(ss, TorsionalSpringSubstructure):
+            if isinstance(ss, substructure.TorsionalSpringSubstructure):
                 ss.write_deformation()
 
     def load_motion(self) -> None:
