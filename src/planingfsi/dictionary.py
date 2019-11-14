@@ -6,6 +6,9 @@ from typing import Dict, Any, Match, Union
 
 from . import logger
 
+# noinspection PyUnresolvedReferences
+from . import unit  # noqa: F401
+
 __all__ = ["load_dict_from_file"]
 
 
@@ -118,9 +121,6 @@ def load_dict_from_string(string: str) -> Dict[str, Any]:
             if match:
                 dict_[key] = float(match.group(1))
             elif "unit." in val:
-                # noinspection PyUnresolvedReferences
-                from planingfsi import unit
-
                 dict_[key] = eval(val)
 
     return dict_

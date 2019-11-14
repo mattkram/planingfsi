@@ -9,11 +9,12 @@ from planingfsi.cli import cli
 
 @pytest.fixture()
 def cli_runner(tmpdir, validation_base_dir):
-    """Return a factory function which can return a case runner in a temporary directory with input files and results
-    copied into it.
+    """Return a factory function which can return a case runner in a temporary directory with input
+    files and results copied into it.
 
     Returns:
-        function: A function accepting a string which identifies the folder within "validation_cases" to run.
+        function: A function accepting a string which identifies the folder within
+        "validation_cases" to run.
 
     """
 

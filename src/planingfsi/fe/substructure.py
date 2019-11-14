@@ -513,7 +513,7 @@ class FlexibleSubstructure(Substructure):
     #  def getPtDispFEM(self):
     # if self.K is None:
     # self.initializeMatrices()
-    ##    self.U *= 0.0
+    #    self.U *= 0.0
     # self.update_fluid_forces()
     # self.assembleGlobalStiffnessAndForce()
     #
@@ -522,7 +522,7 @@ class FlexibleSubstructure(Substructure):
     #      for dofi, fdofi in zip(nd.dof, nd.fixedDOF):
     #        dof[dofi] = not fdofi
     # if any(dof):
-    ##      self.U[np.ix_(dof)] = np.linalg.solve(self.K[np.ix_(dof,dof)], self.F[np.ix_(dof)])
+    #      self.U[np.ix_(dof)] = np.linalg.solve(self.K[np.ix_(dof,dof)], self.F[np.ix_(dof)])
     #
     #    # Relax displacement and limit step if necessary
     #    self.U *= config.relaxFEM
@@ -794,9 +794,9 @@ class TorsionalSpringSubstructure(FlexibleSubstructure, RigidSubstructure):
     #    attR = np.array([attC[i] - self.basePt[i] for i in [0,1]])
     #    attF = el.axialForce * kp.ang2vec(el.gamma + 180)
     #    attM = kp.cross2(attR, attF) * config.ramp
-    ##    attM = np.min([np.abs(attM), np.abs(self.Mt)]) * kp.sign(attM)
+    #    attM = np.min([np.abs(attM), np.abs(self.Mt)]) * kp.sign(attM)
     # if np.abs(attM) > 2 * np.abs(tipM):
-    ##      attM = attM * np.abs(tipM) / np.abs(attM)
+    #      attM = attM * np.abs(tipM) / np.abs(attM)
     #    self.Mt += attM
 
     def update_angle(self) -> None:

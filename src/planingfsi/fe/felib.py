@@ -3,7 +3,7 @@ from typing import List, Tuple, Any, Optional
 
 import numpy as np
 
-from . import substructure
+from . import substructure  # noqa: F401
 from .. import config, trig, general
 
 

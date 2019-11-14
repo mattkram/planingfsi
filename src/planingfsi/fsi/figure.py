@@ -251,7 +251,7 @@ class TimeHistory:
 
                 try:
                     y = y[np.ix_(~np.isnan(y))]
-                except:
+                except IndexError:
                     y = []
 
                 if not np.shape(y)[0] == 0:
@@ -283,9 +283,14 @@ class MotionSubplot(TimeHistory):
     def __init__(self, pos: List[float], body: "rigid_body.RigidBody"):
         TimeHistory.__init__(self, pos, body.name)
 
-        itFunc = lambda: 0  # config.it
-        drftFunc = lambda: body.draft
-        trimFunc = lambda: body.trim
+        def itFunc() -> float:
+            return 0.0  # config.it
+
+        def drftFunc() -> float:
+            return body.draft
+
+        def trimFunc() -> float:
+            return body.trim
 
         self.add_y_axes()
 
@@ -312,10 +317,17 @@ class ForceSubplot(TimeHistory):
     def __init__(self, pos: List[float], body: "rigid_body.RigidBody"):
         TimeHistory.__init__(self, pos, body.name)
 
-        itFunc = lambda: 0  # config.it
-        liftFunc = lambda: body.L / body.weight
-        dragFunc = lambda: body.D / body.weight
-        momFunc = lambda: body.M / (body.weight * config.body.reference_length)
+        def itFunc() -> float:
+            return 0.0  # config.it
+
+        def liftFunc() -> float:
+            return body.L / body.weight
+
+        def dragFunc() -> float:
+            return body.D / body.weight
+
+        def momFunc() -> float:
+            return body.M / (body.weight * config.body.reference_length)
 
         self.add_series(
             PlotSeries(
@@ -345,7 +357,8 @@ class ResidualSubplot(TimeHistory):
     def __init__(self, pos: List[float], solid: "StructuralSolver"):
         TimeHistory.__init__(self, pos, "residuals")
 
-        itFunc = lambda: 0  # config.it
+        def itFunc() -> float:
+            return 0.0  # config.it
 
         col = ["r", "b", "g"]
         for bd, coli in zip(solid.rigid_body, col):
@@ -403,10 +416,10 @@ class CofRPlot:
         self.update()
 
     def update(self) -> None:
-        l = config.plotting.CofR_grid_len
+        grid_len = config.plotting.CofR_grid_len
         c = np.array([self.body.xCofR, self.body.yCofR])
-        hvec = trig.rotate_vec_2d(np.array([0.5 * l, 0.0]), self.body.trim)
-        vvec = trig.rotate_vec_2d(np.array([0.0, 0.5 * l]), self.body.trim)
+        hvec = trig.rotate_vec_2d(np.array([0.5 * grid_len, 0.0]), self.body.trim)
+        vvec = trig.rotate_vec_2d(np.array([0.0, 0.5 * grid_len]), self.body.trim)
         pts = np.array([c - hvec, c + hvec, c, c - vvec, c + vvec])
         self.line.set_data(pts.T)
         self.lineCofG.set_data(self.body.xCofG, self.body.yCofG)

@@ -10,7 +10,7 @@ from scipy.optimize import fmin
 from . import pressureelement as pe, solver
 from .. import config, trig, general
 from ..dictionary import load_dict_from_file
-from ..fsi import interpolator
+from ..fsi import interpolator  # noqa: F401
 
 
 class PressurePatch(abc.ABC):

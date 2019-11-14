@@ -18,7 +18,11 @@ def sign(x: float) -> float:
 
 
 def heaviside(x: float) -> float:
-    """The Heaviside step function returns one if argument is positive, zero if negative, and 0.5 if 0."""
+    """The Heaviside step function.
+
+     Returns one if argument is positive, zero if negative, and 0.5 if 0.
+
+     """
     if x > 0.0:
         return 1.0
     elif x < 0.0:

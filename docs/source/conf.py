@@ -23,7 +23,7 @@ here = os.path.dirname(__file__)
 src_dir = os.path.abspath(os.path.join(here, "..", "..", "src"))
 sys.path.insert(0, src_dir)
 
-import planingfsi
+import planingfsi  # noqa: E40
 
 # -- General configuration ------------------------------------------------
 

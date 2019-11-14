@@ -44,7 +44,8 @@ class Mesh:
                 + radius * trig.angd2vec2d(float(ang))
             )
         elif method == "con":
-            # Constrained coordinate specification, either extrapolating at an angle or going horizontally or vertically
+            # Constrained coordinate specification
+            # Either extrapolating at an angle or going horizontally or vertically
             base_pt_id, dim, val = position
             ang = kwargs.get("angle", 0.0 if dim == "x" else 90.0)
 
@@ -341,8 +342,11 @@ class Point(Shape):
 
     def display(self) -> None:
         logger.info(
-            (
-                f"{self.__class__.__name__} {self.get_index()}: ID = {self.get_id()}, Pos = {self.get_position()}"
+            " ".join(
+                [
+                    f"{self.__class__.__name__} {self.get_index()}",
+                    f"ID = {self.get_id()}, Pos = {self.get_position()}",
+                ]
             )
         )
 
@@ -475,8 +479,11 @@ class Curve(Shape):
 
     def display(self) -> None:
         logger.info(
-            (
-                f"{self.__class__.__name__} {self.get_index()}: ID = {self.get_id()}, Pt IDs = {self.get_pt_ids()}"
+            " ".join(
+                [
+                    f"{self.__class__.__name__} {self.get_index()}:",
+                    f"ID = {self.get_id()}, Pt IDs = {self.get_pt_ids()}",
+                ]
             )
         )
 
