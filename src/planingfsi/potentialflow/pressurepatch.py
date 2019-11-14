@@ -105,7 +105,7 @@ class PressurePatch(abc.ABC):
                 el.z_coord = self.interpolator.get_surface_height_fixed_x(x[i])
 
             if isinstance(el, pe.CompleteTriangularPressureElement):
-                el.width = [x[i] - x[i - 1], x[i + 1] - x[i]]
+                el.width = np.array([x[i] - x[i - 1], x[i + 1] - x[i]])
             elif isinstance(el, pe.ForwardHalfTriangularPressureElement):
                 el.width = x[i + 1] - x[i]
             elif isinstance(el, pe.AftHalfTriangularPressureElement):

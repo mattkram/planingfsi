@@ -127,8 +127,8 @@ class PressureElement(abc.ABC):
         self.shear_stress = shear_stress
         self._width = np.zeros(2)
         self.width = width
-        self.is_source = is_source
-        self.is_on_body = is_on_body
+        self.is_source: bool = is_source
+        self.is_on_body: bool = is_on_body
         self.parent = parent
 
     @property

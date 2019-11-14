@@ -150,12 +150,12 @@ class RigidBody:
                 self.trim_solver = None
                 self.draft_solver = None
 
-        self.substructure: List["Substructure"] = []
+        self.substructure: List["substructure.Substructure"] = []
         self.node: List[fe.Node] = []
 
         print(("Adding Rigid Body: {0}".format(self.name)))
 
-    def add_substructure(self, ss: "Substructure") -> None:
+    def add_substructure(self, ss: "substructure.Substructure") -> None:
         """Add a substructure to the rigid body."""
         self.substructure.append(ss)
         ss.parent = self

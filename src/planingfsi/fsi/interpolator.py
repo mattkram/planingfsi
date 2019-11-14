@@ -70,13 +70,13 @@ class Interpolator:
 
     def get_separation_point(self) -> np.ndarray:
         def get_y_coords(s: float) -> float:
-            return self.get_coordinates(s[0])[1]
+            return self.get_coordinates(s)[1]
 
         if self._separation_arclength is None:
             self._separation_arclength = self.sSepPctStart * self.solid.arc_length
 
         self._separation_arclength = fmin(
-            get_y_coords, np.array([self._separation_arclength]), disp=False, xtol=1e-6
+            get_y_coords, self._separation_arclength, disp=False, xtol=1e-6
         )[0]
         self._separation_arclength = float(np.max([self._separation_arclength, 0.0]))
         return self.get_coordinates(self._separation_arclength)
