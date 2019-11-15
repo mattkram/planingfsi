@@ -1,6 +1,6 @@
 import os
 from pathlib import Path
-from typing import Optional
+from typing import Optional, Iterable
 
 import numpy as np
 
@@ -22,6 +22,7 @@ class Simulation:
         fluid_solver (PotentialPlaningSolver): The fluid solver.
 
     """
+    it_dirs: Iterable[Path]
 
     def __init__(self) -> None:
         self.solid_solver = StructuralSolver(self)

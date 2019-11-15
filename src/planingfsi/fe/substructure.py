@@ -55,6 +55,11 @@ class Substructure(abc.ABC):
         self.parent: Optional[rigid_body.RigidBody] = None
         self.node_arc_length = np.zeros(len(self.node))
 
+        self.D = 0.0
+        self.L = 0.0
+        self.M = 0.0
+        self.Dt = 0.0
+        self.Lt = 0.0
         self.Da = 0.0
         self.La = 0.0
         self.Ma = 0.0
@@ -585,6 +590,7 @@ class TorsionalSpringSubstructure(FlexibleSubstructure, RigidSubstructure):
         config.has_free_structure = True
         self.attached_ind = 0
         self.attached_substructure: Optional[Substructure] = None
+        self.residual = 1.0
 
     def load_mesh(self) -> None:
         Substructure.load_mesh(self)
