@@ -251,7 +251,7 @@ class TimeHistory:
 
                 try:
                     y = y[np.ix_(~np.isnan(y))]
-                except IndexError:
+                except TypeError:
                     y = []
 
                 if not np.shape(y)[0] == 0:
