@@ -227,8 +227,8 @@ class Shape:
     def all(cls: Type[T]) -> List[T]:
         all_return: List[T] = []
         for o in cls.__all:
-            assert isinstance(o, cls)
-            all_return.append(o)
+            if isinstance(o, cls):
+                all_return.append(o)
         return all_return
 
     @classmethod
@@ -261,8 +261,11 @@ class Shape:
     def set_id(self, id_: Optional[int]) -> None:
         # TODO: Replace with property
         if id_ is not None:
-            existing = self.find_by_id(id_)
-            if existing is not None:
+            try:
+                existing = self.find_by_id(id_)
+            except ValueError:
+                pass
+            else:
                 existing.set_id(None)
         self.ID = id_
 
