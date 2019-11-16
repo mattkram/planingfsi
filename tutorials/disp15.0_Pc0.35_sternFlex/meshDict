@@ -1,0 +1,66 @@
+from .dictionary import load_dict_from_file
+from .trig import asind
+from . import unit
+
+dict_  = load_dict_from_file('configDict')
+
+hSF = dict_.get('hSF', 0.0)
+hSA = dict_.get('hSA', 0.0)
+
+# Generate Mesh
+wetdeckHt = 6.5
+wetdeckThick = 2.0
+
+M = mesh
+
+#Create points
+M.add_point(1, 'rel', [ 0, 0, 59])
+M.add_point(9, 'rel', [ 1, 90, wetdeckHt])
+M.add_point(3, 'rel', [ 9, 0, 17.24])
+M.add_point(2, 'con', [ 3, 'y', 0.0], angle=225)
+M.add_point(4, 'rel', [ 3, 90, wetdeckThick])
+M.add_point(5, 'rel', [ 9, 90, wetdeckThick])
+M.add_point(8, 'rel', [ 0, 90, wetdeckHt])
+M.add_point(7, 'rel', [ 8, 90, wetdeckThick])
+M.add_point(6, 'rel', [ 9, 90, wetdeckThick])
+
+M.add_point(100, 'rel', [ 9, 0, 16.1])
+M.add_point(101, 'rel', [ 1, 0, 5])
+M.add_point(102, 'rel', [ 101, 90, 1])
+dx = M.get_pt_by_id(100).get_x_pos() - M.get_pt_by_id(102).get_x_pos()
+dy = M.get_pt_by_id(100).get_y_pos() - M.get_pt_by_id(102).get_y_pos()
+L = (dx**2 + dy**2)**0.5
+dTheta = asind((dy-hSF) / L) - asind(dy / L)
+M.get_pt_by_id(102).rotate(100, dTheta)
+M.add_point(103, 'con', [102, 'y', wetdeckHt], angle=120)
+
+M.add_point(200, 'rel', [ 8, 0, 12.6])
+M.add_point(201, 'rel', [ 0, 0, 1.5])
+M.add_point(202, 'rel', [201, 90, 1])
+dx = M.get_pt_by_id(200).get_x_pos() - M.get_pt_by_id(202).get_x_pos()
+dy = M.get_pt_by_id(200).get_y_pos() - M.get_pt_by_id(202).get_y_pos()
+L = (dx**2 + dy**2)**0.5
+dTheta = asind((dy-hSA) / L) - asind(dy / L)
+M.get_pt_by_id(202).rotate(200, dTheta)
+
+M1 = M.add_submesh('rigidParts')
+M1.add_curve(0, 2)
+M1.add_curve(2, 3)
+M1.add_curve(3, 4)
+M1.add_curve(4, 7)
+M1.add_curve(7, 0)
+M1.add_curve(8, 200)
+M1.add_curve(3, 103)
+
+M2 = M.add_submesh('bowSealLower')
+M2.add_curve(102, 100, arcLen=12.5, Nel=60)
+
+M3 = M.add_submesh('sternSealLower')
+M3.add_curve(202, 200, arcLen=12.5, Nel=60)
+
+M4 = M.add_submesh('wetdeck')
+M4.add_curve(200, 103, Nel=150)
+M4.add_curve(103, 102, Nel=30)
+
+# Create fixed points
+M.scale_all_points(unit.inch)

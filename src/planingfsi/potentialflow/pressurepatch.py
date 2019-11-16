@@ -347,7 +347,7 @@ class PlaningSurface(PressurePatch):
         self.spring_constant = dict_.get("springConstant", 1e4)
         self.kutta_pressure = dict_.get("kuttaPressure", 0.0)
         if isinstance(self.kutta_pressure, str):
-            self.kutta_pressure = getattr(config, self.kutta_pressure)
+            self.kutta_pressure = getattr(config.body, self.kutta_pressure)
         self._upstream_pressure = dict_.get("upstreamPressure", 0.0)
         if isinstance(self._upstream_pressure, str):
             self._upstream_pressure = getattr(config, self._upstream_pressure)
@@ -389,6 +389,7 @@ class PlaningSurface(PressurePatch):
             )
         else:
             self.relative_position = np.linspace(0.0, 1.0, num_elements + 1)
+        print(self.relative_position)
         self.relative_position /= self.relative_position[-2]
         self.relative_position = np.hstack((0.0, self.relative_position))
 

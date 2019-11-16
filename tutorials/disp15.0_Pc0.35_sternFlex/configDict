@@ -1,0 +1,65 @@
+# General Parameters
+rho   : 1000.0
+g     : 9.81
+nu    : 1.0048e-6
+hWL   : 0.0
+hSF   : 0.0
+hSA   : 0.0
+
+PcBar : 0.35
+Fr : 3.50000000e-01
+
+Lc    : "62.64 * unit.inch"
+xCofR : "32.5  * unit.inch"
+xCofG : "33.5  * unit.inch"
+yCofG : "8.5   * unit.inch"
+
+m : "100.0 * unit.lbm / (25.75 * unit.inch)"
+sealLoadPct : 0.15
+
+freeInDraft : True
+freeInTrim  : True
+
+initialDraft : 8.83096590e-02
+initialTrim  : 5.55554568e+00
+
+maxDraftStep : 5.0e-4
+maxTrimStep  : 7.5e-3
+
+wettedLengthSolver : 'broyden'
+wettedLengthMaxStepPct : 0.5
+
+motionMethod : 'Broyden'
+numDamp : 0.8
+rigidBodyRelax : 0.7
+
+# Simulation Parameters
+maxIt  : 1000
+rampIt : 0
+relaxI : 1e-4
+relaxF : 1.0
+tolerance : 1e-4
+
+# Plotting Parameters
+plotXMin : -1.0
+plotXMax :  3.0
+plotYMin : -0.25
+plotYMax :  0.50
+
+growthRate : 1.1
+pScaleType : 'cushion'
+pScalePct  : 0.02
+
+inputDictDir : './inputDict'
+meshDir      : './mesh'
+meshDictDir  : './meshDict'
+pressureCushionDictDir : './pressureCushion'
+
+shearCalc : False
+
+resultsFromFile : False
+writeInterval : 50
+
+plotSave  : False
+plotShow  : False
+plotWatch : False

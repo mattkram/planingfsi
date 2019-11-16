@@ -1,0 +1,5 @@
+substructureName  : 'rigidParts'
+substructureType  : 'rigid'
+hasPlaningSurface : False
+
+bodyName : 'sternSealBody'
