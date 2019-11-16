@@ -54,3 +54,5 @@ docs/build/
 tutorials/**/mesh
 tutorials/**/[0-9]*
 tutorials/**/figures
+tutorials/**/*.png
+tutorials/**/*.eps
