@@ -74,7 +74,7 @@ class PressurePatch(abc.ABC):
     def neighbor_up(self, obj: Optional["PressurePatch"]) -> None:
         self._neighbor_up = obj
         if self._neighbor_up is not None:
-            self._neighbor_up.neighbor_down = self
+            self._neighbor_up._neighbor_down = self
 
     @property
     def neighbor_down(self) -> Optional["PressurePatch"]:
@@ -89,7 +89,7 @@ class PressurePatch(abc.ABC):
     def neighbor_down(self, obj: Optional["PressurePatch"]) -> None:
         self._neighbor_down = obj
         if self._neighbor_down is not None:
-            self._neighbor_down.neighbor_up = self
+            self._neighbor_down._neighbor_up = self
 
     @abc.abstractmethod
     def get_element_coords(self) -> np.ndarray:
