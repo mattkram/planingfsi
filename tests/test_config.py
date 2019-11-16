@@ -1,4 +1,5 @@
 import math
+from typing import Union
 
 import pytest
 
@@ -6,15 +7,16 @@ from planingfsi import config
 from planingfsi.config import SubConfig, ConfigItem
 
 
+class TestClass(SubConfig):
+    """A simple configuration class to test behavior of attribute descriptors."""
+    float_attr = ConfigItem(default=0.0)
+    int_attr = ConfigItem(type=int)
+    bool_attr = ConfigItem(default=True)
+
+
 @pytest.fixture()
-def config_instance():
+def config_instance() -> TestClass:
     """An instance of a configuration class containing some attributes."""
-
-    class TestClass(SubConfig):
-        float_attr = ConfigItem(default=0.0)
-        int_attr = ConfigItem(type=int)
-        bool_attr = ConfigItem(default=True)
-
     return TestClass()
 
 
@@ -49,7 +51,9 @@ def test_config_type_conversion(config_instance):
         (True, True),
     ],
 )
-def test_config_bool_type_converion(config_instance, value, expected):
+def test_config_bool_type_converion(
+    config_instance: TestClass, value: Union[str, bool], expected: bool
+) -> None:
     """When setting a Boolean value, True and False can be passed in as strings."""
     config_instance.bool_attr = value
     assert config_instance.bool_attr == expected
