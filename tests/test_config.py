@@ -13,6 +13,7 @@ def config_instance():
     class TestClass(SubConfig):
         float_attr = ConfigItem(default=0.0)
         int_attr = ConfigItem(type=int)
+        bool_attr = ConfigItem(default=True)
 
     return TestClass()
 
@@ -35,6 +36,23 @@ def test_config_type_conversion(config_instance):
     config_instance.int_attr = 55.0
     assert config_instance.int_attr == 55
     assert isinstance(config_instance.int_attr, int)
+
+
+@pytest.mark.parametrize(
+    "value,expected",
+    [
+        ("False", False),
+        ("false", False),
+        ("True", True),
+        ("true", True),
+        (False, False),
+        (True, True),
+    ],
+)
+def test_config_bool_type_converion(config_instance, value, expected):
+    """When setting a Boolean value, True and False can be passed in as strings."""
+    config_instance.bool_attr = value
+    assert config_instance.bool_attr == expected
 
 
 def test_flow_defaults():
