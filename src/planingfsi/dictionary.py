@@ -88,7 +88,11 @@ def load_dict_from_file(filename: Union[Path, str]) -> Dict[str, Any]:
 
     with Path(filename).open() as f:
         dict_iter = (line.split("#")[0].strip() for line in f.readlines())
-    dict_ = load_dict_from_string(",".join(dict_iter))
+    try:
+        dict_ = load_dict_from_string(",".join(dict_iter))
+    except ValueError as e:
+        print(f"Error reading file {filename}")
+        raise
 
     # If specified, read values from a base dictionary
     # All local values override the base dictionary values
