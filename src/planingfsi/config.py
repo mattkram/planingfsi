@@ -9,7 +9,7 @@ The global attributes can then be simply accessed via config.attribute_name
 """
 import math
 from pathlib import Path
-from typing import Any, List, Type, Dict, Optional
+from typing import Any, List, Type, Dict, Optional, Union
 
 from . import logger
 from .dictionary import load_dict_from_file
@@ -88,7 +88,7 @@ class SubConfig:
     different sections. Also useful in helping define the namespace scopes.
     """
 
-    def load_from_file(self, filename: str) -> None:
+    def load_from_file(self, filename: Union[Path, str]) -> None:
         """Load the configuration from a dictionary file.
 
         Args:
@@ -549,7 +549,7 @@ io = IOConfig()
 solver = SolverConfig()
 
 
-def load_from_file(filename: str) -> None:
+def load_from_file(filename: Union[Path, str]) -> None:
     """Load the configuration from a file.
 
     Args:
