@@ -27,7 +27,7 @@ jobs:
         poetry install --no-dev
     - name: Install CI dependencies
       run: |
-        pip install poetry black flake8 pytest codecov
+        pip install poetry black flake8 pytest pytest-cov codecov
     - name: Check formatting with black
       run: |
         black --check .
