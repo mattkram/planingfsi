@@ -52,5 +52,5 @@ jobs:
             tests
       if: ${{ always() }}
     - name: Publish code coverage
-    - run: |
-      codecov -t $CODECOV_TOKEN
+      run: |
+        codecov -t $CODECOV_TOKEN
