@@ -181,7 +181,11 @@ class PlotSeries:
         if self.series_type == "history+curr":
             self.additionalSeries.append(
                 PlotSeries(
-                    x_func, y_func, ax=self.ax, type="point", sty=kwargs.get("currSty", "ro"),
+                    x_func,
+                    y_func,
+                    ax=self.ax,
+                    type="point",
+                    sty=kwargs.get("currSty", "ro"),
                 )
             )
 
@@ -297,17 +301,29 @@ class MotionSubplot(TimeHistory):
         # Add plot series to appropriate axis
         self.add_series(
             PlotSeries(
-                itFunc, drftFunc, ax=self.ax[0], sty="b-", type="history+curr", legEnt="Draft",
+                itFunc,
+                drftFunc,
+                ax=self.ax[0],
+                sty="b-",
+                type="history+curr",
+                legEnt="Draft",
             )
         )
         self.add_series(
             PlotSeries(
-                itFunc, trimFunc, ax=self.ax[1], sty="r-", type="history+curr", legEnt="Trim",
+                itFunc,
+                trimFunc,
+                ax=self.ax[1],
+                sty="r-",
+                type="history+curr",
+                legEnt="Trim",
             )
         )
 
         self.set_properties(
-            title=r"Motion History: {0}".format(body.name), xlabel=r"Iteration", ylabel=r"$d$ [m]",
+            title=r"Motion History: {0}".format(body.name),
+            xlabel=r"Iteration",
+            ylabel=r"$d$ [m]",
         )
         self.set_properties(1, ylabel=r"$\theta$ [deg]")
         self.create_legend()
@@ -331,17 +347,32 @@ class ForceSubplot(TimeHistory):
 
         self.add_series(
             PlotSeries(
-                itFunc, liftFunc, sty="r-", type="history+curr", legEnt="Lift", ignoreFirst=True,
+                itFunc,
+                liftFunc,
+                sty="r-",
+                type="history+curr",
+                legEnt="Lift",
+                ignoreFirst=True,
             )
         )
         self.add_series(
             PlotSeries(
-                itFunc, dragFunc, sty="b-", type="history+curr", legEnt="Drag", ignoreFirst=True,
+                itFunc,
+                dragFunc,
+                sty="b-",
+                type="history+curr",
+                legEnt="Drag",
+                ignoreFirst=True,
             )
         )
         self.add_series(
             PlotSeries(
-                itFunc, momFunc, sty="g-", type="history+curr", legEnt="Moment", ignoreFirst=True,
+                itFunc,
+                momFunc,
+                sty="g-",
+                type="history+curr",
+                legEnt="Moment",
+                ignoreFirst=True,
             )
         )
 
@@ -450,5 +481,6 @@ def plot_pressure(solver: PotentialPlaningSolver) -> None:
     ax.set_ylim(ymin=0.0)
 
     fig.savefig(
-        f"pressureElements.{config.plotting.fig_format}", format=config.plotting.fig_format,
+        f"pressureElements.{config.plotting.fig_format}",
+        format=config.plotting.fig_format,
     )

@@ -74,7 +74,8 @@ class Substructure(abc.ABC):
 
     def load_mesh(self) -> None:
         nd_st, nd_end = np.loadtxt(
-            str(Path(config.path.mesh_dir, f"elements_{self.name}.txt")), unpack=True,
+            str(Path(config.path.mesh_dir, f"elements_{self.name}.txt")),
+            unpack=True,
         )
         if isinstance(nd_st, float):
             nd_st = [int(nd_st)]
@@ -172,7 +173,8 @@ class Substructure(abc.ABC):
 
     def load_coordinates(self) -> None:
         x, y = np.loadtxt(
-            str(self.it_dir / f"coords_{self.name}.{config.io.data_format}"), unpack=True,
+            str(self.it_dir / f"coords_{self.name}.{config.io.data_format}"),
+            unpack=True,
         )
         for xx, yy, nd in zip(x, y, self.node):
             nd.set_coordinates(xx, yy)
@@ -849,5 +851,6 @@ class TorsionalSpringSubstructure(FlexibleSubstructure, RigidSubstructure):
 
     def write_deformation(self) -> None:
         general.write_as_dict(
-            self.it_dir / f"deformation_{self.name}.{config.io.data_format}", ["angle", self.theta],
+            self.it_dir / f"deformation_{self.name}.{config.io.data_format}",
+            ["angle", self.theta],
         )

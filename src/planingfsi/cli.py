@@ -32,7 +32,10 @@ def cli() -> None:
 )
 @click.option("--plot_save", is_flag=True, help="Save the plots to figures.")
 @click.option(
-    "new_case", "--new", is_flag=True, help="Force generate new case, deleting old results first.",
+    "new_case",
+    "--new",
+    is_flag=True,
+    help="Force generate new case, deleting old results first.",
 )
 def run_planingfsi(post_mode: bool, plot_save: bool, new_case: bool) -> None:
     """Run the planingFSI solver."""
