@@ -255,9 +255,13 @@ class RigidBody:
         #    self.a -= self.Cdamp * (self.v + self.v**3) * config.ramp
         self.a -= self.c_damp * self.v * config.ramp
         self.a /= np.array([self.m, self.Iz])
-        self.a = np.min(
-            np.vstack((np.abs(self.a), np.array([self.max_draft_acc, self.max_trim_acc]))), axis=0,
-        ) * np.sign(self.a)
+        self.a = (
+            np.min(
+                np.vstack((np.abs(self.a), np.array([self.max_draft_acc, self.max_trim_acc]))),
+                axis=0,
+            )
+            * np.sign(self.a)
+        )
 
         #    accLimPct = np.min(np.vstack((np.abs(self.a), self.maxAcc)), axis=0) * np.sign(self.a)
         #    for i in range(len(self.a)):
@@ -275,9 +279,13 @@ class RigidBody:
         self.a = np.array([self.weight - self.L, self.M - self.weight * (self.xCofG - self.xCofR)])
         #    self.a -= self.Cdamp * self.v * config.ramp
         self.a /= np.array([self.m, self.Iz])
-        self.a = np.min(
-            np.vstack((np.abs(self.a), np.array([self.max_draft_acc, self.max_trim_acc]))), axis=0,
-        ) * np.sign(self.a)
+        self.a = (
+            np.min(
+                np.vstack((np.abs(self.a), np.array([self.max_draft_acc, self.max_trim_acc]))),
+                axis=0,
+            )
+            * np.sign(self.a)
+        )
 
         dv = (1 - self.gamma) * self.a_old + self.gamma * self.a
         dv *= self.time_step

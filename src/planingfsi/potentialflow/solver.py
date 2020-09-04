@@ -295,12 +295,18 @@ class PotentialPlaningSolver:
         x_fs_u = np.unique(x_fs)
         x_fs.extend(
             general.grow_points(
-                x_fs_u[-2], x_fs_u[-1], config.plotting.x_fs_max, config.plotting.growth_rate,
+                x_fs_u[-2],
+                x_fs_u[-1],
+                config.plotting.x_fs_max,
+                config.plotting.growth_rate,
             )
         )
         x_fs.extend(
             general.grow_points(
-                x_fs_u[1], x_fs_u[0], config.plotting.x_fs_min, config.plotting.growth_rate,
+                x_fs_u[1],
+                x_fs_u[0],
+                config.plotting.x_fs_min,
+                config.plotting.growth_rate,
             )
         )
         # Add points from each pressure cushion
@@ -393,7 +399,8 @@ class PotentialPlaningSolver:
     def _load_pressure_and_shear(self) -> None:
         """Load pressure and shear stress from file."""
         self.x_coord, self.pressure, self.shear_stress = np.loadtxt(
-            str(self.simulation.it_dir / f"pressureAndShear.{config.io.data_format}"), unpack=True,
+            str(self.simulation.it_dir / f"pressureAndShear.{config.io.data_format}"),
+            unpack=True,
         )
         for el in [el for patch in self.planing_surfaces for el in patch.pressure_elements]:
             compare = np.abs(self.x_coord - el.x_coord) < 1e-6
