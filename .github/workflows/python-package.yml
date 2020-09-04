@@ -51,4 +51,6 @@ jobs:
             --cov planingfsi \
             tests
       if: ${{ always() }}
-#       - codecov -t $CODECOV_TOKENst
+    - name: Publish code coverage
+    - run: |
+      codecov -t $CODECOV_TOKEN
