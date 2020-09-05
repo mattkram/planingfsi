@@ -56,4 +56,8 @@ def test_run_validation_case(run_case: RunCaseFunction, case_name: str) -> None:
     for item in validation_items:
         new_item = item.with_suffix("")
         assert new_item.exists()
-        # TODO: Expand tests once results become available
+        for old_file in item.glob("*"):
+            new_file = new_item / old_file.name
+            assert new_file.exists()
+            with old_file.open() as fp, new_file.open() as gp:
+                assert fp.read() == gp.read()
