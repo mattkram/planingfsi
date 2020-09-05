@@ -15,7 +15,7 @@ RunCaseFunction = Callable[[str], Path]
 
 @pytest.fixture()
 def run_case(tmpdir: Path, validation_base_dir: Path) -> RunCaseFunction:
-    """A function which can construct a case runner for a specific validation case.
+    """A function which is used to run a specific validation case.
 
     The case runner executes in in a temporary directory with input files and results copied into it from the base
     directory.
@@ -23,28 +23,26 @@ def run_case(tmpdir: Path, validation_base_dir: Path) -> RunCaseFunction:
     """
 
     def f(case_name: str) -> Path:
-        """Create a case runner for a specific case.
-
-        Copies all input files from the base case into a temporary directory in order to compare the contents.
+        """Create a case runner for a specific case in a temporary directory and run planingfsi.
 
         Args:
             case_name: The name of the case directory within the validation base directory.
 
         Returns:
-            The CLI runner object for planingfsi, which can be called via the invoke method.
+            The path to the temporary case directory.
 
         """
 
-        runner = CliRunner()
-        case_dir = validation_base_dir / case_name
-        for source in case_dir.glob("*"):
+        cli_runner = CliRunner()
+        case_base_dir = validation_base_dir / case_name
+        for source in case_base_dir.glob("*"):
             destination = tmpdir / source.name
             try:
                 shutil.copytree(source, destination)
             except NotADirectoryError:
                 shutil.copyfile(source, destination)
         os.chdir(tmpdir)
-        runner.invoke(cli, ["run"])
+        cli_runner.invoke(cli, ["run"])
         return Path(tmpdir)
 
     return f
