@@ -54,3 +54,5 @@ jobs:
     - name: Publish code coverage
       run: |
         codecov -t $CODECOV_TOKEN
+      env:
+        CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
