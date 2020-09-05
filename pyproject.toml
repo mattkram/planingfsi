@@ -39,7 +39,7 @@ tox = "^3.6"
 mypy = "^0.740.0"
 
 [tool.poetry.scripts]
-planingfsi = "planingfsi:cli.cli"
+planingfsi = "planingfsi.cli:cli"
 
 [tool.black]
 line-length = 100
