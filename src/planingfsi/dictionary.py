@@ -90,7 +90,7 @@ def load_dict_from_file(filename: Union[Path, str]) -> Dict[str, Any]:
         dict_iter = (line.split("#")[0].strip() for line in f.readlines())
     try:
         dict_ = load_dict_from_string(",".join(dict_iter))
-    except ValueError as e:
+    except ValueError:
         print(f"Error reading file {filename}")
         raise
 
