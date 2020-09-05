@@ -1,0 +1,22 @@
+substructureName  : 'sternSealLower'
+substructureType  : 'torsionalSpring'
+hasPlaningSurface : True
+
+bodyName : 'sternSealBody'
+
+# Fluid Parameters
+Nfl    :  20
+pointSpacing : 'cosine'
+
+initialLength : 1.12459733e-01
+minimumLength : 0.001
+structInterpShape : 'cubic'
+structExtrap : True
+
+# Simulation Parameters
+sSepPctStart : 0.5
+
+springConstant : 5.0
+relaxAng : 0.1
+initialAngle : 3.04657945
+minimumAngle : 0.0

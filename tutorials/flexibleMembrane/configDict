@@ -8,16 +8,22 @@ Fr    : 1.0
 AOA   : 10.0
 Lc    : 1.0
 
+PsBar : 2.0
+
 wettedLengthSolver : 'broyden'
 wettedLengthMaxStepPct : 0.5
-wettedLengthMaxIt : 0
+wettedLengthMaxIt : 10
 
 # Simulation Parameters
-maxIt  : 0
-rampIt : 0
-relaxI : 0.0
-relaxF : 1.0
+maxIt  : 50
+rampIt : 10
+relaxI : 0.2
+relaxF : 0.5
 tolerance : 1e-5
+
+FEMRelax : 0.5
+maxFEMDisp : 0.1
+numDamp : 0.5
 
 # Plotting Parameters
 extE   :  0.5
@@ -44,4 +50,3 @@ writeInterval : 50
 plotSave  : True
 plotShow  : True
 plotWatch : True
-plotPressure : True

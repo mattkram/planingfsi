@@ -1,0 +1,19 @@
+substructureName  : 'bowSealLower'
+substructureType  : 'rigid'
+hasPlaningSurface : True
+
+bodyName : 'bowSealBody'
+
+# Fluid Parameters
+Nfl    :  20
+pointSpacing : 'cosine'
+
+kuttaPressure : 'Pc'
+
+initialLength : 1.00000000e-01
+minimumLength : 0.001
+structInterpType : 'cubic'
+structExtrap : True
+
+# Simulation Parameters
+sSepPctStart : 0.5

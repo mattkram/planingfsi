@@ -1,28 +1,32 @@
 import os
+from pathlib import Path
+from typing import List, Callable, Any
 
-import numpy as np
 import matplotlib.pyplot as plt
+import numpy as np
+from matplotlib.axes import Axes
 
-import planingfsi.config as config
-
-# import planingfsi.krampy as kp
+from .. import config, trig
+from ..fe import rigid_body
+from ..fe.structure import StructuralSolver
+from ..fsi import simulation as fsi_simulation
+from ..potentialflow.solver import PotentialPlaningSolver
 
 
 class FSIFigure:
-    def __init__(self, solid, fluid):
-        self.solid = solid
-        self.fluid = fluid
+    def __init__(self, simulation: "fsi_simulation.Simulation"):
+        self.simulation = simulation
 
-        plt.figure(figsize=(16, 12))
+        fig = plt.figure(figsize=(16, 12))
         if config.plotting.watch:
             plt.ion()
-        self.geometryAx = plt.axes([0.05, 0.6, 0.9, 0.35])
+        self.geometry_ax = fig.add_axes([0.05, 0.6, 0.9, 0.35])
 
         for nd in self.solid.node:
-            (nd.line_x_yline_xy,) = plt.plot([], [], "ro")
+            (nd.line_xy,) = plt.plot([], [], "ro")
 
-        (self.fluid.lineFS,) = plt.plot([], [], "b-")
-        (self.fluid.lineFSi,) = plt.plot([], [], "b--")
+        (self.lineFS,) = plt.plot([], [], "b-")
+        (self.lineFSi,) = plt.plot([], [], "b--")
 
         for struct in self.solid.substructure:
             (struct.line_air_pressure,) = plt.plot([], [], "g-")
@@ -31,34 +35,38 @@ class FSIFigure:
                 (el.lineEl0,) = plt.plot([], [], "k--")
                 (el.lineEl,) = plt.plot([], [], "k-", linewidth=2)
 
-        self.lineCofR = []
-        for bd in self.solid.rigid_body:
-            CofRPlot(
-                self.geometryAx, bd, symbol=False, style="k--", marker="s", fill=False
-            )
+        self.lineCofR: List["CofRPlot"] = []
+        for bodies in self.solid.rigid_body:
+            CofRPlot(self.geometry_ax, bodies, symbol=False, style="k--", marker="s", fill=False)
             self.lineCofR.append(
-                CofRPlot(self.geometryAx, bd, symbol=False, style="k-", marker="o")
+                CofRPlot(self.geometry_ax, bodies, symbol=False, style="k-", marker="o")
             )
 
-        xMin, xMax = kp.minMax(
-            [nd.x for struct in self.solid.substructure for nd in struct.node]
-        )
-        yMin, yMax = kp.minMax(
-            [nd.y for struct in self.solid.substructure for nd in struct.node]
-        )
+        x = [nd.x for struct in self.solid.substructure for nd in struct.node]
+        y = [nd.y for struct in self.solid.substructure for nd in struct.node]
+        xMin, xMax = min(x), max(x)
+        yMin, yMax = min(y), max(y)
 
-        if config.plotting.xmin is not None:
+        try:
             xMin = config.plotting.xmin
             config.plotting.ext_w = 0.0
-        if config.plotting.xmax is not None:
+        except AttributeError:
+            pass
+        try:
             xMax = config.plotting.xmax
             config.plotting.ext_e = 0.0
-        if config.plotting.ymin is not None:
+        except AttributeError:
+            pass
+        try:
             yMin = config.plotting.ymin
             config.plotting.ext_s = 0.0
-        if config.plotting.ymax is not None:
+        except AttributeError:
+            pass
+        try:
             yMax = config.plotting.ymax
             config.plotting.ext_n = 0.0
+        except AttributeError:
+            pass
 
         plt.xlabel(r"$x$ [m]", fontsize=22)
         plt.ylabel(r"$y$ [m]", fontsize=22)
@@ -76,42 +84,54 @@ class FSIFigure:
             ]
         )
         plt.gca().set_aspect("equal")
-        self.TXT = plt.text(
-            0.05, 0.95, "", ha="left", va="top", transform=plt.gca().transAxes
-        )
+        self.TXT = plt.text(0.05, 0.95, "", ha="left", va="top", transform=plt.gca().transAxes)
 
-        self.subplot = []
+        self.subplot: List["TimeHistory"] = []
 
-        bd = [bd for bd in self.solid.rigid_body]
+        if self.solid.rigid_body:
+            body = self.solid.rigid_body[0]
+            self.subplot.append(ForceSubplot([0.70, 0.30, 0.25, 0.2], body))
+            self.subplot.append(MotionSubplot([0.70, 0.05, 0.25, 0.2], body))
 
-        if len(bd) > 0:
-            self.subplot.append(ForceSubplot([0.70, 0.30, 0.25, 0.2], bd[0]))
-            self.subplot.append(MotionSubplot([0.70, 0.05, 0.25, 0.2], bd[0]))
-
-        if len(bd) > 1:
-            self.subplot.append(ForceSubplot([0.05, 0.30, 0.25, 0.2], bd[1]))
-            self.subplot.append(MotionSubplot([0.05, 0.05, 0.25, 0.2], bd[1]))
+        if len(self.solid.rigid_body) > 1:
+            body = self.solid.rigid_body[1]
+            self.subplot.append(ForceSubplot([0.05, 0.30, 0.25, 0.2], body))
+            self.subplot.append(MotionSubplot([0.05, 0.05, 0.25, 0.2], body))
 
         self.subplot.append(ResidualSubplot([0.40, 0.05, 0.25, 0.45], self.solid))
 
-    def update(self):
+    @property
+    def solid(self) -> StructuralSolver:
+        return self.simulation.solid_solver
+
+    @property
+    def fluid(self) -> PotentialPlaningSolver:
+        return self.simulation.fluid_solver
+
+    def plot_free_surface(self) -> None:
+        """Create a plot of the free surface profile."""
+        self.lineFS.set_data(self.fluid.x_coord_fs, self.fluid.z_coord_fs)
+        end_pts = np.array([config.plotting.x_fs_min, config.plotting.x_fs_max])
+        self.lineFSi.set_data(end_pts, config.flow.waterline_height * np.ones_like(end_pts))
+
+    def update(self) -> None:
         self.solid.plot()
-        self.fluid.plot_free_surface()
+        self.plot_free_surface()
         self.TXT.set_text(
-            (
-                r"Iteration {0}"
-                + "\n"
-                + r"$Fr={1:>8.3f}$"
-                + "\n"
-                + r"$\bar{{P_c}}={2:>8.3f}$"
-            ).format(config.it, config.flow.froude_num, config.body.PcBar)
+            "\n".join(
+                [
+                    f"Iteration {self.simulation.it}",
+                    f"$Fr={config.flow.froude_num:>8.3f}$",
+                    f"$\\bar{{P_c}}={config.body.PcBar:>8.3f}$",
+                ]
+            )
         )
 
         # Update each lower subplot
         for s in self.subplot:
             s.update(
                 self.solid.res < config.solver.max_residual
-                and config.it > config.solver.num_ramp_it
+                and self.simulation.it > config.solver.num_ramp_it
             )
 
         for l in self.lineCofR:
@@ -122,66 +142,68 @@ class FSIFigure:
         if config.plotting.save:
             self.save()
 
-    def writeTimeHistories(self):
+    def write_time_histories(self) -> None:
         for s in self.subplot:
             if isinstance(s, TimeHistory):
                 s.write()
 
-    def save(self):
+    def save(self) -> None:
         plt.savefig(
             os.path.join(
                 config.path.fig_dir_name,
-                "frame{1:04d}.{0}".format(config.plotting.fig_format, config.it),
+                "frame{1:04d}.{0}".format(config.plotting.fig_format, self.simulation.it),
             ),
             format=config.plotting.fig_format,
         )  # , dpi=300)
 
-    def show(self):
+    def show(self) -> None:
         plt.show(block=True)
 
 
 class PlotSeries:
-    def __init__(self, xFunc, yFunc, **kwargs):
-        self.x = []
-        self.y = []
-        self.additionalSeries = []
+    def __init__(
+        self, x_func: Callable[[], float], y_func: Callable[[], float], **kwargs: Any
+    ) -> None:
+        self.x: List[float] = []
+        self.y: List[float] = []
+        self.additionalSeries: List["PlotSeries"] = []
 
-        self.getX = xFunc
-        self.getY = yFunc
+        self.get_x = x_func
+        self.get_y = y_func
 
-        self.seriesType = kwargs.get("type", "point")
+        self.series_type = kwargs.get("type", "point")
         self.ax = kwargs.get("ax", plt.gca())
         self.legEnt = kwargs.get("legEnt", None)
-        self.ignoreFirst = kwargs.get("ignoreFirst", False)
+        self.ignore_first = kwargs.get("ignoreFirst", False)
 
         (self.line,) = self.ax.plot([], [], kwargs.get("sty", "k-"))
 
-        if self.seriesType == "history+curr":
+        if self.series_type == "history+curr":
             self.additionalSeries.append(
                 PlotSeries(
-                    xFunc,
-                    yFunc,
+                    x_func,
+                    y_func,
                     ax=self.ax,
                     type="point",
                     sty=kwargs.get("currSty", "ro"),
                 )
             )
 
-    def update(self, final=False):
-        if self.seriesType == "point":
-            self.x = self.getX()
-            self.y = self.getY()
+    def update(self, final: bool = False) -> None:
+        if self.series_type == "point":
+            self.x = [self.get_x()]
+            self.y = [self.get_y()]
             if final:
                 self.line.set_marker("*")
                 self.line.set_markerfacecolor("y")
                 self.line.set_markersize(10)
         else:
-            if self.ignoreFirst and self.getX() == 0:
+            if self.ignore_first and self.get_x() == 0:
                 self.x.append(np.nan)
                 self.y.append(np.nan)
             else:
-                self.x.append(self.getX())
-                self.y.append(self.getY())
+                self.x.append(self.get_x())
+                self.y.append(self.get_y())
 
         self.line.set_data(self.x, self.y)
 
@@ -190,42 +212,41 @@ class PlotSeries:
 
 
 class TimeHistory:
-    def __init__(self, pos, name="default"):
-        self.series = []
-        self.ax = []
+    def __init__(self, pos: List[float], name: str = "default") -> None:
+        self.series: List["PlotSeries"] = []
+        self.ax: List[Axes] = []
         self.title = ""
         self.xlabel = ""
         self.ylabel = ""
 
         self.name = name
 
-        self.addAxes(plt.axes(pos))
+        self.add_axes(plt.axes(pos))
 
-    def addAxes(self, ax):
+    def add_axes(self, ax: Axes) -> None:
         self.ax.append(ax)
 
-    def addYAxes(self):
-        self.addAxes(plt.twinx(self.ax[0]))
+    def add_y_axes(self) -> None:
+        self.add_axes(plt.twinx(self.ax[0]))
 
-    def addSeries(self, series):
+    def add_series(self, series: "PlotSeries") -> "PlotSeries":
         self.series.append(series)
         return series
 
-    def setProperties(self, axInd=0, **kwargs):
-        plt.setp(self.ax[axInd], **kwargs)
+    def set_properties(self, ax_ind: int = 0, **kwargs: Any) -> None:
+        plt.setp(self.ax[ax_ind], **kwargs)
 
-    def createLegend(self, axInd=0):
-        line, name = list(
-            zip(*[(s.line, s.legEnt) for s in self.series if s.legEnt is not None])
-        )
-        self.ax[axInd].legend(line, name, loc="lower left")
+    def create_legend(self, ax_ind: int = 0) -> None:
+        line, name = list(zip(*[(s.line, s.legEnt) for s in self.series if s.legEnt is not None]))
+        self.ax[ax_ind].legend(line, name, loc="lower left")
 
-    def update(self, final=False):
+    def update(self, final: bool = False) -> None:
+        """Update the figure."""
         for s in self.series:
             s.update(final)
 
         for ax in self.ax:
-            xMin, xMax = 0.0, config.it + 5
+            xMin, xMax = 0.0, 5  # config.it + 5
             yMin = np.nan
             for i, l in enumerate(ax.get_lines()):
                 y = l.get_data()[1]
@@ -234,7 +255,7 @@ class TimeHistory:
 
                 try:
                     y = y[np.ix_(~np.isnan(y))]
-                except:
+                except TypeError:
                     y = []
 
                 if not np.shape(y)[0] == 0:
@@ -250,32 +271,35 @@ class TimeHistory:
             if ~np.isnan(yMin) and ~np.isnan(yMax):
                 ax.set_ylim([yMin, yMax])
 
-    def write(self):
-        ff = open("{0}_timeHistories.txt".format(self.name), "w")
-        x = self.series[0].x
-        y = list(zip(*[s.y for s in self.series]))
+    def write(self) -> None:
+        with Path(f"{self.name}_timeHistories.txt").open("w") as ff:
+            x = self.series[0].x
+            y = list(zip(*[s.y for s in self.series]))
 
-        for xi, yi in zip(x, y):
-            ff.write("{0:4.0f}".format(xi))
-            for yii in yi:
-                ff.write(" {0:8.6e}".format(yii))
-            ff.write("\n")
-
-        ff.close()
+            for xi, yi in zip(x, y):
+                ff.write("{0:4.0f}".format(xi))
+                for yii in yi:
+                    ff.write(" {0:8.6e}".format(yii))
+                ff.write("\n")
 
 
 class MotionSubplot(TimeHistory):
-    def __init__(self, pos, body):
+    def __init__(self, pos: List[float], body: "rigid_body.RigidBody"):
         TimeHistory.__init__(self, pos, body.name)
 
-        itFunc = lambda: config.it
-        drftFunc = lambda: body.draft
-        trimFunc = lambda: body.trim
+        def itFunc() -> float:
+            return 0.0  # config.it
 
-        self.addYAxes()
+        def drftFunc() -> float:
+            return body.draft
+
+        def trimFunc() -> float:
+            return body.trim
+
+        self.add_y_axes()
 
         # Add plot series to appropriate axis
-        self.addSeries(
+        self.add_series(
             PlotSeries(
                 itFunc,
                 drftFunc,
@@ -285,7 +309,7 @@ class MotionSubplot(TimeHistory):
                 legEnt="Draft",
             )
         )
-        self.addSeries(
+        self.add_series(
             PlotSeries(
                 itFunc,
                 trimFunc,
@@ -296,25 +320,32 @@ class MotionSubplot(TimeHistory):
             )
         )
 
-        self.setProperties(
+        self.set_properties(
             title=r"Motion History: {0}".format(body.name),
             xlabel=r"Iteration",
             ylabel=r"$d$ [m]",
         )
-        self.setProperties(1, ylabel=r"$\theta$ [deg]")
-        self.createLegend()
+        self.set_properties(1, ylabel=r"$\theta$ [deg]")
+        self.create_legend()
 
 
 class ForceSubplot(TimeHistory):
-    def __init__(self, pos, body):
+    def __init__(self, pos: List[float], body: "rigid_body.RigidBody"):
         TimeHistory.__init__(self, pos, body.name)
 
-        itFunc = lambda: config.it
-        liftFunc = lambda: body.L / body.weight
-        dragFunc = lambda: body.D / body.weight
-        momFunc = lambda: body.M / (body.weight * config.body.reference_length)
+        def itFunc() -> float:
+            return 0.0  # config.it
 
-        self.addSeries(
+        def liftFunc() -> float:
+            return body.L / body.weight
+
+        def dragFunc() -> float:
+            return body.D / body.weight
+
+        def momFunc() -> float:
+            return body.M / (body.weight * config.body.reference_length)
+
+        self.add_series(
             PlotSeries(
                 itFunc,
                 liftFunc,
@@ -324,7 +355,7 @@ class ForceSubplot(TimeHistory):
                 ignoreFirst=True,
             )
         )
-        self.addSeries(
+        self.add_series(
             PlotSeries(
                 itFunc,
                 dragFunc,
@@ -334,7 +365,7 @@ class ForceSubplot(TimeHistory):
                 ignoreFirst=True,
             )
         )
-        self.addSeries(
+        self.add_series(
             PlotSeries(
                 itFunc,
                 momFunc,
@@ -345,23 +376,24 @@ class ForceSubplot(TimeHistory):
             )
         )
 
-        self.setProperties(
+        self.set_properties(
             title=r"Force & Moment History: {0}".format(body.name),
             #                       xlabel=r'Iteration', \
             ylabel=r"$\mathcal{D}/W$, $\mathcal{L}/W$, $\mathcal{M}/WL_c$",
         )
-        self.createLegend()
+        self.create_legend()
 
 
 class ResidualSubplot(TimeHistory):
-    def __init__(self, pos, solid):
+    def __init__(self, pos: List[float], solid: "StructuralSolver"):
         TimeHistory.__init__(self, pos, "residuals")
 
-        itFunc = lambda: config.it
+        def itFunc() -> float:
+            return 0.0  # config.it
 
         col = ["r", "b", "g"]
         for bd, coli in zip(solid.rigid_body, col):
-            self.addSeries(
+            self.add_series(
                 PlotSeries(
                     itFunc,
                     bd.get_res_lift,
@@ -371,7 +403,7 @@ class ResidualSubplot(TimeHistory):
                     ignoreFirst=True,
                 )
             )
-            self.addSeries(
+            self.add_series(
                 PlotSeries(
                     itFunc,
                     bd.get_res_moment,
@@ -382,7 +414,7 @@ class ResidualSubplot(TimeHistory):
                 )
             )
 
-        self.addSeries(
+        self.add_series(
             PlotSeries(
                 itFunc,
                 lambda: np.abs(solid.res),
@@ -393,12 +425,12 @@ class ResidualSubplot(TimeHistory):
             )
         )
 
-        self.setProperties(title=r"Residual History", yscale="log")
-        self.createLegend()
+        self.set_properties(title=r"Residual History", yscale="log")
+        self.create_legend()
 
 
 class CofRPlot:
-    def __init__(self, ax, body, **kwargs):
+    def __init__(self, ax: Axes, body: "rigid_body.RigidBody", **kwargs: Any):
         self.ax = ax
         self.body = body
         self.symbol = kwargs.get("symbol", True)
@@ -411,16 +443,44 @@ class CofRPlot:
             fcol = "k"
 
         (self.line,) = self.ax.plot([], [], style)
-        (self.lineCofG,) = self.ax.plot(
-            [], [], "k" + marker, markersize=8, markerfacecolor=fcol
-        )
+        (self.lineCofG,) = self.ax.plot([], [], "k" + marker, markersize=8, markerfacecolor=fcol)
         self.update()
 
-    def update(self):
-        l = config.plotting.CofR_grid_len
+    def update(self) -> None:
+        grid_len = config.plotting.CofR_grid_len
         c = np.array([self.body.xCofR, self.body.yCofR])
-        hvec = kp.rotateVec(np.array([0.5 * l, 0.0]), self.body.trim)
-        vvec = kp.rotateVec(np.array([0.0, 0.5 * l]), self.body.trim)
-        pts = [c - hvec, c + hvec, np.ones(2) * np.nan, c - vvec, c + vvec]
-        self.line.set_data(list(zip(*pts)))
+        hvec = trig.rotate_vec_2d(np.array([0.5 * grid_len, 0.0]), self.body.trim)
+        vvec = trig.rotate_vec_2d(np.array([0.0, 0.5 * grid_len]), self.body.trim)
+        pts = np.array([c - hvec, c + hvec, c, c - vvec, c + vvec])
+        self.line.set_data(pts.T)
         self.lineCofG.set_data(self.body.xCofG, self.body.yCofG)
+
+
+def plot_pressure(solver: PotentialPlaningSolver) -> None:
+    """Create a plot of the pressure and shear stress profiles."""
+    fig, ax = plt.subplots(1, 1, figsize=(5.0, 5.0))
+
+    for el in solver.pressure_elements:
+        ax.plot(*el.plot_coords, color=el.plot_color, linestyle="-")
+        ax.plot(el.x_coord * np.ones(2), [0.0, el.pressure], color=el.plot_color, linestyle="--")
+
+    ax.plot(solver.x_coord, solver.pressure, "k-")
+    # ax.plot(solver.x_coord, solver.shear_stress * 1000, "c--")
+
+    # Scale x and y axes
+    # for line in ax.lines:
+    #     x, y = line.get_data()
+    #     line.set_data(
+    #         x / (config.body.reference_length * 2), y / config.flow.stagnation_pressure,
+    #     )
+
+    ax.set_xlabel(r"$x\,\mathrm{[m]}$")
+    ax.set_ylabel(r"$p\,\mathrm{[kPa]}$")
+    # ax.set_xlabel(r"$x/L_i$")
+    # ax.set_ylabel(r"$p/(1/2\rho U^2)$")
+    ax.set_ylim(ymin=0.0)
+
+    fig.savefig(
+        f"pressureElements.{config.plotting.fig_format}",
+        format=config.plotting.fig_format,
+    )

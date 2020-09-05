@@ -1,24 +1,15 @@
 """Module containing definitions of different types of pressure element."""
+import abc
+from typing import Tuple, Any, Union
 
 import numpy as np
 from scipy.special import sici
 
-# TODO: Move all plotting commands to its own module
-try:
-    import matplotlib.pyplot as plt
-except ImportError:
-    plt = None
-    pass
-
-import planingfsi.config as config
-
-# import planingfsi.krampy as kp
+from . import pressurepatch
+from .. import config, general
 
 
-_PLOT_INFINITY = 50.0
-
-
-def _get_aux_fg(lam):
+def _get_aux_fg(lam: float) -> Tuple[float, float]:
     """Return f and g functions, which are dependent on the auxiliary
     sine and cosine functions. Combined into one function to reduce number of
     calls to scipy.special.sici().
@@ -32,19 +23,12 @@ def _get_aux_fg(lam):
     )
 
 
-def _get_gamma1(lam, aux_g):
+def _get_gamma1(lam: float, aux_g: float) -> float:
     """Return result of first integral (Gamma_1 in my thesis).
 
-    Args
-    ----
-    lam : float
-        Non-dimensional x-position.
-    aux_g : float
-        Second result of `_get_aux_fg`
-
-    Returns
-    -------
-    float
+    Args:
+        lam: Non-dimensional x-position.
+        aux_g: Second result of `_get_aux_fg`.
 
     """
     if lam > 0:
@@ -53,7 +37,7 @@ def _get_gamma1(lam, aux_g):
         return (aux_g + np.log(-lam)) / np.pi + (2 * np.sin(lam) - lam)
 
 
-def _get_gamma2(lam, aux_f):
+def _get_gamma2(lam: float, aux_f: float) -> float:
     """Return result of second integral (Gamma_2 in my thesis).
 
     Args
@@ -68,10 +52,10 @@ def _get_gamma2(lam, aux_f):
     float
 
     """
-    return kp.sign(lam) * aux_f / np.pi + kp.heaviside(-lam) * (2 * np.cos(lam) - 1)
+    return general.sign(lam) * aux_f / np.pi + general.heaviside(-lam) * (2 * np.cos(lam) - 1)
 
 
-def _get_gamma3(lam, aux_f):
+def _get_gamma3(lam: float, aux_f: float) -> float:
     """Return result of third integral (Gamma_3 in my thesis).
 
     Args
@@ -86,34 +70,13 @@ def _get_gamma3(lam, aux_f):
     float
     """
     return (
-        -kp.sign(lam) * aux_f / np.pi
-        - 2 * kp.heaviside(-lam) * np.cos(lam)
-        - kp.heaviside(lam)
+        -general.sign(lam) * aux_f / np.pi
+        - 2 * general.heaviside(-lam) * np.cos(lam)
+        - general.heaviside(lam)
     )
 
 
-def _eval_left_right(f, x, dx=1e-6):
-    """Evaluate a function by taking the average of the values just above and
-    below the x value. Used to avoid singularity/Inf/NaN.
-
-    Args
-    ----
-    f : function
-        Function handle.
-    x : float
-        Argument of function.
-    dx : float, optional
-        Step size.
-
-    Returns
-    ------
-    float : Function value.
-
-    """
-    return (f(x + dx) + f(x - dx)) / 2
-
-
-class PressureElement(object):
+class PressureElement(abc.ABC):
     """Abstract base class to represent all different types of pressure elements.
 
     Attributes
@@ -144,60 +107,69 @@ class PressureElement(object):
 
     """
 
+    plot_color = "b"
+
     def __init__(
         self,
-        x_coord=np.nan,
-        z_coord=np.nan,
-        pressure=np.nan,
-        shear_stress=0.0,
-        width=np.nan,
-        is_source=False,
-        is_on_body=False,
-        parent=None,
+        x_coord: float = np.nan,
+        z_coord: float = np.nan,
+        pressure: float = np.nan,
+        shear_stress: float = 0.0,
+        width: Union[np.ndarray, float] = np.nan,
+        is_source: bool = False,
+        is_on_body: bool = False,
+        parent: "pressurepatch.PressurePatch" = None,
     ):
-
-        # TODO: Replace x_coord with coord pointer to Coordinate object,
-        # (e.g. self.coords.x).
+        # TODO: Replace x_coord with coord pointer to Coordinate object, (e.g. self.coords.x)
         self.x_coord = x_coord
         self.z_coord = z_coord
         self._pressure = pressure
         self.shear_stress = shear_stress
         self._width = np.zeros(2)
         self.width = width
-        self.is_source = is_source
-        self.is_on_body = is_on_body
+        self.is_source: bool = is_source
+        self.is_on_body: bool = is_on_body
         self.parent = parent
 
     @property
-    def width(self):
-        return sum(self._width)
+    def width(self) -> float:
+        """The total width of the pressure element."""
+        return self._width.sum()
+
+    @width.setter
+    def width(self, width: float) -> None:
+        self._width[0] = width
 
     @property
-    def pressure(self):
+    def pressure(self) -> float:
+        """Return the element pressure."""
         return self._pressure
 
     @pressure.setter
-    def pressure(self, value):
+    def pressure(self, value: float) -> None:
         self._pressure = value
 
-    def get_influence_coefficient(self, x_coord):
+    def get_influence_coefficient(self, x_coord: float) -> float:
         """Return _get_local_influence_coefficient coefficient of element.
 
-        Args
-        ----
-        x_coord : float
-            Dimensional x-coordinate.
+        Args:
+            x_coord: Dimensional x-coordinate.
+
         """
         x_rel = x_coord - self.x_coord
         if self.width == 0.0:
             return 0.0
-        elif x_rel == 0.0 or x_rel == self._width[1] or x_rel == -self._width[0]:
-            influence = _eval_left_right(self._get_local_influence_coefficient, x_rel)
+        elif x_rel in [-self._width[0], 0.0, self._width[1]]:
+            dx = 1e-6
+            influence = 0.5 * (
+                self._get_local_influence_coefficient(x_rel + dx)
+                + self._get_local_influence_coefficient(x_rel - dx)
+            )
         else:
             influence = self._get_local_influence_coefficient(x_rel)
         return influence / (config.flow.density * config.flow.gravity)
 
-    def get_influence(self, x_coord):
+    def get_influence(self, x_coord: float) -> float:
         """Return _get_local_influence_coefficient for actual pressure.
 
         Args
@@ -207,7 +179,7 @@ class PressureElement(object):
         """
         return self.get_influence_coefficient(x_coord) * self.pressure
 
-    def _get_local_influence_coefficient(self, x_coord):
+    def _get_local_influence_coefficient(self, x_coord: float) -> float:
         """Return influence coefficient in iso-geometric coordinates. Each
         subclass must implement its own method.
 
@@ -218,13 +190,9 @@ class PressureElement(object):
         """
         pass
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         """Print element attributes."""
-        string = (
-            "{0}: (x,z) = ({1}, {2}), width = {3},"
-            "is_source = {4}, p = {5}, is_on_body = {6}"
-        )
-        return string.format(
+        return "{}: (x,z) = ({}, {}), width = {}, is_source = {}, p = {}, is_on_body = {}".format(
             self.__class__.__name__,
             self.x_coord,
             self.z_coord,
@@ -234,64 +202,46 @@ class PressureElement(object):
             self.is_on_body,
         )
 
-    def plot(self, x_coords, color="b"):
-        """Plot pressure element shape."""
-        _pressure = np.array([self.pressure(xi) for xi in x_coords])
-
-        plt.plot(x_coords, _pressure, color=color, linetype="-")
-        plt.plot(
-            self.x_coord * np.ones(2), [0.0, self.pressure], color=color, linetype="--"
-        )
+    @property
+    def plot_coords(self) -> Tuple[np.ndarray, np.ndarray]:
+        """Coordinates for pressure plot."""
+        return np.array([]), np.array([])
 
 
 class AftHalfTriangularPressureElement(PressureElement):
-    """Pressure element that is triangular in profile but towards aft
-    direction.
+    """Pressure element that is triangular in profile but towards aft direction."""
 
-    Args
-    ----
-    **kwargs
-        Same as PressureElement arguments, with the following defaults
-        overridden:
-            is_on_body : True
-    """
+    plot_color = "g"
 
-    def __init__(self, **kwargs):
-        kwargs["is_on_body"] = kwargs.get("is_on_body", True)
-        super().__init__(**kwargs)
+    def __init__(self, is_on_body: bool = True, **kwargs: Any) -> None:
+        # By default, this element is on the body.
+        super().__init__(is_on_body=is_on_body, **kwargs)
 
-    @PressureElement.width.setter
-    def width(self, width):
+    @property
+    def width(self) -> float:
+        """The total width of the pressure element."""
+        return super().width
+
+    @width.setter
+    def width(self, width: float) -> None:
         self._width[0] = width
 
-    @PressureElement.pressure.getter
-    def pressure(self, x_coord=None):
-        """Return shape of pressure profile."""
-        if x_coord is None:
-            return self._pressure
-
-        _x_rel = x_coord - self.x_coord
-        if _x_rel < -self.width or _x_rel > 0.0:
-            return 0.0
-        else:
-            return self._pressure * (1 + _x_rel / self.width)
-
-    def _get_local_influence_coefficient(self, x_rel):
+    def _get_local_influence_coefficient(self, x_rel: float) -> float:
+        """Get influence coefficient for element relative to the element position."""
         lambda_0 = config.flow.k0 * x_rel
         aux_f, aux_g = _get_aux_fg(lambda_0)
-        _influence = _get_gamma1(lambda_0, aux_g) / (self.width * config.flow.k0)
-        _influence += _get_gamma2(lambda_0, aux_f)
+        influence = _get_gamma1(lambda_0, aux_g) / (self.width * config.flow.k0)
+        influence += _get_gamma2(lambda_0, aux_f)
 
         lambda_2 = config.flow.k0 * (x_rel + self.width)
-        __, aux_g = _get_aux_fg(lambda_2)
-        _influence -= _get_gamma1(lambda_2, aux_g) / (self.width * config.flow.k0)
+        _, aux_g = _get_aux_fg(lambda_2)
+        influence -= _get_gamma1(lambda_2, aux_g) / (self.width * config.flow.k0)
+        return influence
 
-        return _influence
-
-    def plot(self):
-        """Plot pressure element shape."""
-        x_coords = self.x_coord - np.array([self.width, 0])
-        super().plot(x_coords, color="g")
+    @property
+    def plot_coords(self) -> Tuple[np.ndarray, np.ndarray]:
+        """Coordinates for pressure plot."""
+        return self.x_coord - np.array([self.width, 0]), np.array([0.0, self.pressure])
 
 
 class ForwardHalfTriangularPressureElement(PressureElement):
@@ -306,34 +256,25 @@ class ForwardHalfTriangularPressureElement(PressureElement):
             is_on_body : True
     """
 
-    def __init__(self, **kwargs):
-        kwargs["is_on_body"] = kwargs.get("is_on_body", True)
-        super().__init__(**kwargs)
+    def __init__(self, is_on_body: bool = True, **kwargs: Any) -> None:
+        # By default, this element is on the body.
+        super().__init__(is_on_body=is_on_body, **kwargs)
 
-    @PressureElement.width.setter
-    def width(self, width):
+    @property
+    def width(self) -> float:
+        """The total width of the pressure element."""
+        return super().width
+
+    @width.setter
+    def width(self, width: float) -> None:
         self._width[1] = width
 
-    @PressureElement.pressure.getter
-    def pressure(self, x_coord=None):
-        """Return shape of pressure profile."""
-        if x_coord is None:
-            return self._pressure
+    def _get_local_influence_coefficient(self, x_coord: float) -> float:
+        """Return _get_local_influence_coefficient coefficient in iso-geometric coordinates.
 
-        _x_rel = x_coord - self.x_coord
-        if _x_rel > self.width or _x_rel < 0.0:
-            return 0.0
-        else:
-            return self._pressure * (1 - _x_rel / self.width)
+        Args:
+            x_coord: x-coordinate, centered at element location.
 
-    def _get_local_influence_coefficient(self, x_coord):
-        """Return _get_local_influence_coefficient coefficient in iso-geometric
-        coordinates.
-
-        Args
-        ----
-        x_coord : float
-            x-coordinate, centered at element location.
         """
         lambda_0 = config.flow.k0 * x_coord
         aux_f, aux_g = _get_aux_fg(lambda_0)
@@ -345,10 +286,10 @@ class ForwardHalfTriangularPressureElement(PressureElement):
         influence -= _get_gamma1(lambda_1, aux_g) / (self.width * config.flow.k0)
         return influence
 
-    def plot(self):
-        """Plot pressure element shape."""
-        x_coords = self.x_coord + np.array([0, self.width])
-        super().plot(x_coords, color="b")
+    @property
+    def plot_coords(self) -> Tuple[np.ndarray, np.ndarray]:
+        """Coordinates for pressure plot."""
+        return self.x_coord + np.array([0.0, self.width]), np.array([self.pressure, 0.0])
 
 
 class CompleteTriangularPressureElement(PressureElement):
@@ -363,33 +304,27 @@ class CompleteTriangularPressureElement(PressureElement):
             is_on_body : True
     """
 
-    def __init__(self, **kwargs):
-        kwargs["is_on_body"] = kwargs.get("is_on_body", True)
-        kwargs["width"] = kwargs.get("width", np.zeros(2))
-        super().__init__(**kwargs)
+    plot_color = "r"
 
-    @PressureElement.width.setter
-    def width(self, width):
+    def __init__(
+        self, is_on_body: bool = True, width: np.ndarray = np.zeros(2), **kwargs: Any
+    ) -> None:
+        # By default, this element is on the body.
+        super().__init__(is_on_body=is_on_body, width=width, **kwargs)
+
+    @property
+    def width(self) -> float:
+        """The total width of the pressure element."""
+        return super().width
+
+    @width.setter
+    def width(self, width: np.ndarray) -> None:
         if not len(width) == 2:
             raise ValueError("Width must be length-two array")
         else:
             self._width = np.array(width)
 
-    @PressureElement.pressure.getter
-    def pressure(self, x_coord=None):
-        """Return shape of pressure profile."""
-        if x_coord is None:
-            return self._pressure
-
-        _x_rel = x_coord - self.x_coord
-        if _x_rel > self._width[1] or _x_rel < -self._width[0]:
-            return 0.0
-        elif _x_rel < 0.0:
-            return self._pressure * (1 + _x_rel / self._width[0])
-        else:
-            return self._pressure * (1 - _x_rel / self._width[1])
-
-    def _get_local_influence_coefficient(self, x_coord):
+    def _get_local_influence_coefficient(self, x_coord: float) -> float:
         """Return _get_local_influence_coefficient coefficient in iso-geometric
         coordinates.
 
@@ -400,11 +335,7 @@ class CompleteTriangularPressureElement(PressureElement):
         """
         lambda_0 = config.flow.k0 * x_coord
         _, aux_g = _get_aux_fg(lambda_0)
-        influence = (
-            _get_gamma1(lambda_0, aux_g)
-            * self.width
-            / (self._width[1] * self._width[0])
-        )
+        influence = _get_gamma1(lambda_0, aux_g) * self.width / (self._width[1] * self._width[0])
 
         lambda_1 = config.flow.k0 * (x_coord - self._width[1])
         _, aux_g = _get_aux_fg(lambda_1)
@@ -415,31 +346,19 @@ class CompleteTriangularPressureElement(PressureElement):
         influence -= _get_gamma1(lambda_2, aux_g) / self._width[0]
         return influence / config.flow.k0
 
-    def plot(self):
-        """Plot pressure element shape."""
-        x_coords = self.x_coord + np.array([-self._width[0], 0.0, self._width[1]])
-        super().plot(x_coords, color="r")
+    @property
+    def plot_coords(self) -> Tuple[np.ndarray, np.ndarray]:
+        """Coordinates for pressure plot."""
+        return (
+            self.x_coord + np.array([-self._width[0], 0.0, self._width[1]]),
+            np.array([0.0, self.pressure, 0.0]),
+        )
 
 
 class AftSemiInfinitePressureBand(PressureElement):
-    """Semi-infinite pressure band in aft direction.
+    """Semi-infinite pressure band in aft direction."""
 
-    Args
-    ----
-    **kwargs
-        Same as PressureElement arguments
-    """
-
-    @PressureElement.pressure.getter
-    def pressure(self, x_coord=0.0):
-        """Return shape of pressure profile."""
-        x_rel = x_coord - self.x_coord
-        if x_rel > 0.0:
-            return 0.0
-        else:
-            return self._pressure
-
-    def _get_local_influence_coefficient(self, x_coord):
+    def _get_local_influence_coefficient(self, x_coord: float) -> float:
         """Return _get_local_influence_coefficient coefficient in
         iso-geometric coordinates.
 
@@ -453,34 +372,21 @@ class AftSemiInfinitePressureBand(PressureElement):
         influence = _get_gamma2(lambda_0, aux_f)
         return influence
 
-    def plot(self):
-        """Plot pressure element shape."""
-        x_coords = self.x_coord + np.array([-_PLOT_INFINITY, 0])
-        super().plot(x_coords, color="r")
+    @property
+    def plot_coords(self) -> Tuple[np.ndarray, np.ndarray]:
+        """Coordinates for pressure plot."""
+        return (
+            np.array([config.plotting.x_fs_min, self.x_coord]),
+            np.array([self.pressure, self.pressure]),
+        )
 
 
 class ForwardSemiInfinitePressureBand(PressureElement):
-    """Semi-infinite pressure band in forward direction.
+    """Semi-infinite pressure band in forward direction."""
 
-    Args
-    ----
-    **kwargs
-        Same as PressureElement arguments
-    """
+    plot_color = "r"
 
-    @PressureElement.pressure.getter
-    def pressure(self, x_coord=None):
-        """Return shape of pressure profile."""
-        if x_coord is None:
-            return self._pressure
-
-        _x_rel = x_coord - self.x_coord
-        if _x_rel < 0.0:
-            return 0.0
-        else:
-            return self._pressure
-
-    def _get_local_influence_coefficient(self, x_coord):
+    def _get_local_influence_coefficient(self, x_coord: float) -> float:
         """Return _get_local_influence_coefficient coefficient in iso-geometric
         coordinates.
 
@@ -494,7 +400,10 @@ class ForwardSemiInfinitePressureBand(PressureElement):
         influence = _get_gamma3(lambda_0, aux_f)
         return influence
 
-    def plot(self):
-        """Plot pressure element shape."""
-        x_coords = self.x_coord + np.array([0, _PLOT_INFINITY])
-        super().plot(x_coords, color="r")
+    @property
+    def plot_coords(self) -> Tuple[np.ndarray, np.ndarray]:
+        """Coordinates for pressure plot."""
+        return (
+            np.array([self.x_coord, config.plotting.x_fs_max]),
+            np.array([self.pressure, self.pressure]),
+        )

@@ -1,33 +1,30 @@
+import abc
+from typing import List, Tuple, Any, Optional
+
 import numpy as np
-from scipy.interpolate import interp1d
 
-import planingfsi.config as config
-
-# import planingfsi.krampy as kp
+from . import substructure  # noqa: F401
+from .. import config, trig, general
 
 
 class Node:
-    obj = []
+    __all: List["Node"] = []
 
     @classmethod
-    def get_index(cls, ind):
-        return cls.obj[ind]
+    def get_index(cls, ind: int) -> "Node":
+        return cls.__all[ind]
 
     @classmethod
-    def All(cls):
-        return [o for o in cls.obj]
+    def all(cls) -> List["Node"]:
+        return list(cls.__all)
 
     @classmethod
-    def count(cls):
-        return len(cls.All())
+    def count(cls) -> int:
+        return len(cls.__all)
 
-    @classmethod
-    def find_nearest(cls):
-        return [o for o in cls.obj]
-
-    def __init__(self):
-        self.node_num = len(Node.obj)
-        Node.obj.append(self)
+    def __init__(self) -> None:
+        self.node_num = len(Node.__all)
+        Node.__all.append(self)
 
         self.x = 0.0
         self.y = 0.0
@@ -36,88 +33,91 @@ class Node:
         self.fixed_load = np.zeros(config.flow.num_dim)
         self.line_xy = None
 
-    def set_coordinates(self, x, y):
+    def set_coordinates(self, x: float, y: float) -> None:
         self.x = x
         self.y = y
 
-    def move_coordinates(self, dx, dy):
+    def move_coordinates(self, dx: float, dy: float) -> None:
         self.x += dx
         self.y += dy
 
-    def get_coordinates(self):
+    def get_coordinates(self) -> Tuple[float, float]:
         return self.x, self.y
 
-    def plot(self, sty=None):
+    def plot(self, _: str = None) -> None:
+        # TODO: Move to plotting module
         if self.line_xy is not None:
             self.line_xy.set_data(self.x, self.y)
 
 
-class Element:
-    obj = []
+class Element(abc.ABC):
+    __all: List["Element"] = []
 
-    def __init__(self):
-        self.element_num = len(Element.obj)
-        Element.obj.append(self)
+    def __init__(self) -> None:
+        self.element_num = len(Element.__all)
+        Element.__all.append(self)
 
-        # self.fluidS = []
-        # self.fluidP = []
-        self.node = [None] * 2
+        self.node: List[Node] = []
         self.dof = [0] * config.flow.num_dim
         self.length = 0.0
-        self.initial_length = None
-        self.qp = np.zeros((2))
-        self.qs = np.zeros((2))
+        self.initial_length: Optional[float] = None
+        self.qp = np.zeros((2,))
+        self.qs = np.zeros((2,))
 
         self.lineEl = None
         self.lineEl0 = None
         self.plot_on = True
 
-    def set_properties(self, **kwargs):
-        length = kwargs.get("length", None)
-        axialForce = kwargs.get("axialForce", None)
-        EA = kwargs.get("EA", None)
+        self.axial_force: Optional[float] = None
+        self.initial_axial_force: Optional[float] = None
+        self.EA: Optional[float] = None
 
-        if not length == None:
+        self.gamma = 0.0
+        self.init_pos: List[np.ndarray] = []
+
+        self.parent: Optional["substructure.Substructure"] = None
+
+    def set_properties(self, **kwargs: Any) -> None:
+        length = kwargs.get("length")
+        axial_force = kwargs.get("axialForce")
+        EA = kwargs.get("EA")
+
+        if length is not None:
             self.length = length
             self.initial_length = length
 
-        if not axialForce == None:
-            self.axial_force = axialForce
-            self.initial_axial_force = axialForce
+        if axial_force is not None:
+            self.axial_force = axial_force
+            self.initial_axial_force = axial_force
 
-        if not EA == None:
+        if EA is not None:
             self.EA = EA
 
-    def set_nodes(self, nodeList):
-        self.node = nodeList
+    def set_nodes(self, node_list: List[Node]) -> None:
+        self.node = node_list
         self.dof = [dof for nd in self.node for dof in nd.dof]
         self.update_geometry()
         self.init_pos = [np.array(nd.get_coordinates()) for nd in self.node]
 
-    def set_parent(self, parent):
-        self.parent = parent
-
-    def update_geometry(self):
+    def update_geometry(self) -> None:
+        # TODO: We can replace many of these with properties
         x = [nd.x for nd in self.node]
         y = [nd.y for nd in self.node]
 
         self.length = ((x[1] - x[0]) ** 2 + (y[1] - y[0]) ** 2) ** 0.5
         if self.initial_length is None:
             self.initial_length = self.length
-        self.gamma = kp.atand2(y[1] - y[0], x[1] - x[0])
+        self.gamma = trig.atand2(y[1] - y[0], x[1] - x[0])
 
-    def set_pressure_and_shear(self, qp, qs):
-        self.qp = qp
-        self.qs = qs
-
-    def plot(self):
+    def plot(self) -> None:
+        # TODO: Move to plotting module
         if self.lineEl is not None and self.plot_on:
             self.lineEl.set_data([nd.x for nd in self.node], [nd.y for nd in self.node])
 
         if self.lineEl0 is not None and self.plot_on:
-            basePt = [self.parent.parent.xCofR0, self.parent.parent.yCofR0]
+            base_pt = [self.parent.parent.xCofR0, self.parent.parent.yCofR0]
             pos = [
-                kp.rotatePt(pos, basePt, self.parent.parent.trim)
+                general.rotate_point(pos, base_pt, self.parent.parent.trim)
                 - np.array([0, self.parent.parent.draft])
                 for pos in self.init_pos
             ]
@@ -126,53 +126,54 @@ class Element:
 
 
 class TrussElement(Element):
-    def __init__(self):
-        Element.__init__(self)
+    def __init__(self) -> None:
+        super().__init__()
         self.initial_axial_force = 0.0
         self.EA = 0.0
 
-    def get_stiffness_and_force(self):
+    def get_stiffness_and_force(self) -> Tuple[np.ndarray, np.ndarray]:
         # Stiffness matrices in local coordinates
-        KL = (
+        stiffness_linear_local = (
             np.array([[1, 0, -1, 0], [0, 0, 0, 0], [-1, 0, 1, 0], [0, 0, 0, 0]])
             * self.EA
             / self.length
         )
 
-        KNL = (
+        stiffness_nonlinear_local = (
             np.array([[1, 0, -1, 0], [0, 1, 0, -1], [-1, 0, 1, 0], [0, -1, 0, 1]])
             * self.axial_force
             / self.length
         )
 
         # Force vectors in local coordinates
-        FL = np.array([[self.qs[0]], [self.qp[0]], [self.qs[1]], [self.qp[1]]])
-
-        FNL = np.array([[1], [0], [-1], [0]]) * self.axial_force
+        force_linear_local = np.array([[self.qs[0]], [self.qp[0]], [self.qs[1]], [self.qp[1]]])
+        force_nonlinear_local = np.array([[1], [0], [-1], [0]]) * self.axial_force
 
         # Add linear and nonlinear components
-        K = KL + KNL
-        F = FL + FNL
+        stiffness_total_local = stiffness_linear_local + stiffness_nonlinear_local
+        force_total_local = force_linear_local + force_nonlinear_local
 
         # Rotate stiffness and force matrices into global coordinates
-        C = kp.cosd(self.gamma)
-        S = kp.sind(self.gamma)
+        c, s = trig.cosd(self.gamma), trig.sind(self.gamma)
 
-        TM = np.array([[C, S, 0, 0], [-S, C, 0, 0], [0, 0, C, S], [0, 0, -S, C]])
+        transformation_matrix = np.array([[c, s, 0, 0], [-s, c, 0, 0], [0, 0, c, s], [0, 0, -s, c]])
 
-        K = np.dot(np.dot(TM.T, K), TM)
-        F = np.dot(TM.T, F)
+        stiffness_total_global = np.dot(
+            np.dot(transformation_matrix.T, stiffness_total_local), transformation_matrix
+        )
+        force_total_global = np.dot(transformation_matrix.T, force_total_local)
 
-        return K, F
+        return stiffness_total_global, force_total_global
 
-    def update_geometry(self):
+    def update_geometry(self) -> None:
         Element.update_geometry(self)
-        self.axial_force = (1 - config.ramp) * self.initial_axial_force + self.EA * (
+        assert self.initial_axial_force is not None
+        assert self.initial_length is not None
+        assert self.EA is not None
+        self.axial_force = (1.0 - config.ramp) * self.initial_axial_force + self.EA * (
             self.length - self.initial_length
         ) / self.initial_length
 
 
 class RigidElement(Element):
     pass
-    # def __init__(self):
-    # super().__init__(self)

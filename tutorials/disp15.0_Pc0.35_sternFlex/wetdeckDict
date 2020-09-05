@@ -1,0 +1,6 @@
+substructureName  : 'wetdeck'
+substructureType  : 'rigid'
+hasPlaningSurface : False
+cushionPressureType : 'Total'
+
+bodyName : 'sternSealBody'

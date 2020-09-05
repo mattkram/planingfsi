@@ -1,0 +1,7 @@
+pressureCushionName : 'main'
+cushionPressure : 'Pc'
+
+upstreamPlaningSurface : 'bowSealLower'
+downstreamPlaningSurface : 'sternSealLower'
+
+downstreamLoc : "1.5 * unit.inch"

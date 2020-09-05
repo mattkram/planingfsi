@@ -5,21 +5,42 @@ results from file. It reads the fluid and solid body properties from dictionary
 files, assembles the problem, and runs it.
 
 """
+from pathlib import Path
+from typing import Optional
 
 import click
-import krampy
+import click_log
 
-from . import config
-from . import logger
+from . import config, logger
 from .fe.femesh import Mesh
 from .fsi.simulation import Simulation
 
+click_log.basic_config(logger)
+
 
 @click.group(name="planingfsi", help="Run the PlaningFSI program")
-@click.option("post_mode", "--post", is_flag=True)
-@click.option("--plot_save", is_flag=True)
-@click.option("new_case", "--new", is_flag=True)
-def run_planingfsi(post_mode, plot_save, new_case):
+def cli() -> None:
+    pass
+
+
+@cli.command(name="run")
+@click.option(
+    "post_mode",
+    "--post",
+    is_flag=True,
+    help="Run in post-processing mode, loading results from file and generating figures.",
+)
+@click.option("--plot_save", is_flag=True, help="Save the plots to figures.")
+@click.option(
+    "new_case",
+    "--new",
+    is_flag=True,
+    help="Force generate new case, deleting old results first.",
+)
+def run_planingfsi(post_mode: bool, plot_save: bool, new_case: bool) -> None:
+    """Run the planingFSI solver."""
+    config.load_from_file("configDict")
+
     if post_mode:
         logger.info("Running in post-processing mode")
         config.plotting.save = True
@@ -29,25 +50,32 @@ def run_planingfsi(post_mode, plot_save, new_case):
         config.plotting.save = True
         config.plotting.plot_any = True
     if new_case:
-        krampy.rm_rf(krampy.find_files(config.path.case_dir, "[0-9]*"))
+        logger.info("Removing all time directories")
+        for it_dir in Path(config.path.case_dir).glob("[0-9]*"):
+            it_dir.unlink()
 
     simulation = Simulation()
     simulation.load_input_files()
     simulation.run()
 
 
-@run_planingfsi.command(name="mesh")
+@cli.command(name="mesh")
 @click.argument("mesh_dict", required=False)
 @click.option("plot_show", "--show", is_flag=True)
 @click.option("plot_save", "--save", is_flag=True)
 @click.option("--verbose", is_flag=True)
-def generate_mesh(mesh_dict, plot_show, plot_save, verbose):
-    if not mesh_dict:
+def generate_mesh(
+    mesh_dict: Optional[str], plot_show: bool, plot_save: bool, verbose: bool
+) -> None:
+    """Generate the initial mesh."""
+    if mesh_dict is not None:
         config.path.mesh_dict_dir = mesh_dict
 
-    mesh = Mesh()
+    if not Path(config.path.mesh_dict_dir).exists():
+        raise FileNotFoundError(f"File {config.path.mesh_dict_dir} does not exist")
 
-    exec(open(config.path.mesh_dict_dir).read())
+    mesh = Mesh()
+    exec(Path(config.path.mesh_dict_dir).open("r").read())
 
     mesh.display(disp=verbose)
     mesh.plot(show=plot_show, save=plot_save)

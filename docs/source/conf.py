@@ -23,7 +23,7 @@ here = os.path.dirname(__file__)
 src_dir = os.path.abspath(os.path.join(here, "..", "..", "src"))
 sys.path.insert(0, src_dir)
 
-import planingfsi
+import planingfsi  # noqa: E40
 
 # -- General configuration ------------------------------------------------
 
@@ -127,6 +127,11 @@ pygments_style = "sphinx"
 # If true, `todo` and `todoList` produce output, else they produce nothing.
 todo_include_todos = False
 
+autodoc_default_options = {
+    "members": None,
+    "undoc-members": None,
+    "show-inheritance": None,
+}
 
 # -- Options for HTML output ----------------------------------------------
 
