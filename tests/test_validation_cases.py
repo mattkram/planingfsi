@@ -42,13 +42,17 @@ def run_case(tmpdir: Path, validation_base_dir: Path) -> RunCaseFunction:
             except NotADirectoryError:
                 shutil.copyfile(source, destination)
         os.chdir(tmpdir)
-        cli_runner.invoke(cli, ["run"])
+
+        result = cli_runner.invoke(cli, ["mesh"])
+        assert result.exit_code == 0
+        result = cli_runner.invoke(cli, ["run"])
+        assert result.exit_code == 0
         return Path(tmpdir)
 
     return f
 
 
-@pytest.mark.parametrize("case_name", ("flat_plate",))
+@pytest.mark.parametrize("case_name", ("stepped_planing_plate",))
 def test_run_validation_case(run_case: RunCaseFunction, case_name: str) -> None:
 
     validation_items = run_case(case_name).glob(f"*{VALIDATED_EXTENSION}")

@@ -41,7 +41,7 @@ bodyDictDir            : './bodyDict'
 shearCalc : False
 writeInterval : 50
 
-plotSave  : True
-plotShow  : True
-plotWatch : True
-plotPressure : True
+plotSave  : False
+plotShow  : False
+plotWatch : False
+plotPressure : False

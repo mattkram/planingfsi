@@ -1,0 +1,8 @@
+Drag           : +2.03399088e+02
+WaveDrag       : +1.13928237e+02
+PressDrag      : +2.03399088e+02
+FricDrag       : +0.00000000e+00
+Lift           : +1.15353355e+03
+PressLift      : +1.15353355e+03
+FricLift       : +0.00000000e+00
+Moment         : -3.46919684e+01
