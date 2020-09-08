@@ -1,7 +1,7 @@
 import os
 import shutil
 from pathlib import Path
-from typing import Callable
+from typing import Callable, Tuple
 
 import pytest
 from click.testing import CliRunner
@@ -10,7 +10,7 @@ from planingfsi.cli import cli
 
 VALIDATED_EXTENSION = ".validated"
 
-RunCaseFunction = Callable[[str], Path]
+RunCaseFunction = Callable[[str], Tuple[Path, Path]]
 
 
 @pytest.fixture()
@@ -22,7 +22,7 @@ def run_case(tmpdir: Path, validation_base_dir: Path) -> RunCaseFunction:
 
     """
 
-    def f(case_name: str) -> Path:
+    def f(case_name: str) -> Tuple[Path, Path]:
         """Create a case runner for a specific case in a temporary directory and run planingfsi.
 
         Args:
@@ -36,6 +36,8 @@ def run_case(tmpdir: Path, validation_base_dir: Path) -> RunCaseFunction:
         cli_runner = CliRunner()
         case_base_dir = validation_base_dir / case_name
         for source in case_base_dir.glob("*"):
+            if source.suffix == VALIDATED_EXTENSION:
+                continue  # Don't copy validated files to the temporary directory
             destination = tmpdir / source.name
             try:
                 shutil.copytree(source, destination)
@@ -43,25 +45,23 @@ def run_case(tmpdir: Path, validation_base_dir: Path) -> RunCaseFunction:
                 shutil.copyfile(source, destination)
         os.chdir(tmpdir)
 
-        result = cli_runner.invoke(cli, ["mesh"])
-        assert result.exit_code == 0
-        result = cli_runner.invoke(cli, ["run"])
-        assert result.exit_code == 0
-        return Path(tmpdir)
+        assert cli_runner.invoke(cli, ["mesh"]).exit_code == 0
+        assert cli_runner.invoke(cli, ["run"]).exit_code == 0
+
+        return case_base_dir, Path(tmpdir)
 
     return f
 
 
 @pytest.mark.parametrize("case_name", ("stepped_planing_plate",))
 def test_run_validation_case(run_case: RunCaseFunction, case_name: str) -> None:
+    """For each results directory marked with a '.validated' suffix, check that all newly calculated files exist and
+    contents are identical."""
 
-    validation_items = run_case(case_name).glob(f"*{VALIDATED_EXTENSION}")
-    # For each validation item, recursively check all files exist and contents are identical
-    for item in validation_items:
-        new_item = item.with_suffix("")
-        assert new_item.exists()
-        for old_file in item.glob("*"):
-            new_file = new_item / old_file.name
-            assert new_file.exists()
-            with old_file.open() as fp, new_file.open() as gp:
+    orig_case_dir, new_case_dir = run_case(case_name)
+    for orig_results_dir in orig_case_dir.glob(f"*{VALIDATED_EXTENSION}"):
+        new_results_dir = (new_case_dir / orig_results_dir.name).with_suffix("")
+        for orig_results_file in orig_results_dir.iterdir():
+            new_results_file = new_results_dir / orig_results_file.name
+            with orig_results_file.open() as fp, new_results_file.open() as gp:
                 assert fp.read() == gp.read()
