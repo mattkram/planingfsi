@@ -1,6 +1,7 @@
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *$py.class
+.DS_Store
 
 # Distribution / packaging
 .Python
@@ -45,6 +46,7 @@ venv.bak/
 .*~
 *.swp
 .idea
+.vscode/
 
 # Documentation and wiki
 wiki/
