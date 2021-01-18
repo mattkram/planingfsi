@@ -30,25 +30,26 @@ def cli() -> None:
     is_flag=True,
     help="Run in post-processing mode, loading results from file and generating figures.",
 )
-@click.option("--plot_save", is_flag=True, help="Save the plots to figures.")
+@click.option("--plot-save", is_flag=True, help="Save the plots to figures.")
+@click.option("--plot-show", is_flag=True, help="Show the plots in a pop-up window.")
 @click.option(
     "new_case",
     "--new",
     is_flag=True,
     help="Force generate new case, deleting old results first.",
 )
-def run_planingfsi(post_mode: bool, plot_save: bool, new_case: bool) -> None:
+def run_planingfsi(post_mode: bool, plot_save: bool, plot_show: bool, new_case: bool) -> None:
     """Run the planingFSI solver."""
     config.load_from_file("configDict")
+
+    config.plotting.save = plot_save
+    config.plotting.show = plot_show
 
     if post_mode:
         logger.info("Running in post-processing mode")
         config.plotting.save = True
-        config.plotting.plot_any = True
         config.io.results_from_file = True
-    if plot_save:
-        config.plotting.save = True
-        config.plotting.plot_any = True
+
     if new_case:
         logger.info("Removing all time directories")
         for it_dir in Path(config.path.case_dir).glob("[0-9]*"):
