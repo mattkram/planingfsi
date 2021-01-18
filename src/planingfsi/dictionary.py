@@ -2,11 +2,12 @@ import json
 import os
 import re
 from pathlib import Path
-from typing import Dict, Any, Match, Union
+from typing import Any
+from typing import Dict
+from typing import Match
+from typing import Union
 
 from . import logger
-
-# noinspection PyUnresolvedReferences
 from . import unit  # noqa: F401
 
 __all__ = ["load_dict_from_file"]
