@@ -95,6 +95,8 @@ class SubConfig:
             filename: The path to the dictionary file.
 
         """
+        # Clear the attributes before loading the new ones
+        self.__dict__ = {}
         dict_ = load_dict_from_file(filename)
         for key, config_item in self.__class__.__dict__.items():
             if isinstance(config_item, ConfigItem):
@@ -556,21 +558,6 @@ def load_from_file(filename: Union[Path, str]) -> None:
         filename: The name of the file.
 
     """
-    # TODO: This is very hacky
-    global flow
-    global body
-    global plotting
-    global path
-    global io
-    global solver
-
-    flow = FlowConfig()
-    body = BodyConfig()
-    plotting = PlotConfig()
-    path = PathConfig()
-    io = IOConfig()
-    solver = SolverConfig()
-
     logger.info(f"Loading values from {filename}")
     for c in [flow, body, plotting, path, io, solver]:
         c.load_from_file(filename)
