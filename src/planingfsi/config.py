@@ -556,6 +556,21 @@ def load_from_file(filename: Union[Path, str]) -> None:
         filename: The name of the file.
 
     """
+    # TODO: This is very hacky
+    global flow
+    global body
+    global plotting
+    global path
+    global io
+    global solver
+
+    flow = FlowConfig()
+    body = BodyConfig()
+    plotting = PlotConfig()
+    path = PathConfig()
+    io = IOConfig()
+    solver = SolverConfig()
+
     logger.info(f"Loading values from {filename}")
     for c in [flow, body, plotting, path, io, solver]:
         c.load_from_file(filename)
