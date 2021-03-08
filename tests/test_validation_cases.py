@@ -71,8 +71,9 @@ def run_case(tmpdir: Path, validation_base_dir: Path) -> RunCaseFunction:
     (
         "flat_plate",
         "stepped_planing_plate",
+        "flexible_membrane",
     ),
-)  # "flexible_membrane")
+)
 def test_run_validation_case(run_case: RunCaseFunction, case_name: str) -> None:
     """For each results directory marked with a '.validated' suffix, check that all newly calculated files exist and
     contents are identical."""
