@@ -1,4 +1,4 @@
-from .dictionary import load_dict_from_file
+from planingfsi.dictionary import load_dict_from_file
 
 # Create submeshes
 dict_ = load_dict_from_file('configDict')
