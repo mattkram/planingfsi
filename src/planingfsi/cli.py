@@ -40,6 +40,7 @@ def cli() -> None:
 )
 def run_planingfsi(post_mode: bool, plot_save: bool, plot_show: bool, new_case: bool) -> None:
     """Run the planingFSI solver."""
+    _cleanup_globals()
     config.load_from_file("configDict")
 
     config.plotting.save = plot_save
@@ -69,6 +70,7 @@ def generate_mesh(
     mesh_dict: Optional[str], plot_show: bool, plot_save: bool, verbose: bool
 ) -> None:
     """Generate the initial mesh."""
+    _cleanup_globals()
     if mesh_dict is not None:
         config.path.mesh_dict_dir = mesh_dict
 
@@ -81,3 +83,26 @@ def generate_mesh(
     mesh.display(disp=verbose)
     mesh.plot(show=plot_show, save=plot_save)
     mesh.write()
+
+
+def _cleanup_globals() -> None:
+    """Clear out class-global lists, which causes trouble when running the program multiple times during the same
+    testing session.
+
+    This should be removed after the globals are factored out.
+
+    """
+    from planingfsi.fe.felib import Element
+    from planingfsi.fe.felib import Node
+    from planingfsi.fe.femesh import Curve
+    from planingfsi.fe.femesh import Line
+    from planingfsi.fe.femesh import Mesh
+    from planingfsi.fe.femesh import Point
+    from planingfsi.fe.femesh import Shape
+
+    Shape._Shape__all = []
+    Point._Point__all = []
+    Curve._Curve__all = []
+    Line._Line__all = []
+    Node._Node__all = []
+    Element._Element__all = []

@@ -32,8 +32,6 @@ def run_case(tmpdir: Path, validation_base_dir: Path) -> RunCaseFunction:
             The path to the temporary case directory.
 
         """
-
-        cli_runner = CliRunner()
         case_base_dir = validation_base_dir / case_name
         for source in case_base_dir.glob("*"):
             if source.suffix == VALIDATED_EXTENSION:
@@ -45,8 +43,23 @@ def run_case(tmpdir: Path, validation_base_dir: Path) -> RunCaseFunction:
                 shutil.copyfile(source, destination)
         os.chdir(tmpdir)
 
+        cli_runner = CliRunner()
         assert cli_runner.invoke(cli, ["mesh"]).exit_code == 0
         assert cli_runner.invoke(cli, ["run"]).exit_code == 0
+
+        # This is the leftover module-centric way to run the CLI invoked above
+        # config.load_from_file("configDict")
+        #
+        # mesh = Mesh()
+        # exec(Path(config.path.mesh_dict_dir).open("r").read())
+        #
+        # mesh.display()
+        # mesh.plot()
+        # mesh.write()
+        #
+        # simulation = Simulation()
+        # simulation.load_input_files()
+        # simulation.run()
 
         return case_base_dir, Path(tmpdir)
 
