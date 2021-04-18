@@ -32,9 +32,9 @@ pScalePct  : 0.1
 forceBasePct  : 0.05
 forceScalePct : 0.05
 
-inputDictDir           : '../inputDict'
+inputDictDir           : './inputDict'
 meshDir                : './mesh'
-meshDictDir            : '../meshDict'
+meshDictDir            : './meshDict'
 pressureCushionDictDir : './pressureCushion'
 bodyDictDir            : './bodyDict'
 

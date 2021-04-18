@@ -95,6 +95,8 @@ class SubConfig:
             filename: The path to the dictionary file.
 
         """
+        # Clear the attributes before loading the new ones
+        self.__dict__ = {}
         dict_ = load_dict_from_file(filename)
         for key, config_item in self.__class__.__dict__.items():
             if isinstance(config_item, ConfigItem):

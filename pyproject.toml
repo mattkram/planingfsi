@@ -5,13 +5,13 @@ description = "Fluid-Structure Interaction for large deformation planing surface
 readme = "README.md"
 authors = ["Matt Kramer <matthew.robert.kramer@gmail.com>"]
 license = "MIT"
-repository = "https://bitbucket.org/mattkram/planingfsi"
+repository = "https://github.com/mattkram/planingfsi"
 documentation = "https://planingfsi.readthedocs.io"
 classifiers = [
     "License :: OSI Approved :: MIT License",
     "Programming Language :: Python",
     "Programming Language :: Python :: 3",
-    "Programming Language :: Python :: 3.7",
+    "Programming Language :: Python :: 3.8",
     "Topic :: Scientific/Engineering",
 ]
 packages = [
@@ -19,10 +19,10 @@ packages = [
 ]
 
 [tool.poetry.dependencies]
-python = "^3.6"
+python = "^3.8"
 matplotlib = "^3.0"
 numpy = "^1.15"
-scipy = "^1.2"
+scipy = "^1.6"
 six = "^1.12"
 click = "^7.0"
 mypy = "^0.740.0"
@@ -39,7 +39,7 @@ tox = "^3.6"
 mypy = "^0.740.0"
 
 [tool.poetry.scripts]
-planingfsi = "planingfsi:cli.cli"
+planingfsi = "planingfsi.cli:cli"
 
 [tool.black]
 line-length = 100

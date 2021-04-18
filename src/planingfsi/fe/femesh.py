@@ -198,7 +198,7 @@ class Submesh(Mesh):
         for pt in curve.pt:
             pt.set_used()
 
-        self.line += [l for l in curve.get_lines()]
+        self.line += [line for line in curve.get_lines()]
 
         return curve
 
@@ -206,7 +206,7 @@ class Submesh(Mesh):
         """Write the submesh to file."""
         if self.line:
             pt_l, pt_r = list(
-                zip(*[[pt.get_index() for pt in l.get_element_coords()] for l in self.line])
+                zip(*[[pt.get_index() for pt in line.get_element_coords()] for line in self.line])
             )
             write_as_list(
                 os.path.join(config.path.mesh_dir, "elements_{0}.txt".format(self.name)),
