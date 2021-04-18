@@ -86,23 +86,23 @@ def generate_mesh(
 
 
 def _cleanup_globals() -> None:
-    """Clear out class-global lists, which causes trouble when running the program multiple times during the same
-    testing session.
+    """Clear out class-global lists, which causes trouble when running the program multiple times
+    during the same testing session.
 
-    This should be removed after the globals are factored out.
+    Todo:
+        * This should be removed after the globals are factored out.
 
     """
     from planingfsi.fe.felib import Element
     from planingfsi.fe.felib import Node
     from planingfsi.fe.femesh import Curve
     from planingfsi.fe.femesh import Line
-    from planingfsi.fe.femesh import Mesh
     from planingfsi.fe.femesh import Point
     from planingfsi.fe.femesh import Shape
 
-    Shape._Shape__all = []
-    Point._Point__all = []
-    Curve._Curve__all = []
-    Line._Line__all = []
-    Node._Node__all = []
-    Element._Element__all = []
+    Shape._Shape__all = []  # type: ignore
+    Point._Point__all = []  # type: ignore
+    Curve._Curve__all = []  # type: ignore
+    Line._Line__all = []  # type: ignore
+    Node._Node__all = []  # type: ignore
+    Element._Element__all = []  # type: ignore

@@ -134,8 +134,8 @@ class FSIFigure:
                 and self.simulation.it > config.solver.num_ramp_it
             )
 
-        for l in self.lineCofR:
-            l.update()
+        for line in self.lineCofR:
+            line.update()
 
         plt.draw()
 

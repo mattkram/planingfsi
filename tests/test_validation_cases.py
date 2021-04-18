@@ -17,8 +17,8 @@ RunCaseFunction = Callable[[str], Tuple[Path, Path]]
 def run_case(tmpdir: Path, validation_base_dir: Path) -> RunCaseFunction:
     """A function which is used to run a specific validation case.
 
-    The case runner executes in in a temporary directory with input files and results copied into it from the base
-    directory.
+    The case runner executes in in a temporary directory with input files and results copied into it
+    from the base directory.
 
     """
 
@@ -75,8 +75,8 @@ def run_case(tmpdir: Path, validation_base_dir: Path) -> RunCaseFunction:
     ),
 )
 def test_run_validation_case(run_case: RunCaseFunction, case_name: str) -> None:
-    """For each results directory marked with a '.validated' suffix, check that all newly calculated files exist and
-    contents are identical."""
+    """For each results directory marked with a '.validated' suffix, check that all newly calculated
+    files exist and contents are identical."""
 
     orig_case_dir, new_case_dir = run_case(case_name)
     for orig_results_dir in orig_case_dir.glob(f"*{VALIDATED_EXTENSION}"):
