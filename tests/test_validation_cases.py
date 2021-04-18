@@ -83,5 +83,21 @@ def test_run_validation_case(run_case: RunCaseFunction, case_name: str) -> None:
         new_results_dir = (new_case_dir / orig_results_dir.name).with_suffix("")
         for orig_results_file in orig_results_dir.iterdir():
             new_results_file = new_results_dir / orig_results_file.name
-            with orig_results_file.open() as fp, new_results_file.open() as gp:
-                assert fp.read() == gp.read()
+            assert_files_almost_equal(orig_results_file, new_results_file)
+
+
+def assert_files_almost_equal(orig_file: Path, new_file: Path) -> None:
+    """Read two files line-by-line, convert any float-like number to a float in each line, and then
+    compare each list of floats using pytest.approx."""
+    with orig_file.open() as fp, new_file.open() as gp:
+        for f_line, g_line in zip(fp.readlines(), gp.readlines()):
+            f_values, g_values = [], []
+            for f_str, g_str in zip(f_line.split(), g_line.split()):
+                try:
+                    f_val = float(f_str)
+                    g_val = float(g_str)
+                except ValueError:
+                    continue
+                f_values.append(f_val)
+                g_values.append(g_val)
+            assert f_values == pytest.approx(g_values)
