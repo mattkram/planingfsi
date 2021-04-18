@@ -23,45 +23,33 @@ def run_case(tmpdir: Path, validation_base_dir: Path) -> RunCaseFunction:
     """
 
     def f(case_name: str) -> Tuple[Path, Path]:
-        """Create a case runner for a specific case in a temporary directory and run planingfsi.
+        """Copy all input files from the base directory into the case directory and run the `mesh`
+        and `run` CLI subcommands.
 
         Args:
             case_name: The name of the case directory within the validation base directory.
 
         Returns:
-            The path to the temporary case directory.
+            The paths to the original and new case directories.
 
         """
-        case_base_dir = validation_base_dir / case_name
-        for source in case_base_dir.glob("*"):
+        orig_case_dir = validation_base_dir / case_name
+        new_case_dir = Path(tmpdir)
+        for source in orig_case_dir.glob("*"):
             if source.suffix == VALIDATED_EXTENSION:
                 continue  # Don't copy validated files to the temporary directory
-            destination = tmpdir / source.name
+            destination = new_case_dir / source.name
             try:
                 shutil.copytree(source, destination)
             except NotADirectoryError:
                 shutil.copyfile(source, destination)
-        os.chdir(tmpdir)
+        os.chdir(new_case_dir)
 
         cli_runner = CliRunner()
         assert cli_runner.invoke(cli, ["mesh"]).exit_code == 0
         assert cli_runner.invoke(cli, ["run"]).exit_code == 0
 
-        # This is the leftover module-centric way to run the CLI invoked above
-        # config.load_from_file("configDict")
-        #
-        # mesh = Mesh()
-        # exec(Path(config.path.mesh_dict_dir).open("r").read())
-        #
-        # mesh.display()
-        # mesh.plot()
-        # mesh.write()
-        #
-        # simulation = Simulation()
-        # simulation.load_input_files()
-        # simulation.run()
-
-        return case_base_dir, Path(tmpdir)
+        return orig_case_dir, new_case_dir
 
     return f
 
