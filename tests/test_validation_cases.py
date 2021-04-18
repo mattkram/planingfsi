@@ -1,12 +1,12 @@
 import os
 import shutil
 from pathlib import Path
-from typing import Callable, Tuple
+from typing import Callable
+from typing import Tuple
 
 import pytest
 from click.testing import CliRunner
 from planingfsi.cli import cli
-
 
 VALIDATED_EXTENSION = ".validated"
 
@@ -19,6 +19,14 @@ def run_case(tmpdir: Path, validation_base_dir: Path) -> RunCaseFunction:
 
     The case runner executes in in a temporary directory with input files and results copied into it
     from the base directory.
+
+    Args:
+        tmpdir: A temporary case directory in which to run.
+        validation_base_dir: The base path holding the validation cases.
+
+    Returns:
+        function: A function accepting a string which identifies the folder within
+        "validation_cases" to run.
 
     """
 
