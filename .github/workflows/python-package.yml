@@ -56,3 +56,4 @@ jobs:
         codecov -t $CODECOV_TOKEN
       env:
         CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
+      if: ${{ always() }}
