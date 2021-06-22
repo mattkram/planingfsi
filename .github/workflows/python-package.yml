@@ -61,7 +61,7 @@ jobs:
           mypy
 
   test:
-    needs: linting
+    needs: [lint, type-check]
     strategy:
       fail-fast: true
       matrix:
