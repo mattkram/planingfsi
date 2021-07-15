@@ -125,7 +125,7 @@ jobs:
         if: ${{ always() }}
 
   publish:
-    if: success() && github.ref == 'refs/heads/main'
+    if: startsWith(github.ref, 'refs/tags/v')
     needs: [test]
     runs-on: ubuntu-latest
 

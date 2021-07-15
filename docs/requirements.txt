@@ -1,4 +1,6 @@
-m2r
+m2r2
 poetry
 sphinx
+sphinx_autodoc_typehints
 sphinx-rtd-theme
+toml
