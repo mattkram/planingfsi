@@ -136,12 +136,31 @@ jobs:
     steps:
       - name: Check out repository
         uses: actions/checkout@v2
-      - name: Build and publish to pypi
-        uses: JRubics/poetry-publish@v1.6
+      - name: Set up python 3.8
+        uses: actions/setup-python@v2
         with:
-          python_version: '3.8'
-          poetry_version: '==1.1.4'  # (PIP version specifier syntax)
-          pypi_token: ${{ secrets.TEST_PYPI_TOKEN }}
-          repository_name: 'testpypi'
-          repository_url: 'https://test.pypi.org/legacy/'
-          ignore_dev_requirements: "yes"
+          python-version: 3.8
+      - name: Install Poetry
+        uses: snok/install-poetry@v1.1.6
+        with:
+          virtualenvs-create: true
+          virtualenvs-in-project: true
+      - name: Install package dependencies
+        run: poetry install --no-dev
+      - name: Configure repository and credentials
+        run: |
+          poetry config pypi-token.pypi-test ${{ secrets.TEST_PYPI_TOKEN }}
+          poetry config repositories.pypi-test https://test.pypi.org/legacy/
+      - name: Build package
+        run: poetry build
+      - name: Publish package
+        run: poetry publish --repository pypi-test
+#      - name: Build and publish to pypi
+#        uses: JRubics/poetry-publish@v1.6
+#        with:
+#          python_version: '3.8'
+#          poetry_version: '==1.1.4'  # (PIP version specifier syntax)
+#          pypi_token: ${{ secrets.TEST_PYPI_TOKEN }}
+#          repository_name: 'testpypi'
+#          repository_url: 'https://test.pypi.org/legacy/'
+#          ignore_dev_requirements: "yes"
