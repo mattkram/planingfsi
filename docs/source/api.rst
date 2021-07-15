@@ -1,107 +1,92 @@
-=================
-API Documentation
-=================
+========================
+planingfsi documentation
+========================
 
 .. contents::
    :local:
 
-planingfsi package
-==================
+planingfsi
+==========
 
 .. automodule:: planingfsi
 
-planingfsi.config module
-------------------------
+planingfsi.config
+-----------------
 
 .. automodule:: planingfsi.config
    :no-members:
 
-.. autoclass:: planingfsi.config.FlowConfig
-
-.. autoclass:: planingfsi.config.BodyConfig
-
-.. autoclass:: planingfsi.config.PlotConfig
-
-.. autoclass:: planingfsi.config.IOConfig
-
-.. autoclass:: planingfsi.config.SolverConfig
-
-planingfsi.dictionary module
-----------------------------
+planingfsi.dictionary
+---------------------
 
 .. automodule:: planingfsi.dictionary
 
-planingfsi.solver module
-------------------------
+planingfsi.solver
+-----------------
 
 .. automodule:: planingfsi.solver
 
-planingfsi.trig module
-----------------------
+planingfsi.trig
+---------------
 
 .. automodule:: planingfsi.trig
 
-planingfsi.util module
-----------------------
-
-.. automodule:: planingfsi.util
-
-planingfsi.fe package
-=====================
+planingfsi.fe
+-------------
 
 .. automodule:: planingfsi.fe
 
-planingfsi.fe.felib module
---------------------------
+planingfsi.fe.felib
+^^^^^^^^^^^^^^^^^^^
 
 .. automodule:: planingfsi.fe.felib
 
-planingfsi.fe.femesh module
----------------------------
+planingfsi.fe.femesh
+^^^^^^^^^^^^^^^^^^^^
 
 .. automodule:: planingfsi.fe.femesh
 
-planingfsi.fe.structure module
-------------------------------
+planingfsi.fe.structure
+^^^^^^^^^^^^^^^^^^^^^^^
 
 .. automodule:: planingfsi.fe.structure
 
-planingfsi.fsi package
-======================
+planingfsi.fsi
+--------------
 
 .. automodule:: planingfsi.fsi
 
-planingfsi.fsi.figure module
--------------------------------
+planingfsi.fsi.figure
+^^^^^^^^^^^^^^^^^^^^^
 
 .. automodule:: planingfsi.fsi.figure
 
-planingfsi.fsi.interpolator module
--------------------------------------
+planingfsi.fsi.interpolator
+^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 .. automodule:: planingfsi.fsi.interpolator
 
-planingfsi.fsi.simulation module
------------------------------------
+planingfsi.fsi.simulation
+^^^^^^^^^^^^^^^^^^^^^^^^^
 
 .. automodule:: planingfsi.fsi.simulation
 
-planingfsi.potentialflow package
-================================
+planingfsi.potentialflow
+------------------------
 
 .. automodule:: planingfsi.potentialflow
 
-planingfsi.potentialflow.pressureelement module
------------------------------------------------
+planingfsi.potentialflow.pressureelement
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 .. automodule:: planingfsi.potentialflow.pressureelement
 
-planingfsi.potentialflow.pressurepatch module
----------------------------------------------
+planingfsi.potentialflow.pressurepatch
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 .. automodule:: planingfsi.potentialflow.pressurepatch
 
-planingfsi.potentialflow.solver module
---------------------------------------
+planingfsi.potentialflow.solver
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 .. automodule:: planingfsi.potentialflow.solver
