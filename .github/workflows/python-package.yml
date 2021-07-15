@@ -129,7 +129,7 @@ jobs:
         if: ${{ always() }}
 
   publish:
-    if: success() #&& github.ref == 'refs/heads/master'
+    if: success() && github.ref == 'refs/heads/master'
     needs: [test]
     runs-on: ubuntu-latest
 
@@ -147,11 +147,9 @@ jobs:
           virtualenvs-in-project: true
       - name: Install package dependencies
         run: poetry install --no-dev
-      - name: Configure repository and credentials
-        run: |
-          poetry config pypi-token.pypi-test ${{ secrets.TEST_PYPI_TOKEN }}
-          poetry config repositories.pypi-test https://test.pypi.org/legacy/
       - name: Build package
         run: poetry build
       - name: Publish package
-        run: poetry publish --repository pypi-test
+        run: |
+          poetry config pypi-token.pypi ${{ secrets.PYPI_TOKEN }}
+          poetry publish
