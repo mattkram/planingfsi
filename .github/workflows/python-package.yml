@@ -125,7 +125,7 @@ jobs:
         if: ${{ always() }}
 
   publish:
-    if: success() && github.ref == 'refs/heads/master'
+    if: success() && github.ref == 'refs/heads/main'
     needs: [test]
     runs-on: ubuntu-latest
 
