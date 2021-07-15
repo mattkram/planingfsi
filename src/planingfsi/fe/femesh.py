@@ -277,11 +277,11 @@ class Shape:
 
     @abc.abstractmethod
     def display(self) -> None:
-        return NotImplemented
+        raise NotImplementedError
 
     @abc.abstractmethod
     def plot(self) -> None:
-        return NotImplemented
+        raise NotImplementedError
 
 
 class Point(Shape):

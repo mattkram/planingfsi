@@ -429,7 +429,7 @@ class Substructure(abc.ABC):
 
     @abc.abstractmethod
     def set_fixed_dof(self) -> None:
-        return NotImplemented
+        raise NotImplementedError
 
 
 class FlexibleSubstructure(Substructure):

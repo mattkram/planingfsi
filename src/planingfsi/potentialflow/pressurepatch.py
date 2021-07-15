@@ -127,7 +127,7 @@ class PressurePatch(abc.ABC):
     @abc.abstractmethod
     def calculate_forces(self) -> None:
         """Calculate the force components for this pressure patch."""
-        return NotImplemented
+        raise NotImplementedError
 
     def _calculate_wave_drag(self) -> float:
         """Calculate wave drag of patch."""
