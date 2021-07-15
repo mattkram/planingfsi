@@ -2,3 +2,4 @@ m2r2
 poetry
 sphinx
 sphinx-rtd-theme
+toml

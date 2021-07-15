@@ -16,8 +16,10 @@
 # add these directories to sys.path here. If the directory is relative to the
 # documentation root, use os.path.abspath to make it absolute, like shown here.
 #
-import importlib.metadata
+from pathlib import Path
 from datetime import datetime
+
+import toml
 
 # -- General configuration ------------------------------------------------
 
@@ -67,7 +69,8 @@ author = "Matthew R. Kramer"
 # built documents.
 #
 # The short X.Y version.
-version = importlib.metadata.version("planingfsi")
+with (Path(__file__).parents[2] / "pyproject.toml").open("r") as fp:
+    version = toml.load(fp)["tool"]["poetry"]["version"]
 
 # The full version, including alpha/beta/rc tags.
 release = version
