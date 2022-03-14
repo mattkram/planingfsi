@@ -176,12 +176,12 @@ class FlowConfig(SubConfig):
     @property
     def stagnation_pressure(self) -> float:
         """float: The pressure at the stagnation point."""
-        return 0.5 * self.density * self.flow_speed ** 2
+        return 0.5 * self.density * self.flow_speed**2
 
     @property
     def k0(self) -> float:
         """float: A wave number used internally in the potential-flow solver."""
-        return self.gravity / self.flow_speed ** 2
+        return self.gravity / self.flow_speed**2
 
     @property
     def lam(self) -> float:

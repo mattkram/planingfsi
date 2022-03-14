@@ -555,7 +555,7 @@ class PlaningSurface(PressurePatch):
         def get_shear_stress(xx: float) -> float:
             """Calculate the shear stress at a given location."""
             re_x = config.flow.flow_speed * xx / config.flow.kinematic_viscosity
-            return 0.332 * config.flow.density * config.flow.flow_speed ** 2 * re_x ** -0.5
+            return 0.332 * config.flow.density * config.flow.flow_speed**2 * re_x**-0.5
 
         x = self.get_element_coords()[:-1]
         assert self.interpolator is not None

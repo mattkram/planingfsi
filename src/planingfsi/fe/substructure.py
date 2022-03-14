@@ -250,7 +250,7 @@ class Substructure(abc.ABC):
                 air_p += [Pc - self.seal_pressure for _ in node_s[1:]]
 
             # Apply ramp to hydrodynamic pressure
-            pressure_fluid *= config.ramp ** 2
+            pressure_fluid *= config.ramp**2
 
             # Add external cushion pressure to external fluid pressure
             pressure_cushion = np.zeros_like(s)
@@ -688,7 +688,7 @@ class TorsionalSpringSubstructure(FlexibleSubstructure, RigidSubstructure):
             airP += [Pc - self.seal_pressure for _ in node_s[1:]]
 
             # Apply ramp to hydrodynamic pressure
-            pressure_fluid *= config.ramp ** 2
+            pressure_fluid *= config.ramp**2
 
             # Add external cushion pressure to external fluid pressure
             pressure_cushion = np.zeros_like(s)
