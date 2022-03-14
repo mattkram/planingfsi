@@ -12,34 +12,28 @@ classifiers = [
     "Programming Language :: Python",
     "Programming Language :: Python :: 3",
     "Programming Language :: Python :: 3.8",
+    "Programming Language :: Python :: 3.9",
     "Topic :: Scientific/Engineering",
 ]
 packages = [
     { include = "planingfsi", from = "src" },
 ]
 
-[tool.poetry.dependencies]
-python = "^3.8"
-matplotlib = "^3.0"
-numpy = "^1.15"
-scipy = "^1.5"
-six = "^1.12"
-click = "^8.0"
-click-log = "^0.3.2"
-
-[tool.poetry.dev-dependencies]
-black = "^22.1.0"
-codecov = "^2.1.11"
-coverage = "^4.5"
-flake8 = "^3.7"
-mypy = "^0.740.0"
-pytest = "^4.0"
-pytest-cov = "^2.6"
-pytest-flake8 = "^1.0"
-tox = "^3.6"
-
 [tool.poetry.scripts]
 planingfsi = "planingfsi.cli:cli"
+
+[tool.poetry.dependencies]
+python = ">=3.8,<3.11"
+matplotlib = "^3.0"
+numpy = "^1.15"
+scipy = "^1.8.0"
+click = "^8.0"
+click-log = "^0.4.0"
+
+[tool.poetry.dev-dependencies]
+codecov = "^2.1.11"
+pytest = "^7.1.0"
+pytest-cov = "^3.0.0"
 
 [tool.black]
 line-length = 100
