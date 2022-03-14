@@ -28,7 +28,7 @@ matplotlib = "^3.0"
 numpy = "^1.15"
 scipy = "^1.5"
 click = "^8.0"
-click-log = "^0.3.2"
+click-log = "^0.4.0"
 
 [tool.poetry.dev-dependencies]
 codecov = "^2.1.11"
