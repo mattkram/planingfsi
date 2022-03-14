@@ -1,5 +1,6 @@
 """Solvers for single and multi-dimensional nonlinear problems."""
-from typing import Callable, Any
+from typing import Any
+from typing import Callable
 
 import numpy
 

@@ -1,13 +1,22 @@
 import abc
 from pathlib import Path
-from typing import List, Dict, Any, Optional, Tuple, Type, Callable, Iterable
+from typing import Any
+from typing import Callable
+from typing import Dict
+from typing import Iterable
+from typing import List
+from typing import Optional
+from typing import Tuple
+from typing import Type
 
 import numpy as np
 from scipy.interpolate import interp1d
 
 from . import felib as fe
 from . import rigid_body
-from .. import config, general, trig
+from .. import config
+from .. import general
+from .. import trig
 from ..fsi.interpolator import Interpolator
 
 

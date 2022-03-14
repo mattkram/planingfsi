@@ -1,12 +1,21 @@
 import abc
 import os
 from pathlib import Path
-from typing import List, Iterable, Any, Callable, Optional, TypeVar, Type, Union
+from typing import Any
+from typing import Callable
+from typing import Iterable
+from typing import List
+from typing import Optional
+from typing import Type
+from typing import TypeVar
+from typing import Union
 
 import matplotlib.pyplot as plt
 import numpy as np
 
-from .. import config, trig, logger
+from .. import config
+from .. import logger
+from .. import trig
 from ..general import write_as_list
 from ..solver import fzero
 

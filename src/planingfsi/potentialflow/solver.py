@@ -1,14 +1,21 @@
 """Fundamental module for constructing and solving planing potential flow problems."""
 import weakref
-from typing import List, Dict, Any, Optional
+from typing import Any
+from typing import Dict
+from typing import List
+from typing import Optional
 
 import numpy as np
 from scipy.optimize import fmin
 
-from .pressureelement import PressureElement
 from . import pressurepatch
-from .. import solver, config, general, logger
-from ..fsi import simulation as fsi_simulation, figure
+from .. import config
+from .. import general
+from .. import logger
+from .. import solver
+from ..fsi import figure
+from ..fsi import simulation as fsi_simulation
+from .pressureelement import PressureElement
 
 
 class PotentialPlaningSolver:

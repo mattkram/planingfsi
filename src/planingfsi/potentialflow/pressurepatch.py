@@ -1,14 +1,21 @@
 """Classes representing a pressure patch on the free surface."""
 import abc
 from pathlib import Path
-from typing import List, Optional, Any, Dict, Tuple
+from typing import Any
+from typing import Dict
+from typing import List
+from typing import Optional
+from typing import Tuple
 
 import numpy as np
 from scipy.interpolate import interp1d
 from scipy.optimize import fmin
 
-from . import pressureelement as pe, solver
-from .. import config, trig, general
+from . import pressureelement as pe
+from . import solver
+from .. import config
+from .. import general
+from .. import trig
 from ..dictionary import load_dict_from_file
 from ..fsi import interpolator  # noqa: F401
 
@@ -202,7 +209,8 @@ class PressureCushion(PressurePatch):
         cushion_pressure = dict_.get("cushionPressure")
         if cushion_pressure is None:
             cushion_pressure = getattr(config, "cushionPressure", 0.0)
-        self.cushion_pressure: float = cushion_pressure
+        assert isinstance(cushion_pressure, float)
+        self.cushion_pressure = cushion_pressure
 
         self.neighbor_up = PlaningSurface.find_by_name(dict_.get("upstreamPlaningSurface"))
         self.neighbor_down = PlaningSurface.find_by_name(dict_.get("downstreamPlaningSurface"))

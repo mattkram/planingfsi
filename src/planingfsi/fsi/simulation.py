@@ -1,16 +1,19 @@
 import os
 from pathlib import Path
-from typing import Optional, List
+from typing import List
+from typing import Optional
 
 import numpy as np
 
-from .figure import FSIFigure
-from .interpolator import Interpolator
-from .. import config, logger
+# TODO: There is an import cycle making this noreorder line necessary
+from .figure import FSIFigure  # noreorder
+from .. import config
+from .. import logger
 from ..dictionary import load_dict_from_file
 from ..fe.structure import StructuralSolver
 from ..general import write_as_dict
 from ..potentialflow.solver import PotentialPlaningSolver
+from .interpolator import Interpolator
 
 
 class Simulation:

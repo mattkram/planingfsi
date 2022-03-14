@@ -96,4 +96,4 @@ def assert_files_almost_equal(orig_file: Path, new_file: Path) -> None:
                     continue
                 f_values.append(f_val)
                 g_values.append(g_val)
-            assert f_values == pytest.approx(g_values)
+            assert f_values == pytest.approx(g_values, rel=1e-3, abs=1e-6)

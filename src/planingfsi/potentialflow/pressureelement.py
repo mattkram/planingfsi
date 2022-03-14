@@ -1,12 +1,15 @@
 """Module containing definitions of different types of pressure element."""
 import abc
-from typing import Tuple, Any, Union
+from typing import Any
+from typing import Tuple
+from typing import Union
 
 import numpy as np
 from scipy.special import sici
 
 from . import pressurepatch
-from .. import config, general
+from .. import config
+from .. import general
 
 
 def _get_aux_fg(lam: float) -> Tuple[float, float]:

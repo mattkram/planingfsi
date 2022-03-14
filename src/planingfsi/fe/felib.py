@@ -1,10 +1,15 @@
 import abc
-from typing import List, Tuple, Any, Optional
+from typing import Any
+from typing import List
+from typing import Optional
+from typing import Tuple
 
 import numpy as np
 
 from . import substructure  # noqa: F401
-from .. import config, trig, general
+from .. import config
+from .. import general
+from .. import trig
 
 
 class Node:

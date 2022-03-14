@@ -1,9 +1,11 @@
 """General utilities."""
 from pathlib import Path
-from typing import Union, Any, Callable, TextIO
+from typing import Any
+from typing import Callable
+from typing import TextIO
+from typing import Union
 
 import numpy
-
 from planingfsi import trig
 
 
