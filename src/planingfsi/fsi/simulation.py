@@ -5,13 +5,14 @@ from typing import Optional
 
 import numpy as np
 
+# TODO: There is an import cycle making this noreorder line necessary
+from .figure import FSIFigure  # noreorder
 from .. import config
 from .. import logger
 from ..dictionary import load_dict_from_file
 from ..fe.structure import StructuralSolver
 from ..general import write_as_dict
 from ..potentialflow.solver import PotentialPlaningSolver
-from .figure import FSIFigure
 from .interpolator import Interpolator
 
 
