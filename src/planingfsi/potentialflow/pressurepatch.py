@@ -209,7 +209,8 @@ class PressureCushion(PressurePatch):
         cushion_pressure = dict_.get("cushionPressure")
         if cushion_pressure is None:
             cushion_pressure = getattr(config, "cushionPressure", 0.0)
-        self.cushion_pressure: float = cushion_pressure
+        assert isinstance(cushion_pressure, float)
+        self.cushion_pressure = cushion_pressure
 
         self.neighbor_up = PlaningSurface.find_by_name(dict_.get("upstreamPlaningSurface"))
         self.neighbor_down = PlaningSurface.find_by_name(dict_.get("downstreamPlaningSurface"))

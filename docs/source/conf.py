@@ -17,6 +17,9 @@
 #
 from datetime import datetime
 from pathlib import Path
+from typing import Any
+from typing import Dict
+from typing import List
 
 import toml
 
@@ -147,7 +150,7 @@ html_theme = "sphinx_rtd_theme"
 
 # Add any paths that contain custom themes here, relative to this directory.
 # html_theme_path = [sphinx_rtd_theme.get_html_theme_path()]
-html_theme_path = []
+html_theme_path: List = []
 
 # The name for this set of Sphinx documents.
 # "<project> v<release> documentation" by default.
@@ -256,7 +259,7 @@ htmlhelp_basename = "PlaningFSIdoc"
 
 # -- Options for LaTeX output ---------------------------------------------
 
-latex_elements = {
+latex_elements: Dict[str, Any] = {
     # The paper size ('letterpaper' or 'a4paper').
     #
     # 'papersize': 'letterpaper',
