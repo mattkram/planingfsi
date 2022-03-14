@@ -525,14 +525,8 @@ class PlaningSurface(PressurePatch):
         """Return pressure and shear stress values at points between two
         arguments.
         """
-        # Get indices within range unless length is zero
         if self.length > 0.0:
             ind = np.nonzero((self.x_coords > x0) * (self.x_coords < x1))[0]
-        else:
-            ind = []
-
-        # Output all values within range
-        if not ind == []:
             interp_p = interp1d(self.x_coords, self.pressure, bounds_error=False, fill_value=0.0)
             interp_tau = interp1d(
                 self.x_coords, self.shear_stress, bounds_error=False, fill_value=0.0
