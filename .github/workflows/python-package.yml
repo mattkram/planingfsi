@@ -41,13 +41,11 @@ jobs:
           --cov-report xml:./test-reports/coverage.xml \
           --cov planingfsi \
           tests
-      # if: ${{ always() }}
     - name: Publish code coverage
       run: |
         poetry run codecov -t $CODECOV_TOKEN
       env:
         CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
-      # if: ${{ always() }}
 
   publish:
     if: startsWith(github.ref, 'refs/tags/v')
