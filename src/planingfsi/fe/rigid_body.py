@@ -1,4 +1,8 @@
-from typing import Dict, Any, List, Optional, Callable
+from typing import Any
+from typing import Callable
+from typing import Dict
+from typing import List
+from typing import Optional
 
 import numpy as np
 from planingfsi.solver import RootFinder
@@ -6,7 +10,11 @@ from planingfsi.solver import RootFinder
 from . import felib as fe
 from . import structure
 from . import substructure
-from .. import config, general, logger, trig, solver
+from .. import config
+from .. import general
+from .. import logger
+from .. import solver
+from .. import trig
 from ..dictionary import load_dict_from_file
 from ..general import write_as_dict
 

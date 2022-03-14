@@ -1,4 +1,9 @@
-from typing import Any, Dict, Optional, List, Tuple, Callable
+from typing import Any
+from typing import Callable
+from typing import Dict
+from typing import List
+from typing import Optional
+from typing import Tuple
 
 import numpy as np
 from scipy.optimize import fmin

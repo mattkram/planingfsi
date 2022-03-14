@@ -1,6 +1,5 @@
 import pytest
 from click.testing import CliRunner
-
 from planingfsi.cli import cli
 
 

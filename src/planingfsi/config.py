@@ -9,7 +9,12 @@ The global attributes can then be simply accessed via config.attribute_name
 """
 import math
 from pathlib import Path
-from typing import Any, List, Type, Dict, Optional, Union
+from typing import Any
+from typing import Dict
+from typing import List
+from typing import Optional
+from typing import Type
+from typing import Union
 
 from . import logger
 from .dictionary import load_dict_from_file

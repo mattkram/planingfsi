@@ -1,12 +1,15 @@
 import os
 from pathlib import Path
-from typing import List, Callable, Any
+from typing import Any
+from typing import Callable
+from typing import List
 
 import matplotlib.pyplot as plt
 import numpy as np
 from matplotlib.axes import Axes
 
-from .. import config, trig
+from .. import config
+from .. import trig
 from ..fe import rigid_body
 from ..fe.structure import StructuralSolver
 from ..fsi import simulation as fsi_simulation

@@ -1,14 +1,21 @@
 """Classes representing a pressure patch on the free surface."""
 import abc
 from pathlib import Path
-from typing import List, Optional, Any, Dict, Tuple
+from typing import Any
+from typing import Dict
+from typing import List
+from typing import Optional
+from typing import Tuple
 
 import numpy as np
 from scipy.interpolate import interp1d
 from scipy.optimize import fmin
 
-from . import pressureelement as pe, solver
-from .. import config, trig, general
+from . import pressureelement as pe
+from . import solver
+from .. import config
+from .. import general
+from .. import trig
 from ..dictionary import load_dict_from_file
 from ..fsi import interpolator  # noqa: F401
 

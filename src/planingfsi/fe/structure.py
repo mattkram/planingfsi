@@ -1,19 +1,20 @@
 import os
 import weakref
-from typing import Dict, Any, List
+from typing import Any
+from typing import Dict
+from typing import List
 
 import numpy as np
 
 from . import felib as fe
 from . import rigid_body as rigid_body_mod
-from .substructure import (
-    Substructure,
-    FlexibleSubstructure,
-    RigidSubstructure,
-    TorsionalSpringSubstructure,
-)
-from .. import config, logger
+from .. import config
+from .. import logger
 from ..fsi import simulation as fsi_simulation
+from .substructure import FlexibleSubstructure
+from .substructure import RigidSubstructure
+from .substructure import Substructure
+from .substructure import TorsionalSpringSubstructure
 
 
 class StructuralSolver:
