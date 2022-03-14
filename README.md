@@ -2,6 +2,7 @@
 
 [![Run Python Tests](https://github.com/mattkram/planingfsi/workflows/Run%20Python%20Tests/badge.svg)](https://github.com/mattkram/planingfsi/actions)
 [![Coverage](https://codecov.io/gh/mattkram/planingfsi/branch/develop/graph/badge.svg)](https://codecov.io/gh/mattkram/planingfsi)
+[![pre-commit](https://img.shields.io/badge/pre--commit-enabled-brightgreen?logo=pre-commit&logoColor=white)](https://github.com/pre-commit/pre-commit)
 [![Docs](https://readthedocs.org/projects/planingfsi/badge/?version=latest)](https://planingfsi.readthedocs.io/en/latest/?badge=latest)
 [![Version](https://img.shields.io/pypi/v/planingfsi.svg)](https://pypi.org/project/planingfsi/)
 [![License](https://img.shields.io/pypi/l/planingfsi.svg)](https://pypi.org/project/planingfsi/)
