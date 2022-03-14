@@ -13,7 +13,7 @@ It was originally written in 2012-2013 to support my Ph.D. research and has rece
 
 I am currently working on releasing this package as open source.
 Since this is my first open-source release, the next few releases on PyPI should not be used for production.
-I will release version 1.0.0 and remove this note once I feel that I have sufficiently cleaned up and documented the code. 
+I will release version 1.0.0 and remove this note once I feel that I have sufficiently cleaned up and documented the code.
 
 ## Required Python version
 
