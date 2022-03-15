@@ -16,8 +16,8 @@ import numpy as np
 from .. import config
 from .. import logger
 from .. import trig
-from ..general import write_as_list
 from ..solver import fzero
+from ..writers import write_as_list
 
 
 class Mesh:

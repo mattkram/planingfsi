@@ -10,9 +10,10 @@ from scipy.optimize import fmin
 
 from . import pressurepatch
 from .. import config
-from .. import general
 from .. import logger
+from .. import math_helpers
 from .. import solver
+from .. import writers
 from ..fsi import figure
 from ..fsi import simulation as fsi_simulation
 from .pressureelement import PressureElement
@@ -67,7 +68,7 @@ class PotentialPlaningSolver:
     @property
     def x_bar(self) -> float:
         """The center of lift."""
-        return general.integrate(self.x_coord, self.pressure * self.x_coord) / self.lift_total
+        return math_helpers.integrate(self.x_coord, self.pressure * self.x_coord) / self.lift_total
 
     def __getattr__(self, item: str) -> Any:
         """Calculate total forces as sum of forces on each patch."""
@@ -301,7 +302,7 @@ class PotentialPlaningSolver:
         # Grow points upstream and downstream from first and last plate
         x_fs_u = np.unique(x_fs)
         x_fs.extend(
-            general.grow_points(
+            _grow_points(
                 x_fs_u[-2],
                 x_fs_u[-1],
                 config.plotting.x_fs_max,
@@ -309,7 +310,7 @@ class PotentialPlaningSolver:
             )
         )
         x_fs.extend(
-            general.grow_points(
+            _grow_points(
                 x_fs_u[1],
                 x_fs_u[0],
                 config.plotting.x_fs_min,
@@ -360,7 +361,7 @@ class PotentialPlaningSolver:
 
     def _write_forces(self) -> None:
         """Write forces to file."""
-        general.write_as_dict(
+        writers.write_as_dict(
             self.simulation.it_dir / f"forces_total.{config.io.data_format}",
             ["Drag", self.drag_total],
             ["WaveDrag", self.drag_wave],
@@ -377,7 +378,7 @@ class PotentialPlaningSolver:
 
     def _write_pressure_and_shear(self) -> None:
         """Write pressure and shear stress profiles to data file."""
-        general.write_as_list(
+        writers.write_as_list(
             self.simulation.it_dir / f"pressureAndShear.{config.io.data_format}",
             ["x [m]", self.x_coord],
             ["p [Pa]", self.pressure],
@@ -386,7 +387,7 @@ class PotentialPlaningSolver:
 
     def _write_free_surface(self) -> None:
         """Write free-surface profile to file."""
-        general.write_as_list(
+        writers.write_as_list(
             self.simulation.it_dir / f"freeSurface.{config.io.data_format}",
             ["x [m]", self.x_coord_fs],
             ["y [m]", self.z_coord_fs],
@@ -426,3 +427,40 @@ class PotentialPlaningSolver:
             )
         except IOError:
             self.z_coord_fs = np.zeros_like(self.x_coord_fs)
+
+
+def _grow_points(x0: float, x1: float, x_max: float, rate: float = 1.1) -> np.ndarray:
+    """Grow points exponentially from two starting points assuming a growth rate.
+
+    Args:
+        x0: The first point.
+        x1: The second point.
+        x_max: The maximum distance.
+        rate: The growth rate of spacing between subsequent points.
+
+    """
+    # TODO: Check this function, is first point included?
+    dx = x1 - x0
+    x = [x1]
+
+    if dx > 0:
+
+        def done(xt: float) -> bool:
+            return xt > x_max
+
+    elif dx < 0:
+
+        def done(xt: float) -> bool:
+            return xt < x_max
+
+    else:
+
+        def done(xt: float) -> bool:
+            _ = xt
+            return True
+
+    while not done(x[-1]):
+        x.append(x[-1] + dx)
+        dx *= rate
+
+    return np.array(x[1:])

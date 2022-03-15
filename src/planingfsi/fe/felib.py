@@ -8,7 +8,6 @@ import numpy as np
 
 from . import substructure  # noqa: F401
 from .. import config
-from .. import general
 from .. import trig
 
 
@@ -122,7 +121,7 @@ class Element(abc.ABC):
         if self.lineEl0 is not None and self.plot_on:
             base_pt = [self.parent.parent.xCofR0, self.parent.parent.yCofR0]
             pos = [
-                general.rotate_point(pos, base_pt, self.parent.parent.trim)
+                trig.rotate_point(pos, base_pt, self.parent.parent.trim)
                 - np.array([0, self.parent.parent.draft])
                 for pos in self.init_pos
             ]

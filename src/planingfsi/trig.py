@@ -133,3 +133,10 @@ def rotate_vec(
     return (
         numpy.dot(numpy.dot(numpy.dot(rot_x, rot_y), rot_z), (numpy.asarray(vec) - about).T) + about
     )
+
+
+def rotate_point(point: numpy.ndarray, about: numpy.ndarray, angle: float) -> numpy.ndarray:
+    """Rotate a point about another point by a specific angle in degrees."""
+    relative_pos = numpy.array(point) - numpy.array(about)
+    new_pos = rotate_vec_2d(relative_pos, angle)
+    return about + new_pos
