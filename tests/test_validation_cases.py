@@ -6,6 +6,7 @@ from typing import Tuple
 
 import pytest
 from click.testing import CliRunner
+
 from planingfsi.cli import cli
 
 VALIDATED_EXTENSION = ".validated"

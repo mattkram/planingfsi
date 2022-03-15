@@ -5,6 +5,7 @@ from typing import Dict
 
 import pytest
 from click.testing import CliRunner
+
 from planingfsi.dictionary import load_dict_from_file
 
 PROJECT_DIR = Path(__file__).parents[1]

@@ -3,6 +3,7 @@ from pathlib import Path
 from typing import Union
 
 import pytest
+
 from planingfsi import config
 from planingfsi.config import ConfigItem
 from planingfsi.config import SubConfig

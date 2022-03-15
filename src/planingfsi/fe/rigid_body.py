@@ -5,7 +5,6 @@ from typing import List
 from typing import Optional
 
 import numpy as np
-from planingfsi.solver import RootFinder
 
 from . import felib as fe
 from . import substructure
@@ -16,6 +15,7 @@ from .. import trig
 from .. import writers
 from ..dictionary import load_dict_from_file
 from .structure import StructuralSolver
+from planingfsi.solver import RootFinder
 
 
 class RigidBody:
