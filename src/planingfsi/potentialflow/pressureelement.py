@@ -9,7 +9,7 @@ from scipy.special import sici
 
 from . import pressurepatch
 from .. import config
-from .. import general
+from .. import math_helpers
 
 
 def _get_aux_fg(lam: float) -> Tuple[float, float]:
@@ -55,7 +55,9 @@ def _get_gamma2(lam: float, aux_f: float) -> float:
     float
 
     """
-    return general.sign(lam) * aux_f / np.pi + general.heaviside(-lam) * (2 * np.cos(lam) - 1)
+    return math_helpers.sign(lam) * aux_f / np.pi + math_helpers.heaviside(-lam) * (
+        2 * np.cos(lam) - 1
+    )
 
 
 def _get_gamma3(lam: float, aux_f: float) -> float:
@@ -73,9 +75,9 @@ def _get_gamma3(lam: float, aux_f: float) -> float:
     float
     """
     return (
-        -general.sign(lam) * aux_f / np.pi
-        - 2 * general.heaviside(-lam) * np.cos(lam)
-        - general.heaviside(lam)
+        -math_helpers.sign(lam) * aux_f / np.pi
+        - 2 * math_helpers.heaviside(-lam) * np.cos(lam)
+        - math_helpers.heaviside(lam)
     )
 
 

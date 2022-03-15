@@ -15,7 +15,7 @@ from scipy.interpolate import interp1d
 from . import felib as fe
 from . import rigid_body
 from .. import config
-from .. import general
+from .. import math_helpers
 from .. import trig
 from .. import writers
 from ..fsi.interpolator import Interpolator
@@ -298,20 +298,22 @@ class Substructure(abc.ABC):
 
             # Integrate pressure profile, calculate center of pressure and
             # distribute force to nodes
-            integral = general.integrate(s, pressure_total)
+            integral = math_helpers.integrate(s, pressure_total)
             if integral == 0.0:
                 qp = np.zeros(2)
             else:
                 pct = (
-                    general.integrate(s, s * pressure_total) / integral - s[0]
-                ) / general.cumdiff(s)
+                    math_helpers.integrate(s, s * pressure_total) / integral - s[0]
+                ) / math_helpers.cumdiff(s)
                 qp = integral * np.array([1 - pct, pct])
 
-            integral = general.integrate(s, tau)
+            integral = math_helpers.integrate(s, tau)
             if integral == 0.0:
                 qs = np.zeros(2)
             else:
-                pct = (general.integrate(s, s * tau) / integral - s[0]) / general.cumdiff(s)
+                pct = (math_helpers.integrate(s, s * tau) / integral - s[0]) / math_helpers.cumdiff(
+                    s
+                )
                 qs = -integral * np.array([1 - pct, pct])
 
             el.qp = qp
@@ -342,11 +344,11 @@ class Substructure(abc.ABC):
                     for pt in map(self.get_coordinates, s)
                 ]
 
-                m = [general.cross2(ri, fi) for ri, fi in zip(r, f)]
+                m = [math_helpers.cross2(ri, fi) for ri, fi in zip(r, f)]
 
-                self.D -= general.integrate(s, np.array(list(zip(*f))[0]))
-                self.L += general.integrate(s, np.array(list(zip(*f))[1]))
-                self.M += general.integrate(s, np.array(m))
+                self.D -= math_helpers.integrate(s, np.array(list(zip(*f))[0]))
+                self.L += math_helpers.integrate(s, np.array(list(zip(*f))[1]))
+                self.M += math_helpers.integrate(s, np.array(m))
             else:
                 if self.interpolator is not None:
                     self.D = self.interpolator.fluid.drag_total
@@ -366,11 +368,11 @@ class Substructure(abc.ABC):
                 for pt in map(self.get_coordinates, s)
             ]
 
-            m = [general.cross2(ri, fi) for ri, fi in zip(r, f)]
+            m = [math_helpers.cross2(ri, fi) for ri, fi in zip(r, f)]
 
-            self.Da -= general.integrate(s, np.array(list(zip(*f))[0]))
-            self.La += general.integrate(s, np.array(list(zip(*f))[1]))
-            self.Ma += general.integrate(s, np.array(m))
+            self.Da -= math_helpers.integrate(s, np.array(list(zip(*f))[0]))
+            self.La += math_helpers.integrate(s, np.array(list(zip(*f))[1]))
+            self.Ma += math_helpers.integrate(s, np.array(m))
             self.fluidP = np.array(fluid_p)
             self.fluidS = np.array(fluid_s)
             self.airP = np.array(air_p)
@@ -378,8 +380,8 @@ class Substructure(abc.ABC):
 
     def get_normal_vector(self, s: float) -> np.ndarray:
         """Calculate the normal vector at a specific arc length."""
-        dx_ds = general.deriv(lambda si: self.get_coordinates(si)[0], s)
-        dy_ds = general.deriv(lambda si: self.get_coordinates(si)[1], s)
+        dx_ds = math_helpers.deriv(lambda si: self.get_coordinates(si)[0], s)
+        dy_ds = math_helpers.deriv(lambda si: self.get_coordinates(si)[1], s)
 
         return trig.rotate_vec_2d(trig.angd2vec2d(trig.atand2(dy_ds, dx_ds)), -90)
 
@@ -744,11 +746,11 @@ class TorsionalSpringSubstructure(FlexibleSubstructure, RigidSubstructure):
                     for pt in map(self.get_coordinates, s)
                 ]
 
-                m = [general.cross2(ri, fi) for ri, fi in zip(r, f)]
+                m = [math_helpers.cross2(ri, fi) for ri, fi in zip(r, f)]
 
-                self.D -= general.integrate(s, np.array(list(zip(*f))[0]))
-                self.L += general.integrate(s, np.array(list(zip(*f))[1]))
-                self.M += general.integrate(s, np.array(m))
+                self.D -= math_helpers.integrate(s, np.array(list(zip(*f))[0]))
+                self.L += math_helpers.integrate(s, np.array(list(zip(*f))[1]))
+                self.M += math_helpers.integrate(s, np.array(m))
             else:
                 if self.interpolator is not None:
                     self.D = self.interpolator.fluid.drag_total
@@ -767,12 +769,12 @@ class TorsionalSpringSubstructure(FlexibleSubstructure, RigidSubstructure):
                 for pt in map(self.get_coordinates, s)
             ]
 
-            m = [general.cross2(ri, fi) for ri, fi in zip(r, f)]
+            m = [math_helpers.cross2(ri, fi) for ri, fi in zip(r, f)]
             fx, fy = list(zip(*f))
 
-            self.Dt += general.integrate(s, np.array(fx))
-            self.Lt += general.integrate(s, np.array(fy))
-            self.Mt += general.integrate(s, np.array(m))
+            self.Dt += math_helpers.integrate(s, np.array(fx))
+            self.Lt += math_helpers.integrate(s, np.array(fy))
+            self.Mt += math_helpers.integrate(s, np.array(m))
 
             integrand = pressure_cushion
 
@@ -787,17 +789,17 @@ class TorsionalSpringSubstructure(FlexibleSubstructure, RigidSubstructure):
                 for pt in map(self.get_coordinates, s)
             ]
 
-            m = [general.cross2(ri, fi) for ri, fi in zip(r, f)]
+            m = [math_helpers.cross2(ri, fi) for ri, fi in zip(r, f)]
 
-            self.Da -= general.integrate(s, np.array(list(zip(*f))[0]))
-            self.La += general.integrate(s, np.array(list(zip(*f))[1]))
-            self.Ma += general.integrate(s, np.array(m))
+            self.Da -= math_helpers.integrate(s, np.array(list(zip(*f))[0]))
+            self.La += math_helpers.integrate(s, np.array(list(zip(*f))[1]))
+            self.Ma += math_helpers.integrate(s, np.array(m))
 
         # Apply tip load
         tipC = self.get_coordinates(self.tip_load_pct * self.arc_length)
         tipR = np.array([tipC[i] - self.base_pt[i] for i in [0, 1]])
         tipF = np.array([0.0, self.tip_load]) * config.ramp
-        tipM = general.cross2(tipR, tipF)
+        tipM = math_helpers.cross2(tipR, tipF)
         self.Lt += tipF[1]
         self.Mt += tipM
         self.fluidP = np.array(fluidP)

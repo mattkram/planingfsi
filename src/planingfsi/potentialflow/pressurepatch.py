@@ -14,7 +14,7 @@ from scipy.optimize import fmin
 from . import pressureelement as pe
 from . import solver
 from .. import config
-from .. import general
+from .. import math_helpers
 from .. import trig
 from .. import writers
 from ..dictionary import load_dict_from_file
@@ -490,21 +490,21 @@ class PlaningSurface(PressurePatch):
             self.s_coords = np.array([self.interpolator.get_s_fixed_x(xx) for xx in self.x_coords])
 
             tangent_angle = trig.atand(self._get_body_derivative(self.x_coords))
-            self.drag_pressure = general.integrate(
+            self.drag_pressure = math_helpers.integrate(
                 self.s_coords, self.pressure * trig.sind(tangent_angle)
             )
-            self.drag_friction = general.integrate(
+            self.drag_friction = math_helpers.integrate(
                 self.s_coords, self.shear_stress * trig.cosd(tangent_angle)
             )
             self.drag_total = self.drag_pressure + self.drag_friction
-            self.lift_pressure = general.integrate(
+            self.lift_pressure = math_helpers.integrate(
                 self.s_coords, self.pressure * trig.cosd(tangent_angle)
             )
-            self.lift_friction = -general.integrate(
+            self.lift_friction = -math_helpers.integrate(
                 self.s_coords, self.shear_stress * trig.sind(tangent_angle)
             )
             self.lift_total = self.lift_pressure + self.lift_friction
-            self.moment_total = general.integrate(
+            self.moment_total = math_helpers.integrate(
                 self.x_coords,
                 self.pressure * trig.cosd(tangent_angle) * (self.x_coords - config.body.xCofR),
             )
@@ -572,5 +572,5 @@ class PlaningSurface(PressurePatch):
         """Calculate the derivative of the body surface at a point."""
         assert self.interpolator is not None
         return np.array(
-            [general.deriv(self.interpolator.get_body_height, xx, direction) for xx in x]
+            [math_helpers.deriv(self.interpolator.get_body_height, xx, direction) for xx in x]
         )

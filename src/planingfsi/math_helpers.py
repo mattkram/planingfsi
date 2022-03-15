@@ -1,4 +1,4 @@
-"""General utilities."""
+"""General math helpers."""
 from typing import Callable
 
 import numpy

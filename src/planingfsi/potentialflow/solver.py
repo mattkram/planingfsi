@@ -10,8 +10,8 @@ from scipy.optimize import fmin
 
 from . import pressurepatch
 from .. import config
-from .. import general
 from .. import logger
+from .. import math_helpers
 from .. import solver
 from .. import writers
 from ..fsi import figure
@@ -68,7 +68,7 @@ class PotentialPlaningSolver:
     @property
     def x_bar(self) -> float:
         """The center of lift."""
-        return general.integrate(self.x_coord, self.pressure * self.x_coord) / self.lift_total
+        return math_helpers.integrate(self.x_coord, self.pressure * self.x_coord) / self.lift_total
 
     def __getattr__(self, item: str) -> Any:
         """Calculate total forces as sum of forces on each patch."""
