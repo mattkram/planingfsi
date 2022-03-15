@@ -1,3 +1,4 @@
+"""High-level control of a `planingfsi` simulation."""
 import os
 from pathlib import Path
 from typing import List
@@ -17,12 +18,16 @@ from .interpolator import Interpolator
 
 
 class Simulation:
-    """Simulation object to manage the FSI problem. Handles the iteration
-    between the fluid and solid solvers.
+    """Simulation object to manage the FSI problem.
+
+    Handles the iteration between the fluid and solid solvers.
 
     Attributes:
         solid_solver (StructuralSolver): The structural solver.
         fluid_solver (PotentialPlaningSolver): The fluid solver.
+        it (int): The current iteration.
+        ramp (float): The current ramping coefficient, used when applying loads
+            and moving nodes. The value is between 1.0 and 0.0.
 
     """
 
