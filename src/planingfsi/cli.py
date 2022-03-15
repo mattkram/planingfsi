@@ -57,8 +57,7 @@ def run_planingfsi(post_mode: bool, plot_save: bool, plot_show: bool, new_case: 
         for it_dir in Path(config.path.case_dir).glob("[0-9]*"):
             it_dir.unlink()
 
-    simulation = Simulation()
-    simulation.load_input_files()
+    simulation = Simulation.from_input_files()
     simulation.run()
 
 

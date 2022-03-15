@@ -40,6 +40,13 @@ class Simulation:
         self.it = 0
         self.ramp = 1.0
 
+    @classmethod
+    def from_input_files(cls) -> "Simulation":
+        """Construct a `Simulation` object by loading input files."""
+        simulation = cls()
+        simulation.load_input_files()
+        return simulation
+
     @property
     def figure(self) -> Optional[FSIFigure]:
         """Use a property for the figure object to initialize lazily."""
