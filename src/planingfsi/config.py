@@ -574,7 +574,6 @@ if Path(DICT_NAME).exists():
 
 # Initialized constants
 # TODO: These should be moved to the Simulation class
-ramp = 1.0
 has_free_structure = False
 
 # TODO: This need to be factored out eventually

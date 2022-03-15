@@ -8,7 +8,6 @@ import numpy as np
 from planingfsi.solver import RootFinder
 
 from . import felib as fe
-from . import structure
 from . import substructure
 from .. import config
 from .. import logger
@@ -16,6 +15,7 @@ from .. import solver
 from .. import trig
 from .. import writers
 from ..dictionary import load_dict_from_file
+from .structure import StructuralSolver
 
 
 class RigidBody:
@@ -39,7 +39,7 @@ class RigidBody:
     time_step: float
     num_damp: int
 
-    def __init__(self, dict_: Dict[str, Any], parent: "structure.StructuralSolver"):
+    def __init__(self, dict_: Dict[str, Any], parent: StructuralSolver):
         self.parent = parent
         self.num_dim = 2
         self.draft = 0.0
@@ -162,6 +162,11 @@ class RigidBody:
 
         print(("Adding Rigid Body: {0}".format(self.name)))
 
+    @property
+    def ramp(self) -> float:
+        """The ramping coefficient from the high-level simulation object."""
+        return self.parent.simulation.ramp
+
     def add_substructure(self, ss: "substructure.Substructure") -> None:
         """Add a substructure to the rigid body."""
         self.substructure.append(ss)
@@ -260,7 +265,7 @@ class RigidBody:
 
         self.a = np.array([self.weight - self.L, self.M - self.weight * (self.xCofG - self.xCofR)])
         #    self.a -= self.Cdamp * (self.v + self.v**3) * config.ramp
-        self.a -= self.c_damp * self.v * config.ramp
+        self.a -= self.c_damp * self.v * self.ramp
         self.a /= np.array([self.m, self.Iz])
         self.a = np.min(
             np.vstack((np.abs(self.a), np.array([self.max_draft_acc, self.max_trim_acc]))),
@@ -275,7 +280,7 @@ class RigidBody:
         #        accLimPct[i] /= self.a[i]
         #
         #    self.a *= np.min(accLimPct)
-        disp *= config.ramp
+        disp *= self.ramp
         return disp
 
     def get_disp_newmark_beta(self) -> np.ndarray:
@@ -302,9 +307,8 @@ class RigidBody:
         self.v_old = self.v
 
         disp *= self.relax
-        disp *= config.ramp
+        disp *= self.ramp
         disp = self.limit_disp(disp)
-        #    disp *= config.ramp
 
         return disp
 
@@ -322,7 +326,7 @@ class RigidBody:
             disp = 0.5 * self.time_step / self.c_damp * (force_moment - self.two_ago_f)
             self.predictor = True
 
-        disp *= self.relax * config.ramp
+        disp *= self.relax * self.ramp
         disp = self.limit_disp(disp)
 
         #    self.v = disp / self.timeStep

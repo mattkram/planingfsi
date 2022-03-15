@@ -15,6 +15,7 @@ from scipy.interpolate import interp1d
 from . import felib as fe
 from . import rigid_body
 from .. import config
+from .. import logger
 from .. import math_helpers
 from .. import trig
 from .. import writers
@@ -77,6 +78,14 @@ class Substructure(abc.ABC):
         self.interp_func_x: Optional[interp1d] = None
         self.interp_func_y: Optional[interp1d] = None
 
+    @property
+    def ramp(self) -> float:
+        """The ramping coefficient from the high-level simulation object."""
+        if self.parent is None:
+            logger.warning("No parent assigned, ramp will be set to 1.0.")
+            return 1.0
+        return self.parent.parent.simulation.ramp
+
     def set_element_properties(self) -> None:
         """Set the properties of each element."""
         for el in self.el:
@@ -99,11 +108,10 @@ class Substructure(abc.ABC):
         self.node = [fe.Node.get_index(i) for i in ndInd]
 
         self.set_interp_function()
-        self.el = [self.element_type() for _ in nd_st]
+        self.el = [self.element_type(parent=self) for _ in nd_st]
         self.set_element_properties()
         for ndSti, ndEndi, el in zip(nd_st, nd_end, self.el):
             el.set_nodes([fe.Node.get_index(ndSti), fe.Node.get_index(ndEndi)])
-            el.parent = self
 
     def set_interp_function(self) -> None:
         self.node_arc_length = np.zeros(len(self.node))
@@ -260,7 +268,7 @@ class Substructure(abc.ABC):
                 air_p += [Pc - self.seal_pressure for _ in node_s[1:]]
 
             # Apply ramp to hydrodynamic pressure
-            pressure_fluid *= config.ramp**2
+            pressure_fluid *= self.ramp**2
 
             # Add external cushion pressure to external fluid pressure
             pressure_cushion = np.zeros_like(s)
@@ -700,7 +708,7 @@ class TorsionalSpringSubstructure(FlexibleSubstructure, RigidSubstructure):
             airP += [Pc - self.seal_pressure for _ in node_s[1:]]
 
             # Apply ramp to hydrodynamic pressure
-            pressure_fluid *= config.ramp**2
+            pressure_fluid *= self.ramp**2
 
             # Add external cushion pressure to external fluid pressure
             pressure_cushion = np.zeros_like(s)
@@ -798,7 +806,7 @@ class TorsionalSpringSubstructure(FlexibleSubstructure, RigidSubstructure):
         # Apply tip load
         tipC = self.get_coordinates(self.tip_load_pct * self.arc_length)
         tipR = np.array([tipC[i] - self.base_pt[i] for i in [0, 1]])
-        tipF = np.array([0.0, self.tip_load]) * config.ramp
+        tipF = np.array([0.0, self.tip_load]) * self.ramp
         tipM = math_helpers.cross2(tipR, tipF)
         self.Lt += tipF[1]
         self.Mt += tipM

@@ -6,9 +6,10 @@ from typing import Tuple
 
 import numpy as np
 
-from . import substructure  # noqa: F401
 from .. import config
+from .. import logger
 from .. import trig
+from .substructure import Substructure
 
 
 class Node:
@@ -57,7 +58,7 @@ class Node:
 class Element(abc.ABC):
     __all: List["Element"] = []
 
-    def __init__(self) -> None:
+    def __init__(self, parent: Optional[Substructure] = None) -> None:
         self.element_num = len(Element.__all)
         Element.__all.append(self)
 
@@ -79,7 +80,15 @@ class Element(abc.ABC):
         self.gamma = 0.0
         self.init_pos: List[np.ndarray] = []
 
-        self.parent: Optional["substructure.Substructure"] = None
+        self.parent = parent
+
+    @property
+    def ramp(self) -> float:
+        """The ramping coefficient from the high-level simulation object."""
+        if self.parent is None:
+            logger.warning("No parent assigned, ramp will be set to 1.0.")
+            return 1.0
+        return self.parent.ramp
 
     def set_properties(self, **kwargs: Any) -> None:
         length = kwargs.get("length")
@@ -130,8 +139,8 @@ class Element(abc.ABC):
 
 
 class TrussElement(Element):
-    def __init__(self) -> None:
-        super().__init__()
+    def __init__(self, **kwargs: Any) -> None:
+        super().__init__(**kwargs)
         self.initial_axial_force = 0.0
         self.EA = 0.0
 
@@ -174,7 +183,7 @@ class TrussElement(Element):
         assert self.initial_axial_force is not None
         assert self.initial_length is not None
         assert self.EA is not None
-        self.axial_force = (1.0 - config.ramp) * self.initial_axial_force + self.EA * (
+        self.axial_force = (1.0 - self.ramp) * self.initial_axial_force + self.EA * (
             self.length - self.initial_length
         ) / self.initial_length
 

@@ -221,15 +221,13 @@ class Simulation:
             self.load_results()
         else:
             if config.solver.num_ramp_it == 0:
-                ramp = 1.0
+                self.ramp = 1.0
             else:
-                ramp = np.min((self.it / float(config.solver.num_ramp_it), 1.0))
+                self.ramp = np.min((self.it / float(config.solver.num_ramp_it), 1.0))
 
-            # TODO: Remove reference to config.ramp eventually
-            config.ramp = self.ramp = ramp
             config.solver.relax_FEM = (
-                1 - ramp
-            ) * config.solver.relax_initial + ramp * config.solver.relax_final
+                1 - self.ramp
+            ) * config.solver.relax_initial + self.ramp * config.solver.relax_final
 
     def get_residual(self) -> float:
         if config.io.results_from_file:
@@ -256,7 +254,7 @@ class Simulation:
         if self.check_output_interval() and not config.io.results_from_file:
             writers.write_as_dict(
                 os.path.join(self.it_dir, "overallQuantities.txt"),
-                ["Ramp", config.ramp],
+                ["Ramp", self.ramp],
                 ["Residual", self.solid_solver.res],
             )
 
@@ -265,5 +263,5 @@ class Simulation:
 
     def load_results(self) -> None:
         dict_ = load_dict_from_file(os.path.join(self.it_dir, "overallQuantities.txt"))
-        config.ramp = dict_.get("Ramp", 0.0)
+        self.ramp = dict_.get("Ramp", 0.0)
         self.solid_solver.res = dict_.get("Residual", 0.0)
