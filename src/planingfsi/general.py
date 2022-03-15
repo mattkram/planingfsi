@@ -43,43 +43,6 @@ def integrate(x: numpy.ndarray, f: numpy.ndarray) -> float:
     return 0.5 * numpy.sum((x[1:] - x[:-1]) * (f[1:] + f[:-1]))
 
 
-def grow_points(x0: float, x1: float, x_max: float, rate: float = 1.1) -> numpy.ndarray:
-    """Grow points exponentially from two starting points assuming a growth rate.
-
-    Args:
-        x0: The first point.
-        x1: The second point.
-        x_max: The maximum distance.
-        rate: The growth rate of spacing between subsequent points.
-
-    """
-    # TODO: Check this function, is first point included?
-    dx = x1 - x0
-    x = [x1]
-
-    if dx > 0:
-
-        def done(xt: float) -> bool:
-            return xt > x_max
-
-    elif dx < 0:
-
-        def done(xt: float) -> bool:
-            return xt < x_max
-
-    else:
-
-        def done(xt: float) -> bool:
-            _ = xt
-            return True
-
-    while not done(x[-1]):
-        x.append(x[-1] + dx)
-        dx *= rate
-
-    return numpy.array(x[1:])
-
-
 def deriv(f: Callable[[float], float], x: float, direction: str = "c") -> float:
     """Calculate the derivative of a function at a specific point."""
     dx = 1e-6
