@@ -17,6 +17,7 @@ from . import rigid_body
 from .. import config
 from .. import general
 from .. import trig
+from .. import writers
 from ..fsi.interpolator import Interpolator
 
 
@@ -174,7 +175,7 @@ class Substructure(abc.ABC):
 
     def write_coordinates(self) -> None:
         """Write the coordinates to file"""
-        general.write_as_list(
+        writers.write_as_list(
             self.it_dir / f"coords_{self.name}.{config.io.data_format}",
             ["x [m]", [nd.x for nd in self.node]],
             ["y [m]", [nd.y for nd in self.node]],
@@ -859,7 +860,7 @@ class TorsionalSpringSubstructure(FlexibleSubstructure, RigidSubstructure):
     #    return self.theta + self.Mt / self.spring_constant
 
     def write_deformation(self) -> None:
-        general.write_as_dict(
+        writers.write_as_dict(
             self.it_dir / f"deformation_{self.name}.{config.io.data_format}",
             ["angle", self.theta],
         )

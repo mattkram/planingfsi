@@ -16,6 +16,7 @@ from . import solver
 from .. import config
 from .. import general
 from .. import trig
+from .. import writers
 from ..dictionary import load_dict_from_file
 from ..fsi import interpolator  # noqa: F401
 
@@ -156,7 +157,7 @@ class PressurePatch(abc.ABC):
 
     def write_forces(self) -> None:
         """Write forces to file."""
-        general.write_as_dict(
+        writers.write_as_dict(
             self._force_file_save_path,
             ["Drag", self.drag_total],
             ["WaveDrag", self.drag_wave],

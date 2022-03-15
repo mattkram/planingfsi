@@ -14,8 +14,8 @@ from .. import config
 from .. import logger
 from .. import solver
 from .. import trig
+from .. import writers
 from ..dictionary import load_dict_from_file
-from ..general import write_as_dict
 
 
 class RigidBody:
@@ -527,7 +527,7 @@ class RigidBody:
 
     def write_motion(self) -> None:
         """Write the motion results to file."""
-        write_as_dict(
+        writers.write_as_dict(
             self.parent.simulation.it_dir / f"motion_{self.name}.{config.io.data_format}",
             ["xCofR", self.xCofR],
             ["yCofR", self.yCofR],
