@@ -11,7 +11,6 @@ from . import felib as fe
 from . import structure
 from . import substructure
 from .. import config
-from .. import general
 from .. import logger
 from .. import solver
 from .. import trig
@@ -197,7 +196,7 @@ class RigidBody:
 
         for nd in self.node:
             xo, yo = nd.get_coordinates()
-            new_pos = general.rotate_point(
+            new_pos = trig.rotate_point(
                 np.array([xo, yo]), np.array([self.xCofR, self.yCofR]), trim_delta
             )
             nd.move_coordinates(new_pos[0] - xo, new_pos[1] - yo - draft_delta)
@@ -205,7 +204,7 @@ class RigidBody:
         for s in self.substructure:
             s.update_geometry()
 
-        self.xCofG, self.yCofG = general.rotate_point(
+        self.xCofG, self.yCofG = trig.rotate_point(
             np.array([self.xCofG, self.yCofG]), np.array([self.xCofR, self.yCofR]), trim_delta
         )
         self.yCofG -= draft_delta

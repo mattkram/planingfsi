@@ -6,7 +6,6 @@ from typing import TextIO
 from typing import Union
 
 import numpy
-from planingfsi import trig
 
 
 def sign(x: float) -> float:
@@ -65,13 +64,6 @@ def cross2(a: numpy.ndarray, b: numpy.ndarray) -> float:
 def cumdiff(x: numpy.ndarray) -> float:
     """Calculate the cumulative difference of an array."""
     return float(numpy.sum(numpy.diff(x)))
-
-
-def rotate_point(point: numpy.ndarray, about: numpy.ndarray, angle: float) -> numpy.ndarray:
-    """Rotate a point about another point by a specific angle in degrees."""
-    relative_pos = numpy.array(point) - numpy.array(about)
-    new_pos = trig.rotate_vec_2d(relative_pos, angle)
-    return about + new_pos
 
 
 def write_as_dict(filename: Union[Path, str], *args: Any, data_format: str = ">+10.8e") -> None:
