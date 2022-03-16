@@ -48,6 +48,18 @@ class StructuralSolver:
         return simulation
 
     @property
+    def res_l(self) -> float:
+        """The lift residual."""
+        # TODO: This should handle multiple rigid bodies
+        return self.rigid_body[0].get_res_lift()
+
+    @property
+    def res_m(self) -> float:
+        """The trim moment residual."""
+        # TODO: This should handle multiple rigid bodies
+        return self.rigid_body[0].get_res_moment()
+
+    @property
     def substructure(self) -> List[Substructure]:
         """A combined list of substructures from all rigid bodies."""
         return [ss for body in self.rigid_body for ss in body.substructure]

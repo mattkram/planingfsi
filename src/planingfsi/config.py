@@ -571,8 +571,3 @@ def load_from_file(filename: Union[Path, str]) -> None:
 # Load the default config dict file
 if Path(DICT_NAME).exists():
     load_from_file(DICT_NAME)
-
-# Initialized constants
-# TODO: This need to be factored out eventually
-res_l = 1.0
-res_m = 1.0

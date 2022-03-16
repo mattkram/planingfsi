@@ -221,14 +221,14 @@ class Simulation:
         else:
             self.it += 1
 
-        config.res_l = self.solid_solver.rigid_body[0].get_res_lift()
-        config.res_m = self.solid_solver.rigid_body[0].get_res_moment()
+        res_l = self.solid_solver.res_l
+        res_m = self.solid_solver.res_m
 
         logger.info("Rigid Body Residuals:")
-        logger.info("  Lift:   {0:0.4e}".format(config.res_l))
-        logger.info("  Moment: {0:0.4e}\n".format(config.res_m))
+        logger.info("  Lift:   {0:0.4e}".format(res_l))
+        logger.info("  Moment: {0:0.4e}\n".format(res_m))
 
-        return np.array([config.res_l, config.res_m])
+        return np.array([res_l, res_m])
 
     def apply_ramp(self) -> None:
         if config.io.results_from_file:
