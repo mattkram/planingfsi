@@ -71,7 +71,7 @@ def run_case(tmpdir: Path, validation_base_dir: Path) -> RunCaseFunction:
     (
         "flat_plate",
         "stepped_planing_plate",
-        "flexible_membrane",
+        pytest.param("flexible_membrane", marks=pytest.mark.skip),
     ),
 )
 def test_run_validation_case(run_case: RunCaseFunction, case_name: str) -> None:
