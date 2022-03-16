@@ -55,8 +55,11 @@ def run_case(tmpdir: Path, validation_base_dir: Path) -> RunCaseFunction:
         os.chdir(new_case_dir)
 
         cli_runner = CliRunner()
-        assert cli_runner.invoke(cli, ["mesh"]).exit_code == 0
-        assert cli_runner.invoke(cli, ["run"]).exit_code == 0
+        mesh_result = cli_runner.invoke(cli, ["mesh"], catch_exceptions=False)
+        assert mesh_result.exit_code == 0
+
+        run_result = cli_runner.invoke(cli, ["run"], catch_exceptions=False)
+        assert run_result.exit_code == 0
 
         return orig_case_dir, new_case_dir
 
