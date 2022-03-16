@@ -28,6 +28,8 @@ class Substructure(abc.ABC):
 
     element_type: Type["fe.Element"]
 
+    is_free = False
+
     @classmethod
     def find_by_name(cls, name: str) -> "Substructure":
         """Return a substructure whose name matches the argument."""
@@ -456,6 +458,7 @@ class FlexibleSubstructure(Substructure):
 
     __all: List["FlexibleSubstructure"] = []
     res = 0.0
+    is_free = True
 
     @classmethod
     def update_all(cls) -> None:
@@ -509,7 +512,6 @@ class FlexibleSubstructure(Substructure):
         self.K: Optional[np.ndarray] = None
         self.F: Optional[np.ndarray] = None
         self.U: Optional[np.ndarray] = None
-        config.has_free_structure = True
 
     def get_residual(self) -> float:
         return np.max(np.abs(self.U))
@@ -593,6 +595,7 @@ class RigidSubstructure(Substructure):
 
 class TorsionalSpringSubstructure(FlexibleSubstructure, RigidSubstructure):
     base_pt: np.ndarray
+    is_free = True
 
     def __init__(self, dict_: Dict[str, Any]):
         FlexibleSubstructure.__init__(self, dict_)
@@ -609,7 +612,6 @@ class TorsionalSpringSubstructure(FlexibleSubstructure, RigidSubstructure):
         self.attached_element: Optional[fe.Element] = None
         self.minimum_angle = dict_.get("minimumAngle", -float("Inf"))
         self.max_angle_step = dict_.get("maxAngleStep", float("Inf"))
-        config.has_free_structure = True
         self.attached_ind = 0
         self.attached_substructure: Optional[Substructure] = None
         self.residual = 1.0

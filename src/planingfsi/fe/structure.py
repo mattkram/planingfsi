@@ -28,6 +28,18 @@ class StructuralSolver:
         self.res = 1.0  # TODO: Can this be a property instead?
 
     @property
+    def has_free_structure(self) -> bool:
+        """True if any rigid body or substructure are free to move."""
+        for rigid_body in self.rigid_body:
+            if rigid_body.free_in_draft or rigid_body.free_in_trim:
+                return True
+
+            for ss in rigid_body.substructure:
+                if ss.is_free:
+                    return True
+        return False
+
+    @property
     def simulation(self) -> "fsi_simulation.Simulation":
         """A reference to the simulation object by resolving the weak reference."""
         simulation = self._simulation()

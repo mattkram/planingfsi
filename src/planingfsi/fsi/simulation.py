@@ -140,7 +140,7 @@ class Simulation:
         ):
 
             # Calculate response
-            if config.has_free_structure:
+            if self.solid_solver.has_free_structure:
                 self.apply_ramp()
                 self.update_solid_response()
                 self.update_fluid_response()

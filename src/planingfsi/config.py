@@ -573,9 +573,6 @@ if Path(DICT_NAME).exists():
     load_from_file(DICT_NAME)
 
 # Initialized constants
-# TODO: These should be moved to the Simulation class
-has_free_structure = False
-
 # TODO: This need to be factored out eventually
 res_l = 1.0
 res_m = 1.0

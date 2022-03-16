@@ -99,10 +99,6 @@ class RigidBody:
         self.max_acc = np.array([self.max_draft_acc, self.max_trim_acc])
         self.relax = np.array([self.relax_draft, self.relax_trim])
 
-        # TODO: The config.has_free_structure variable should be factored out
-        if self.free_in_draft or self.free_in_trim:
-            config.has_free_structure = True
-
         self.v = np.zeros((self.num_dim,))
         self.a = np.zeros((self.num_dim,))
         self.v_old = np.zeros((self.num_dim,))
