@@ -120,8 +120,10 @@ class Simulation:
         print(f"Pressure Cushions: {self.fluid_solver.pressure_cushions}")
 
     def run(self) -> None:
-        """Run the fluid-structure interaction simulation by iterating
-        between the fluid and solid solvers.
+        """Run the fluid-structure interaction simulation.
+
+        The fluid and solid solvers are solved iteratively until convergence is reached.
+
         """
         self.reset()
 
