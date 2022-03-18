@@ -573,13 +573,13 @@ class Config:
 
 # Global instances of configs
 # TODO: Factor out and attach to Simulation object instead
-config = Config()
+_config = Config()
 
-flow = config.flow
-body = config.body
-plotting = config.plotting
-path = config.path
-io = config.io
-solver = config.solver
+flow = _config.flow
+body = _config.body
+plotting = _config.plotting
+path = _config.path
+io = _config.io
+solver = _config.solver
 
-load_from_file = config.load_from_file
+load_from_file = _config.load_from_file
