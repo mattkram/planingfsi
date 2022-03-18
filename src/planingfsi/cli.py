@@ -42,22 +42,25 @@ def cli() -> None:
 def run_planingfsi(post_mode: bool, plot_save: bool, plot_show: bool, new_case: bool) -> None:
     """Run the planingFSI solver."""
     _cleanup_globals()
+
+    # TODO: Remove global config load after all references are removed
     config.load_from_file("configDict")
 
-    config.plotting.save = plot_save
-    config.plotting.show = plot_show
+    simulation = Simulation.from_input_files("configDict")
+
+    simulation.config.plotting.save = plot_save
+    simulation.config.plotting.show = plot_show
 
     if post_mode:
         logger.info("Running in post-processing mode")
-        config.plotting.save = True
-        config.io.results_from_file = True
+        simulation.config.plotting.save = True
+        simulation.config.io.results_from_file = True
 
     if new_case:
         logger.info("Removing all time directories")
-        for it_dir in Path(config.path.case_dir).glob("[0-9]*"):
+        for it_dir in Path(simulation.config.path.case_dir).glob("[0-9]*"):
             it_dir.unlink()
 
-    simulation = Simulation.from_input_files()
     simulation.run()
 
 

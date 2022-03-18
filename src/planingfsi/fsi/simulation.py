@@ -3,6 +3,7 @@ import os
 from pathlib import Path
 from typing import List
 from typing import Optional
+from typing import Union
 
 import numpy as np
 
@@ -42,10 +43,10 @@ class Simulation:
         self.ramp = 1.0
 
     @classmethod
-    def from_input_files(cls) -> "Simulation":
+    def from_input_files(cls, config_filename: Union[Path, str]) -> "Simulation":
         """Construct a `Simulation` object by loading input files."""
         simulation = cls()
-        simulation.load_input_files()
+        simulation.load_input_files(config_filename)
         return simulation
 
     @property
@@ -84,9 +85,9 @@ class Simulation:
                 for f in os.listdir(self.config.path.fig_dir_name):
                     os.remove(os.path.join(self.config.path.fig_dir_name, f))
 
-    def load_input_files(self) -> None:
+    def load_input_files(self, config_filename: Union[Path, str]) -> None:
         """Load all of the input files."""
-        self.config.load_from_file("configDict")
+        self.config.load_from_file(config_filename)
         self._load_rigid_bodies()
         self._load_substructures()
         self._load_pressure_cushions()
