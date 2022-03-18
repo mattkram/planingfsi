@@ -159,6 +159,16 @@ def test_body_pressure_calculations(config: Config) -> None:
     body.PcBar = 10.0
     assert body.Pc == 50.0
 
+    config.body._seal_pressure = 0.0
+    assert config.body.PsBar == 0.0
+
+    config.body._cushion_pressure = 10.0
+    config.body._seal_pressure = 100.0
+    assert config.body.PsBar == 10.0
+
+    config.body.PsBar = 20.0
+    assert config.body._seal_pressure == 200.0
+
 
 @pytest.fixture()
 def config_from_file(test_dir: Path, config: Config) -> Config:
