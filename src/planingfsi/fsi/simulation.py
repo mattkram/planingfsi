@@ -111,6 +111,7 @@ class Simulation:
 
             if dict_.get("hasPlaningSurface", False):
                 planing_surface = self.fluid_solver.add_planing_surface(dict_)
+                dict_.setdefault("waterline_height", self.config.flow.waterline_height)
                 interpolator = Interpolator(substructure, planing_surface, dict_)
                 interpolator.solid_position_function = substructure.get_coordinates
                 interpolator.fluid_pressure_function = planing_surface.get_loads_in_range

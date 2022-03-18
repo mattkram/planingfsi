@@ -8,7 +8,6 @@ from typing import Tuple
 import numpy as np
 from scipy.optimize import fmin
 
-from .. import config
 from ..fe import substructure
 from ..potentialflow import pressurepatch
 from ..solver import fzero
@@ -37,6 +36,7 @@ class Interpolator:
         if dict_ is None:
             dict_ = {}
 
+        self._waterline_height = dict_.get("waterline_height", 0.0)
         self.sSepPctStart = dict_.get("sSepPctStart", 0.5)
         self.sImmPctStart = dict_.get("sImmPctStart", 0.9)
 
@@ -67,7 +67,7 @@ class Interpolator:
             self._immersed_arclength = self.sImmPctStart * self.solid.arc_length
 
         self._immersed_arclength = fzero(
-            lambda s: self.get_coordinates(s)[1] - config.flow.waterline_height,
+            lambda s: self.get_coordinates(s)[1] - self._waterline_height,
             self._immersed_arclength,
         )
 
