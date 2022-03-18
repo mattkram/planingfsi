@@ -51,3 +51,31 @@ def pytest_addoption(parser: Parser) -> None:
 def pytest_runtest_setup(item: Function) -> None:
     if "slow" in item.keywords and not item.config.getoption("--slow"):
         pytest.skip("need --slow option to run this test")
+
+
+@pytest.fixture(autouse=True)
+def _cleanup_globals() -> None:
+    """Clear out class-global lists, which causes trouble when running the program multiple times
+    during the same testing session.
+
+    Todo:
+        * This should be removed after the globals are factored out.
+
+    """
+    from planingfsi.fe.felib import Element
+    from planingfsi.fe.felib import Node
+    from planingfsi.fe.femesh import Curve
+    from planingfsi.fe.femesh import Line
+    from planingfsi.fe.femesh import Point
+    from planingfsi.fe.femesh import Shape
+    from planingfsi.fe.substructure import FlexibleSubstructure
+    from planingfsi.fe.substructure import Substructure
+
+    Shape._Shape__all = []  # type: ignore
+    Point._Point__all = []  # type: ignore
+    Curve._Curve__all = []  # type: ignore
+    Line._Line__all = []  # type: ignore
+    Node._Node__all = []  # type: ignore
+    Element._Element__all = []  # type: ignore
+    Substructure._Substructure__all = []  # type: ignore
+    FlexibleSubstructure._FlexibleSubstructure__all = []  # type: ignore
