@@ -102,6 +102,7 @@ def _cleanup_globals() -> None:
     from planingfsi.fe.femesh import Line
     from planingfsi.fe.femesh import Point
     from planingfsi.fe.femesh import Shape
+    from planingfsi.fe.substructure import Substructure, FlexibleSubstructure
 
     Shape._Shape__all = []  # type: ignore
     Point._Point__all = []  # type: ignore
@@ -109,3 +110,5 @@ def _cleanup_globals() -> None:
     Line._Line__all = []  # type: ignore
     Node._Node__all = []  # type: ignore
     Element._Element__all = []  # type: ignore
+    Substructure._Substructure__all = []  # type: ignore
+    FlexibleSubstructure._FlexibleSubstructure__all = []  # type: ignore

@@ -4,6 +4,8 @@ from typing import Any
 from typing import Dict
 
 import pytest
+from _pytest.config.argparsing import Parser
+from _pytest.python import Function
 from click.testing import CliRunner
 
 from planingfsi.dictionary import load_dict_from_file
@@ -40,3 +42,12 @@ def test_dict(input_dir: Path) -> Dict[str, Any]:
 @pytest.fixture()
 def runner() -> CliRunner:
     return CliRunner()
+
+
+def pytest_addoption(parser: Parser) -> None:
+    parser.addoption("--slow", action="store_true", help="run the tests marked 'slow'")
+
+
+def pytest_runtest_setup(item: Function) -> None:
+    if "slow" in item.keywords and not item.config.getoption("--slow"):
+        pytest.skip("need --slow option to run this test")
