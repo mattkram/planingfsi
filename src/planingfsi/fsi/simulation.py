@@ -8,7 +8,7 @@ import numpy as np
 
 # TODO: There is an import cycle making this noreorder line necessary
 from .figure import FSIFigure  # noreorder
-from .. import config
+from planingfsi.config import Config
 from .. import logger
 from ..dictionary import load_dict_from_file
 from ..fe.structure import StructuralSolver
@@ -34,6 +34,7 @@ class Simulation:
     it_dirs: List[Path]
 
     def __init__(self) -> None:
+        self.config = Config()
         self.solid_solver = StructuralSolver(self)
         self.fluid_solver = PotentialPlaningSolver(self)
         self._figure: Optional[FSIFigure] = None
@@ -50,7 +51,7 @@ class Simulation:
     @property
     def figure(self) -> Optional[FSIFigure]:
         """Use a property for the figure object to initialize lazily."""
-        if self._figure is None and config.plotting.plot_any:
+        if self._figure is None and self.config.plotting.plot_any:
             self._figure = FSIFigure(self)
         return self._figure
 
@@ -66,31 +67,34 @@ class Simulation:
     @property
     def it_dir(self) -> Path:
         """A path to the directory for the current iteration."""
-        return Path(config.path.case_dir, str(self.it))
+        return Path(self.config.path.case_dir, str(self.it))
 
     def create_dirs(self) -> None:
-        config.path.fig_dir_name = os.path.join(config.path.case_dir, config.path.fig_dir_name)
+        self.config.path.fig_dir_name = os.path.join(
+            self.config.path.case_dir, self.config.path.fig_dir_name
+        )
 
-        if self.check_output_interval() and not config.io.results_from_file:
-            Path(config.path.case_dir).mkdir(exist_ok=True)
+        if self.check_output_interval() and not self.config.io.results_from_file:
+            Path(self.config.path.case_dir).mkdir(exist_ok=True)
             Path(self.it_dir).mkdir(exist_ok=True)
 
-        if config.plotting.save:
-            Path(config.path.fig_dir_name).mkdir(exist_ok=True)
+        if self.config.plotting.save:
+            Path(self.config.path.fig_dir_name).mkdir(exist_ok=True)
             if self.it == 0:
-                for f in os.listdir(config.path.fig_dir_name):
-                    os.remove(os.path.join(config.path.fig_dir_name, f))
+                for f in os.listdir(self.config.path.fig_dir_name):
+                    os.remove(os.path.join(self.config.path.fig_dir_name, f))
 
     def load_input_files(self) -> None:
         """Load all of the input files."""
+        self.config.load_from_file("configDict")
         self._load_rigid_bodies()
         self._load_substructures()
         self._load_pressure_cushions()
 
     def _load_rigid_bodies(self) -> None:
         """Load all rigid bodies from files."""
-        if Path(config.path.body_dict_dir).exists():
-            for dict_path in Path(config.path.body_dict_dir).glob("*"):
+        if Path(self.config.path.body_dict_dir).exists():
+            for dict_path in Path(self.config.path.body_dict_dir).glob("*"):
                 dict_ = load_dict_from_file(str(dict_path))
                 self.solid_solver.add_rigid_body(dict_)
         else:
@@ -100,7 +104,7 @@ class Simulation:
 
     def _load_substructures(self) -> None:
         """Load all substructures from files."""
-        for dict_path in Path(config.path.input_dict_dir).glob("*"):
+        for dict_path in Path(self.config.path.input_dict_dir).glob("*"):
             dict_ = load_dict_from_file(dict_path)
             substructure = self.solid_solver.add_substructure(dict_)
 
@@ -113,8 +117,8 @@ class Simulation:
 
     def _load_pressure_cushions(self) -> None:
         """Load all pressure cushions from files."""
-        if Path(config.path.cushion_dict_dir).exists():
-            for dict_path in Path(config.path.cushion_dict_dir).glob("*"):
+        if Path(self.config.path.cushion_dict_dir).exists():
+            for dict_path in Path(self.config.path.cushion_dict_dir).glob("*"):
                 dict_ = load_dict_from_file(dict_path)
                 self.fluid_solver.add_pressure_cushion(dict_)
         print(f"Pressure Cushions: {self.fluid_solver.pressure_cushions}")
@@ -127,7 +131,7 @@ class Simulation:
         """
         self.reset()
 
-        if config.io.results_from_file:
+        if self.config.io.results_from_file:
             self.create_dirs()
             self.apply_ramp()
             self.it_dirs = sorted(Path(".").glob("[0-9]*"), key=lambda x: int(x.name))
@@ -135,8 +139,9 @@ class Simulation:
         self.initialize_solvers()
 
         # Iterate between solid and fluid solvers until equilibrium
-        while self.it <= config.solver.num_ramp_it or (
-            self.get_residual() >= config.solver.max_residual and self.it <= config.solver.max_it
+        while self.it <= self.config.solver.num_ramp_it or (
+            self.get_residual() >= self.config.solver.max_residual
+            and self.it <= self.config.solver.max_it
         ):
 
             # Calculate response
@@ -159,18 +164,18 @@ class Simulation:
 
         if (
             self.figure is not None
-            and config.plotting.save
-            and not config.plotting.fig_format == "png"
+            and self.config.plotting.save
+            and not self.config.plotting.fig_format == "png"
         ):
-            config.plotting.fig_format = "png"
+            self.config.plotting.fig_format = "png"
             self.figure.save()
 
-        if self.figure is not None and config.io.write_time_histories:
+        if self.figure is not None and self.config.io.write_time_histories:
             self.figure.write_time_histories()
 
         logger.info("Execution complete")
 
-        if self.figure is not None and config.plotting.show:
+        if self.figure is not None and self.config.plotting.show:
             self.figure.show()
 
     def reset(self) -> None:
@@ -185,18 +190,18 @@ class Simulation:
 
     def increment(self) -> None:
         """Increment iteration counter. If loading from files, use the next stored iteration."""
-        if config.io.results_from_file:
+        if self.config.io.results_from_file:
             old_ind = np.nonzero(self.it == self.it_dirs)[0][0]
             if not old_ind == len(self.it_dirs) - 1:
                 self.it = int(self.it_dirs[old_ind + 1])
             else:
-                self.it = config.solver.max_it + 1
+                self.it = self.config.solver.max_it + 1
             self.create_dirs()
         else:
             self.it += 1
 
     def update_figure(self) -> None:
-        if self.figure is not None and config.plotting.plot_any:
+        if self.figure is not None and self.config.plotting.plot_any:
             self.figure.update()
 
     def get_body_res(self, x: np.array) -> np.array:
@@ -212,11 +217,11 @@ class Simulation:
 
         # Update iteration number depending on whether loading existing or
         # simply incrementing by 1
-        if config.io.results_from_file:
+        if self.config.io.results_from_file:
             if self.it < len(self.it_dirs) - 1:
                 self.it = int(str(self.it_dirs[self.it + 1]))
             else:
-                self.it = config.solver.max_it
+                self.it = self.config.solver.max_it
             self.it += 1
         else:
             self.it += 1
@@ -231,20 +236,20 @@ class Simulation:
         return np.array([res_l, res_m])
 
     def apply_ramp(self) -> None:
-        if config.io.results_from_file:
+        if self.config.io.results_from_file:
             self.load_results()
         else:
-            if config.solver.num_ramp_it == 0:
+            if self.config.solver.num_ramp_it == 0:
                 self.ramp = 1.0
             else:
-                self.ramp = np.min((self.it / float(config.solver.num_ramp_it), 1.0))
+                self.ramp = np.min((self.it / float(self.config.solver.num_ramp_it), 1.0))
 
-            config.solver.relax_FEM = (
+            self.config.solver.relax_FEM = (
                 1 - self.ramp
-            ) * config.solver.relax_initial + self.ramp * config.solver.relax_final
+            ) * self.config.solver.relax_initial + self.ramp * self.config.solver.relax_final
 
     def get_residual(self) -> float:
-        if config.io.results_from_file:
+        if self.config.io.results_from_file:
             return 1.0
             return load_dict_from_file(os.path.join(self.it_dir, "overallQuantities.txt")).get(
                 "Residual", 0.0
@@ -259,13 +264,13 @@ class Simulation:
 
     def check_output_interval(self) -> bool:
         return (
-            self.it >= config.solver.max_it
-            or self.get_residual() < config.solver.max_residual
-            or np.mod(self.it, config.io.write_interval) == 0
+            self.it >= self.config.solver.max_it
+            or self.get_residual() < self.config.solver.max_residual
+            or np.mod(self.it, self.config.io.write_interval) == 0
         )
 
     def write_results(self) -> None:
-        if self.check_output_interval() and not config.io.results_from_file:
+        if self.check_output_interval() and not self.config.io.results_from_file:
             writers.write_as_dict(
                 os.path.join(self.it_dir, "overallQuantities.txt"),
                 ["Ramp", self.ramp],
