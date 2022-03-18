@@ -19,6 +19,7 @@ from .. import logger
 from .. import math_helpers
 from .. import trig
 from .. import writers
+from ..config import NUM_DIM
 from ..fsi.interpolator import Interpolator
 
 
@@ -464,7 +465,7 @@ class FlexibleSubstructure(Substructure):
     def update_all(cls) -> None:
         # TODO: This functionality should be moved to the rigid body
 
-        num_dof = fe.Node.count() * config.flow.num_dim
+        num_dof = fe.Node.count() * NUM_DIM
         Kg = np.zeros((num_dof, num_dof))
         Fg = np.zeros((num_dof, 1))
         Ug = np.zeros((num_dof, 1))
@@ -517,7 +518,7 @@ class FlexibleSubstructure(Substructure):
         return np.max(np.abs(self.U))
 
     def initialize_matrices(self) -> None:
-        num_dof = fe.Node.count() * config.flow.num_dim
+        num_dof = fe.Node.count() * NUM_DIM
         self.K = np.zeros((num_dof, num_dof))
         self.F = np.zeros((num_dof, 1))
         self.U = np.zeros((num_dof, 1))
@@ -589,7 +590,7 @@ class RigidSubstructure(Substructure):
 
     def set_fixed_dof(self) -> None:
         for nd in self.node:
-            for j in range(config.flow.num_dim):
+            for j in range(NUM_DIM):
                 nd.is_dof_fixed[j] = True
 
 

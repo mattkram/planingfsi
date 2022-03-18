@@ -6,9 +6,9 @@ from typing import Tuple
 
 import numpy as np
 
-from .. import config
 from .. import logger
 from .. import trig
+from ..config import NUM_DIM
 from .substructure import Substructure
 
 
@@ -33,9 +33,9 @@ class Node:
 
         self.x = 0.0
         self.y = 0.0
-        self.dof = [self.node_num * config.flow.num_dim + i for i in [0, 1]]
-        self.is_dof_fixed = [True] * config.flow.num_dim
-        self.fixed_load = np.zeros(config.flow.num_dim)
+        self.dof = [self.node_num * NUM_DIM + i for i in [0, 1]]
+        self.is_dof_fixed = [True] * NUM_DIM
+        self.fixed_load = np.zeros(NUM_DIM)
         self.line_xy = None
 
     def set_coordinates(self, x: float, y: float) -> None:
@@ -63,7 +63,7 @@ class Element(abc.ABC):
         Element.__all.append(self)
 
         self.node: List[Node] = []
-        self.dof = [0] * config.flow.num_dim
+        self.dof = [0] * NUM_DIM
         self.length = 0.0
         self.initial_length: Optional[float] = None
         self.qp = np.zeros((2,))

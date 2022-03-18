@@ -20,6 +20,7 @@ from . import logger
 from .dictionary import load_dict_from_file
 
 DICT_NAME = "configDict"
+NUM_DIM = 2
 
 
 class ConfigItem:
@@ -132,7 +133,6 @@ class FlowConfig(SubConfig):
         gravity (float): Acceleration due to gravity.
         kinematic_viscosity (float): Kinematic viscosity of the fluid.
         waterline_height (float): Height of the waterline above the reference.
-        num_dim (int): Number of dimensions.
         include_friction (bool): If True, include a flat-plate estimation for the frictional drag
             component.
 
@@ -142,7 +142,6 @@ class FlowConfig(SubConfig):
     gravity = ConfigItem("g", default=9.81)
     kinematic_viscosity = ConfigItem("nu", default=1e-6)
     waterline_height = ConfigItem("hWL", default=0.0)
-    num_dim = ConfigItem("dim", default=2)
     include_friction = ConfigItem("shearCalc", default=False)
 
     _froude_num = ConfigItem("Fr", default=None, type=float)

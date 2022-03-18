@@ -79,7 +79,6 @@ def test_flow_defaults(config: Config) -> None:
     assert flow.gravity == 9.81
     assert flow.kinematic_viscosity == 1e-6
     assert flow.waterline_height == 0.0
-    assert flow.num_dim == 2
     assert not flow.include_friction
 
 
