@@ -8,8 +8,8 @@ import numpy as np
 from scipy.special import sici
 
 from . import pressurepatch
-from .. import config
 from .. import math_helpers
+from ..config import Config
 
 
 def _get_aux_fg(lam: float) -> Tuple[float, float]:
@@ -137,6 +137,13 @@ class PressureElement(abc.ABC):
         self.parent = parent
 
     @property
+    def config(self) -> Config:
+        """A reference to the simulation configuration."""
+        if self.parent is None:
+            raise ValueError("Must set parent pressure patch to access config.")
+        return self.parent.config
+
+    @property
     def width(self) -> float:
         """The total width of the pressure element."""
         return self._width.sum()
@@ -172,7 +179,7 @@ class PressureElement(abc.ABC):
             )
         else:
             influence = self._get_local_influence_coefficient(x_rel)
-        return influence / (config.flow.density * config.flow.gravity)
+        return influence / (self.config.flow.density * self.config.flow.gravity)
 
     def get_influence(self, x_coord: float) -> float:
         """Return _get_local_influence_coefficient for actual pressure.
@@ -233,14 +240,14 @@ class AftHalfTriangularPressureElement(PressureElement):
 
     def _get_local_influence_coefficient(self, x_rel: float) -> float:
         """Get influence coefficient for element relative to the element position."""
-        lambda_0 = config.flow.k0 * x_rel
+        lambda_0 = self.config.flow.k0 * x_rel
         aux_f, aux_g = _get_aux_fg(lambda_0)
-        influence = _get_gamma1(lambda_0, aux_g) / (self.width * config.flow.k0)
+        influence = _get_gamma1(lambda_0, aux_g) / (self.width * self.config.flow.k0)
         influence += _get_gamma2(lambda_0, aux_f)
 
-        lambda_2 = config.flow.k0 * (x_rel + self.width)
+        lambda_2 = self.config.flow.k0 * (x_rel + self.width)
         _, aux_g = _get_aux_fg(lambda_2)
-        influence -= _get_gamma1(lambda_2, aux_g) / (self.width * config.flow.k0)
+        influence -= _get_gamma1(lambda_2, aux_g) / (self.width * self.config.flow.k0)
         return influence
 
     @property
@@ -281,14 +288,14 @@ class ForwardHalfTriangularPressureElement(PressureElement):
             x_coord: x-coordinate, centered at element location.
 
         """
-        lambda_0 = config.flow.k0 * x_coord
+        lambda_0 = self.config.flow.k0 * x_coord
         aux_f, aux_g = _get_aux_fg(lambda_0)
-        influence = _get_gamma1(lambda_0, aux_g) / (self.width * config.flow.k0)
+        influence = _get_gamma1(lambda_0, aux_g) / (self.width * self.config.flow.k0)
         influence -= _get_gamma2(lambda_0, aux_f)
 
-        lambda_1 = config.flow.k0 * (x_coord - self.width)
+        lambda_1 = self.config.flow.k0 * (x_coord - self.width)
         _, aux_g = _get_aux_fg(lambda_1)
-        influence -= _get_gamma1(lambda_1, aux_g) / (self.width * config.flow.k0)
+        influence -= _get_gamma1(lambda_1, aux_g) / (self.width * self.config.flow.k0)
         return influence
 
     @property
@@ -338,18 +345,18 @@ class CompleteTriangularPressureElement(PressureElement):
         x_coord : float
             x-coordinate, centered at element location.
         """
-        lambda_0 = config.flow.k0 * x_coord
+        lambda_0 = self.config.flow.k0 * x_coord
         _, aux_g = _get_aux_fg(lambda_0)
         influence = _get_gamma1(lambda_0, aux_g) * self.width / (self._width[1] * self._width[0])
 
-        lambda_1 = config.flow.k0 * (x_coord - self._width[1])
+        lambda_1 = self.config.flow.k0 * (x_coord - self._width[1])
         _, aux_g = _get_aux_fg(lambda_1)
         influence -= _get_gamma1(lambda_1, aux_g) / self._width[1]
 
-        lambda_2 = config.flow.k0 * (x_coord + self._width[0])
+        lambda_2 = self.config.flow.k0 * (x_coord + self._width[0])
         _, aux_g = _get_aux_fg(lambda_2)
         influence -= _get_gamma1(lambda_2, aux_g) / self._width[0]
-        return influence / config.flow.k0
+        return influence / self.config.flow.k0
 
     @property
     def plot_coords(self) -> Tuple[np.ndarray, np.ndarray]:
@@ -372,7 +379,7 @@ class AftSemiInfinitePressureBand(PressureElement):
         x_coord : float
             x-coordinate, centered at element location.
         """
-        lambda_0 = config.flow.k0 * x_coord
+        lambda_0 = self.config.flow.k0 * x_coord
         aux_f, _ = _get_aux_fg(lambda_0)
         influence = _get_gamma2(lambda_0, aux_f)
         return influence
@@ -381,7 +388,7 @@ class AftSemiInfinitePressureBand(PressureElement):
     def plot_coords(self) -> Tuple[np.ndarray, np.ndarray]:
         """Coordinates for pressure plot."""
         return (
-            np.array([config.plotting.x_fs_min, self.x_coord]),
+            np.array([self.config.plotting.x_fs_min, self.x_coord]),
             np.array([self.pressure, self.pressure]),
         )
 
@@ -400,7 +407,7 @@ class ForwardSemiInfinitePressureBand(PressureElement):
         x_coord : float
             x-coordinate, centered at element location.
         """
-        lambda_0 = config.flow.k0 * x_coord
+        lambda_0 = self.config.flow.k0 * x_coord
         aux_f, _ = _get_aux_fg(lambda_0)
         influence = _get_gamma3(lambda_0, aux_f)
         return influence
@@ -409,6 +416,6 @@ class ForwardSemiInfinitePressureBand(PressureElement):
     def plot_coords(self) -> Tuple[np.ndarray, np.ndarray]:
         """Coordinates for pressure plot."""
         return (
-            np.array([self.x_coord, config.plotting.x_fs_max]),
+            np.array([self.x_coord, self.config.plotting.x_fs_max]),
             np.array([self.pressure, self.pressure]),
         )

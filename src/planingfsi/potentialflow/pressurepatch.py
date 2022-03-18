@@ -13,10 +13,10 @@ from scipy.optimize import fmin
 
 from . import pressureelement as pe
 from . import solver
-from .. import config
 from .. import math_helpers
 from .. import trig
 from .. import writers
+from ..config import Config
 from ..dictionary import load_dict_from_file
 from ..fsi import interpolator  # noqa: F401
 
@@ -50,6 +50,11 @@ class PressurePatch(abc.ABC):
         self.lift_pressure = np.nan
         self.lift_friction = np.nan
         self.moment_total = np.nan
+
+    @property
+    def config(self) -> Config:
+        """A reference to the simulation configuration."""
+        return self.parent.config
 
     @property
     def base_pt(self) -> float:
@@ -139,13 +144,13 @@ class PressurePatch(abc.ABC):
 
     def _calculate_wave_drag(self) -> float:
         """Calculate wave drag of patch."""
-        xo = -10 * config.flow.lam
+        xo = -10 * self.config.flow.lam
         (xTrough,) = fmin(self.get_free_surface_height, xo, disp=False)
         (xCrest,) = fmin(lambda x: -self.get_free_surface_height(x), xo, disp=False)
         return (
             0.0625
-            * config.flow.density
-            * config.flow.gravity
+            * self.config.flow.density
+            * self.config.flow.gravity
             * (self.get_free_surface_height(xCrest) - self.get_free_surface_height(xTrough)) ** 2
         )
 
@@ -153,7 +158,9 @@ class PressurePatch(abc.ABC):
     def _force_file_save_path(self) -> Path:
         """A path to the force file."""
         assert self.parent is not None
-        return self.parent.simulation.it_dir / f"forces_{self.patch_name}.{config.io.data_format}"
+        return (
+            self.parent.simulation.it_dir / f"forces_{self.patch_name}.{self.config.io.data_format}"
+        )
 
     def write_forces(self) -> None:
         """Write forces to file."""
@@ -209,7 +216,7 @@ class PressureCushion(PressurePatch):
 
         cushion_pressure = dict_.get("cushionPressure")
         if cushion_pressure is None:
-            cushion_pressure = getattr(config, "cushionPressure", 0.0)
+            cushion_pressure = getattr(self.config, "cushionPressure", 0.0)
         assert isinstance(cushion_pressure, float)
         self.cushion_pressure = cushion_pressure
 
@@ -251,7 +258,7 @@ class PressureCushion(PressurePatch):
             for i, key in enumerate(["downstreamLoc", "upstreamLoc"]):
                 value = dict_.get(key)
                 if value is None:
-                    value = getattr(config, key, 0.0)
+                    value = getattr(self.config, key, 0.0)
                 self._end_pts[i] = value
 
             self.pressure_elements.append(
@@ -356,10 +363,10 @@ class PlaningSurface(PressurePatch):
         self.spring_constant = dict_.get("springConstant", 1e4)
         self.kutta_pressure = dict_.get("kuttaPressure", 0.0)
         if isinstance(self.kutta_pressure, str):
-            self.kutta_pressure = getattr(config.body, self.kutta_pressure)
+            self.kutta_pressure = getattr(self.config.body, self.kutta_pressure)
         self._upstream_pressure = dict_.get("upstreamPressure", 0.0)
         if isinstance(self._upstream_pressure, str):
-            self._upstream_pressure = getattr(config, self._upstream_pressure)
+            self._upstream_pressure = getattr(self.config, self._upstream_pressure)
 
         self.is_initialized = False
         self.is_active = True
@@ -471,13 +478,13 @@ class PlaningSurface(PressurePatch):
     def get_residual(self) -> float:
         """Get residual to drive first element pressure to zero."""
         if self.length > 0.0:
-            return self.pressure_elements[0].pressure / config.flow.stagnation_pressure
+            return self.pressure_elements[0].pressure / self.config.flow.stagnation_pressure
         else:
             return 0.0
 
     def calculate_forces(self) -> None:
         """Calculate the forces by integrating pressure and shear stress."""
-        if config.flow.include_friction:
+        if self.config.flow.include_friction:
             self._calculate_shear_stress()
 
         if self.length > 0.0:
@@ -506,7 +513,7 @@ class PlaningSurface(PressurePatch):
             self.lift_total = self.lift_pressure + self.lift_friction
             self.moment_total = math_helpers.integrate(
                 self.x_coords,
-                self.pressure * trig.cosd(tangent_angle) * (self.x_coords - config.body.xCofR),
+                self.pressure * trig.cosd(tangent_angle) * (self.x_coords - self.config.body.xCofR),
             )
             if self.is_sprung:
                 self._apply_spring()
@@ -550,15 +557,17 @@ class PlaningSurface(PressurePatch):
         spring_displacement = z_s - self.parent.get_free_surface_height(x_s)
         spring_force = -self.spring_constant * spring_displacement
         self.lift_total += spring_force
-        self.moment_total += spring_force * (x_s - config.body.xCofR)
+        self.moment_total += spring_force * (x_s - self.config.body.xCofR)
 
     def _calculate_shear_stress(self) -> None:
         """Calculate the shear stress and apply to each element."""
 
         def get_shear_stress(xx: float) -> float:
             """Calculate the shear stress at a given location."""
-            re_x = config.flow.flow_speed * xx / config.flow.kinematic_viscosity
-            return 0.332 * config.flow.density * config.flow.flow_speed**2 * re_x**-0.5
+            re_x = self.config.flow.flow_speed * xx / self.config.flow.kinematic_viscosity
+            return (
+                0.332 * self.config.flow.density * self.config.flow.flow_speed**2 * re_x**-0.5
+            )
 
         x = self.get_element_coords()[:-1]
         assert self.interpolator is not None

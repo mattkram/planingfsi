@@ -8,8 +8,8 @@ import matplotlib.pyplot as plt
 import numpy as np
 from matplotlib.axes import Axes
 
-from .. import config
 from .. import trig
+from ..config import Config
 from ..fe import rigid_body
 from ..fe.structure import StructuralSolver
 from ..fsi import simulation as fsi_simulation
@@ -17,7 +17,8 @@ from ..potentialflow.solver import PotentialPlaningSolver
 
 
 class FSIFigure:
-    def __init__(self, simulation: "fsi_simulation.Simulation"):
+    def __init__(self, simulation: "fsi_simulation.Simulation", config: Config):
+        self.config = config
         self.simulation = simulation
 
         fig = plt.figure(figsize=(16, 12))
@@ -40,9 +41,24 @@ class FSIFigure:
 
         self.lineCofR: List["CofRPlot"] = []
         for bodies in self.solid.rigid_body:
-            CofRPlot(self.geometry_ax, bodies, symbol=False, style="k--", marker="s", fill=False)
+            CofRPlot(
+                self.geometry_ax,
+                bodies,
+                grid_len=self.config.plotting.CofR_grid_len,
+                symbol=False,
+                style="k--",
+                marker="s",
+                fill=False,
+            )
             self.lineCofR.append(
-                CofRPlot(self.geometry_ax, bodies, symbol=False, style="k-", marker="o")
+                CofRPlot(
+                    self.geometry_ax,
+                    bodies,
+                    grid_len=self.config.plotting.CofR_grid_len,
+                    symbol=False,
+                    style="k-",
+                    marker="o",
+                )
             )
 
         x = [nd.x for struct in self.solid.substructure for nd in struct.node]
@@ -93,15 +109,15 @@ class FSIFigure:
 
         if self.solid.rigid_body:
             body = self.solid.rigid_body[0]
-            self.subplot.append(ForceSubplot([0.70, 0.30, 0.25, 0.2], body))
-            self.subplot.append(MotionSubplot([0.70, 0.05, 0.25, 0.2], body))
+            self.subplot.append(ForceSubplot([0.70, 0.30, 0.25, 0.2], body, parent=self))
+            self.subplot.append(MotionSubplot([0.70, 0.05, 0.25, 0.2], body, parent=self))
 
         if len(self.solid.rigid_body) > 1:
             body = self.solid.rigid_body[1]
-            self.subplot.append(ForceSubplot([0.05, 0.30, 0.25, 0.2], body))
-            self.subplot.append(MotionSubplot([0.05, 0.05, 0.25, 0.2], body))
+            self.subplot.append(ForceSubplot([0.05, 0.30, 0.25, 0.2], body, parent=self))
+            self.subplot.append(MotionSubplot([0.05, 0.05, 0.25, 0.2], body, parent=self))
 
-        self.subplot.append(ResidualSubplot([0.40, 0.05, 0.25, 0.45], self.solid))
+        self.subplot.append(ResidualSubplot([0.40, 0.05, 0.25, 0.45], self.solid, parent=self))
 
     @property
     def solid(self) -> StructuralSolver:
@@ -114,8 +130,8 @@ class FSIFigure:
     def plot_free_surface(self) -> None:
         """Create a plot of the free surface profile."""
         self.lineFS.set_data(self.fluid.x_coord_fs, self.fluid.z_coord_fs)
-        end_pts = np.array([config.plotting.x_fs_min, config.plotting.x_fs_max])
-        self.lineFSi.set_data(end_pts, config.flow.waterline_height * np.ones_like(end_pts))
+        end_pts = np.array([self.config.plotting.x_fs_min, self.config.plotting.x_fs_max])
+        self.lineFSi.set_data(end_pts, self.config.flow.waterline_height * np.ones_like(end_pts))
 
     def update(self) -> None:
         self.solid.plot()
@@ -124,8 +140,8 @@ class FSIFigure:
             "\n".join(
                 [
                     f"Iteration {self.simulation.it}",
-                    f"$Fr={config.flow.froude_num:>8.3f}$",
-                    f"$\\bar{{P_c}}={config.body.PcBar:>8.3f}$",
+                    f"$Fr={self.config.flow.froude_num:>8.3f}$",
+                    f"$\\bar{{P_c}}={self.config.body.PcBar:>8.3f}$",
                 ]
             )
         )
@@ -133,8 +149,8 @@ class FSIFigure:
         # Update each lower subplot
         for s in self.subplot:
             s.update(
-                self.solid.res < config.solver.max_residual
-                and self.simulation.it > config.solver.num_ramp_it
+                self.solid.res < self.config.solver.max_residual
+                and self.simulation.it > self.config.solver.num_ramp_it
             )
 
         for line in self.lineCofR:
@@ -142,7 +158,7 @@ class FSIFigure:
 
         plt.draw()
 
-        if config.plotting.save:
+        if self.config.plotting.save:
             self.save()
 
     def write_time_histories(self) -> None:
@@ -153,10 +169,10 @@ class FSIFigure:
     def save(self) -> None:
         plt.savefig(
             os.path.join(
-                config.path.fig_dir_name,
-                "frame{1:04d}.{0}".format(config.plotting.fig_format, self.simulation.it),
+                self.config.path.fig_dir_name,
+                "frame{1:04d}.{0}".format(self.config.plotting.fig_format, self.simulation.it),
             ),
-            format=config.plotting.fig_format,
+            format=self.config.plotting.fig_format,
         )  # , dpi=300)
 
     def show(self) -> None:
@@ -215,7 +231,8 @@ class PlotSeries:
 
 
 class TimeHistory:
-    def __init__(self, pos: List[float], name: str = "default") -> None:
+    def __init__(self, pos: List[float], name: str = "default", *, parent: FSIFigure) -> None:
+        self.parent = parent
         self.series: List["PlotSeries"] = []
         self.ax: List[Axes] = []
         self.title = ""
@@ -287,8 +304,8 @@ class TimeHistory:
 
 
 class MotionSubplot(TimeHistory):
-    def __init__(self, pos: List[float], body: "rigid_body.RigidBody"):
-        TimeHistory.__init__(self, pos, body.name)
+    def __init__(self, pos: List[float], body: "rigid_body.RigidBody", parent: FSIFigure):
+        TimeHistory.__init__(self, pos, body.name, parent=parent)
 
         def itFunc() -> float:
             return 0.0  # config.it
@@ -333,8 +350,8 @@ class MotionSubplot(TimeHistory):
 
 
 class ForceSubplot(TimeHistory):
-    def __init__(self, pos: List[float], body: "rigid_body.RigidBody"):
-        TimeHistory.__init__(self, pos, body.name)
+    def __init__(self, pos: List[float], body: "rigid_body.RigidBody", parent: FSIFigure):
+        TimeHistory.__init__(self, pos, body.name, parent=parent)
 
         def itFunc() -> float:
             return 0.0  # config.it
@@ -346,7 +363,7 @@ class ForceSubplot(TimeHistory):
             return body.D / body.weight
 
         def momFunc() -> float:
-            return body.M / (body.weight * config.body.reference_length)
+            return body.M / (body.weight * self.parent.config.body.reference_length)
 
         self.add_series(
             PlotSeries(
@@ -388,8 +405,8 @@ class ForceSubplot(TimeHistory):
 
 
 class ResidualSubplot(TimeHistory):
-    def __init__(self, pos: List[float], solid: "StructuralSolver"):
-        TimeHistory.__init__(self, pos, "residuals")
+    def __init__(self, pos: List[float], solid: "StructuralSolver", parent: FSIFigure):
+        TimeHistory.__init__(self, pos, "residuals", parent=parent)
 
         def itFunc() -> float:
             return 0.0  # config.it
@@ -444,22 +461,22 @@ class CofRPlot:
             fcol = "w"
         else:
             fcol = "k"
+        self._grid_len = kwargs.get("grid_len", 0.5)
 
         (self.line,) = self.ax.plot([], [], style)
         (self.lineCofG,) = self.ax.plot([], [], "k" + marker, markersize=8, markerfacecolor=fcol)
         self.update()
 
     def update(self) -> None:
-        grid_len = config.plotting.CofR_grid_len
         c = np.array([self.body.xCofR, self.body.yCofR])
-        hvec = trig.rotate_vec_2d(np.array([0.5 * grid_len, 0.0]), self.body.trim)
-        vvec = trig.rotate_vec_2d(np.array([0.0, 0.5 * grid_len]), self.body.trim)
+        hvec = trig.rotate_vec_2d(np.array([0.5 * self._grid_len, 0.0]), self.body.trim)
+        vvec = trig.rotate_vec_2d(np.array([0.0, 0.5 * self._grid_len]), self.body.trim)
         pts = np.array([c - hvec, c + hvec, c, c - vvec, c + vvec])
         self.line.set_data(pts.T)
         self.lineCofG.set_data(self.body.xCofG, self.body.yCofG)
 
 
-def plot_pressure(solver: PotentialPlaningSolver) -> None:
+def plot_pressure(solver: PotentialPlaningSolver, fig_format: str = "png") -> None:
     """Create a plot of the pressure and shear stress profiles."""
     fig, ax = plt.subplots(1, 1, figsize=(5.0, 5.0))
 
@@ -483,7 +500,4 @@ def plot_pressure(solver: PotentialPlaningSolver) -> None:
     # ax.set_ylabel(r"$p/(1/2\rho U^2)$")
     ax.set_ylim(ymin=0.0)
 
-    fig.savefig(
-        f"pressureElements.{config.plotting.fig_format}",
-        format=config.plotting.fig_format,
-    )
+    fig.savefig(f"pressureElements.{fig_format}", format=fig_format)

@@ -1,15 +1,15 @@
 import os
-import weakref
 from typing import Any
 from typing import Dict
 from typing import List
+from typing import Type
 
 import numpy as np
 
 from . import felib as fe
 from . import rigid_body as rigid_body_mod
-from .. import config
 from .. import logger
+from ..config import Config
 from ..fsi import simulation as fsi_simulation
 from .substructure import FlexibleSubstructure
 from .substructure import RigidSubstructure
@@ -23,17 +23,38 @@ class StructuralSolver:
     """
 
     def __init__(self, simulation: "fsi_simulation.Simulation") -> None:
-        self._simulation = weakref.ref(simulation)
+        self.simulation = simulation
         self.rigid_body: List["rigid_body_mod.RigidBody"] = []
         self.res = 1.0  # TODO: Can this be a property instead?
 
     @property
-    def simulation(self) -> "fsi_simulation.Simulation":
-        """A reference to the simulation object by resolving the weak reference."""
-        simulation = self._simulation()
-        if simulation is None:
-            raise ReferenceError("Simulation object cannot be accessed.")
-        return simulation
+    def config(self) -> Config:
+        """A reference to the simulation configuration."""
+        return self.simulation.config
+
+    @property
+    def has_free_structure(self) -> bool:
+        """True if any rigid body or substructure are free to move."""
+        for rigid_body in self.rigid_body:
+            if rigid_body.free_in_draft or rigid_body.free_in_trim:
+                return True
+
+            for ss in rigid_body.substructure:
+                if ss.is_free:
+                    return True
+        return False
+
+    @property
+    def res_l(self) -> float:
+        """The lift residual."""
+        # TODO: This should handle multiple rigid bodies
+        return self.rigid_body[0].get_res_lift()
+
+    @property
+    def res_m(self) -> float:
+        """The trim moment residual."""
+        # TODO: This should handle multiple rigid bodies
+        return self.rigid_body[0].get_res_moment()
 
     @property
     def substructure(self) -> List[Substructure]:
@@ -71,13 +92,14 @@ class StructuralSolver:
             dict_ = {}
         # TODO: This logic is better handled by the factory pattern
         ss_type = dict_.get("substructureType", "rigid")
-        ss: Substructure
+        ss_class: Type[Substructure]
         if ss_type.lower() == "flexible" or ss_type.lower() == "truss":
-            ss = FlexibleSubstructure(dict_)
+            ss_class = FlexibleSubstructure
         elif ss_type.lower() == "torsionalspring":
-            ss = TorsionalSpringSubstructure(dict_)
+            ss_class = TorsionalSpringSubstructure
         else:
-            ss = RigidSubstructure(dict_)
+            ss_class = RigidSubstructure
+        ss: Substructure = ss_class(dict_, solver=self)
         self.substructure.append(ss)
 
         self._assign_substructure_to_body(dict_, ss)
@@ -106,7 +128,7 @@ class StructuralSolver:
 
     def calculate_response(self) -> None:
         """Calculate the structural response, or load from files."""
-        if config.io.results_from_file:
+        if self.config.io.results_from_file:
             self._load_response()
         else:
             for bd in self.rigid_body:
@@ -149,9 +171,9 @@ class StructuralSolver:
     def load_mesh(self) -> None:
         """Load the mesh from files."""
         # Create all nodes
-        x, y = np.loadtxt(os.path.join(config.path.mesh_dir, "nodes.txt"), unpack=True)
-        xf, yf = np.loadtxt(os.path.join(config.path.mesh_dir, "fixedDOF.txt"), unpack=True)
-        fx, fy = np.loadtxt(os.path.join(config.path.mesh_dir, "fixedLoad.txt"), unpack=True)
+        x, y = np.loadtxt(os.path.join(self.config.path.mesh_dir, "nodes.txt"), unpack=True)
+        xf, yf = np.loadtxt(os.path.join(self.config.path.mesh_dir, "fixedDOF.txt"), unpack=True)
+        fx, fy = np.loadtxt(os.path.join(self.config.path.mesh_dir, "fixedLoad.txt"), unpack=True)
 
         for xx, yy, xxf, yyf, ffx, ffy in zip(x, y, xf, yf, fx, fy):
             nd = fe.Node()

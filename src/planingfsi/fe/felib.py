@@ -6,9 +6,10 @@ from typing import Tuple
 
 import numpy as np
 
-from . import substructure  # noqa: F401
-from .. import config
+from .. import logger
 from .. import trig
+from ..config import NUM_DIM
+from .substructure import Substructure
 
 
 class Node:
@@ -32,9 +33,9 @@ class Node:
 
         self.x = 0.0
         self.y = 0.0
-        self.dof = [self.node_num * config.flow.num_dim + i for i in [0, 1]]
-        self.is_dof_fixed = [True] * config.flow.num_dim
-        self.fixed_load = np.zeros(config.flow.num_dim)
+        self.dof = [self.node_num * NUM_DIM + i for i in [0, 1]]
+        self.is_dof_fixed = [True] * NUM_DIM
+        self.fixed_load = np.zeros(NUM_DIM)
         self.line_xy = None
 
     def set_coordinates(self, x: float, y: float) -> None:
@@ -57,12 +58,12 @@ class Node:
 class Element(abc.ABC):
     __all: List["Element"] = []
 
-    def __init__(self) -> None:
+    def __init__(self, parent: Optional[Substructure] = None) -> None:
         self.element_num = len(Element.__all)
         Element.__all.append(self)
 
         self.node: List[Node] = []
-        self.dof = [0] * config.flow.num_dim
+        self.dof = [0] * NUM_DIM
         self.length = 0.0
         self.initial_length: Optional[float] = None
         self.qp = np.zeros((2,))
@@ -79,7 +80,15 @@ class Element(abc.ABC):
         self.gamma = 0.0
         self.init_pos: List[np.ndarray] = []
 
-        self.parent: Optional["substructure.Substructure"] = None
+        self.parent = parent
+
+    @property
+    def ramp(self) -> float:
+        """The ramping coefficient from the high-level simulation object."""
+        if self.parent is None:
+            logger.warning("No parent assigned, ramp will be set to 1.0.")
+            return 1.0
+        return self.parent.ramp
 
     def set_properties(self, **kwargs: Any) -> None:
         length = kwargs.get("length")
@@ -130,8 +139,8 @@ class Element(abc.ABC):
 
 
 class TrussElement(Element):
-    def __init__(self) -> None:
-        super().__init__()
+    def __init__(self, **kwargs: Any) -> None:
+        super().__init__(**kwargs)
         self.initial_axial_force = 0.0
         self.EA = 0.0
 
@@ -174,7 +183,7 @@ class TrussElement(Element):
         assert self.initial_axial_force is not None
         assert self.initial_length is not None
         assert self.EA is not None
-        self.axial_force = (1.0 - config.ramp) * self.initial_axial_force + self.EA * (
+        self.axial_force = (1.0 - self.ramp) * self.initial_axial_force + self.EA * (
             self.length - self.initial_length
         ) / self.initial_length
 

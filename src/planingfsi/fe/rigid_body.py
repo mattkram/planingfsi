@@ -5,17 +5,17 @@ from typing import List
 from typing import Optional
 
 import numpy as np
-from planingfsi.solver import RootFinder
 
 from . import felib as fe
-from . import structure
 from . import substructure
-from .. import config
 from .. import logger
 from .. import solver
 from .. import trig
 from .. import writers
+from ..config import Config
 from ..dictionary import load_dict_from_file
+from .structure import StructuralSolver
+from planingfsi.solver import RootFinder
 
 
 class RigidBody:
@@ -39,7 +39,7 @@ class RigidBody:
     time_step: float
     num_damp: int
 
-    def __init__(self, dict_: Dict[str, Any], parent: "structure.StructuralSolver"):
+    def __init__(self, dict_: Dict[str, Any], parent: StructuralSolver):
         self.parent = parent
         self.num_dim = 2
         self.draft = 0.0
@@ -47,11 +47,11 @@ class RigidBody:
 
         self.name = dict_.get("bodyName", "default")
         self.weight = (
-            dict_.get("W", dict_.get("loadPct", 1.0) * config.body.weight)
-            * config.body.seal_load_pct
+            dict_.get("W", dict_.get("loadPct", 1.0) * self.config.body.weight)
+            * self.config.body.seal_load_pct
         )
-        self.m = dict_.get("m", self.weight / config.flow.gravity)
-        self.Iz = dict_.get("Iz", self.m * config.body.reference_length**2 / 12)
+        self.m = dict_.get("m", self.weight / self.config.flow.gravity)
+        self.Iz = dict_.get("Iz", self.m * self.config.body.reference_length**2 / 12)
         self.has_planing_surface = dict_.get("hasPlaningSurface", False)
 
         var = [
@@ -77,12 +77,12 @@ class RigidBody:
         for v in var:
             if v in dict_:
                 setattr(self, v, dict_.get(v))
-            elif hasattr(config.body, v):
-                setattr(self, v, getattr(config.body, v))
-            elif hasattr(config.solver, v):
-                setattr(self, v, getattr(config.solver, v))
-            elif hasattr(config, v):
-                setattr(self, v, getattr(config, v))
+            elif hasattr(self.config.body, v):
+                setattr(self, v, getattr(self.config.body, v))
+            elif hasattr(self.config.solver, v):
+                setattr(self, v, getattr(self.config.solver, v))
+            elif hasattr(self.config, v):
+                setattr(self, v, getattr(self.config, v))
             else:
                 raise ValueError("Cannot find symbol: {0}".format(v))
             # setattr(self, v, dict_.read(v, getattr(config.body, getattr(config, v))))
@@ -98,10 +98,6 @@ class RigidBody:
         self.c_damp = np.array([self.draft_damping, self.trim_damping])
         self.max_acc = np.array([self.max_draft_acc, self.max_trim_acc])
         self.relax = np.array([self.relax_draft, self.relax_trim])
-
-        # TODO: The config.has_free_structure variable should be factored out
-        if self.free_in_draft or self.free_in_trim:
-            config.has_free_structure = True
 
         self.v = np.zeros((self.num_dim,))
         self.a = np.zeros((self.num_dim,))
@@ -140,19 +136,19 @@ class RigidBody:
         # Assign displacement function depending on specified method
         self.get_disp = lambda: (0.0, 0.0)
         if any(self.free_dof):
-            if config.body.motion_method == "Secant":
+            if self.config.body.motion_method == "Secant":
                 self.get_disp = self.get_disp_secant
-            elif config.body.motion_method == "Broyden":
+            elif self.config.body.motion_method == "Broyden":
                 self.get_disp = self.get_disp_broyden
-            elif config.body.motion_method == "BroydenNew":
+            elif self.config.body.motion_method == "BroydenNew":
                 self.get_disp = self.get_disp_broyden_new
-            elif config.body.motion_method == "Physical":
+            elif self.config.body.motion_method == "Physical":
                 self.get_disp = self.get_disp_physical
-            elif config.body.motion_method == "Newmark-Beta":
+            elif self.config.body.motion_method == "Newmark-Beta":
                 self.get_disp = self.get_disp_newmark_beta
-            elif config.body.motion_method == "PhysicalNoMass":
+            elif self.config.body.motion_method == "PhysicalNoMass":
                 self.get_disp = self.get_disp_physical_no_mass
-            elif config.body.motion_method == "Sep":
+            elif self.config.body.motion_method == "Sep":
                 self.get_disp = self.get_disp_secant
                 self.trim_solver = None
                 self.draft_solver = None
@@ -161,6 +157,16 @@ class RigidBody:
         self.node: List[fe.Node] = []
 
         print(("Adding Rigid Body: {0}".format(self.name)))
+
+    @property
+    def config(self) -> Config:
+        """A reference to the simulation configuration."""
+        return self.parent.config
+
+    @property
+    def ramp(self) -> float:
+        """The ramping coefficient from the high-level simulation object."""
+        return self.parent.simulation.ramp
 
     def add_substructure(self, ss: "substructure.Substructure") -> None:
         """Add a substructure to the rigid body."""
@@ -217,7 +223,7 @@ class RigidBody:
 
     def update_substructure_positions(self) -> None:
         """Update the positions of all substructures."""
-        substructure.FlexibleSubstructure.update_all()
+        substructure.FlexibleSubstructure.update_all(self)
         for ss in self.substructure:
             logger.info(f"Updating position for substructure: {ss.name}")
             if isinstance(ss, substructure.RigidSubstructure):
@@ -243,9 +249,11 @@ class RigidBody:
         self.D *= 0.0
         self.L *= 0.0
         self.M *= 0.0
-        if config.body.cushion_force_method.lower() == "assumed":
+        if self.config.body.cushion_force_method.lower() == "assumed":
             self.L += (
-                config.body.Pc * config.body.reference_length * trig.cosd(config.body.initial_trim)
+                self.config.body.Pc
+                * self.config.body.reference_length
+                * trig.cosd(self.config.body.initial_trim)
             )
 
     def get_disp_physical(self) -> np.ndarray:
@@ -260,7 +268,7 @@ class RigidBody:
 
         self.a = np.array([self.weight - self.L, self.M - self.weight * (self.xCofG - self.xCofR)])
         #    self.a -= self.Cdamp * (self.v + self.v**3) * config.ramp
-        self.a -= self.c_damp * self.v * config.ramp
+        self.a -= self.c_damp * self.v * self.ramp
         self.a /= np.array([self.m, self.Iz])
         self.a = np.min(
             np.vstack((np.abs(self.a), np.array([self.max_draft_acc, self.max_trim_acc]))),
@@ -275,7 +283,7 @@ class RigidBody:
         #        accLimPct[i] /= self.a[i]
         #
         #    self.a *= np.min(accLimPct)
-        disp *= config.ramp
+        disp *= self.ramp
         return disp
 
     def get_disp_newmark_beta(self) -> np.ndarray:
@@ -302,16 +310,18 @@ class RigidBody:
         self.v_old = self.v
 
         disp *= self.relax
-        disp *= config.ramp
+        disp *= self.ramp
         disp = self.limit_disp(disp)
-        #    disp *= config.ramp
 
         return disp
 
     def get_disp_physical_no_mass(self) -> np.ndarray:
         """Get the rigid body displacement using a time-domain model without inertia."""
         force_moment = np.array(
-            [self.weight - self.L, self.M - self.weight * (config.body.xCofG - config.body.xCofR)]
+            [
+                self.weight - self.L,
+                self.M - self.weight * (self.config.body.xCofG - self.config.body.xCofR),
+            ]
         )
         #    F -= self.Cdamp * self.v
 
@@ -322,7 +332,7 @@ class RigidBody:
             disp = 0.5 * self.time_step / self.c_damp * (force_moment - self.two_ago_f)
             self.predictor = True
 
-        disp *= self.relax * config.ramp
+        disp *= self.relax * self.ramp
         disp = self.limit_disp(disp)
 
         #    self.v = disp / self.timeStep
@@ -338,12 +348,12 @@ class RigidBody:
             self.resFun = lambda x: np.array(
                 [
                     self.L - self.weight,
-                    self.M - self.weight * (config.body.xCofG - config.body.xCofR),
+                    self.M - self.weight * (self.config.body.xCofG - self.config.body.xCofR),
                 ]
             )
             self.solver = solver.RootFinder(
                 self.resFun,
-                np.array([config.body.initial_draft, config.body.initial_trim]),
+                np.array([self.config.body.initial_draft, self.config.body.initial_trim]),
                 "secant",
                 dxMax=self.max_disp * self.free_dof,
             )
@@ -376,10 +386,10 @@ class RigidBody:
 
         disp = np.zeros((self.num_dim,))
         if self.Jit < self.num_dim:
-            disp[self.Jit] = float(config.body.motion_jacobian_first_step)
+            disp[self.Jit] = float(self.config.body.motion_jacobian_first_step)
 
         if self.Jit > 0:
-            disp[self.Jit - 1] = -float(config.body.motion_jacobian_first_step)
+            disp[self.Jit - 1] = -float(self.config.body.motion_jacobian_first_step)
         self.disp_old = disp
         if self.Jit >= self.num_dim:
             assert isinstance(self.J, np.ndarray)
@@ -488,7 +498,7 @@ class RigidBody:
             res = 1.0
         else:
             res = (self.L - self.weight) / (
-                config.flow.stagnation_pressure * config.body.reference_length + 1e-6
+                self.config.flow.stagnation_pressure * self.config.body.reference_length + 1e-6
             )
         return np.abs(res * self.free_in_draft)
 
@@ -501,7 +511,8 @@ class RigidBody:
                 res = 1.0
             else:
                 res = (self.M - self.weight * (self.xCofG - self.xCofR)) / (
-                    config.flow.stagnation_pressure * config.body.reference_length**2 + 1e-6
+                    self.config.flow.stagnation_pressure * self.config.body.reference_length**2
+                    + 1e-6
                 )
         return np.abs(res * self.free_in_trim)
 
@@ -528,7 +539,7 @@ class RigidBody:
     def write_motion(self) -> None:
         """Write the motion results to file."""
         writers.write_as_dict(
-            self.parent.simulation.it_dir / f"motion_{self.name}.{config.io.data_format}",
+            self.parent.simulation.it_dir / f"motion_{self.name}.{self.config.io.data_format}",
             ["xCofR", self.xCofR],
             ["yCofR", self.yCofR],
             ["xCofG", self.xCofG],
@@ -550,7 +561,7 @@ class RigidBody:
 
     def load_motion(self) -> None:
         dict_ = load_dict_from_file(
-            self.parent.simulation.it_dir / f"motion_{self.name}.{config.io.data_format}"
+            self.parent.simulation.it_dir / f"motion_{self.name}.{self.config.io.data_format}"
         )
         self.xCofR = dict_.get("xCofR", np.nan)
         self.yCofR = dict_.get("yCofR", np.nan)

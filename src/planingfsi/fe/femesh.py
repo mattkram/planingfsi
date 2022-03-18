@@ -13,7 +13,6 @@ from typing import Union
 import matplotlib.pyplot as plt
 import numpy as np
 
-from .. import config
 from .. import logger
 from .. import trig
 from ..solver import fzero
@@ -25,7 +24,8 @@ class Mesh:
     def get_pt_by_id(cls, id_: int) -> "Point":
         return Point.find_by_id(id_)
 
-    def __init__(self) -> None:
+    def __init__(self, mesh_dir: Union[Path, str] = "mesh") -> None:
+        self.mesh_dir = Path(mesh_dir)
         self.submesh: List["Submesh"] = []
         self.add_point(0, "dir", [0, 0])
 
@@ -155,13 +155,13 @@ class Mesh:
 
     def write(self) -> None:
         """Write the mesh to text files."""
-        Path(config.path.mesh_dir).mkdir(exist_ok=True)
+        Path(self.mesh_dir).mkdir(exist_ok=True)
         x, y = list(zip(*[pt.get_position() for pt in Point.all()]))
-        write_as_list(os.path.join(config.path.mesh_dir, "nodes.txt"), ["x", x], ["y", y])
+        write_as_list(os.path.join(self.mesh_dir, "nodes.txt"), ["x", x], ["y", y])
 
         x, y = list(zip(*[pt.get_fixed_dof() for pt in Point.all()]))
         write_as_list(
-            os.path.join(config.path.mesh_dir, "fixedDOF.txt"),
+            os.path.join(self.mesh_dir, "fixedDOF.txt"),
             ["x", x],
             ["y", y],
             header_format=">1",
@@ -170,7 +170,7 @@ class Mesh:
 
         x, y = list(zip(*[pt.get_fixed_load() for pt in Point.all()]))
         write_as_list(
-            os.path.join(config.path.mesh_dir, "fixedLoad.txt"),
+            os.path.join(self.mesh_dir, "fixedLoad.txt"),
             ["x", x],
             ["y", y],
             header_format=">6",
@@ -182,8 +182,8 @@ class Mesh:
 
 
 class Submesh(Mesh):
-    def __init__(self, name: str):
-        Mesh.__init__(self)
+    def __init__(self, name: str, **kwargs: Any):
+        Mesh.__init__(self, **kwargs)
         self.name = name
         self.line: List["Line"] = []
 
@@ -218,7 +218,7 @@ class Submesh(Mesh):
                 zip(*[[pt.get_index() for pt in line.get_element_coords()] for line in self.line])
             )
             write_as_list(
-                os.path.join(config.path.mesh_dir, "elements_{0}.txt".format(self.name)),
+                os.path.join(self.mesh_dir, "elements_{0}.txt".format(self.name)),
                 ["ptL", pt_l],
                 ["ptR", pt_r],
                 header_format="<4",
