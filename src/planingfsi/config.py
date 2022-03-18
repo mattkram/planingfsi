@@ -599,5 +599,3 @@ plotting = _config.plotting
 path = _config.path
 io = _config.io
 solver = _config.solver
-
-load_from_file = _config.load_from_file

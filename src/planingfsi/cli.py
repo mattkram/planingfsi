@@ -44,7 +44,7 @@ def run_planingfsi(post_mode: bool, plot_save: bool, plot_show: bool, new_case: 
     _cleanup_globals()
 
     # TODO: Remove global config load after all references are removed
-    from . import config as _config
+    from .config import _config
 
     _config.load_from_file("configDict")
 
