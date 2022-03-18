@@ -94,7 +94,14 @@ class SubConfig:
     """
 
     def __init__(self, parent: Optional["Config"] = None):
-        self.parent = parent
+        self._parent = parent
+
+    @property
+    def parent(self) -> "Config":
+        """Raises a ValueError if parent is not assigned."""
+        if self._parent is None:
+            raise ValueError("Must assign a parent to access this property.")
+        return self._parent
 
     def load_from_file(self, filename: Union[Path, str]) -> None:
         """Load the configuration from a dictionary file.
@@ -104,7 +111,8 @@ class SubConfig:
 
         """
         # Clear the attributes before loading the new ones
-        self.__dict__ = {}
+        # TODO: This is hacky
+        self.__dict__ = {"_parent": self.parent}
         dict_ = load_dict_from_file(filename)
         for key, config_item in self.__class__.__dict__.items():
             if isinstance(config_item, ConfigItem):
@@ -431,8 +439,6 @@ class PlotConfig(SubConfig):
             return self._x_fs_min
         if self.xmin is not None:
             return self.xmin
-        if self.parent is None:
-            raise ValueError("Must assign a parent with FlowConfig instance assigned.")
         return self.lambda_min * self.parent.flow.lam
 
     @property
@@ -442,8 +448,6 @@ class PlotConfig(SubConfig):
             return self._x_fs_max
         if self.xmax is not None:
             return self.xmax
-        if self.parent is None:
-            raise ValueError("Must assign a parent with FlowConfig instance assigned.")
         return self.lambda_max * self.parent.flow.lam
 
     @property
