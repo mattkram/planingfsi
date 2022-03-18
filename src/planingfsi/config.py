@@ -405,6 +405,10 @@ class PlotConfig(SubConfig):
         """bool: If True, watch the plot figure."""
         return self._watch or self.show
 
+    @watch.setter
+    def watch(self, value: bool) -> None:
+        self._watch = value
+
     @property
     def plot_any(self) -> bool:
         """bool: If True, plot will be generated, otherwise skip to save compute time."""

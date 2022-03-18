@@ -179,3 +179,38 @@ def test_plot_config_watch(config: Config, attr_to_set_true: Optional[str], expe
     if attr_to_set_true is not None:
         setattr(config.plotting, attr_to_set_true, True)
     assert config.plotting.watch is expected
+
+
+@pytest.mark.parametrize(
+    "attr_to_set_true, expected",
+    [(None, False), ("show", True), ("show_pressure", True), ("watch", True)],
+)
+def test_plot_config_plot_any_getter(
+    config: Config, attr_to_set_true: Optional[str], expected: bool
+) -> None:
+    if attr_to_set_true is not None:
+        setattr(config.plotting, attr_to_set_true, True)
+    assert config.plotting.plot_any is expected
+
+
+@pytest.fixture()
+def config_with_all_plot_true(config: Config) -> Config:
+    config.plotting.save = True
+    config.plotting.show = True
+    config.plotting.show_pressure = True
+    config.plotting.watch = True
+    config.plotting.plot_any = False
+    return config
+
+
+@pytest.mark.parametrize("attr_to_set_false", ["save", "show", "show_pressure", "_watch"])
+def test_plot_config_plot_any_setter(
+    config_with_all_plot_true: Config, attr_to_set_false: str
+) -> None:
+    value = getattr(config_with_all_plot_true.plotting, attr_to_set_false)
+    assert value is False
+
+
+def test_plot_config_plot_any_setter_true_raises_exception(config: Config) -> None:
+    with pytest.raises(ValueError):
+        config.plotting.plot_any = True
