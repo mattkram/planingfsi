@@ -1,5 +1,6 @@
 import math
 from pathlib import Path
+from typing import Optional
 from typing import Union
 
 import pytest
@@ -168,3 +169,13 @@ def test_load_config_from_file(config: Config) -> None:
     """Configuration loaded from file overrides defaults."""
     assert config.flow.density == 998.2
     assert config.flow.kinematic_viscosity == 1.0048e-6
+
+
+@pytest.mark.parametrize(
+    "attr_to_set_true, expected", [(None, False), ("_watch", True), ("show", True)]
+)
+def test_plot_config_watch(config: Config, attr_to_set_true: Optional[str], expected: bool) -> None:
+    """By default, we don't watch the plot unless certain attributes are set to True."""
+    if attr_to_set_true is not None:
+        setattr(config.plotting, attr_to_set_true, True)
+    assert config.plotting.watch is expected
