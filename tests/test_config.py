@@ -199,7 +199,6 @@ def config_with_all_plot_true(config: Config) -> Config:
     config.plotting.show = True
     config.plotting.show_pressure = True
     config.plotting.watch = True
-    config.plotting.plot_any = False
     return config
 
 
@@ -207,6 +206,7 @@ def config_with_all_plot_true(config: Config) -> Config:
 def test_plot_config_plot_any_setter(
     config_with_all_plot_true: Config, attr_to_set_false: str
 ) -> None:
+    config_with_all_plot_true.plotting.plot_any = False
     value = getattr(config_with_all_plot_true.plotting, attr_to_set_false)
     assert value is False
 
