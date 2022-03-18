@@ -9,11 +9,11 @@ import numpy as np
 from scipy.optimize import fmin
 
 from . import pressurepatch
-from .. import config
 from .. import logger
 from .. import math_helpers
 from .. import solver
 from .. import writers
+from ..config import Config
 from ..fsi import figure
 from ..fsi import simulation as fsi_simulation
 from .pressureelement import PressureElement
@@ -49,6 +49,11 @@ class PotentialPlaningSolver:
         self.init_len = np.array([])
 
     @property
+    def config(self) -> Config:
+        """A reference to the simulation configuration."""
+        return self.simulation.config
+
+    @property
     def simulation(self) -> "fsi_simulation.Simulation":
         """A reference to the simulation object by resolving the weak reference."""
         simulation = self._simulation()
@@ -60,10 +65,15 @@ class PotentialPlaningSolver:
     def drag_wave(self) -> float:
         """The wave drag, calculated from downstream wave amplitude."""
         f = self.get_free_surface_height
-        x_init = -10 * config.flow.lam
+        x_init = -10 * self.config.flow.lam
         (x_trough,) = fmin(f, x_init, disp=False)
         (x_crest,) = fmin(lambda x: -f(x), x_init, disp=False)
-        return 0.0625 * config.flow.density * config.flow.gravity * (f(x_crest) - f(x_trough)) ** 2
+        return (
+            0.0625
+            * self.config.flow.density
+            * self.config.flow.gravity
+            * (f(x_crest) - f(x_trough)) ** 2
+        )
 
     @property
     def x_bar(self) -> float:
@@ -142,7 +152,7 @@ class PotentialPlaningSolver:
         )
 
         # height of each unknown element above waterline
-        z_array = np.array([el.z_coord for el in unknown_el]) - config.flow.waterline_height
+        z_array = np.array([el.z_coord for el in unknown_el]) - self.config.flow.waterline_height
 
         # subtract contribution from source elements
         z_array -= np.array([np.sum([el.get_influence(x) for el in source_el]) for x in x_array])
@@ -210,17 +220,17 @@ class PotentialPlaningSolver:
             self.solver = solver.RootFinder(
                 self._calculate_residual,
                 self.init_len,
-                config.solver.wetted_length_solver,
+                self.config.solver.wetted_length_solver,
                 xMin=self.min_len,
                 xMax=self.max_len,
-                errLim=config.solver.wetted_length_tol,
+                errLim=self.config.solver.wetted_length_tol,
                 firstStep=1e-6,
-                maxIt=config.solver.wetted_length_max_it_0,
-                maxJacobianResetStep=config.solver.wetted_length_max_jacobian_reset_step,
-                relax=config.solver.wetted_length_relax,
+                maxIt=self.config.solver.wetted_length_max_it_0,
+                maxJacobianResetStep=self.config.solver.wetted_length_max_jacobian_reset_step,
+                relax=self.config.solver.wetted_length_relax,
             )
         else:
-            self.solver.max_it = config.solver.wetted_length_max_it
+            self.solver.max_it = self.config.solver.wetted_length_max_it
             for i, p in enumerate(self.planing_surfaces):
                 length = p.length
                 if np.isnan(length) or length - self.min_len[i] < 1e-6:
@@ -229,10 +239,10 @@ class PotentialPlaningSolver:
                     self.init_len[i] = length
 
         self.solver.reinitialize(self.init_len)
-        self.solver.dx_max_decrease = config.solver.wetted_length_max_step_pct_dec * (
+        self.solver.dx_max_decrease = self.config.solver.wetted_length_max_step_pct_dec * (
             self.init_len - self.min_len
         )
-        self.solver.dx_max_increase = config.solver.wetted_length_max_step_pct_inc * (
+        self.solver.dx_max_increase = self.config.solver.wetted_length_max_step_pct_inc * (
             self.init_len - self.min_len
         )
 
@@ -244,7 +254,7 @@ class PotentialPlaningSolver:
         conditions.
 
         """
-        if config.io.results_from_file:
+        if self.config.io.results_from_file:
             self.load_results()
             return
 
@@ -266,7 +276,7 @@ class PotentialPlaningSolver:
         self.calculate_pressure_and_shear_profile()
 
         # Plot the pressure profile if specified
-        if config.plotting.show_pressure:
+        if self.config.plotting.show_pressure:
             figure.plot_pressure(self)
 
     def calculate_pressure_and_shear_profile(self) -> None:
@@ -305,16 +315,16 @@ class PotentialPlaningSolver:
             _grow_points(
                 x_fs_u[-2],
                 x_fs_u[-1],
-                config.plotting.x_fs_max,
-                config.plotting.growth_rate,
+                self.config.plotting.x_fs_max,
+                self.config.plotting.growth_rate,
             )
         )
         x_fs.extend(
             _grow_points(
                 x_fs_u[1],
                 x_fs_u[0],
-                config.plotting.x_fs_min,
-                config.plotting.growth_rate,
+                self.config.plotting.x_fs_min,
+                self.config.plotting.growth_rate,
             )
         )
         # Add points from each pressure cushion
@@ -362,7 +372,7 @@ class PotentialPlaningSolver:
     def _write_forces(self) -> None:
         """Write forces to file."""
         writers.write_as_dict(
-            self.simulation.it_dir / f"forces_total.{config.io.data_format}",
+            self.simulation.it_dir / f"forces_total.{self.config.io.data_format}",
             ["Drag", self.drag_total],
             ["WaveDrag", self.drag_wave],
             ["PressDrag", self.drag_pressure],
@@ -379,7 +389,7 @@ class PotentialPlaningSolver:
     def _write_pressure_and_shear(self) -> None:
         """Write pressure and shear stress profiles to data file."""
         writers.write_as_list(
-            self.simulation.it_dir / f"pressureAndShear.{config.io.data_format}",
+            self.simulation.it_dir / f"pressureAndShear.{self.config.io.data_format}",
             ["x [m]", self.x_coord],
             ["p [Pa]", self.pressure],
             ["shear_stress [Pa]", self.shear_stress],
@@ -388,7 +398,7 @@ class PotentialPlaningSolver:
     def _write_free_surface(self) -> None:
         """Write free-surface profile to file."""
         writers.write_as_list(
-            self.simulation.it_dir / f"freeSurface.{config.io.data_format}",
+            self.simulation.it_dir / f"freeSurface.{self.config.io.data_format}",
             ["x [m]", self.x_coord_fs],
             ["y [m]", self.z_coord_fs],
         )
@@ -407,7 +417,7 @@ class PotentialPlaningSolver:
     def _load_pressure_and_shear(self) -> None:
         """Load pressure and shear stress from file."""
         self.x_coord, self.pressure, self.shear_stress = np.loadtxt(
-            str(self.simulation.it_dir / f"pressureAndShear.{config.io.data_format}"),
+            str(self.simulation.it_dir / f"pressureAndShear.{self.config.io.data_format}"),
             unpack=True,
         )
         for el in [el for patch in self.planing_surfaces for el in patch.pressure_elements]:
@@ -423,7 +433,8 @@ class PotentialPlaningSolver:
         """Load free surface coordinates from file."""
         try:
             self.x_coord_fs, self.z_coord_fs = np.loadtxt(
-                str(self.simulation.it_dir / f"freeSurface.{config.io.data_format}"), unpack=True
+                str(self.simulation.it_dir / f"freeSurface.{self.config.io.data_format}"),
+                unpack=True,
             )
         except IOError:
             self.z_coord_fs = np.zeros_like(self.x_coord_fs)
