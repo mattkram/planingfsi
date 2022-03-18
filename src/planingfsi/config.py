@@ -93,6 +93,9 @@ class SubConfig:
     different sections. Also useful in helping define the namespace scopes.
     """
 
+    def __init__(self, parent: Optional["Config"] = None):
+        self.parent = parent
+
     def load_from_file(self, filename: Union[Path, str]) -> None:
         """Load the configuration from a dictionary file.
 
@@ -547,27 +550,36 @@ class SolverConfig(SubConfig):
             return self.wetted_length_max_step_pct
 
 
-# Create instances of each class and store on module
-flow = FlowConfig()
-body = BodyConfig()
-plotting = PlotConfig()
-path = PathConfig()
-io = IOConfig()
-solver = SolverConfig()
+class Config:
+    def __init__(self) -> None:
+        self.flow = FlowConfig(parent=self)
+        self.body = BodyConfig(parent=self)
+        self.plotting = PlotConfig(parent=self)
+        self.path = PathConfig(parent=self)
+        self.io = IOConfig(parent=self)
+        self.solver = SolverConfig(parent=self)
+
+    def load_from_file(self, filename: Union[Path, str]) -> None:
+        """Load the configuration from a file.
+
+        Args:
+            filename: The name of the file.
+
+        """
+        logger.info(f"Loading values from {filename}")
+        for c in [self.flow, self.body, self.plotting, self.path, self.io, self.solver]:
+            c.load_from_file(filename)
 
 
-def load_from_file(filename: Union[Path, str]) -> None:
-    """Load the configuration from a file.
+# Global instances of configs
+# TODO: Factor out and attach to Simulation object instead
+config = Config()
 
-    Args:
-        filename: The name of the file.
+flow = config.flow
+body = config.body
+plotting = config.plotting
+path = config.path
+io = config.io
+solver = config.solver
 
-    """
-    logger.info(f"Loading values from {filename}")
-    for c in [flow, body, plotting, path, io, solver]:
-        c.load_from_file(filename)
-
-
-# Load the default config dict file
-if Path(DICT_NAME).exists():
-    load_from_file(DICT_NAME)
+load_from_file = config.load_from_file
