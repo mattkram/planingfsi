@@ -160,15 +160,15 @@ def test_body_pressure_calculations(config: Config) -> None:
 
 
 @pytest.fixture()
-def config_from_file(test_dir: Path, config: Config) -> None:
+def config_from_file(test_dir: Path, config: Config) -> Config:
     config.load_from_file(test_dir / "input_files" / "configDict")
+    return config
 
 
-@pytest.mark.usefixtures("config_from_file")
-def test_load_config_from_file(config: Config) -> None:
+def test_load_config_from_file(config_from_file: Config) -> None:
     """Configuration loaded from file overrides defaults."""
-    assert config.flow.density == 998.2
-    assert config.flow.kinematic_viscosity == 1.0048e-6
+    assert config_from_file.flow.density == 998.2
+    assert config_from_file.flow.kinematic_viscosity == 1.0048e-6
 
 
 @pytest.mark.parametrize(
