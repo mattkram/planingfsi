@@ -43,11 +43,6 @@ def run_planingfsi(post_mode: bool, plot_save: bool, plot_show: bool, new_case: 
     """Run the planingFSI solver."""
     _cleanup_globals()
 
-    # TODO: Remove global config load after all references are removed
-    from .config import _config
-
-    _config.load_from_file("configDict")
-
     simulation = Simulation.from_input_files("configDict")
 
     simulation.config.plotting.save = plot_save
@@ -85,7 +80,7 @@ def generate_mesh(
     if not Path(config.path.mesh_dict_dir).exists():
         raise FileNotFoundError(f"File {config.path.mesh_dict_dir} does not exist")
 
-    mesh = Mesh()
+    mesh = Mesh(mesh_dir=config.path.mesh_dir)
     exec(Path(config.path.mesh_dict_dir).open("r").read())
 
     mesh.display(disp=verbose)

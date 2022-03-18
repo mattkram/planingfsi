@@ -6,7 +6,6 @@ from typing import Type
 import numpy
 import pytest
 
-from planingfsi import config
 from planingfsi.fsi.simulation import Simulation  # noreorder
 from planingfsi.fe.rigid_body import RigidBody
 from planingfsi.fe.structure import StructuralSolver
@@ -59,7 +58,7 @@ def test_solver_with_substructure_has_free_structure(
     """
     rigid_body = solver.add_rigid_body()
     # TODO: We shouldn't require a dict_ to be passed in
-    rigid_body.add_substructure(class_(dict_={}))
+    rigid_body.add_substructure(class_(dict_={}, solver=solver))
     assert solver.has_free_structure is expected
 
 
@@ -67,10 +66,10 @@ def test_solver_with_substructure_has_free_structure(
 def solver_with_body(solver: StructuralSolver) -> Tuple[StructuralSolver, RigidBody]:
     """Select parameters such that lift residual is simply abs(L-W)."""
     # These make the stagnation pressure equal to 1.0
-    config.flow.flow_speed = 1.0
-    config.flow.density = 2.0
-    config.body.reference_length = 1.0
-    config.body.weight = 2.0
+    solver.config.flow.flow_speed = 1.0
+    solver.config.flow.density = 2.0
+    solver.config.body.reference_length = 1.0
+    solver.config.body.weight = 2.0
 
     body = solver.add_rigid_body()
     body.free_in_draft = True

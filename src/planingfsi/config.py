@@ -455,7 +455,7 @@ class PlotConfig(SubConfig):
         if self.pType == "stagnation":
             pScale = self.parent.flow.stagnation_pressure
         elif self.pType == "cushion":
-            pScale = self.parent.body.Pc if body.Pc > 0.0 else 1.0
+            pScale = self.parent.body.Pc if self.parent.body.Pc > 0.0 else 1.0
         elif self.pType == "hydrostatic":
             pScale = self.parent.flow.density * self.parent.flow.gravity * self._pScaleHead
         else:
@@ -586,15 +586,3 @@ class Config:
         logger.info(f"Loading values from {filename}")
         for c in [self.flow, self.body, self.plotting, self.path, self.io, self.solver]:
             c.load_from_file(filename)
-
-
-# Global instances of configs
-# TODO: Factor out and attach to Simulation object instead
-_config = Config()
-
-flow = _config.flow
-body = _config.body
-plotting = _config.plotting
-path = _config.path
-io = _config.io
-solver = _config.solver
