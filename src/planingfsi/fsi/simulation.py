@@ -53,7 +53,7 @@ class Simulation:
     def figure(self) -> Optional[FSIFigure]:
         """Use a property for the figure object to initialize lazily."""
         if self._figure is None and self.config.plotting.plot_any:
-            self._figure = FSIFigure(self)
+            self._figure = FSIFigure(simulation=self, config=self.config)
         return self._figure
 
     def update_fluid_response(self) -> None:
