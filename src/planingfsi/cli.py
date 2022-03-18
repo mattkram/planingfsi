@@ -11,8 +11,8 @@ from typing import Optional
 import click
 import click_log
 
-from . import config
 from . import logger
+from .config import Config
 from .fe.femesh import Mesh
 from .fsi.simulation import Simulation
 
@@ -44,7 +44,9 @@ def run_planingfsi(post_mode: bool, plot_save: bool, plot_show: bool, new_case: 
     _cleanup_globals()
 
     # TODO: Remove global config load after all references are removed
-    config.load_from_file("configDict")
+    from . import config as _config
+
+    _config.load_from_file("configDict")
 
     simulation = Simulation.from_input_files("configDict")
 
@@ -74,6 +76,9 @@ def generate_mesh(
 ) -> None:
     """Generate the initial mesh."""
     _cleanup_globals()
+
+    config = Config.from_file("configDict")
+
     if mesh_dict is not None:
         config.path.mesh_dict_dir = mesh_dict
 

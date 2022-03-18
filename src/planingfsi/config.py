@@ -571,6 +571,12 @@ class Config:
         self.io = IOConfig(parent=self)
         self.solver = SolverConfig(parent=self)
 
+    @classmethod
+    def from_file(cls, filename: Union[Path, str]) -> "Config":
+        obj = cls()
+        obj.load_from_file(filename)
+        return obj
+
     def load_from_file(self, filename: Union[Path, str]) -> None:
         """Load the configuration from a file.
 
