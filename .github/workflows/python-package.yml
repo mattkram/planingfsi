@@ -40,6 +40,7 @@ jobs:
           --junitxml=./test-reports/junit.xml \
           --cov-report xml:./test-reports/coverage.xml \
           --cov planingfsi \
+          --slow \
           tests
     - name: Publish code coverage
       run: |
