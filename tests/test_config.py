@@ -8,6 +8,7 @@ from _pytest.fixtures import SubRequest
 
 from planingfsi.config import Config
 from planingfsi.config import ConfigItem
+from planingfsi.config import PlotConfig
 from planingfsi.config import SubConfig
 
 
@@ -237,11 +238,20 @@ def expected_x_min_max(config: Config, request: SubRequest) -> float:
         config.plotting.lambda_min = value / config.flow.lam
         config.plotting.lambda_max = value / config.flow.lam
     else:
-        raise ValueError("Invalid request.param")
+        raise ValueError("Invalid request.param")  # pragma: no cover
 
     return value
 
 
-def test_plot_config_x_fs_min(config: Config, expected_x_min_max: float) -> None:
-    assert config.plotting.x_fs_min == expected_x_min_max
-    assert config.plotting.x_fs_max == expected_x_min_max
+@pytest.mark.parametrize("attr_name", ["x_fs_min", "x_fs_max"])
+def test_plot_config_x_fs_min_max(
+    config: Config, expected_x_min_max: float, attr_name: str
+) -> None:
+    assert getattr(config.plotting, attr_name) == expected_x_min_max
+
+
+@pytest.mark.parametrize("attr_name", ["x_fs_min", "x_fs_max"])
+def test_plot_config_x_fs_min_max_requires_parent(attr_name: str) -> None:
+    flow_config = PlotConfig()
+    with pytest.raises(ValueError):
+        getattr(flow_config, attr_name)
