@@ -374,10 +374,10 @@ class PlotConfig(SubConfig):
 
     """
 
-    pType = ConfigItem("pScaleType", default="stagnation")
-    _pScale = ConfigItem("pScale", default=1.0)
-    _pScalePct = ConfigItem("pScalePct", default=1.0)
-    _pScaleHead = ConfigItem("pScaleHead", default=1.0)
+    pressure_scale_method = ConfigItem("pScaleType", default="stagnation")
+    _pressure_scale = ConfigItem("pScale", default=1.0)
+    _pressure_scale_pct = ConfigItem("pScalePct", default=1.0)
+    _pressure_scale_head = ConfigItem("pScaleHead", default=1.0)
     growth_rate = ConfigItem("growthRate", default=1.1)
     CofR_grid_len = ConfigItem("CofRGridLen", default=0.5)
     fig_format = ConfigItem("figFormat", default="png")
@@ -450,17 +450,19 @@ class PlotConfig(SubConfig):
         return self.lambda_max * self.parent.flow.lam
 
     @property
-    def pScale(self) -> float:
+    def pressure_scale(self) -> float:
         """float: Pressure value to use to scale the pressure profile."""
-        if self.pType == "stagnation":
-            pScale = self.parent.flow.stagnation_pressure
-        elif self.pType == "cushion":
-            pScale = self.parent.body.Pc if self.parent.body.Pc > 0.0 else 1.0
-        elif self.pType == "hydrostatic":
-            pScale = self.parent.flow.density * self.parent.flow.gravity * self._pScaleHead
+        if self.pressure_scale_method == "stagnation":
+            ref_pressure = self.parent.flow.stagnation_pressure
+        elif self.pressure_scale_method == "cushion":
+            ref_pressure = self.parent.body.Pc if self.parent.body.Pc > 0.0 else 1.0
+        elif self.pressure_scale_method == "hydrostatic":
+            ref_pressure = (
+                self.parent.flow.density * self.parent.flow.gravity * self._pressure_scale_head
+            )
         else:
-            pScale = self._pScale
-        return pScale * self._pScalePct
+            ref_pressure = self._pressure_scale
+        return ref_pressure * self._pressure_scale_pct
 
 
 class PathConfig(SubConfig):

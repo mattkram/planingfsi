@@ -254,3 +254,36 @@ def test_plot_config_x_fs_min_max_requires_parent(attr_name: str) -> None:
     flow_config = PlotConfig()
     with pytest.raises(ValueError):
         getattr(flow_config, attr_name)
+
+
+@pytest.fixture(params=["stagnation", "cushion-0", "cushion-10", "hydrostatic", "other"])
+def expected_pressure_scale(config: Config, request: SubRequest) -> float:
+    """Apply various configuration settings, returning the expected pressure scale for plotting."""
+    pressure_scale_pct = 0.1
+    config.plotting.pressure_scale_method = request.param
+    config.plotting._pressure_scale_pct = pressure_scale_pct
+
+    if request.param == "stagnation":
+        config.flow.flow_speed = 1.0
+        config.flow.density = 2.0
+        return 1.0 * pressure_scale_pct
+    elif request.param == "cushion-0":
+        config.plotting.pressure_scale_method = "cushion"
+        config.body._cushion_pressure = 0.0
+        return 1.0 * pressure_scale_pct
+    elif request.param == "cushion-10":
+        config.plotting.pressure_scale_method = "cushion"
+        config.body._cushion_pressure = 10.0
+        return 10.0 * pressure_scale_pct
+    elif request.param == "hydrostatic":
+        config.flow.density = 1.0
+        config.flow.gravity = 10.0
+        config.plotting._pressure_scale_head = 10.0
+        return 100.0 * pressure_scale_pct
+    else:
+        config.plotting._pressure_scale = 10.0
+        return 10.0 * pressure_scale_pct
+
+
+def test_plot_config_pressure_scale(config: Config, expected_pressure_scale: float) -> None:
+    assert config.plotting.pressure_scale == expected_pressure_scale

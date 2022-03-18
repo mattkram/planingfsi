@@ -425,7 +425,8 @@ class Substructure(abc.ABC):
             nVec = list(map(self.get_normal_vector, s0))
             coords0 = [np.array(self.get_coordinates(s)) for s in s0]
             coords1 = [
-                c + self.config.plotting.pScale * p * n for c, p, n in zip(coords0, p0, nVec)
+                c + self.config.plotting.pressure_scale * p * n
+                for c, p, n in zip(coords0, p0, nVec)
             ]
 
             return list(
