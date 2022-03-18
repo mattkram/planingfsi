@@ -1,10 +1,10 @@
-"""This module is used to store the global configuration. Values are stored
-after reading the configDict file, and values can be accessed by other
-packages and modules by importing the config module.
+"""This module is used to store the global configuration classes.
 
-Usage: from planingfsi import config
-
-The global attributes can then be simply accessed via config.attribute_name
+Values are generally read on from the `configDict` file, which is
+parsed into separate domain configurations. Each of these domain
+configurations are stored under the high-level `Config` instance.
+In general, the configuration is attached to the `Simulation`
+instance, which then serves as a reference point elsewhere in the code.
 
 """
 import math
