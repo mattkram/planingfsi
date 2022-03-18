@@ -383,16 +383,16 @@ class PlotConfig(SubConfig):
     ext_n = ConfigItem("extN", default=0.1)
     ext_s = ConfigItem("extS", default=0.1)
 
-    xmin = ConfigItem("plotXMin", type=float)
-    xmax = ConfigItem("plotXMax", type=float)
-    ymin = ConfigItem("plotYMin", type=float)
-    ymax = ConfigItem("plotYMax", type=float)
+    xmin = ConfigItem("plotXMin", type=float, default=None)
+    xmax = ConfigItem("plotXMax", type=float, default=None)
+    ymin = ConfigItem("plotYMin", type=float, default=None)
+    ymax = ConfigItem("plotYMax", type=float, default=None)
 
     lambda_min = ConfigItem("lamMin", default=-1.0)
     lambda_max = ConfigItem("lamMax", default=1.0)
 
-    _x_fs_min = ConfigItem("xFSMin", type=float)
-    _x_fs_max = ConfigItem("xFSMax", type=float)
+    _x_fs_min = ConfigItem("xFSMin", type=float, default=None)
+    _x_fs_max = ConfigItem("xFSMax", type=float, default=None)
 
     # Whether to save, show, or watch plots
     save = ConfigItem("plotSave", default=False)
@@ -431,7 +431,9 @@ class PlotConfig(SubConfig):
             return self._x_fs_min
         if self.xmin is not None:
             return self.xmin
-        return self.lambda_min * flow.lam
+        if self.parent is None:
+            raise ValueError("Must assign a parent with FlowConfig instance assigned.")
+        return self.lambda_min * self.parent.flow.lam
 
     @property
     def x_fs_max(self) -> float:
@@ -440,7 +442,9 @@ class PlotConfig(SubConfig):
             return self._x_fs_max
         if self.xmax is not None:
             return self.xmax
-        return self.lambda_max * flow.lam
+        if self.parent is None:
+            raise ValueError("Must assign a parent with FlowConfig instance assigned.")
+        return self.lambda_max * self.parent.flow.lam
 
     @property
     def pScale(self) -> float:

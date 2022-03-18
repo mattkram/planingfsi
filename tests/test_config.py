@@ -4,6 +4,7 @@ from typing import Optional
 from typing import Union
 
 import pytest
+from _pytest.fixtures import SubRequest
 
 from planingfsi.config import Config
 from planingfsi.config import ConfigItem
@@ -214,3 +215,33 @@ def test_plot_config_plot_any_setter(
 def test_plot_config_plot_any_setter_true_raises_exception(config: Config) -> None:
     with pytest.raises(ValueError):
         config.plotting.plot_any = True
+
+
+@pytest.fixture(params=["_x_fs_min_max", "xmin_xmax", "lambda_min_max"])
+def expected_x_min_max(config: Config, request: SubRequest) -> float:
+    """Each of the provided configs should have an x_fs_min and x_fs_max of 10.0.
+
+    These are tested together since the logic should be identical.
+
+    """
+    value = 10.0
+    if request.param == "_x_fs_min_max":
+        config.plotting._x_fs_min = value
+        config.plotting._x_fs_max = value
+    elif request.param == "xmin_xmax":
+        config.plotting.xmin = value
+        config.plotting.xmax = value
+    elif request.param == "lambda_min_max":
+        # Need to set flow speed, can be anything
+        config.flow.flow_speed = 1.0
+        config.plotting.lambda_min = value / config.flow.lam
+        config.plotting.lambda_max = value / config.flow.lam
+    else:
+        raise ValueError("Invalid request.param")
+
+    return value
+
+
+def test_plot_config_x_fs_min(config: Config, expected_x_min_max: float) -> None:
+    assert config.plotting.x_fs_min == expected_x_min_max
+    assert config.plotting.x_fs_max == expected_x_min_max
