@@ -155,7 +155,7 @@ class FlowConfig(SubConfig):
         Defaults to reference length of the rigid body.
 
         """
-        return body.reference_length
+        return self.parent.body.reference_length
 
     @property
     def flow_speed(self) -> float:
@@ -287,7 +287,7 @@ class BodyConfig(SubConfig):
         try:
             return self._relax_draft
         except AttributeError:
-            return body.relax_rigid_body
+            return self.parent.body.relax_rigid_body
 
     @property
     def relax_trim(self) -> float:
@@ -299,7 +299,7 @@ class BodyConfig(SubConfig):
         try:
             return self._relax_trim
         except AttributeError:
-            return body.relax_rigid_body
+            return self.parent.body.relax_rigid_body
 
     @property
     def Pc(self) -> float:
@@ -353,11 +353,11 @@ class BodyConfig(SubConfig):
         try:
             return self._weight
         except AttributeError:
-            return self.mass * flow.gravity
+            return self.mass * self.parent.flow.gravity
 
     @weight.setter
     def weight(self, value: float) -> None:
-        self.mass = value / flow.gravity
+        self.mass = value / self.parent.flow.gravity
 
 
 class PlotConfig(SubConfig):
@@ -453,12 +453,12 @@ class PlotConfig(SubConfig):
     @property
     def pScale(self) -> float:
         """float: Pressure value to use to scale the pressure profile."""
-        if plotting.pType == "stagnation":
-            pScale = flow.stagnation_pressure
-        elif plotting.pType == "cushion":
-            pScale = body.Pc if body.Pc > 0.0 else 1.0
-        elif plotting.pType == "hydrostatic":
-            pScale = flow.density * flow.gravity * self._pScaleHead
+        if self.pType == "stagnation":
+            pScale = self.parent.flow.stagnation_pressure
+        elif self.pType == "cushion":
+            pScale = self.parent.body.Pc if body.Pc > 0.0 else 1.0
+        elif self.pType == "hydrostatic":
+            pScale = self.parent.flow.density * self.parent.flow.gravity * self._pScaleHead
         else:
             pScale = self._pScale
         return pScale * self._pScalePct
