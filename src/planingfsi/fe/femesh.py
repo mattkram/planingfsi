@@ -221,7 +221,7 @@ class Submesh(Mesh):
         """Write the submesh to file."""
         if self.line:
             pt_l, pt_r = list(
-                zip(*[[pt.get_index() for pt in line.get_element_coords()] for line in self.line])
+                zip(*[[pt.ind for pt in line.get_element_coords()] for line in self.line])
             )
             write_as_list(
                 os.path.join(self.mesh_dir, "elements_{0}.txt".format(self.name)),
@@ -288,12 +288,6 @@ class Shape:
             else:
                 existing.ID = None
         self._id = value
-
-    def get_id(self) -> Optional[int]:
-        return self.ID
-
-    def get_index(self) -> int:
-        return self.ind
 
     @abc.abstractmethod
     def display(self) -> None:
@@ -367,8 +361,8 @@ class Point(Shape):
         logger.info(
             " ".join(
                 [
-                    f"{self.__class__.__name__} {self.get_index()}",
-                    f"ID = {self.get_id()}, Pos = {self.get_position()}",
+                    f"{self.__class__.__name__} {self.ind}",
+                    f"ID = {self.ID}, Pos = {self.get_position()}",
                 ]
             )
         )
@@ -495,7 +489,7 @@ class Curve(Shape):
     def get_pt_ids(self) -> List[int]:
         out: List[int] = []
         for pt in self.pt:
-            id_ = pt.get_id()
+            id_ = pt.ID
             if id_ is not None:
                 out.append(id_)
         return out
@@ -504,8 +498,8 @@ class Curve(Shape):
         logger.info(
             " ".join(
                 [
-                    f"{self.__class__.__name__} {self.get_index()}:",
-                    f"ID = {self.get_id()}, Pt IDs = {self.get_pt_ids()}",
+                    f"{self.__class__.__name__} {self.ind}:",
+                    f"ID = {self.ID}, Pt IDs = {self.get_pt_ids()}",
                 ]
             )
         )
