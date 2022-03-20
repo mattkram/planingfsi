@@ -20,9 +20,17 @@ from ..writers import write_as_list
 
 
 class Mesh:
-    @classmethod
-    def get_pt_by_id(cls, id_: int) -> "Point":
-        return Point.find_by_id(id_)
+    """A high-level class to store a structural mesh.
+
+    The mesh serves as a container for `Point` instances. It then serves as a container for
+    any number of `Submesh` instances, which each consists of a series of `Curve`s and can
+    optionally be associated with a planing surface.
+
+    Attributes:
+        mesh_dir: The directory in which to store the mesh files on export.
+        submesh: A list of submeshes belonging to the parent mesh.
+
+    """
 
     def __init__(self, mesh_dir: Union[Path, str] = "mesh") -> None:
         self.mesh_dir = Path(mesh_dir)
