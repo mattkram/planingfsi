@@ -3,6 +3,7 @@ from typing import Any
 from typing import Dict
 from typing import List
 from typing import Type
+from typing import TYPE_CHECKING
 
 import numpy as np
 
@@ -11,10 +12,12 @@ from . import rigid_body as rigid_body_mod
 from .. import logger
 from ..config import Config
 from ..fsi import simulation as fsi_simulation
-from .substructure import FlexibleSubstructure
-from .substructure import RigidSubstructure
-from .substructure import Substructure
-from .substructure import TorsionalSpringSubstructure
+
+if TYPE_CHECKING:
+    from .substructure import FlexibleSubstructure
+    from .substructure import RigidSubstructure  # noqa: F401
+    from .substructure import Substructure
+    from .substructure import TorsionalSpringSubstructure  # noqa: F401
 
 
 class StructuralSolver:
@@ -57,12 +60,12 @@ class StructuralSolver:
         return self.rigid_body[0].get_res_moment()
 
     @property
-    def substructure(self) -> List[Substructure]:
+    def substructure(self) -> List["Substructure"]:
         """A combined list of substructures from all rigid bodies."""
         return [ss for body in self.rigid_body for ss in body.substructure]
 
     @property
-    def node(self) -> List[fe.Node]:
+    def node(self) -> List["fe.Node"]:
         """A combined list of nodes from all substructures."""
         return [nd for ss in self.substructure for nd in ss.node]
 
@@ -88,6 +91,12 @@ class StructuralSolver:
         dict_: A dictionary containing substructure specifications.
 
         """
+        # TODO: Remove after circular dependencies resolved
+        from .substructure import FlexibleSubstructure
+        from .substructure import RigidSubstructure  # noqa: F811
+        from .substructure import Substructure
+        from .substructure import TorsionalSpringSubstructure  # noqa: F811
+
         if dict_ is None:
             dict_ = {}
         # TODO: This logic is better handled by the factory pattern
