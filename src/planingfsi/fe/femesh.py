@@ -47,8 +47,7 @@ class Mesh:
         self, id_: int, method: str, position: Iterable[Union[float, int, str]], **kwargs: Any
     ) -> "Point":
         # TODO: Split method into several
-        point = Point()
-        point.set_id(id_)
+        point = Point(id=id_)
 
         if method == "dir":
             # Direct coordinate specification
@@ -90,8 +89,7 @@ class Mesh:
 
     def add_point_along_curve(self, id_: int, curve: "Curve", pct: float) -> "Point":
         """Add a point at a certain percentage along a curve."""
-        point = Point()
-        point.set_id(id_)
+        point = Point(id=id_)
         point.set_position(curve.get_shape_func()(pct))
         return point
 
@@ -201,7 +199,7 @@ class Submesh(Mesh):
         radius = kwargs.get("radius")
 
         curve = Curve(kwargs.get("Nel", 1))
-        curve.set_id(kwargs.get("ID", -1))
+        curve.ID = kwargs.get("ID", -1)
         curve.set_end_pts_by_id(pt_id1, pt_id2)
 
         if arc_length is not None:
@@ -270,21 +268,26 @@ class Shape:
                     return a
         raise ValueError(f"Cannot find {cls.__name__} object with ID={id_}")
 
-    def __init__(self) -> None:
+    def __init__(self, id: Optional[int] = None) -> None:
         self.ind = self.count()
-        self.ID: Optional[int] = None
+        self.ID: Optional[int] = id
         Shape.__all.append(self)
 
-    def set_id(self, id_: Optional[int]) -> None:
-        # TODO: Replace with property
-        if id_ is not None:
+    @property
+    def ID(self) -> Optional[int]:
+        return self._id
+
+    @ID.setter
+    def ID(self, value: Optional[int]) -> None:
+        # TODO: Not sure why we need this
+        if value is not None:
             try:
-                existing = self.find_by_id(id_)
+                existing = self.find_by_id(value)
             except ValueError:
                 pass
             else:
-                existing.set_id(None)
-        self.ID = id_
+                existing.ID = None
+        self._id = value
 
     def get_id(self) -> Optional[int]:
         return self.ID
@@ -304,8 +307,8 @@ class Shape:
 class Point(Shape):
     __all: List["Point"] = []
 
-    def __init__(self) -> None:
-        super().__init__()
+    def __init__(self, **kwargs: Any) -> None:
+        super().__init__(**kwargs)
         Point.__all.append(self)
 
         self.pos = np.zeros(2)
@@ -381,8 +384,8 @@ class Point(Shape):
 class Curve(Shape):
     __all: List["Curve"] = []
 
-    def __init__(self, Nel: int = 1):
-        super().__init__()
+    def __init__(self, Nel: int = 1, **kwargs: Any):
+        super().__init__(**kwargs)
         Curve.__all.append(self)
         self.pt: List[Point] = []
         self.line: List["Line"] = []
@@ -515,8 +518,8 @@ class Curve(Shape):
 class Line(Curve):
     __all: List["Line"] = []
 
-    def __init__(self) -> None:
-        super().__init__()
+    def __init__(self, **kwargs: Any) -> None:
+        super().__init__(**kwargs)
         Line.__all.append(self)
         self.plot_sty = "b-"
 
