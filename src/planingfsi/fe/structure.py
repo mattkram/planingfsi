@@ -14,7 +14,7 @@ from ..config import Config
 from ..fsi import simulation as fsi_simulation
 
 if TYPE_CHECKING:
-    from .substructure import FlexibleSubstructure
+    from .substructure import FlexibleSubstructure  # noqa: F401
     from .substructure import RigidSubstructure  # noqa: F401
     from .substructure import Substructure
     from .substructure import TorsionalSpringSubstructure  # noqa: F401
@@ -92,7 +92,7 @@ class StructuralSolver:
 
         """
         # TODO: Remove after circular dependencies resolved
-        from .substructure import FlexibleSubstructure
+        from .substructure import FlexibleSubstructure  # noqa: F811
         from .substructure import RigidSubstructure  # noqa: F811
         from .substructure import Substructure
         from .substructure import TorsionalSpringSubstructure  # noqa: F811
@@ -146,6 +146,9 @@ class StructuralSolver:
 
     def get_residual(self) -> None:
         """Calculate the residual."""
+        # TODO: Remove after circular dependencies resolved
+        from .substructure import FlexibleSubstructure  # noqa: F811
+
         self.res = 0.0
         for bd in self.rigid_body:
             if bd.free_in_draft or bd.free_in_trim:
