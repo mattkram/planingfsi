@@ -34,6 +34,7 @@ class Mesh:
 
     def __init__(self, mesh_dir: Union[Path, str] = "mesh") -> None:
         self.mesh_dir = Path(mesh_dir)
+        self.points: List["Point"] = []
         self.submesh: List["Submesh"] = []
         self.add_point(0, "dir", [0, 0])
 
@@ -46,8 +47,26 @@ class Mesh:
     def add_point(
         self, id_: int, method: str, position: Iterable[Union[float, int, str]], **kwargs: Any
     ) -> "Point":
+        """Add a new point to the mesh, returning the created point.
+
+        Args:
+            id_: The point ID.
+            method: A method by which to specify the point. Depending on the method, the position
+                argument is treated differently.
+
+                Options are:
+                    * "dir" - Direct coordinate specification
+                    * "rel" - Relative to another point, using polar coordinates
+                    * "con" - Constrained along a specific direction up to a certain distance or intersection
+                    * "pct" - At a specific percentage of the distance between two other points
+
+        Returns:
+            The point that is created.
+
+        """
         # TODO: Split method into several
         point = Point(id=id_)
+        self.points.append(point)
 
         if method == "dir":
             # Direct coordinate specification
@@ -90,6 +109,7 @@ class Mesh:
     def add_point_along_curve(self, id_: int, curve: "Curve", pct: float) -> "Point":
         """Add a point at a certain percentage along a curve."""
         point = Point(id=id_)
+        self.points.append(point)
         point.set_position(curve.get_shape_func()(pct))
         return point
 
@@ -98,10 +118,12 @@ class Mesh:
         Point.find_by_id(pt_id).add_fixed_load(load)
 
     def fix_points(self, pt_id_list: Iterable[int]) -> None:
+        """Fix the position of a list of points in the mesh."""
         for pt in [Point.find_by_id(pt_id) for pt_id in pt_id_list]:
             pt.set_fixed_dof("x", "y")
 
     def fix_all_points(self) -> None:
+        """Fix the position of all points in the mesh."""
         self.fix_points([p.ind for p in Point.all()])
 
     def rotate_points(self, base_pt_id: int, angle: float, pt_id_list: Iterable[int]) -> None:
