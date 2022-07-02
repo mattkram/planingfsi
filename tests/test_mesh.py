@@ -1,4 +1,5 @@
 from typing import List
+from typing import Type
 from typing import Union
 
 import numpy
@@ -43,3 +44,18 @@ def test_add_point(
     assert len(mesh.points) == 3
     assert point in mesh.points
     assert numpy.allclose(point.pos, numpy.array(expected_coords))
+
+
+@pytest.mark.parametrize(
+    "method, position, expected_error",
+    [
+        pytest.param("unknown", [0, 90, 10], NameError, id="Bad method"),
+        pytest.param("con", [0, "z", 10], ValueError, id="Bad direction"),
+        pytest.param("con", [100, "y", -10], ValueError, id="Missing base point"),
+    ],
+)
+def test_add_point_error(
+    mesh: Mesh, method: str, position: List[Union[float, str]], expected_error: Type[Exception]
+) -> None:
+    with pytest.raises(expected_error):
+        mesh.add_point(1, method, position)
