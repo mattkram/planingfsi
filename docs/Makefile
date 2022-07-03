@@ -6,6 +6,7 @@ SPHINXOPTS    =
 SPHINXBUILD   = sphinx-build
 PAPER         =
 BUILDDIR      = build
+SOURCEDIR	  = source
 
 # Internal variables.
 PAPEROPT_a4     = -D latex_paper_size=a4
@@ -48,12 +49,18 @@ help:
 clean:
 	rm -rf $(BUILDDIR)/*
 
+source/api:
+	mkdir -p $<
+
 .PHONY: html
 html:
-	sphinx-apidoc -f -o source/api ../planingfsi
+	sphinx-apidoc -f -o source/api ../src/planingfsi
 	$(SPHINXBUILD) -b html $(ALLSPHINXOPTS) $(BUILDDIR)/html
 	@echo
 	@echo "Build finished. The HTML pages are in $(BUILDDIR)/html."
+
+livehtml:
+	sphinx-autobuild "$(SOURCEDIR)" "$(BUILDDIR)" $(SPHINXOPTS) $(O)
 
 .PHONY: dirhtml
 dirhtml:
