@@ -114,7 +114,13 @@ class Mesh:
         return point
 
     def add_load(self, pt_id: int, load: np.ndarray) -> None:
-        """Add a fixed load at a specific point."""
+        """Add a fixed load at a specific point.
+
+        Args:
+            pt_id: The ID of the point at which to add the load.
+            load: A 2d vector load to apply at the point.
+
+        """
         Point.find_by_id(pt_id).add_fixed_load(load)
 
     def fix_points(self, pt_id_list: Iterable[int]) -> None:
