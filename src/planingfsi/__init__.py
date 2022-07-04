@@ -10,8 +10,11 @@ and the structural solver considers a large-deformation simple beam element.
 """
 import logging
 
+from .fe.femesh import Mesh  # noqa: F401
+
 logger = logging.getLogger("planingfsi")
 logger.setLevel(logging.INFO)
+
 
 # # Use tk by default. Otherwise try Agg. Otherwise, disable plotting.
 # _fallback_engine = "Agg"
