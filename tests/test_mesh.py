@@ -59,3 +59,18 @@ def test_add_point_error(
 ) -> None:
     with pytest.raises(expected_error):
         mesh.add_point(1, method, position)
+
+
+def test_add_load(mesh: Mesh) -> None:
+    """Add a fixed load several times to the origin."""
+    point = mesh.get_point(0)
+    mesh.add_load(0, numpy.array([1.0, 1.0]))
+    fixed_load_1 = point.get_fixed_load()
+    assert numpy.allclose(fixed_load_1, numpy.array([1.0, 1.0]))
+
+    mesh.add_load(0, numpy.array([1.0, -1.0]))
+    fixed_load_2 = point.get_fixed_load()
+    assert numpy.allclose(fixed_load_2, numpy.array([2.0, 0.0]))
+
+    # The array never changes ID
+    assert fixed_load_1 is fixed_load_2

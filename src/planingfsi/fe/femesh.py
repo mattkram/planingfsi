@@ -38,6 +38,10 @@ class Mesh:
         self.submesh: List["Submesh"] = []
         self.add_point(0, "dir", [0, 0])
 
+    def get_point(self, pt_id: int, /) -> "Point":
+        """Return a point by ID from the mesh."""
+        return Point.find_by_id(pt_id)
+
     def add_submesh(self, name: str = "") -> "Submesh":
         """Add a submesh to the mesh."""
         submesh = Submesh(name)
@@ -121,7 +125,7 @@ class Mesh:
             load: A 2d vector load to apply at the point.
 
         """
-        Point.find_by_id(pt_id).add_fixed_load(load)
+        self.get_point(pt_id).add_fixed_load(load)
 
     def fix_points(self, pt_id_list: Iterable[int]) -> None:
         """Fix the position of a list of points in the mesh."""
@@ -347,7 +351,7 @@ class Point(Shape):
 
     def add_fixed_load(self, load: np.ndarray) -> None:
         """Add a fixed load to the point."""
-        self.fixed_load[:] += load
+        self.fixed_load += load
 
     def set_free_dof(self, *args: str) -> None:
         for arg in args:
