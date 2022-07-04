@@ -175,28 +175,34 @@ class Mesh:
         logger.info("Line count:  {0}".format(Line.count()))
         logger.info("Point count: {0}".format(Point.count()))
 
-    def plot(self, **kwargs: Any) -> None:
-        show = kwargs.get("show", False)
-        save = kwargs.get("save", False)
-        plot = show or save
-        if plot:
-            plt.figure(figsize=(16, 14))
-            plt.axis("equal")
-            plt.xlabel(r"$x$", size=18)
-            plt.ylabel(r"$y$", size=18)
+    def plot(self, show: bool = False, save: bool = False, *, filename: str = "meshLayout") -> None:
+        """Plot the mesh if we elect to show or save it. Otherwise, do nothing.
 
-            Shape.plot_all()
+        Args:
+            show: If True, the plot window will open.
+            save: If True, the plot will be saved to a file.
+            filename: A filename which can be used when saving the mesh image.
 
-            lims = plt.gca().get_xlim()
-            ext = (lims[1] - lims[0]) * 0.1
-            plt.xlim([lims[0] - ext, lims[1] + ext])
+        """
+        if not (show or save):
+            return
 
-            # Process optional arguments and save or show figure
-            if save:
-                saved_file_name = kwargs.get("fileName", "meshLayout")
-                plt.savefig(saved_file_name + ".eps", format="eps")
-            if show:
-                plt.show()
+        plt.figure(figsize=(16, 14))
+        plt.axis("equal")
+        plt.xlabel(r"$x$", size=18)
+        plt.ylabel(r"$y$", size=18)
+
+        Shape.plot_all()
+
+        lims = plt.gca().get_xlim()
+        ext = (lims[1] - lims[0]) * 0.1
+        plt.xlim([lims[0] - ext, lims[1] + ext])
+
+        # Process optional arguments and save or show figure
+        if save:
+            plt.savefig(f"{filename}.eps", format="eps")
+        if show:
+            plt.show()
 
     def write(self) -> None:
         """Write the mesh to text files."""
