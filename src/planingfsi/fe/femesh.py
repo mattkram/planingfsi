@@ -162,11 +162,18 @@ class Mesh:
     def get_length(self, pt0: int, pt1: int) -> float:
         return np.linalg.norm(self.get_diff(pt0, pt1))
 
-    def display(self, **kwargs: Any) -> None:
-        if kwargs.get("disp", False):
-            Shape.print_all()
-            logger.info("Line count:  {0}".format(Line.count()))
-            logger.info("Point count: {0}".format(Point.count()))
+    def display(self, disp: bool = False) -> None:
+        """Display information about the mesh.
+
+        Args:
+            disp: If True, print to console. Otherwise, do nothing.
+
+        """
+        if not disp:
+            return
+        Shape.print_all()
+        logger.info("Line count:  {0}".format(Line.count()))
+        logger.info("Point count: {0}".format(Point.count()))
 
     def plot(self, **kwargs: Any) -> None:
         show = kwargs.get("show", False)
