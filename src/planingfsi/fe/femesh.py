@@ -19,6 +19,9 @@ from ..solver import fzero
 from ..writers import write_as_list
 
 
+DEFAULT_MESH_DIR = Path("mesh")
+
+
 class Mesh:
     """A high-level class to store a structural mesh.
 
@@ -32,7 +35,7 @@ class Mesh:
 
     """
 
-    def __init__(self, mesh_dir: Union[Path, str] = "mesh") -> None:
+    def __init__(self, mesh_dir: Union[Path, str] = DEFAULT_MESH_DIR) -> None:
         self.mesh_dir = Path(mesh_dir)
         self.points: List["Point"] = []
         self.submesh: List["Submesh"] = []
@@ -52,7 +55,7 @@ class Mesh:
 
     def add_submesh(self, name: str = "") -> "Submesh":
         """Add a submesh to the mesh."""
-        submesh = Submesh(name)
+        submesh = Submesh(name, mesh=self)
         self.submesh.append(submesh)
         return submesh
 
@@ -261,11 +264,20 @@ class Mesh:
             sm.write()
 
 
-class Submesh(Mesh):
-    def __init__(self, name: str, **kwargs: Any):
-        Mesh.__init__(self, **kwargs)
+class Submesh:
+    """A child component of the mesh used for splitting up different sets of curves."""
+
+    def __init__(self, name: str, mesh: Optional[Mesh] = None):
         self.name = name
+        self.mesh = mesh
         self.line: List["Line"] = []
+
+    @property
+    def mesh_dir(self) -> Path:
+        """The directory in which to write the mesh files."""
+        if self.mesh:
+            return self.mesh.mesh_dir
+        return DEFAULT_MESH_DIR
 
     def add_curve(self, pt_id1: int, pt_id2: int, **kwargs: Any) -> "Curve":
         """Add a curve to the submesh."""
