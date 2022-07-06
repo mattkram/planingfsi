@@ -146,11 +146,13 @@ class Mesh:
         self.rotate_points(base_pt_id, angle, [p.ID for p in self.points if p.ID is not None])
 
     def move_points(self, dx: float, dy: float, pt_id_list: Iterable[int]) -> None:
-        for pt in [Point.find_by_id(pt_id) for pt_id in pt_id_list]:
+        """Move (translate) a selection of points in the x & y directions."""
+        for pt in [self.get_point(pt_id) for pt_id in pt_id_list]:
             pt.move(dx, dy)
 
     def move_all_points(self, dx: float, dy: float) -> None:
-        self.move_points(dx, dy, [p.ind for p in Point.all()])
+        """Move (translate) all points in the x & y directions."""
+        self.move_points(dx, dy, [p.ID for p in self.points if p.ID is not None])
 
     def scale_all_points(self, sf: float, base_pt_id: int = 0) -> None:
         base_pt = Point.find_by_id(base_pt_id).get_position()

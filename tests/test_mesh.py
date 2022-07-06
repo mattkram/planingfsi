@@ -117,3 +117,22 @@ def test_rotate_all_points(mesh: Mesh) -> None:
     assert numpy.allclose(mesh.get_point(0).get_position(), numpy.array([0, 0]))
     assert numpy.allclose(mesh.get_point(10).get_position(), numpy.array([-10, 0]))
     assert numpy.allclose(mesh.get_point(20).get_position(), numpy.array([-20, 0]))
+
+
+def test_move_points(mesh: Mesh) -> None:
+    mesh.move_points(10, -10, [10])
+
+    # Point 10 has been rotated 90 degrees
+    assert numpy.allclose(mesh.get_point(10).get_position(), numpy.array([10, 0]))
+
+    # Points 0 & 20 remains in the same position
+    assert numpy.allclose(mesh.get_point(0).get_position(), numpy.array([0, 0]))
+    assert numpy.allclose(mesh.get_point(20).get_position(), numpy.array([0, 20]))
+
+
+def test_move_all_points(mesh: Mesh) -> None:
+    mesh.move_all_points(10, -10)
+
+    assert numpy.allclose(mesh.get_point(0).get_position(), numpy.array([10, -10]))
+    assert numpy.allclose(mesh.get_point(10).get_position(), numpy.array([10, 0]))
+    assert numpy.allclose(mesh.get_point(20).get_position(), numpy.array([10, 10]))
