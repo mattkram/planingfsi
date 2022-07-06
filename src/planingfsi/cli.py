@@ -16,12 +16,10 @@ from .config import Config
 from .fe.femesh import Mesh
 from .fsi.simulation import Simulation
 
-click_log.basic_config(logger)
-
 
 @click.group(name="planingfsi", help="Run the PlaningFSI program")
 def cli() -> None:
-    pass
+    click_log.basic_config(logger)
 
 
 @cli.command(name="run")
