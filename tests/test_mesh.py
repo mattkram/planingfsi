@@ -98,3 +98,22 @@ def test_fix_all_points(mesh: Mesh) -> None:
     for point_id in [0, 10, 20]:
         point = mesh.get_point(point_id)
         assert numpy.all(point.get_fixed_dof() == numpy.array([True, True]))
+
+
+def test_rotate_points(mesh: Mesh) -> None:
+    mesh.rotate_points(0, 90, [0, 10])
+
+    # Point 10 has been rotated 90 degrees
+    assert numpy.allclose(mesh.get_point(10).get_position(), numpy.array([-10, 0]))
+
+    # Points 0 & 20 remains in the same position
+    assert numpy.allclose(mesh.get_point(0).get_position(), numpy.array([0, 0]))
+    assert numpy.allclose(mesh.get_point(20).get_position(), numpy.array([0, 20]))
+
+
+def test_rotate_all_points(mesh: Mesh) -> None:
+    mesh.rotate_all_points(0, 90)
+
+    assert numpy.allclose(mesh.get_point(0).get_position(), numpy.array([0, 0]))
+    assert numpy.allclose(mesh.get_point(10).get_position(), numpy.array([-10, 0]))
+    assert numpy.allclose(mesh.get_point(20).get_position(), numpy.array([-20, 0]))

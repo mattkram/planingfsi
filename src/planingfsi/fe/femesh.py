@@ -138,11 +138,12 @@ class Mesh:
 
     def rotate_points(self, base_pt_id: int, angle: float, pt_id_list: Iterable[int]) -> None:
         """Rotate all points in a list by a given angle about a base point, counter-clockwise."""
-        for pt in [Point.find_by_id(pt_id) for pt_id in pt_id_list]:
+        for pt in [self.get_point(pt_id) for pt_id in pt_id_list]:
             pt.rotate(base_pt_id, angle)
 
     def rotate_all_points(self, base_pt_id: int, angle: float) -> None:
-        self.rotate_points(base_pt_id, angle, [p.ind for p in Point.all()])
+        """Rotate all points in the mesh by a given angle about a base point, counter-clockwise."""
+        self.rotate_points(base_pt_id, angle, [p.ID for p in self.points if p.ID is not None])
 
     def move_points(self, dx: float, dy: float, pt_id_list: Iterable[int]) -> None:
         for pt in [Point.find_by_id(pt_id) for pt_id in pt_id_list]:
