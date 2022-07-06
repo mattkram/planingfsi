@@ -136,3 +136,11 @@ def test_move_all_points(mesh: Mesh) -> None:
     assert numpy.allclose(mesh.get_point(0).get_position(), numpy.array([10, -10]))
     assert numpy.allclose(mesh.get_point(10).get_position(), numpy.array([10, 0]))
     assert numpy.allclose(mesh.get_point(20).get_position(), numpy.array([10, 10]))
+
+
+def test_scale_all_points(mesh: Mesh) -> None:
+    mesh.scale_all_points(2.0, 0)
+
+    assert numpy.allclose(mesh.get_point(0).get_position(), numpy.array([0, 0]))
+    assert numpy.allclose(mesh.get_point(10).get_position(), numpy.array([0, 20]))
+    assert numpy.allclose(mesh.get_point(20).get_position(), numpy.array([0, 40]))

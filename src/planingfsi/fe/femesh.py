@@ -155,8 +155,15 @@ class Mesh:
         self.move_points(dx, dy, [p.ID for p in self.points if p.ID is not None])
 
     def scale_all_points(self, sf: float, base_pt_id: int = 0) -> None:
+        """Scale the coordinates of all points in the mesh by a constant scaling factor, relative to some base point.
+
+        Args:
+            sf: The scale factor.
+            base_pt_id: The point from which coordinates are taken to be relative. Defaults to the origin.
+
+        """
         base_pt = Point.find_by_id(base_pt_id).get_position()
-        for pt in Point.all():
+        for pt in self.points:
             pt.set_position((pt.get_position() - base_pt) * sf + base_pt)
 
     def get_diff(self, pt0: int, pt1: int) -> np.ndarray:
