@@ -1,3 +1,4 @@
+from typing import Any
 from typing import List
 from typing import Type
 from typing import Union
@@ -154,3 +155,10 @@ def test_get_length(mesh: Mesh) -> None:
     assert mesh.get_length(0, 10) == pytest.approx(10.0)
     assert mesh.get_length(10, 20) == pytest.approx(10.0)
     assert mesh.get_length(0, 20) == pytest.approx(20.0)
+
+
+@pytest.mark.parametrize("disp", [True, False])
+def test_display(caplog: Any, mesh: Mesh, disp: bool) -> None:
+    mesh.display(disp=disp)
+    assert ("Line count:" in caplog.text) is disp
+    assert ("Point count:" in caplog.text) is disp
