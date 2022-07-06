@@ -40,7 +40,12 @@ class Mesh:
 
     def get_point(self, pt_id: int, /) -> "Point":
         """Return a point by ID from the mesh."""
-        return Point.find_by_id(pt_id)
+        # TODO: Potentially replace this with a dictionary lookup
+        for pt in self.points:
+            if pt.ID == pt_id:
+                return pt
+
+        raise ValueError(f"Cannot find Point object with ID={pt_id}")
 
     def add_submesh(self, name: str = "") -> "Submesh":
         """Add a submesh to the mesh."""
@@ -79,7 +84,7 @@ class Mesh:
             # Relative coordinate specification using polar coordinates
             base_pt_id, ang, radius = position
             point.set_position(
-                Point.find_by_id(int(base_pt_id)).get_position()
+                self.get_point(int(base_pt_id)).get_position()
                 + radius * trig.angd2vec2d(float(ang))
             )
         elif method == "con":
@@ -88,7 +93,7 @@ class Mesh:
             base_pt_id, dim, val = position
             ang = kwargs.get("angle", 0.0 if dim == "x" else 90.0)
 
-            base_pt = Point.find_by_id(int(base_pt_id)).get_position()
+            base_pt = self.get_point(int(base_pt_id)).get_position()
             if dim == "x":
                 point.set_position(
                     np.array([val, base_pt[1] + (val - base_pt[0]) * trig.tand(float(ang))])
@@ -102,8 +107,8 @@ class Mesh:
         elif method == "pct":
             # Place a point at a certain percentage along the line between two other points
             base_pt_id, end_pt_id, pct = position
-            base_pt = Point.find_by_id(int(base_pt_id)).get_position()
-            end_pt = Point.find_by_id(int(end_pt_id)).get_position()
+            base_pt = self.get_point(int(base_pt_id)).get_position()
+            end_pt = self.get_point(int(end_pt_id)).get_position()
             point.set_position((1.0 - float(pct)) * base_pt + float(pct) * end_pt)
         else:
             raise NameError(f"Incorrect position specification method for point, ID: {id_}")
@@ -162,7 +167,7 @@ class Mesh:
             base_pt_id: The point from which coordinates are taken to be relative. Defaults to the origin.
 
         """
-        base_pt = Point.find_by_id(base_pt_id).get_position()
+        base_pt = self.get_point(base_pt_id).get_position()
         for pt in self.points:
             pt.set_position((pt.get_position() - base_pt) * sf + base_pt)
 
