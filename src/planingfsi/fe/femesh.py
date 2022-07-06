@@ -47,6 +47,9 @@ class Mesh:
 
         raise ValueError(f"Cannot find Point object with ID={pt_id}")
 
+    """A method alias, kept for backwards compatibility with old meshDict files."""
+    get_pt_by_id = get_point
+
     def add_submesh(self, name: str = "") -> "Submesh":
         """Add a submesh to the mesh."""
         submesh = Submesh(name)
@@ -351,13 +354,13 @@ class Shape:
     @ID.setter
     def ID(self, value: Optional[int]) -> None:
         # TODO: Not sure why we need this
-        if value is not None:
-            try:
-                existing = self.find_by_id(value)
-            except ValueError:
-                pass
-            else:
-                existing.ID = None
+        # if value is not None:
+        #     try:
+        #         existing = self.find_by_id(value)
+        #     except ValueError:
+        #         pass
+        #     else:
+        #         existing.ID = None
         self._id = value
 
     @abc.abstractmethod
