@@ -129,12 +129,12 @@ class Mesh:
 
     def fix_points(self, pt_id_list: Iterable[int]) -> None:
         """Fix the position of a list of points in the mesh."""
-        for pt in [Point.find_by_id(pt_id) for pt_id in pt_id_list]:
+        for pt in [self.get_point(pt_id) for pt_id in pt_id_list]:
             pt.set_fixed_dof("x", "y")
 
     def fix_all_points(self) -> None:
         """Fix the position of all points in the mesh."""
-        self.fix_points([p.ind for p in Point.all()])
+        self.fix_points([p.ID for p in self.points if p.ID is not None])
 
     def rotate_points(self, base_pt_id: int, angle: float, pt_id_list: Iterable[int]) -> None:
         """Rotate all points in a list by a given angle about a base point, counter-clockwise."""

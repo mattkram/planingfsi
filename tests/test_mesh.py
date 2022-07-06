@@ -13,6 +13,10 @@ def mesh() -> Mesh:
     """Create a new mesh with a point added. By default, the origin is point 0."""
     mesh = Mesh()
     mesh.add_point(10, "dir", [0, 10])
+    mesh.add_point(20, "dir", [0, 20])
+    for pt_id in [0, 10, 20]:
+        point = mesh.get_point(pt_id)
+        point.set_free_dof("x", "y")
     return mesh
 
 
@@ -41,7 +45,6 @@ def test_add_point(
 
     """
     point = mesh.add_point(1, method, position)
-    assert len(mesh.points) == 3
     assert point in mesh.points
     assert numpy.allclose(point.pos, numpy.array(expected_coords))
 
@@ -74,3 +77,24 @@ def test_add_load(mesh: Mesh) -> None:
 
     # The array never changes ID
     assert fixed_load_1 is fixed_load_2
+
+
+def test_fix_points(mesh: Mesh) -> None:
+    """Fix a few points and ensure they are fixed in both x & y."""
+    mesh.fix_points([0, 10])
+
+    for point_id in [0, 10]:
+        point = mesh.get_point(point_id)
+        assert numpy.all(point.get_fixed_dof() == numpy.array([True, True]))
+
+    point = mesh.get_point(20)
+    assert numpy.all(point.get_fixed_dof() == numpy.array([False, False]))
+
+
+def test_fix_all_points(mesh: Mesh) -> None:
+    """Fix all points and ensure they are fixed in both x & y."""
+    mesh.fix_all_points()
+
+    for point_id in [0, 10, 20]:
+        point = mesh.get_point(point_id)
+        assert numpy.all(point.get_fixed_dof() == numpy.array([True, True]))
