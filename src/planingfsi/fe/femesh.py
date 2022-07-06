@@ -167,9 +167,20 @@ class Mesh:
             pt.set_position((pt.get_position() - base_pt) * sf + base_pt)
 
     def get_diff(self, pt0: int, pt1: int) -> np.ndarray:
-        return Point.find_by_id(pt1).get_position() - Point.find_by_id(pt0).get_position()
+        """The vector pointing from one point to another.
+
+        Args:
+            pt0: The source point.
+            pt1: The destination point.
+
+        Returns:
+            A two-dimensional vector pointing from source to destination.
+
+        """
+        return self.get_point(pt1).get_position() - self.get_point(pt0).get_position()
 
     def get_length(self, pt0: int, pt1: int) -> float:
+        """The Cartesian distance of the line between two points."""
         return np.linalg.norm(self.get_diff(pt0, pt1))
 
     def display(self, disp: bool = False) -> None:

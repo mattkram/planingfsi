@@ -144,3 +144,13 @@ def test_scale_all_points(mesh: Mesh) -> None:
     assert numpy.allclose(mesh.get_point(0).get_position(), numpy.array([0, 0]))
     assert numpy.allclose(mesh.get_point(10).get_position(), numpy.array([0, 20]))
     assert numpy.allclose(mesh.get_point(20).get_position(), numpy.array([0, 40]))
+
+
+def test_get_diff(mesh: Mesh) -> None:
+    assert numpy.allclose(mesh.get_diff(10, 20), numpy.array([0, 10]))
+
+
+def test_get_length(mesh: Mesh) -> None:
+    assert mesh.get_length(0, 10) == pytest.approx(10.0)
+    assert mesh.get_length(10, 20) == pytest.approx(10.0)
+    assert mesh.get_length(0, 20) == pytest.approx(20.0)
