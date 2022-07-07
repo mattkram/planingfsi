@@ -502,7 +502,7 @@ class Curve(Shape):
         self.line: List["Line"] = []
         self._end_pts: List[Point] = []
         self.Nel = Nel
-        self.plot_sty = "m--"
+        self.plot_sty = "b-"
 
         self.radius = 0.0
         self.arc_length = 0.0
