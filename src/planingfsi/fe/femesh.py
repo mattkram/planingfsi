@@ -348,14 +348,6 @@ class Shape:
         for o in cls.__all:
             o.display()
 
-    @classmethod
-    def find_by_id(cls: Type[T], id_: int) -> T:
-        if id_ is not None:
-            for a in cls.all():
-                if a.ID == id_:
-                    return a
-        raise ValueError(f"Cannot find {cls.__name__} object with ID={id_}")
-
     def __init__(self, id: Optional[int] = None, mesh: Optional[Mesh] = None) -> None:
         self.ind = self.count()
         self.ID: Optional[int] = id
@@ -519,7 +511,8 @@ class Curve(Shape):
         self.chord = 0.0
 
     def set_end_pts_by_id(self, pt_id1: int, pt_id2: int) -> None:
-        self.set_end_pts([Point.find_by_id(pid) for pid in [pt_id1, pt_id2]])
+        assert self.mesh is not None
+        self.set_end_pts([self.mesh.get_point(pid) for pid in [pt_id1, pt_id2]])
 
     def get_shape_func(self) -> Callable[[float], np.ndarray]:
         xy = [pt.position for pt in self._end_pts]
