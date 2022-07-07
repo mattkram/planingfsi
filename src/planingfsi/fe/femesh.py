@@ -495,7 +495,6 @@ class Curve(_ShapeBase):
         self._curvature = 0.0
         self._radius = 0.0
         self.arc_length = 0.0
-        self._chord = 0.0
 
     @property
     def index(self) -> int:
@@ -503,6 +502,11 @@ class Curve(_ShapeBase):
         if self.mesh is None:
             raise ValueError("Curve is not associated with a mesh")
         return self.mesh.curves.index(self)
+
+    @property
+    def chord(self) -> float:
+        """The chord length, i.e. the distance between start and end points."""
+        return np.linalg.norm(self._end_pts[1].position - self._end_pts[0].position)
 
     def set_end_pts_by_id(self, pt_id1: int, pt_id2: int) -> None:
         assert self.mesh is not None
@@ -535,11 +539,9 @@ class Curve(_ShapeBase):
 
     def set_radius(self, radius: float) -> None:
         self.radius = radius
-        self.calculate_chord()
         self.calculate_arc_length()
 
     def set_arc_length(self, arc_length: float) -> None:
-        self.calculate_chord()
         if self.chord >= arc_length:
             self.arc_length = 0.0
             self.set_radius(0.0)
@@ -549,14 +551,6 @@ class Curve(_ShapeBase):
 
     def calculate_radius(self) -> None:
         self.radius = 1 / self.calculate_curvature()
-
-    @property
-    def chord(self) -> float:
-        return self._chord
-
-    def calculate_chord(self) -> None:
-        x, y = list(zip(*[pt.position for pt in self._end_pts]))
-        self._chord = ((x[1] - x[0]) ** 2 + (y[1] - y[0]) ** 2) ** 0.5
 
     def calculate_arc_length(self) -> None:
         if self.radius == 0:
