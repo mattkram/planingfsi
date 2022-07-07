@@ -173,13 +173,30 @@ def test_add_submesh(mesh: Mesh, submesh: Submesh) -> None:
     assert submesh.mesh == mesh
 
 
-def test_add_curve(submesh: Submesh) -> None:
-    curve = submesh.add_curve(0, 10)
-    assert curve.radius == pytest.approx(0.0)
-    assert curve.arc_length == pytest.approx(10.0)
-    assert curve.chord == pytest.approx(10.0)
-    assert curve.index == 0
-    assert curve.curvature == pytest.approx(0.0, abs=3e-6)
+@pytest.mark.parametrize(
+    "kwargs, attr_name, expected_value",
+    [
+        ({}, "index", 0),
+        ({}, "radius", pytest.approx(0.0)),
+        ({}, "curvature", pytest.approx(0.0, abs=3e-6)),
+        ({}, "chord", pytest.approx(10.0)),
+        ({}, "arc_length", pytest.approx(10.0)),
+        (dict(radius=5), "radius", pytest.approx(5.0)),
+        (dict(radius=5), "curvature", pytest.approx(0.2)),
+        (dict(radius=5), "chord", pytest.approx(10.0)),
+        (dict(radius=5), "arc_length", pytest.approx(5.0 * numpy.pi)),
+        (dict(arcLen=5 * numpy.pi), "radius", pytest.approx(5.0)),
+        (dict(arcLen=5 * numpy.pi), "curvature", pytest.approx(0.2)),
+        (dict(arcLen=5 * numpy.pi), "chord", pytest.approx(10.0)),
+        (dict(arcLen=5 * numpy.pi), "arc_length", pytest.approx(5.0 * numpy.pi)),
+    ],
+)
+def test_add_curve(
+    submesh: Submesh, kwargs: dict[str, Any], attr_name: str, expected_value: float
+) -> None:
+    curve = submesh.add_curve(0, 10, **kwargs)
+    value = getattr(curve, attr_name)
+    assert value == expected_value
 
 
 @pytest.fixture()
