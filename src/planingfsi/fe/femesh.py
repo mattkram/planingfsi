@@ -251,7 +251,7 @@ class Mesh:
             data_format=">1",
         )
 
-        x, y = list(zip(*[pt.get_fixed_load() for pt in Point.all()]))
+        x, y = list(zip(*[pt.fixed_load for pt in Point.all()]))
         write_as_list(
             os.path.join(self.mesh_dir, "fixedLoad.txt"),
             ["x", x],
@@ -410,9 +410,6 @@ class Point(Shape):
             self.set_free_dof("x", "y")
         else:
             self.set_fixed_dof("x", "y")
-
-    def get_fixed_load(self) -> np.ndarray:
-        return self.fixed_load
 
     def add_fixed_load(self, load: np.ndarray) -> None:
         """Add a fixed load to the point."""
