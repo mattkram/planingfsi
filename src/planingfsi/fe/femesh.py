@@ -328,8 +328,6 @@ class Submesh:
             curve.set_arc_length(0.0)
 
         curve.distribute_points(num_elements)
-        for pt in curve.pt:
-            pt.is_used = True
 
         return curve
 
@@ -494,9 +492,10 @@ class Curve(_ShapeBase):
         self._end_pts: List[Point] = []
         self.plot_sty = "b-"
 
-        self.radius = 0.0
+        self._curvature = 0.0
+        self._radius = 0.0
         self.arc_length = 0.0
-        self.chord = 0.0
+        self._chord = 0.0
 
     @property
     def index(self) -> int:
@@ -526,6 +525,14 @@ class Curve(_ShapeBase):
                 + 2.0 * self.radius * np.sin(s * alf) * trig.ang2vec(gam + (s - 1.0) * alf)[:2]
             )
 
+    @property
+    def radius(self) -> float:
+        return self._radius
+
+    @radius.setter
+    def radius(self, value: float) -> None:
+        self._radius = value
+
     def set_radius(self, radius: float) -> None:
         self.radius = radius
         self.calculate_chord()
@@ -543,9 +550,13 @@ class Curve(_ShapeBase):
     def calculate_radius(self) -> None:
         self.radius = 1 / self.calculate_curvature()
 
+    @property
+    def chord(self) -> float:
+        return self._chord
+
     def calculate_chord(self) -> None:
         x, y = list(zip(*[pt.position for pt in self._end_pts]))
-        self.chord = ((x[1] - x[0]) ** 2 + (y[1] - y[0]) ** 2) ** 0.5
+        self._chord = ((x[1] - x[0]) ** 2 + (y[1] - y[0]) ** 2) ** 0.5
 
     def calculate_arc_length(self) -> None:
         if self.radius == 0:
@@ -557,6 +568,10 @@ class Curve(_ShapeBase):
 
             # Keep increasing guess until fsolve finds the first non-zero root
             self.arc_length = fzero(f, self.chord + 1e-6)
+
+    @property
+    def curvature(self) -> float:
+        return self.calculate_curvature()
 
     def calculate_curvature(self) -> float:
         def f(x: float) -> float:
@@ -578,6 +593,7 @@ class Curve(_ShapeBase):
             s = np.linspace(0.0, 1.0, num_segments + 1)[1:-1]
             for xy in map(self.get_shape_func(), s):
                 point = Point(mesh=self.mesh)
+                point.is_used = True
                 if self.mesh is not None:
                     self.mesh.points.append(point)
                 self.pt.append(point)

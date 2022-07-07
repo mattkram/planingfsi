@@ -12,6 +12,7 @@ import pytest
 
 from planingfsi.fe.femesh import Mesh
 from planingfsi.fe.femesh import Point
+from planingfsi.fe.femesh import Submesh
 
 
 @pytest.fixture()
@@ -160,6 +161,25 @@ def test_get_length(mesh: Mesh) -> None:
     assert mesh.get_length(0, 10) == pytest.approx(10.0)
     assert mesh.get_length(10, 20) == pytest.approx(10.0)
     assert mesh.get_length(0, 20) == pytest.approx(20.0)
+
+
+@pytest.fixture()
+def submesh(mesh: Mesh) -> Submesh:
+    return mesh.add_submesh("submesh_name")
+
+
+def test_add_submesh(mesh: Mesh, submesh: Submesh) -> None:
+    assert submesh.name == "submesh_name"
+    assert submesh.mesh == mesh
+
+
+def test_add_curve(submesh: Submesh) -> None:
+    curve = submesh.add_curve(0, 10)
+    assert curve.radius == pytest.approx(0.0)
+    assert curve.arc_length == pytest.approx(10.0)
+    assert curve.chord == pytest.approx(10.0)
+    assert curve.index == 0
+    assert curve.curvature == pytest.approx(0.0, abs=3e-6)
 
 
 @pytest.fixture()
