@@ -323,7 +323,7 @@ class Submesh:
         if arc_length is not None:
             curve.set_arc_length(arc_length)
         elif radius is not None:
-            curve.set_radius(radius)
+            curve.radius = radius
         else:
             curve.set_arc_length(0.0)
 
@@ -536,21 +536,15 @@ class Curve(_ShapeBase):
     @radius.setter
     def radius(self, value: float) -> None:
         self._radius = value
-
-    def set_radius(self, radius: float) -> None:
-        self.radius = radius
         self.calculate_arc_length()
 
     def set_arc_length(self, arc_length: float) -> None:
         if self.chord >= arc_length:
             self.arc_length = 0.0
-            self.set_radius(0.0)
+            self.radius = 0.0
         else:
             self.arc_length = arc_length
-            self.calculate_radius()
-
-    def calculate_radius(self) -> None:
-        self.radius = 1 / self.calculate_curvature()
+            self.radius = 1 / self.calculate_curvature()
 
     def calculate_arc_length(self) -> None:
         if self.radius == 0:
