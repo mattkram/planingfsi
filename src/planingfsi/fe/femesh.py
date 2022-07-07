@@ -148,8 +148,9 @@ class Mesh:
 
     def rotate_points(self, base_pt_id: int, angle: float, pt_id_list: Iterable[int]) -> None:
         """Rotate all points in a list by a given angle about a base point, counter-clockwise."""
+        base_pt = self.get_point(base_pt_id)
         for pt in [self.get_point(pt_id) for pt_id in pt_id_list]:
-            pt.rotate(base_pt_id, angle)
+            pt.rotate(base_pt, angle)
 
     def rotate_all_points(self, base_pt_id: int, angle: float) -> None:
         """Rotate all points in the mesh by a given angle about a base point, counter-clockwise."""
@@ -461,9 +462,17 @@ class Point(Shape):
         # Kept for backwards-compatibility with old meshDicts
         return self.y_pos
 
-    def rotate(self, base_pt_id: int, angle: float) -> None:
-        base_pt = Point.find_by_id(base_pt_id).position
-        self.position = trig.rotate_vec_2d(self.position - base_pt, angle) + base_pt
+    def rotate(self, base_pt: "Point", angle: float) -> None:
+        """Rotate this point about another base point.
+
+        Args:
+            base_pt: The point around which to rotate.
+            angle: The angle to rotate, in degrees, positive counter-clockwise.
+
+        """
+        self.position = (
+            trig.rotate_vec_2d(self.position - base_pt.position, angle) + base_pt.position
+        )
 
     def display(self) -> None:
         logger.info(
