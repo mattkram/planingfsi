@@ -295,13 +295,29 @@ class Submesh:
         return DEFAULT_MESH_DIR
 
     def add_curve(self, pt_id1: int, pt_id2: int, **kwargs: Any) -> "Curve":
-        """Add a curve to the submesh."""
+        """Add a curve to the submesh.
+
+        Args:
+            pt_id1: The starting point ID.
+            pt_id2: The end point ID.
+
+        Keyword Args:
+            ID: An explicit ID to use for the curve.
+            arcLen: The arclength of the curve (if circular).
+            radius: The radius of the curve (if circular).
+            Nel: The number of line segments to divide the curve into.
+
+        Returns:
+            The Curve object.
+
+        """
+        id_ = kwargs.get("ID", -1)
         arc_length = kwargs.get("arcLen")
         radius = kwargs.get("radius")
+        num_elements = kwargs.get("Nel", 1)
 
-        curve = Curve(kwargs.get("Nel", 1), mesh=self.mesh)
+        curve = Curve(id=id_, mesh=self.mesh)
         self.curves.append(curve)
-        curve.id = kwargs.get("ID", -1)
         curve.set_end_pts_by_id(pt_id1, pt_id2)
 
         if arc_length is not None:
@@ -311,7 +327,7 @@ class Submesh:
         else:
             curve.set_arc_length(0.0)
 
-        curve.distribute_points()
+        curve.distribute_points(num_elements)
         for pt in curve.pt:
             pt.is_used = True
 
@@ -471,12 +487,11 @@ class Point(_ShapeBase):
 
 
 class Curve(_ShapeBase):
-    def __init__(self, Nel: int = 1, id: Optional[int] = None, mesh: Optional[Mesh] = None):
+    def __init__(self, id: Optional[int] = None, mesh: Optional[Mesh] = None):
         super().__init__(id=id, mesh=mesh)
         self.pt: List[Point] = []
         self.lines: List["Line"] = []
         self._end_pts: List[Point] = []
-        self.Nel = Nel
         self.plot_sty = "b-"
 
         self.radius = 0.0
@@ -556,25 +571,25 @@ class Curve(_ShapeBase):
 
         return kap
 
-    def distribute_points(self) -> None:
+    def distribute_points(self, num_segments: int = 1) -> None:
         self.pt.append(self._end_pts[0])
-        if not self.Nel == 1:
+        if num_segments > 1:
             # Distribute N points along a parametric curve defined by f(s), s in [0,1]
-            s = np.linspace(0.0, 1.0, self.Nel + 1)[1:-1]
+            s = np.linspace(0.0, 1.0, num_segments + 1)[1:-1]
             for xy in map(self.get_shape_func(), s):
-                P = Point(mesh=self.mesh)
+                point = Point(mesh=self.mesh)
                 if self.mesh is not None:
-                    self.mesh.points.append(P)
-                self.pt.append(P)
-                P.position = xy
+                    self.mesh.points.append(point)
+                self.pt.append(point)
+                point.position = xy
         self.pt.append(self._end_pts[1])
         self.generate_lines()
 
     def generate_lines(self) -> None:
         for ptSt, ptEnd in zip(self.pt[:-1], self.pt[1:]):
-            L = Line(mesh=self.mesh)
-            L.set_end_pts([ptSt, ptEnd])
-            self.lines.append(L)
+            line = Line(mesh=self.mesh)
+            line.set_end_pts([ptSt, ptEnd])
+            self.lines.append(line)
 
     def set_pts(self, pt: List[Point]) -> None:
         self.pt = pt
