@@ -321,7 +321,7 @@ class Submesh:
         """Write the submesh to file."""
         if self.line:
             pt_l, pt_r = list(
-                zip(*[[pt.ind for pt in line.get_element_coords()] for line in self.line])
+                zip(*[[pt.index for pt in line.get_element_coords()] for line in self.line])
             )
             write_as_list(
                 os.path.join(self.mesh_dir, "elements_{0}.txt".format(self.name)),
@@ -358,7 +358,6 @@ class Shape:
             o.display()
 
     def __init__(self, id: Optional[int] = None, mesh: Optional[Mesh] = None) -> None:
-        self.ind = self.count()
         self.ID = id
         self.mesh = mesh
         Shape.__all.append(self)
@@ -379,6 +378,13 @@ class Point(Shape):
         self.is_dof_fixed = [True, True]
         self.fixed_load = np.zeros(2)
         self._is_used = False
+
+    @property
+    def index(self) -> int:
+        """The index of the point within the mesh point list."""
+        if self.mesh is None:
+            raise ValueError("Point is not associated with a mesh")
+        return self.mesh.points.index(self)
 
     @property
     def is_used(self) -> bool:
@@ -464,7 +470,7 @@ class Point(Shape):
         logger.info(
             " ".join(
                 [
-                    f"{self.__class__.__name__} {self.ind}",
+                    f"{self.__class__.__name__} {self.index}",
                     f"ID = {self.ID}, Pos = {self.position}",
                 ]
             )
@@ -495,6 +501,13 @@ class Curve(Shape):
         self.radius = 0.0
         self.arc_length = 0.0
         self.chord = 0.0
+
+    @property
+    def index(self) -> int:
+        """The index of the point within the mesh curves list."""
+        if self.mesh is None:
+            raise ValueError("Curve is not associated with a mesh")
+        return self.mesh.curves.index(self)
 
     def set_end_pts_by_id(self, pt_id1: int, pt_id2: int) -> None:
         assert self.mesh is not None
@@ -606,7 +619,7 @@ class Curve(Shape):
         logger.info(
             " ".join(
                 [
-                    f"{self.__class__.__name__} {self.ind}:",
+                    f"{self.__class__.__name__} {self.index}:",
                     f"ID = {self.ID}, Pt IDs = {self.get_pt_ids()}",
                 ]
             )
