@@ -9,7 +9,6 @@ from typing import Callable
 from typing import Iterable
 from typing import List
 from typing import Optional
-from typing import TypeVar
 from typing import Union
 
 import matplotlib.pyplot as plt
@@ -334,10 +333,7 @@ class Submesh:
             )
 
 
-T = TypeVar("T", bound="Shape")
-
-
-class Shape:
+class _ShapeBase:
     """An abstract base class for all Shapes."""
 
     def __init__(self, id: Optional[int] = None, mesh: Optional[Mesh] = None) -> None:
@@ -353,7 +349,7 @@ class Shape:
         raise NotImplementedError
 
 
-class Point(Shape):
+class Point(_ShapeBase):
     def __init__(self, id: Optional[int] = None, mesh: Optional[Mesh] = None) -> None:
         super().__init__(id=id, mesh=mesh)
         self.position = np.zeros(2)
@@ -471,7 +467,7 @@ class Point(Shape):
             plt.text(self.x_pos, self.y_pos, f" {self.id}")
 
 
-class Curve(Shape):
+class Curve(_ShapeBase):
     def __init__(self, Nel: int = 1, id: Optional[int] = None, mesh: Optional[Mesh] = None):
         super().__init__(id=id, mesh=mesh)
         self.pt: List[Point] = []
