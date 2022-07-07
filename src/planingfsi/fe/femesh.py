@@ -485,11 +485,16 @@ class Point(Shape):
         )
 
     def plot(self) -> None:
+        """Plot the point.
+
+        If it is a control point with an ID, it is a circle with a label. Otherwise, it's a star.
+
+        """
         if self.ID is None:
             plt.plot(self.x_pos, self.y_pos, "r*")
         else:
             plt.plot(self.x_pos, self.y_pos, "ro")
-            plt.text(self.x_pos, self.y_pos, " {0}".format(self.ID))
+            plt.text(self.x_pos, self.y_pos, f" {self.ID}")
 
 
 class Curve(Shape):
