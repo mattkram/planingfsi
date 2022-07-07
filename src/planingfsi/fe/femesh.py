@@ -389,8 +389,8 @@ class Shape:
 class Point(Shape):
     __all: List["Point"] = []
 
-    def __init__(self, **kwargs: Any) -> None:
-        super().__init__(**kwargs)
+    def __init__(self, id: Optional[int] = None) -> None:
+        super().__init__(id=id)
         Point.__all.append(self)
 
         self.pos = np.zeros(2)
@@ -466,8 +466,8 @@ class Point(Shape):
 class Curve(Shape):
     __all: List["Curve"] = []
 
-    def __init__(self, Nel: int = 1, **kwargs: Any):
-        super().__init__(**kwargs)
+    def __init__(self, Nel: int = 1, id: Optional[int] = None):
+        super().__init__(id=id)
         Curve.__all.append(self)
         self.pt: List[Point] = []
         self.line: List["Line"] = []
@@ -600,8 +600,8 @@ class Curve(Shape):
 class Line(Curve):
     __all: List["Line"] = []
 
-    def __init__(self, **kwargs: Any) -> None:
-        super().__init__(**kwargs)
+    def __init__(self, id: Optional[int] = None) -> None:
+        super().__init__(id=id)
         Line.__all.append(self)
         self.plot_sty = "b-"
 
