@@ -188,3 +188,33 @@ def test_add_fixed_load() -> None:
     point.add_fixed_load(numpy.array([1.0, 2.0]))
     point.add_fixed_load(numpy.array([1.0, 2.0]))
     assert numpy.allclose(point.fixed_load, numpy.array([2.0, 4.0]))
+
+
+@pytest.mark.parametrize(
+    "dofs, expected_is_dof_fixed",
+    [
+        (("x", "y"), [False, False]),
+        (("x",), [False, True]),
+        (("y",), [True, False]),
+    ],
+)
+def test_set_free_dof(dofs: tuple[str, ...], expected_is_dof_fixed: list[bool]) -> None:
+    point = Point()
+    point.is_dof_fixed = [True, True]
+    point.set_free_dof(*dofs)
+    assert point.is_dof_fixed == expected_is_dof_fixed
+
+
+@pytest.mark.parametrize(
+    "dofs, expected_is_dof_fixed",
+    [
+        (("x", "y"), [True, True]),
+        (("x",), [True, False]),
+        (("y",), [False, True]),
+    ],
+)
+def test_set_fixed_dof(dofs: tuple[str, ...], expected_is_dof_fixed: list[bool]) -> None:
+    point = Point()
+    point.is_dof_fixed = [False, False]
+    point.set_fixed_dof(*dofs)
+    assert point.is_dof_fixed == expected_is_dof_fixed
