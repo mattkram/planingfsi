@@ -181,3 +181,10 @@ def test_point_is_used(is_used: bool, expected_is_dof_fixed: List[bool]) -> None
     point = Point()
     point.is_used = is_used
     assert point.is_dof_fixed == expected_is_dof_fixed
+
+
+def test_add_fixed_load() -> None:
+    point = Point()
+    point.add_fixed_load(numpy.array([1.0, 2.0]))
+    point.add_fixed_load(numpy.array([1.0, 2.0]))
+    assert numpy.allclose(point.fixed_load, numpy.array([2.0, 4.0]))
