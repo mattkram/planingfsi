@@ -180,6 +180,7 @@ def test_point_init(kwargs: dict[str, int], expected_id: Optional[int]) -> None:
 def test_point_is_used(is_used: bool, expected_is_dof_fixed: List[bool]) -> None:
     point = Point()
     point.is_used = is_used
+    assert point.is_used == is_used
     assert point.is_dof_fixed == expected_is_dof_fixed
 
 
