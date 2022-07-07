@@ -350,25 +350,9 @@ class Shape:
 
     def __init__(self, id: Optional[int] = None, mesh: Optional[Mesh] = None) -> None:
         self.ind = self.count()
-        self.ID: Optional[int] = id
+        self.ID = id
         self.mesh = mesh
         Shape.__all.append(self)
-
-    @property
-    def ID(self) -> Optional[int]:
-        return self._id
-
-    @ID.setter
-    def ID(self, value: Optional[int]) -> None:
-        # TODO: Not sure why we need this
-        # if value is not None:
-        #     try:
-        #         existing = self.find_by_id(value)
-        #     except ValueError:
-        #         pass
-        #     else:
-        #         existing.ID = None
-        self._id = value
 
     @abc.abstractmethod
     def display(self) -> None:
