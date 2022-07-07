@@ -1,5 +1,8 @@
+from __future__ import annotations
+
 from typing import Any
 from typing import List
+from typing import Optional
 from typing import Type
 from typing import Union
 
@@ -7,6 +10,7 @@ import numpy
 import pytest
 
 from planingfsi.fe.femesh import Mesh
+from planingfsi.fe.femesh import Point
 
 
 @pytest.fixture()
@@ -162,3 +166,9 @@ def test_display(caplog: Any, mesh: Mesh, disp: bool) -> None:
     mesh.display(disp=disp)
     assert ("Line count:" in caplog.text) is disp
     assert ("Point count:" in caplog.text) is disp
+
+
+@pytest.mark.parametrize("kwargs, expected_id", [({}, None), ({"id": 1}, 1)])
+def test_point_init(kwargs: dict[str, int], expected_id: Optional[int]) -> None:
+    point = Point(**kwargs)
+    assert point.ID == expected_id

@@ -322,6 +322,8 @@ T = TypeVar("T", bound="Shape")
 
 
 class Shape:
+    """An abstract base class for all Shapes."""
+
     __all: List["Shape"] = []
 
     @classmethod
