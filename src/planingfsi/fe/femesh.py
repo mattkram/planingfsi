@@ -80,7 +80,7 @@ class Mesh:
 
         """
         # TODO: Split method into several
-        point = Point(id=id_)
+        point = Point(id=id_, mesh=self)
         self.points.append(point)
 
         if method == "dir":
@@ -122,7 +122,7 @@ class Mesh:
 
     def add_point_along_curve(self, id_: int, curve: "Curve", pct: float) -> "Point":
         """Add a point at a certain percentage along a curve."""
-        point = Point(id=id_)
+        point = Point(id=id_, mesh=self)
         self.points.append(point)
         point.position = curve.get_shape_func()(pct)
         return point
@@ -284,7 +284,7 @@ class Submesh:
         arc_length = kwargs.get("arcLen")
         radius = kwargs.get("radius")
 
-        curve = Curve(kwargs.get("Nel", 1))
+        curve = Curve(kwargs.get("Nel", 1), mesh=self.mesh)
         curve.ID = kwargs.get("ID", -1)
         curve.set_end_pts_by_id(pt_id1, pt_id2)
 
@@ -356,9 +356,10 @@ class Shape:
                     return a
         raise ValueError(f"Cannot find {cls.__name__} object with ID={id_}")
 
-    def __init__(self, id: Optional[int] = None) -> None:
+    def __init__(self, id: Optional[int] = None, mesh: Optional[Mesh] = None) -> None:
         self.ind = self.count()
         self.ID: Optional[int] = id
+        self.mesh = mesh
         Shape.__all.append(self)
 
     @property
@@ -389,8 +390,8 @@ class Shape:
 class Point(Shape):
     __all: List["Point"] = []
 
-    def __init__(self, id: Optional[int] = None) -> None:
-        super().__init__(id=id)
+    def __init__(self, id: Optional[int] = None, mesh: Optional[Mesh] = None) -> None:
+        super().__init__(id=id, mesh=mesh)
         Point.__all.append(self)
 
         self.position = np.zeros(2)
@@ -462,7 +463,7 @@ class Point(Shape):
         # Kept for backwards-compatibility with old meshDicts
         return self.y_pos
 
-    def rotate(self, base_pt: "Point", angle: float) -> None:
+    def rotate(self, base_pt: Union["Point", int], angle: float) -> None:
         """Rotate this point about another base point.
 
         Args:
@@ -470,6 +471,10 @@ class Point(Shape):
             angle: The angle to rotate, in degrees, positive counter-clockwise.
 
         """
+        if isinstance(base_pt, int):
+            if self.mesh is None:
+                raise ValueError("Only points with an ID can be rotated by ID.")
+            base_pt = self.mesh.get_point(base_pt)
         self.position = (
             trig.rotate_vec_2d(self.position - base_pt.position, angle) + base_pt.position
         )
@@ -500,8 +505,8 @@ class Point(Shape):
 class Curve(Shape):
     __all: List["Curve"] = []
 
-    def __init__(self, Nel: int = 1, id: Optional[int] = None):
-        super().__init__(id=id)
+    def __init__(self, Nel: int = 1, id: Optional[int] = None, mesh: Optional[Mesh] = None):
+        super().__init__(id=id, mesh=mesh)
         Curve.__all.append(self)
         self.pt: List[Point] = []
         self.line: List["Line"] = []
@@ -584,7 +589,7 @@ class Curve(Shape):
             # Distribute N points along a parametric curve defined by f(s), s in [0,1]
             s = np.linspace(0.0, 1.0, self.Nel + 1)[1:-1]
             for xy in map(self.get_shape_func(), s):
-                P = Point()
+                P = Point(mesh=self.mesh)
                 self.pt.append(P)
                 P.position = xy
         self.pt.append(self._end_pts[1])
@@ -634,8 +639,8 @@ class Curve(Shape):
 class Line(Curve):
     __all: List["Line"] = []
 
-    def __init__(self, id: Optional[int] = None) -> None:
-        super().__init__(id=id)
+    def __init__(self, id: Optional[int] = None, mesh: Optional[Mesh] = None) -> None:
+        super().__init__(id=id, mesh=mesh)
         Line.__all.append(self)
         self.plot_sty = "b-"
 
