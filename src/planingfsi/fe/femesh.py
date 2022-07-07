@@ -251,22 +251,23 @@ class Mesh:
 
     def write(self) -> None:
         """Write the mesh to text files."""
-        Path(self.mesh_dir).mkdir(exist_ok=True)
-        x, y = list(zip(*[pt.position for pt in self.points]))
-        write_as_list(os.path.join(self.mesh_dir, "nodes.txt"), ["x", x], ["y", y])
+        self.mesh_dir.mkdir(exist_ok=True)
 
-        x, y = list(zip(*[pt.is_dof_fixed for pt in self.points]))
+        x, y = list(zip(*(pt.position for pt in self.points)))
+        write_as_list(self.mesh_dir / "nodes.txt", ["x", x], ["y", y])
+
+        x, y = list(zip(*(pt.is_dof_fixed for pt in self.points)))
         write_as_list(
-            os.path.join(self.mesh_dir, "fixedDOF.txt"),
+            self.mesh_dir / "fixedDOF.txt",
             ["x", x],
             ["y", y],
             header_format=">1",
             data_format=">1",
         )
 
-        x, y = list(zip(*[pt.fixed_load for pt in self.points]))
+        x, y = list(zip(*(pt.fixed_load for pt in self.points)))
         write_as_list(
-            os.path.join(self.mesh_dir, "fixedLoad.txt"),
+            self.mesh_dir / "fixedLoad.txt",
             ["x", x],
             ["y", y],
             header_format=">6",
@@ -322,7 +323,7 @@ class Submesh:
 
         lines = []
         for curve in self.curves:
-            lines.extend(curve.get_lines())
+            lines.extend(curve.lines)
 
         pt_l, pt_r = list(zip(*[[pt.index for pt in line.get_element_coords()] for line in lines]))
         write_as_list(
@@ -472,7 +473,7 @@ class Curve(_ShapeBase):
     def __init__(self, Nel: int = 1, id: Optional[int] = None, mesh: Optional[Mesh] = None):
         super().__init__(id=id, mesh=mesh)
         self.pt: List[Point] = []
-        self.line: List["Line"] = []
+        self.lines: List["Line"] = []
         self._end_pts: List[Point] = []
         self.Nel = Nel
         self.plot_sty = "b-"
@@ -572,10 +573,7 @@ class Curve(_ShapeBase):
         for ptSt, ptEnd in zip(self.pt[:-1], self.pt[1:]):
             L = Line(mesh=self.mesh)
             L.set_end_pts([ptSt, ptEnd])
-            self.line.append(L)
-
-    def get_lines(self) -> List["Line"]:
-        return self.line
+            self.lines.append(L)
 
     def set_pts(self, pt: List[Point]) -> None:
         self.pt = pt
