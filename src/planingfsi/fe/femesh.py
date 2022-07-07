@@ -416,6 +416,12 @@ class Point(Shape):
         self.fixed_load += load
 
     def set_free_dof(self, *args: str) -> None:
+        """Set specific degrees of freedom to be free.
+
+        Args:
+            *args: Can be "x" and/or "y".
+
+        """
         for arg in args:
             if arg == "x":
                 self.is_dof_fixed[0] = False
@@ -423,6 +429,12 @@ class Point(Shape):
                 self.is_dof_fixed[1] = False
 
     def set_fixed_dof(self, *args: str) -> None:
+        """Set specific degrees of freedom to be fixed.
+
+        Args:
+            *args: Can be "x" and/or "y".
+
+        """
         for arg in args:
             if arg == "x":
                 self.is_dof_fixed[0] = True
