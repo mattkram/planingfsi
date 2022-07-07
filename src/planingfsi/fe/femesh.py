@@ -210,7 +210,10 @@ class Mesh:
         """
         if not disp:
             return
-        Shape.print_all()
+
+        for obj in itertools.chain(self.points, self.curves):
+            obj.display()
+
         logger.info("Curve count: {0}".format(len(self.curves)))
         logger.info("Point count: {0}".format(len(self.points)))
 
@@ -337,17 +340,9 @@ T = TypeVar("T", bound="Shape")
 class Shape:
     """An abstract base class for all Shapes."""
 
-    __all: List["Shape"] = []
-
-    @classmethod
-    def print_all(cls) -> None:
-        for o in Shape.__all:
-            o.display()
-
     def __init__(self, id: Optional[int] = None, mesh: Optional[Mesh] = None) -> None:
         self.ID = id
         self.mesh = mesh
-        Shape.__all.append(self)
 
     @abc.abstractmethod
     def display(self) -> None:
