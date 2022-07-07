@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from pathlib import Path
 from typing import Any
 from typing import List
 from typing import Optional
@@ -159,6 +160,33 @@ def test_get_length(mesh: Mesh) -> None:
     assert mesh.get_length(0, 10) == pytest.approx(10.0)
     assert mesh.get_length(10, 20) == pytest.approx(10.0)
     assert mesh.get_length(0, 20) == pytest.approx(20.0)
+
+
+@pytest.fixture()
+def written_mesh(tmp_path: Path, mesh: Mesh) -> Mesh:
+    mesh.mesh_dir = tmp_path / "mesh"
+    mesh.get_point(0).set_fixed_dof("x", "y")
+    mesh.get_point(10).set_fixed_dof("x")
+    mesh.get_point(20).set_fixed_dof("y")
+    mesh.get_point(20).add_fixed_load(numpy.array([1.0, 2.0]))
+    mesh.write()
+    return mesh
+
+
+@pytest.mark.parametrize(
+    "filename, expected_data",
+    [
+        ("nodes.txt", numpy.array([[0.0, 0.0], [0.0, 10.0], [0.0, 20.0]])),
+        ("fixedDOF.txt", numpy.array([[1, 1], [1, 0], [0, 1]])),
+        ("fixedLoad.txt", numpy.array([[0.0, 0.0], [0.0, 0.0], [1.0, 2.0]])),
+    ],
+)
+def test_mesh_write(written_mesh: Mesh, filename: str, expected_data: numpy.ndarray) -> None:
+    file_path = written_mesh.mesh_dir / filename
+    assert file_path.exists()
+
+    data = numpy.loadtxt(file_path)
+    assert numpy.allclose(data, expected_data)
 
 
 @pytest.mark.parametrize("disp", [True, False])
