@@ -353,13 +353,8 @@ class Shape:
         return len(cls.all())
 
     @classmethod
-    def plot_all(cls) -> None:
-        for o in cls.__all:
-            o.plot()
-
-    @classmethod
     def print_all(cls) -> None:
-        for o in cls.__all:
+        for o in Shape.__all:
             o.display()
 
     def __init__(self, id: Optional[int] = None, mesh: Optional[Mesh] = None) -> None:
@@ -378,12 +373,8 @@ class Shape:
 
 
 class Point(Shape):
-    __all: List["Point"] = []
-
     def __init__(self, id: Optional[int] = None, mesh: Optional[Mesh] = None) -> None:
         super().__init__(id=id, mesh=mesh)
-        Point.__all.append(self)
-
         self.position = np.zeros(2)
         self.is_dof_fixed = [True, True]
         self.fixed_load = np.zeros(2)
@@ -493,11 +484,8 @@ class Point(Shape):
 
 
 class Curve(Shape):
-    __all: List["Curve"] = []
-
     def __init__(self, Nel: int = 1, id: Optional[int] = None, mesh: Optional[Mesh] = None):
         super().__init__(id=id, mesh=mesh)
-        Curve.__all.append(self)
         self.pt: List[Point] = []
         self.line: List["Line"] = []
         self._end_pts: List[Point] = []
@@ -625,18 +613,12 @@ class Curve(Shape):
         )
 
     def plot(self) -> None:
-        x, y = list(zip(*[pt.position for pt in self.pt]))
+        """Plot the curve as a line by chaining all component points together."""
+        x, y = list(zip(*(pt.position for pt in self.pt)))
         plt.plot(x, y, self.plot_sty)
 
 
 class Line(Curve):
-    __all: List["Line"] = []
-
-    def __init__(self, id: Optional[int] = None, mesh: Optional[Mesh] = None) -> None:
-        super().__init__(id=id, mesh=mesh)
-        Line.__all.append(self)
-        self.plot_sty = "b-"
-
     def set_end_pts(self, end_pt: List[Point]) -> None:
         super().set_end_pts(end_pt)
         self.set_pts(end_pt)
