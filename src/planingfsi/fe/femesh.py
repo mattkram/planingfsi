@@ -297,7 +297,7 @@ class Submesh:
 
         curve.distribute_points()
         for pt in curve.pt:
-            pt.set_used()
+            pt.is_used = True
 
         self.line += [line for line in curve.get_lines()]
 
@@ -396,11 +396,20 @@ class Point(Shape):
         self.pos = np.zeros(2)
         self.is_dof_fixed = [True, True]
         self.fixed_load = np.zeros(2)
-        self.is_used = False
+        self._is_used = False
 
-    def set_used(self) -> None:
-        self.is_used = True
-        self.set_free_dof("x", "y")
+    @property
+    def is_used(self) -> bool:
+        """If True, the point will be used in the solution and is free to move."""
+        return self._is_used
+
+    @is_used.setter
+    def is_used(self, value: bool) -> None:
+        self._is_used = value
+        if value:
+            self.set_free_dof("x", "y")
+        else:
+            self.set_fixed_dof("x", "y")
 
     def get_fixed_load(self) -> np.ndarray:
         return self.fixed_load

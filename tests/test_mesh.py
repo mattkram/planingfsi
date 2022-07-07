@@ -172,3 +172,12 @@ def test_display(caplog: Any, mesh: Mesh, disp: bool) -> None:
 def test_point_init(kwargs: dict[str, int], expected_id: Optional[int]) -> None:
     point = Point(**kwargs)
     assert point.ID == expected_id
+
+
+@pytest.mark.parametrize(
+    "is_used, expected_is_dof_fixed", [(True, [False, False]), (False, [True, True])]
+)
+def test_point_is_used(is_used: bool, expected_is_dof_fixed: List[bool]) -> None:
+    point = Point()
+    point.is_used = is_used
+    assert point.is_dof_fixed == expected_is_dof_fixed
