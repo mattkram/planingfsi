@@ -590,7 +590,7 @@ class Curve(Shape):
 
     def generate_lines(self) -> None:
         for ptSt, ptEnd in zip(self.pt[:-1], self.pt[1:]):
-            L = Line()
+            L = Line(mesh=self.mesh)
             L.set_end_pts([ptSt, ptEnd])
             self.line.append(L)
 
