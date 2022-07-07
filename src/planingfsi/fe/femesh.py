@@ -239,10 +239,10 @@ class Mesh:
     def write(self) -> None:
         """Write the mesh to text files."""
         Path(self.mesh_dir).mkdir(exist_ok=True)
-        x, y = list(zip(*[pt.position for pt in Point.all()]))
+        x, y = list(zip(*[pt.position for pt in self.points]))
         write_as_list(os.path.join(self.mesh_dir, "nodes.txt"), ["x", x], ["y", y])
 
-        x, y = list(zip(*[pt.is_dof_fixed for pt in Point.all()]))
+        x, y = list(zip(*[pt.is_dof_fixed for pt in self.points]))
         write_as_list(
             os.path.join(self.mesh_dir, "fixedDOF.txt"),
             ["x", x],
@@ -251,7 +251,7 @@ class Mesh:
             data_format=">1",
         )
 
-        x, y = list(zip(*[pt.fixed_load for pt in Point.all()]))
+        x, y = list(zip(*[pt.fixed_load for pt in self.points]))
         write_as_list(
             os.path.join(self.mesh_dir, "fixedLoad.txt"),
             ["x", x],
@@ -567,6 +567,8 @@ class Curve(Shape):
             s = np.linspace(0.0, 1.0, self.Nel + 1)[1:-1]
             for xy in map(self.get_shape_func(), s):
                 P = Point(mesh=self.mesh)
+                if self.mesh is not None:
+                    self.mesh.points.append(P)
                 self.pt.append(P)
                 P.position = xy
         self.pt.append(self._end_pts[1])
