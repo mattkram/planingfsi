@@ -218,3 +218,13 @@ def test_set_fixed_dof(dofs: tuple[str, ...], expected_is_dof_fixed: list[bool])
     point.is_dof_fixed = [False, False]
     point.set_fixed_dof(*dofs)
     assert point.is_dof_fixed == expected_is_dof_fixed
+
+
+def test_get_position() -> None:
+    point = Point()
+    point.pos = numpy.array([10.0, 20.0])
+    assert point.get_x_pos() == pytest.approx(10.0)
+    assert point.get_y_pos() == pytest.approx(20.0)
+
+    assert point.x_pos == pytest.approx(10.0)
+    assert point.y_pos == pytest.approx(20.0)

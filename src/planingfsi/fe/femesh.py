@@ -411,6 +411,16 @@ class Point(Shape):
         else:
             self.set_fixed_dof("x", "y")
 
+    @property
+    def x_pos(self) -> float:
+        """The x-coordinate of the point."""
+        return self.pos[0]
+
+    @property
+    def y_pos(self) -> float:
+        """The y-coordinate of the point."""
+        return self.pos[1]
+
     def add_fixed_load(self, load: np.ndarray) -> None:
         """Add a fixed load to the point."""
         self.fixed_load += load
@@ -451,10 +461,12 @@ class Point(Shape):
         return self.pos
 
     def get_x_pos(self) -> float:
-        return self.pos[0]
+        # Kept for backwards-compatibility with old meshDicts
+        return self.x_pos
 
     def get_y_pos(self) -> float:
-        return self.pos[1]
+        # Kept for backwards-compatibility with old meshDicts
+        return self.y_pos
 
     def rotate(self, base_pt_id: int, angle: float) -> None:
         base_pt = Point.find_by_id(base_pt_id).get_position()
