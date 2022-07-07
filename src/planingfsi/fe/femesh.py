@@ -242,7 +242,7 @@ class Mesh:
         x, y = list(zip(*[pt.get_position() for pt in Point.all()]))
         write_as_list(os.path.join(self.mesh_dir, "nodes.txt"), ["x", x], ["y", y])
 
-        x, y = list(zip(*[pt.get_fixed_dof() for pt in Point.all()]))
+        x, y = list(zip(*[pt.is_dof_fixed for pt in Point.all()]))
         write_as_list(
             os.path.join(self.mesh_dir, "fixedDOF.txt"),
             ["x", x],
@@ -440,9 +440,6 @@ class Point(Shape):
                 self.is_dof_fixed[0] = True
             if arg == "y":
                 self.is_dof_fixed[1] = True
-
-    def get_fixed_dof(self) -> List[bool]:
-        return self.is_dof_fixed
 
     def move(self, dx: float, dy: float) -> None:
         self.set_position(self.get_position() + np.array([dx, dy]))
