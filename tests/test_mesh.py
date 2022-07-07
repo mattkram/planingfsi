@@ -171,7 +171,7 @@ def test_display(caplog: Any, mesh: Mesh, disp: bool) -> None:
 @pytest.mark.parametrize("kwargs, expected_id", [({}, None), ({"id": 1}, 1)])
 def test_point_init(kwargs: dict[str, Any], expected_id: Optional[int]) -> None:
     point = Point(**kwargs)
-    assert point.ID == expected_id
+    assert point.id == expected_id
 
 
 @pytest.mark.parametrize(

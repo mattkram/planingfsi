@@ -52,7 +52,7 @@ class Mesh:
         """Return a point by ID from the mesh."""
         # TODO: Potentially replace this with a dictionary lookup
         for pt in self.points:
-            if pt.ID == pt_id:
+            if pt.id == pt_id:
                 return pt
 
         raise ValueError(f"Cannot find Point object with ID={pt_id}")
@@ -151,7 +151,7 @@ class Mesh:
 
     def fix_all_points(self) -> None:
         """Fix the position of all points in the mesh."""
-        self.fix_points([p.ID for p in self.points if p.ID is not None])
+        self.fix_points([p.id for p in self.points if p.id is not None])
 
     def rotate_points(self, base_pt_id: int, angle: float, pt_id_list: Iterable[int]) -> None:
         """Rotate all points in a list by a given angle about a base point, counter-clockwise."""
@@ -161,7 +161,7 @@ class Mesh:
 
     def rotate_all_points(self, base_pt_id: int, angle: float) -> None:
         """Rotate all points in the mesh by a given angle about a base point, counter-clockwise."""
-        self.rotate_points(base_pt_id, angle, [p.ID for p in self.points if p.ID is not None])
+        self.rotate_points(base_pt_id, angle, [p.id for p in self.points if p.id is not None])
 
     def move_points(self, dx: float, dy: float, pt_id_list: Iterable[int]) -> None:
         """Move (translate) a selection of points in the x & y directions."""
@@ -170,7 +170,7 @@ class Mesh:
 
     def move_all_points(self, dx: float, dy: float) -> None:
         """Move (translate) all points in the x & y directions."""
-        self.move_points(dx, dy, [p.ID for p in self.points if p.ID is not None])
+        self.move_points(dx, dy, [p.id for p in self.points if p.id is not None])
 
     def scale_all_points(self, sf: float, base_pt_id: int = 0) -> None:
         """Scale the coordinates of all points in the mesh by a constant scaling factor, relative to some base point.
@@ -301,7 +301,7 @@ class Submesh:
 
         curve = Curve(kwargs.get("Nel", 1), mesh=self.mesh)
         self.curves.append(curve)
-        curve.ID = kwargs.get("ID", -1)
+        curve.id = kwargs.get("ID", -1)
         curve.set_end_pts_by_id(pt_id1, pt_id2)
 
         if arc_length is not None:
@@ -341,7 +341,7 @@ class Shape:
     """An abstract base class for all Shapes."""
 
     def __init__(self, id: Optional[int] = None, mesh: Optional[Mesh] = None) -> None:
-        self.ID = id
+        self.id = id
         self.mesh = mesh
 
     @abc.abstractmethod
@@ -453,7 +453,7 @@ class Point(Shape):
             " ".join(
                 [
                     f"{self.__class__.__name__} {self.index}",
-                    f"ID = {self.ID}, Pos = {self.position}",
+                    f"ID = {self.id}, Pos = {self.position}",
                 ]
             )
         )
@@ -464,11 +464,11 @@ class Point(Shape):
         If it is a control point with an ID, it is a circle with a label. Otherwise, it's a star.
 
         """
-        if self.ID is None:
+        if self.id is None:
             plt.plot(self.x_pos, self.y_pos, "r*")
         else:
             plt.plot(self.x_pos, self.y_pos, "ro")
-            plt.text(self.x_pos, self.y_pos, f" {self.ID}")
+            plt.text(self.x_pos, self.y_pos, f" {self.id}")
 
 
 class Curve(Shape):
@@ -592,7 +592,7 @@ class Curve(Shape):
     def get_pt_ids(self) -> List[int]:
         out: List[int] = []
         for pt in self.pt:
-            id_ = pt.ID
+            id_ = pt.id
             if id_ is not None:
                 out.append(id_)
         return out
@@ -602,7 +602,7 @@ class Curve(Shape):
             " ".join(
                 [
                     f"{self.__class__.__name__} {self.index}:",
-                    f"ID = {self.ID}, Pt IDs = {self.get_pt_ids()}",
+                    f"ID = {self.id}, Pt IDs = {self.get_pt_ids()}",
                 ]
             )
         )
