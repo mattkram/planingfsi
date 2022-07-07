@@ -1,4 +1,7 @@
+from __future__ import annotations
+
 import abc
+import itertools
 import os
 from pathlib import Path
 from typing import Any
@@ -40,6 +43,11 @@ class Mesh:
         self.points: List["Point"] = []
         self.submesh: List["Submesh"] = []
         self.add_point(0, "dir", [0, 0])
+
+    @property
+    def curves(self) -> list["Curve"]:
+        """A list of all component curves from all submeshes."""
+        return list(itertools.chain(*(submesh.curves for submesh in self.submesh)))
 
     def get_point(self, pt_id: int, /) -> "Point":
         """Return a point by ID from the mesh."""
@@ -219,12 +227,16 @@ class Mesh:
         if not (show or save):
             return
 
-        plt.figure(figsize=(16, 14))
+        plt.figure()
         plt.axis("equal")
-        plt.xlabel(r"$x$", size=18)
-        plt.ylabel(r"$y$", size=18)
+        plt.xlabel(r"$x$")
+        plt.ylabel(r"$y$")
 
-        Shape.plot_all()
+        for curve in self.curves:
+            curve.plot()
+
+        for point in self.points:
+            point.plot()
 
         lims = plt.gca().get_xlim()
         ext = (lims[1] - lims[0]) * 0.1
@@ -270,6 +282,7 @@ class Submesh:
     def __init__(self, name: str, mesh: Optional[Mesh] = None):
         self.name = name
         self.mesh = mesh
+        self.curves: list["Curve"] = []
         self.line: List["Line"] = []
 
     @property
@@ -285,6 +298,7 @@ class Submesh:
         radius = kwargs.get("radius")
 
         curve = Curve(kwargs.get("Nel", 1), mesh=self.mesh)
+        self.curves.append(curve)
         curve.ID = kwargs.get("ID", -1)
         curve.set_end_pts_by_id(pt_id1, pt_id2)
 
