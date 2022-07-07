@@ -284,7 +284,6 @@ class Submesh:
         self.name = name
         self.mesh = mesh
         self.curves: list["Curve"] = []
-        self.line: List["Line"] = []
 
     @property
     def mesh_dir(self) -> Path:
@@ -314,23 +313,25 @@ class Submesh:
         for pt in curve.pt:
             pt.is_used = True
 
-        self.line += [line for line in curve.get_lines()]
-
         return curve
 
     def write(self) -> None:
         """Write the submesh to file."""
-        if self.line:
-            pt_l, pt_r = list(
-                zip(*[[pt.index for pt in line.get_element_coords()] for line in self.line])
-            )
-            write_as_list(
-                os.path.join(self.mesh_dir, "elements_{0}.txt".format(self.name)),
-                ["ptL", pt_l],
-                ["ptR", pt_r],
-                header_format="<4",
-                data_format=">4",
-            )
+        if not self.curves:
+            return
+
+        lines = []
+        for curve in self.curves:
+            lines.extend(curve.get_lines())
+
+        pt_l, pt_r = list(zip(*[[pt.index for pt in line.get_element_coords()] for line in lines]))
+        write_as_list(
+            os.path.join(self.mesh_dir, "elements_{0}.txt".format(self.name)),
+            ["ptL", pt_l],
+            ["ptR", pt_r],
+            header_format="<4",
+            data_format=">4",
+        )
 
 
 class _ShapeBase:
