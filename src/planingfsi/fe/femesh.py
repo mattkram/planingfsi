@@ -85,13 +85,12 @@ class Mesh:
 
         if method == "dir":
             # Direct coordinate specification
-            point.set_position(np.array(position))
+            point.position = np.array(position)
         elif method == "rel":
             # Relative coordinate specification using polar coordinates
             base_pt_id, ang, radius = position
-            point.set_position(
-                self.get_point(int(base_pt_id)).get_position()
-                + radius * trig.angd2vec2d(float(ang))
+            point.position = self.get_point(int(base_pt_id)).position + radius * trig.angd2vec2d(
+                float(ang)
             )
         elif method == "con":
             # Constrained coordinate specification
@@ -99,23 +98,23 @@ class Mesh:
             base_pt_id, dim, val = position
             ang = kwargs.get("angle", 0.0 if dim == "x" else 90.0)
 
-            base_pt = self.get_point(int(base_pt_id)).get_position()
+            base_pt = self.get_point(int(base_pt_id)).position
             if dim == "x":
-                point.set_position(
-                    np.array([val, base_pt[1] + (val - base_pt[0]) * trig.tand(float(ang))])
+                point.position = np.array(
+                    [val, base_pt[1] + (val - base_pt[0]) * trig.tand(float(ang))]
                 )
             elif dim == "y":
-                point.set_position(
-                    np.array([base_pt[0] + (val - base_pt[1]) / trig.tand(float(ang)), val])
+                point.position = np.array(
+                    [base_pt[0] + (val - base_pt[1]) / trig.tand(float(ang)), val]
                 )
             else:
                 raise ValueError("Incorrect dimension specification")
         elif method == "pct":
             # Place a point at a certain percentage along the line between two other points
             base_pt_id, end_pt_id, pct = position
-            base_pt = self.get_point(int(base_pt_id)).get_position()
-            end_pt = self.get_point(int(end_pt_id)).get_position()
-            point.set_position((1.0 - float(pct)) * base_pt + float(pct) * end_pt)
+            base_pt = self.get_point(int(base_pt_id)).position
+            end_pt = self.get_point(int(end_pt_id)).position
+            point.position = (1.0 - float(pct)) * base_pt + float(pct) * end_pt
         else:
             raise NameError(f"Incorrect position specification method for point, ID: {id_}")
 
@@ -125,7 +124,7 @@ class Mesh:
         """Add a point at a certain percentage along a curve."""
         point = Point(id=id_)
         self.points.append(point)
-        point.set_position(curve.get_shape_func()(pct))
+        point.position = curve.get_shape_func()(pct)
         return point
 
     def add_load(self, pt_id: int, load: np.ndarray) -> None:
@@ -173,9 +172,9 @@ class Mesh:
             base_pt_id: The point from which coordinates are taken to be relative. Defaults to the origin.
 
         """
-        base_pt = self.get_point(base_pt_id).get_position()
+        base_pt = self.get_point(base_pt_id).position
         for pt in self.points:
-            pt.set_position((pt.get_position() - base_pt) * sf + base_pt)
+            pt.position = (pt.position - base_pt) * sf + base_pt
 
     def get_diff(self, pt0: int, pt1: int) -> np.ndarray:
         """The vector pointing from one point to another.
@@ -188,7 +187,7 @@ class Mesh:
             A two-dimensional vector pointing from source to destination.
 
         """
-        return self.get_point(pt1).get_position() - self.get_point(pt0).get_position()
+        return self.get_point(pt1).position - self.get_point(pt0).position
 
     def get_length(self, pt0: int, pt1: int) -> float:
         """The Cartesian distance of the line between two points."""
@@ -239,7 +238,7 @@ class Mesh:
     def write(self) -> None:
         """Write the mesh to text files."""
         Path(self.mesh_dir).mkdir(exist_ok=True)
-        x, y = list(zip(*[pt.get_position() for pt in Point.all()]))
+        x, y = list(zip(*[pt.position for pt in Point.all()]))
         write_as_list(os.path.join(self.mesh_dir, "nodes.txt"), ["x", x], ["y", y])
 
         x, y = list(zip(*[pt.is_dof_fixed for pt in Point.all()]))
@@ -393,7 +392,7 @@ class Point(Shape):
         super().__init__(id=id)
         Point.__all.append(self)
 
-        self.pos = np.zeros(2)
+        self.position = np.zeros(2)
         self.is_dof_fixed = [True, True]
         self.fixed_load = np.zeros(2)
         self._is_used = False
@@ -414,12 +413,12 @@ class Point(Shape):
     @property
     def x_pos(self) -> float:
         """The x-coordinate of the point."""
-        return self.pos[0]
+        return self.position[0]
 
     @property
     def y_pos(self) -> float:
         """The y-coordinate of the point."""
-        return self.pos[1]
+        return self.position[1]
 
     def add_fixed_load(self, load: np.ndarray) -> None:
         """Add a fixed load to the point."""
@@ -452,13 +451,7 @@ class Point(Shape):
                 self.is_dof_fixed[1] = True
 
     def move(self, dx: float, dy: float) -> None:
-        self.set_position(self.get_position() + np.array([dx, dy]))
-
-    def set_position(self, pos: np.ndarray) -> None:
-        self.pos = pos
-
-    def get_position(self) -> np.ndarray:
-        return self.pos
+        self.position += np.array([dx, dy])
 
     def get_x_pos(self) -> float:
         # Kept for backwards-compatibility with old meshDicts
@@ -469,25 +462,25 @@ class Point(Shape):
         return self.y_pos
 
     def rotate(self, base_pt_id: int, angle: float) -> None:
-        base_pt = Point.find_by_id(base_pt_id).get_position()
-        self.set_position(trig.rotate_vec_2d(self.get_position() - base_pt, angle) + base_pt)
+        base_pt = Point.find_by_id(base_pt_id).position
+        self.position = trig.rotate_vec_2d(self.position - base_pt, angle) + base_pt
 
     def display(self) -> None:
         logger.info(
             " ".join(
                 [
                     f"{self.__class__.__name__} {self.ind}",
-                    f"ID = {self.ID}, Pos = {self.get_position()}",
+                    f"ID = {self.ID}, Pos = {self.position}",
                 ]
             )
         )
 
     def plot(self) -> None:
         if self.ID is None:
-            plt.plot(self.pos[0], self.pos[1], "r*")
+            plt.plot(self.x_pos, self.y_pos, "r*")
         else:
-            plt.plot(self.pos[0], self.pos[1], "ro")
-            plt.text(self.pos[0], self.pos[1], " {0}".format(self.ID))
+            plt.plot(self.x_pos, self.y_pos, "ro")
+            plt.text(self.x_pos, self.y_pos, " {0}".format(self.ID))
 
 
 class Curve(Shape):
@@ -510,7 +503,7 @@ class Curve(Shape):
         self.set_end_pts([Point.find_by_id(pid) for pid in [pt_id1, pt_id2]])
 
     def get_shape_func(self) -> Callable[[float], np.ndarray]:
-        xy = [pt.get_position() for pt in self._end_pts]
+        xy = [pt.position for pt in self._end_pts]
         assert self.radius is not None or self.arc_length is not None
         if self.radius == 0.0:
             return lambda s: xy[0] * (1 - s) + xy[1] * s
@@ -522,7 +515,7 @@ class Curve(Shape):
             alf = self.arc_length / (2 * self.radius)
             assert self.radius is not None
             return (
-                lambda s: self._end_pts[0].get_position()
+                lambda s: self._end_pts[0].position
                 + 2.0 * self.radius * np.sin(s * alf) * trig.ang2vec(gam + (s - 1.0) * alf)[:2]
             )
 
@@ -544,7 +537,7 @@ class Curve(Shape):
         self.radius = 1 / self.calculate_curvature()
 
     def calculate_chord(self) -> None:
-        x, y = list(zip(*[pt.get_position() for pt in self._end_pts]))
+        x, y = list(zip(*[pt.position for pt in self._end_pts]))
         self.chord = ((x[1] - x[0]) ** 2 + (y[1] - y[0]) ** 2) ** 0.5
 
     def calculate_arc_length(self) -> None:
@@ -579,7 +572,7 @@ class Curve(Shape):
             for xy in map(self.get_shape_func(), s):
                 P = Point()
                 self.pt.append(P)
-                P.set_position(xy)
+                P.position = xy
         self.pt.append(self._end_pts[1])
         self.generate_lines()
 
@@ -620,7 +613,7 @@ class Curve(Shape):
         )
 
     def plot(self) -> None:
-        x, y = list(zip(*[pt.get_position() for pt in self.pt]))
+        x, y = list(zip(*[pt.position for pt in self.pt]))
         plt.plot(x, y, self.plot_sty)
 
 
