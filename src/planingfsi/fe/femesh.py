@@ -80,7 +80,8 @@ class Mesh:
                     * "rel" - Relative to another point, using polar coordinates
                     * "con" - Constrained along a specific direction up to a certain distance or intersection
                     * "pct" - At a specific percentage of the distance between two other points
-
+            position: An iterable of parameters, used for specifying the position.
+                The specific meaning of the different parameters differs based on the selected method.
         Returns:
             The point that is created.
 
