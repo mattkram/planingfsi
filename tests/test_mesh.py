@@ -164,12 +164,12 @@ def test_get_length(mesh: Mesh) -> None:
 @pytest.mark.parametrize("disp", [True, False])
 def test_display(caplog: Any, mesh: Mesh, disp: bool) -> None:
     mesh.display(disp=disp)
-    assert ("Line count:" in caplog.text) is disp
+    assert ("Curve count:" in caplog.text) is disp
     assert ("Point count:" in caplog.text) is disp
 
 
 @pytest.mark.parametrize("kwargs, expected_id", [({}, None), ({"id": 1}, 1)])
-def test_point_init(kwargs: dict[str, int], expected_id: Optional[int]) -> None:
+def test_point_init(kwargs: dict[str, Any], expected_id: Optional[int]) -> None:
     point = Point(**kwargs)
     assert point.ID == expected_id
 

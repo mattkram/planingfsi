@@ -9,7 +9,6 @@ from typing import Callable
 from typing import Iterable
 from typing import List
 from typing import Optional
-from typing import Type
 from typing import TypeVar
 from typing import Union
 
@@ -212,8 +211,8 @@ class Mesh:
         if not disp:
             return
         Shape.print_all()
-        logger.info("Line count:  {0}".format(Line.count()))
-        logger.info("Point count: {0}".format(Point.count()))
+        logger.info("Curve count: {0}".format(len(self.curves)))
+        logger.info("Point count: {0}".format(len(self.points)))
 
     def plot(self, show: bool = False, save: bool = False, *, filename: str = "meshLayout") -> None:
         """Plot the mesh if we elect to show or save it. Otherwise, do nothing.
@@ -339,18 +338,6 @@ class Shape:
     """An abstract base class for all Shapes."""
 
     __all: List["Shape"] = []
-
-    @classmethod
-    def all(cls: Type[T]) -> List[T]:
-        all_return: List[T] = []
-        for o in cls.__all:
-            if isinstance(o, cls):
-                all_return.append(o)
-        return all_return
-
-    @classmethod
-    def count(cls) -> int:
-        return len(cls.all())
 
     @classmethod
     def print_all(cls) -> None:
