@@ -506,27 +506,6 @@ class Curve(_ShapeBase):
         """The chord length, i.e. the distance between start and end points."""
         return np.linalg.norm(self._end_pts[1].position - self._end_pts[0].position)
 
-    def set_end_pts_by_id(self, pt_id1: int, pt_id2: int) -> None:
-        assert self.mesh is not None
-        self.set_end_pts([self.mesh.get_point(pid) for pid in [pt_id1, pt_id2]])
-
-    def get_shape_func(self) -> Callable[[float], np.ndarray]:
-        xy = [pt.position for pt in self._end_pts]
-        assert self.radius is not None or self.arc_length is not None
-        if self.radius == 0.0:
-            return lambda s: xy[0] * (1 - s) + xy[1] * s
-        else:
-            x, y = list(zip(*xy))
-            gam = np.arctan2(y[1] - y[0], x[1] - x[0])
-            assert self.radius is not None
-            assert self.arc_length is not None
-            alf = self.arc_length / (2 * self.radius)
-            assert self.radius is not None
-            return (
-                lambda s: self._end_pts[0].position
-                + 2.0 * self.radius * np.sin(s * alf) * trig.ang2vec(gam + (s - 1.0) * alf)[:2]
-            )
-
     @property
     def radius(self) -> float:
         return 1 / self.curvature if self.curvature != 0 else 0.0
@@ -564,6 +543,27 @@ class Curve(_ShapeBase):
                 kap0 += 0.02
 
             self.curvature = kap
+
+    def set_end_pts_by_id(self, pt_id1: int, pt_id2: int) -> None:
+        assert self.mesh is not None
+        self.set_end_pts([self.mesh.get_point(pid) for pid in [pt_id1, pt_id2]])
+
+    def get_shape_func(self) -> Callable[[float], np.ndarray]:
+        xy = [pt.position for pt in self._end_pts]
+        assert self.radius is not None or self.arc_length is not None
+        if self.radius == 0.0:
+            return lambda s: xy[0] * (1 - s) + xy[1] * s
+        else:
+            x, y = list(zip(*xy))
+            gam = np.arctan2(y[1] - y[0], x[1] - x[0])
+            assert self.radius is not None
+            assert self.arc_length is not None
+            alf = self.arc_length / (2 * self.radius)
+            assert self.radius is not None
+            return (
+                lambda s: self._end_pts[0].position
+                + 2.0 * self.radius * np.sin(s * alf) * trig.ang2vec(gam + (s - 1.0) * alf)[:2]
+            )
 
     def distribute_points(self, num_segments: int = 1) -> None:
         self.pt.append(self._end_pts[0])
