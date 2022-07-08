@@ -493,7 +493,7 @@ class Curve(_ShapeBase):
         self.plot_sty = "b-"
 
         self._curvature = 0.0
-        self.arc_length = 0.0
+        self._arc_length = 0.0
 
     @property
     def index(self) -> int:
@@ -543,11 +543,19 @@ class Curve(_ShapeBase):
             self.radius = 0.0
         else:
             self.arc_length = arc_length
-            self.radius = 1 / self.calculate_curvature()
+            self._curvature = self.calculate_curvature()
+
+    @property
+    def arc_length(self) -> float:
+        return self._arc_length
+
+    @arc_length.setter
+    def arc_length(self, value: float) -> None:
+        self._arc_length = value
 
     def calculate_arc_length(self) -> None:
         if self.radius == 0:
-            self.arc_length = self.chord
+            self._arc_length = self.chord
         else:
 
             def f(s: float) -> float:
