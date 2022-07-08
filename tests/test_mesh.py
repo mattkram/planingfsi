@@ -9,6 +9,7 @@ from typing import Union
 
 import numpy
 import pytest
+from _pytest.monkeypatch import MonkeyPatch
 
 from planingfsi.fe.femesh import Mesh
 from planingfsi.fe.femesh import Point
@@ -294,3 +295,10 @@ def test_get_position() -> None:
 
     assert point.x_pos == pytest.approx(10.0)
     assert point.y_pos == pytest.approx(20.0)
+
+
+def test_plot_mesh(monkeypatch: MonkeyPatch, tmp_path: Path, mesh: Mesh) -> None:
+    """Smoke test for plotting the mesh."""
+    monkeypatch.chdir(tmp_path)
+    mesh.plot(save=True)
+    assert (tmp_path / "meshLayout.eps").exists()

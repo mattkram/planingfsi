@@ -247,7 +247,7 @@ class Mesh:
         if save:
             plt.savefig(f"{filename}.eps", format="eps")
         if show:
-            plt.show()
+            plt.show()  # pragma: no cover
 
     def write(self) -> None:
         """Write the mesh to text files."""
