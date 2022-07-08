@@ -539,11 +539,11 @@ class Curve(_ShapeBase):
 
     def set_arc_length(self, arc_length: float) -> None:
         if self.chord >= arc_length:
-            self.arc_length = 0.0
-            self.radius = 0.0
+            self._curvature = 0.0
         else:
-            self.arc_length = arc_length
+            self._arc_length = arc_length
             self._curvature = self.calculate_curvature()
+        self.calculate_arc_length()
 
     @property
     def arc_length(self) -> float:
@@ -554,7 +554,7 @@ class Curve(_ShapeBase):
         self._arc_length = value
 
     def calculate_arc_length(self) -> None:
-        if self.radius == 0:
+        if self._curvature == 0:
             self._arc_length = self.chord
         else:
 
@@ -562,7 +562,7 @@ class Curve(_ShapeBase):
                 return self.chord / (2 * self.radius) - np.sin(s / (2 * self.radius))
 
             # Keep increasing guess until fsolve finds the first non-zero root
-            self.arc_length = fzero(f, self.chord + 1e-6)
+            self._arc_length = fzero(f, self.chord + 1e-6)
 
     @property
     def curvature(self) -> float:
