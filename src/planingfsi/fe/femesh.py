@@ -492,7 +492,7 @@ class Curve(_ShapeBase):
         self._end_pts: List[Point] = []
         self.plot_sty = "b-"
 
-        self._curvature = 0.0
+        self.curvature = 0.0
 
     @property
     def index(self) -> int:
@@ -529,16 +529,16 @@ class Curve(_ShapeBase):
 
     @property
     def radius(self) -> float:
-        return 1 / self._curvature if self._curvature != 0 else 0.0
+        return 1 / self.curvature if self.curvature != 0 else 0.0
 
     @radius.setter
     def radius(self, value: float) -> None:
-        self._curvature = 1 / value if value != 0 else 0.0
+        self.curvature = 1 / value if value != 0 else 0.0
 
     @property
     def arc_length(self) -> float:
         """The arclength of the curve."""
-        if self._curvature == 0:
+        if self.curvature == 0:
             return self.chord
         else:
 
@@ -550,7 +550,7 @@ class Curve(_ShapeBase):
     @arc_length.setter
     def arc_length(self, value: float) -> None:
         if self.chord >= value:
-            self._curvature = 0.0
+            self.curvature = 0.0
         else:
 
             def f(x: float) -> float:
@@ -563,11 +563,7 @@ class Curve(_ShapeBase):
                 kap = fzero(f, kap0)
                 kap0 += 0.02
 
-            self._curvature = kap
-
-    @property
-    def curvature(self) -> float:
-        return self._curvature
+            self.curvature = kap
 
     def distribute_points(self, num_segments: int = 1) -> None:
         self.pt.append(self._end_pts[0])
