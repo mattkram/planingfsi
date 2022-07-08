@@ -324,8 +324,6 @@ class Submesh:
             curve.arc_length = arc_length
         elif radius is not None:
             curve.radius = radius
-        else:
-            curve.arc_length = 0.0
 
         curve.distribute_points(num_elements)
 
@@ -508,11 +506,12 @@ class Curve(_ShapeBase):
 
     @property
     def radius(self) -> float:
-        return 1 / self.curvature if self.curvature != 0 else 0.0
+        """The radius of the curve. A flat curve has an infinite radius."""
+        return 1 / self.curvature if self.curvature != 0 else np.inf
 
     @radius.setter
     def radius(self, value: float) -> None:
-        self.curvature = 1 / value if value != 0 else 0.0
+        self.curvature = 1 / value if ~np.isinf(value) else 0.0
 
     @property
     def arc_length(self) -> float:
@@ -551,7 +550,7 @@ class Curve(_ShapeBase):
     def get_shape_func(self) -> Callable[[float], np.ndarray]:
         xy = [pt.position for pt in self._end_pts]
         assert self.radius is not None or self.arc_length is not None
-        if self.radius == 0.0:
+        if self.curvature == 0.0:
             return lambda s: xy[0] * (1 - s) + xy[1] * s
         else:
             x, y = list(zip(*xy))

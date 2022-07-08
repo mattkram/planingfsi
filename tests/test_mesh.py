@@ -177,7 +177,7 @@ def test_add_submesh(mesh: Mesh, submesh: Submesh) -> None:
     "kwargs, attr_name, expected_value",
     [
         ({}, "index", 0),
-        ({}, "radius", pytest.approx(0.0)),
+        ({}, "radius", numpy.inf),
         ({}, "curvature", pytest.approx(0.0, abs=3e-6)),
         ({}, "chord", pytest.approx(10.0)),
         ({}, "arc_length", pytest.approx(10.0)),
