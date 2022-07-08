@@ -19,9 +19,6 @@ from ..solver import fzero
 from ..writers import write_as_list
 
 
-DEFAULT_MESH_DIR = Path("mesh")
-
-
 class Mesh:
     """A high-level class to store a structural mesh.
 
@@ -35,7 +32,7 @@ class Mesh:
 
     """
 
-    def __init__(self, mesh_dir: Union[Path, str] = DEFAULT_MESH_DIR) -> None:
+    def __init__(self, mesh_dir: Union[Path, str] = Path("mesh")) -> None:
         self.mesh_dir = Path(mesh_dir)
         self.points: List["Point"] = []
         self.submesh: List["Submesh"] = []
@@ -281,17 +278,10 @@ class Mesh:
 class Submesh:
     """A child component of the mesh used for splitting up different sets of curves."""
 
-    def __init__(self, name: str, mesh: Optional[Mesh] = None):
+    def __init__(self, name: str, mesh: Mesh):
         self.name = name
         self.mesh = mesh
         self.curves: list["Curve"] = []
-
-    @property
-    def mesh_dir(self) -> Path:
-        """The directory in which to write the mesh files."""
-        if self.mesh:
-            return self.mesh.mesh_dir
-        return DEFAULT_MESH_DIR
 
     def add_curve(self, pt_id1: int, pt_id2: int, **kwargs: Any) -> "Curve":
         """Add a curve to the submesh.
@@ -339,7 +329,7 @@ class Submesh:
 
         pt_l, pt_r = list(zip(*[[pt.index for pt in line.get_element_coords()] for line in lines]))
         write_as_list(
-            os.path.join(self.mesh_dir, "elements_{0}.txt".format(self.name)),
+            os.path.join(self.mesh.mesh_dir, "elements_{0}.txt".format(self.name)),
             ["ptL", pt_l],
             ["ptR", pt_r],
             header_format="<4",
