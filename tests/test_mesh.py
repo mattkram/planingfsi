@@ -300,7 +300,7 @@ def test_get_position() -> None:
 def test_plot_mesh(monkeypatch: MonkeyPatch, tmp_path: Path, mesh: Mesh, submesh: Submesh) -> None:
     """Smoke test for plotting the mesh."""
     monkeypatch.chdir(tmp_path)
-    submesh.add_curve(0, 10)
+    submesh.add_curve(0, 10, Nel=3)
     mesh.plot(save=True)
     assert (tmp_path / "meshLayout.eps").exists()
 
