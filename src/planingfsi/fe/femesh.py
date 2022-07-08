@@ -546,8 +546,7 @@ class Curve(_ShapeBase):
         if self.chord >= value:
             self._curvature = 0.0
         else:
-            self._arc_length = value
-            self._curvature = self.calculate_curvature()
+            self._curvature = self.calculate_curvature(value)
         self.calculate_arc_length()
 
     def calculate_arc_length(self) -> None:
@@ -563,11 +562,13 @@ class Curve(_ShapeBase):
 
     @property
     def curvature(self) -> float:
-        return self.calculate_curvature()
+        return self.calculate_curvature(self._arc_length)
 
-    def calculate_curvature(self) -> float:
+    def calculate_curvature(self, arc_length: float) -> float:
+        """Given an arclength, calculate the curvature."""
+
         def f(x: float) -> float:
-            return x * self.chord / 2 - np.sin(x * self.arc_length / 2)
+            return x * self.chord / 2 - np.sin(x * arc_length / 2)
 
         # Keep increasing guess until fsolve finds the first non-zero root
         kap = 0.0
