@@ -206,8 +206,8 @@ class Mesh:
         if not disp:
             return
 
-        for obj in itertools.chain(self.points, self.curves):
-            obj.display()
+        for pt in self.points:
+            pt.display()
 
         logger.info("Curve count: {0}".format(len(self.curves)))
         logger.info("Point count: {0}".format(len(self.points)))
@@ -347,10 +347,6 @@ class _ShapeBase:
     def __init__(self, id: Optional[int] = None, mesh: Optional[Mesh] = None) -> None:
         self.id = id
         self.mesh = mesh
-
-    @abc.abstractmethod
-    def display(self) -> None:
-        raise NotImplementedError
 
     @abc.abstractmethod
     def plot(self) -> None:
@@ -577,9 +573,6 @@ class Curve(_ShapeBase):
 
     def set_end_pts(self, end_pt: List[Point]) -> None:
         self._end_pts = end_pt
-
-    def display(self) -> None:
-        return
 
     def plot(self) -> None:
         """Plot the curve as a line by chaining all component points together."""

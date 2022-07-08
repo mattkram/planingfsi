@@ -189,6 +189,10 @@ def test_add_submesh(mesh: Mesh, submesh: Submesh) -> None:
         (dict(arcLen=5 * numpy.pi), "curvature", pytest.approx(0.2)),
         (dict(arcLen=5 * numpy.pi), "chord", pytest.approx(10.0)),
         (dict(arcLen=5 * numpy.pi), "arc_length", pytest.approx(5.0 * numpy.pi, rel=1e-5)),
+        (dict(arcLen=1), "radius", numpy.inf),
+        (dict(arcLen=1), "curvature", pytest.approx(0.0, abs=3e-6)),
+        (dict(arcLen=1), "chord", pytest.approx(10.0)),
+        (dict(arcLen=1), "arc_length", pytest.approx(10.0)),
     ],
 )
 def test_add_curve(
