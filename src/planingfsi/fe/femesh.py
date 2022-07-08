@@ -2,7 +2,6 @@ from __future__ import annotations
 
 import abc
 import itertools
-import os
 from pathlib import Path
 from typing import Any
 from typing import Iterable
@@ -319,17 +318,22 @@ class Submesh:
         return curve
 
     def write(self) -> None:
-        """Write the submesh to file."""
+        """Write the submesh to file.
+
+        The submesh is stored as a list of Point IDs for each line segment in the submesh.
+
+        """
         if not self.curves:
-            return
+            return  # pragma: no cover
 
-        lines = []
+        point_indices = []
         for curve in self.curves:
-            lines.extend(curve.lines)
+            for line in curve.lines:
+                point_indices.append([pt.index for pt in line.pt])
 
-        pt_l, pt_r = list(zip(*[[pt.index for pt in line.get_element_coords()] for line in lines]))
+        pt_l, pt_r = list(zip(*point_indices))
         write_as_list(
-            os.path.join(self.mesh.mesh_dir, "elements_{0}.txt".format(self.name)),
+            self.mesh.mesh_dir / f"elements_{self.name}.txt",
             ["ptL", pt_l],
             ["ptR", pt_r],
             header_format="<4",
@@ -584,9 +588,6 @@ class Curve(_ShapeBase):
 
     def set_end_pts(self, end_pt: List[Point]) -> None:
         self._end_pts = end_pt
-
-    def get_element_coords(self) -> List[Point]:
-        return self.pt
 
     def display(self) -> None:
         return
