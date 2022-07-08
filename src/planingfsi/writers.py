@@ -5,7 +5,7 @@ from typing import TextIO
 from typing import Union
 
 
-def write_as_dict(filename: Union[Path, str], *args: Any, data_format: str = ">+10.8e") -> None:
+def write_as_dict(filename: Union[Path, str], *args: Any, data_format: str = ">10.8e") -> None:
     """Write arguments to a file as a dictionary."""
     with Path(filename).open("w") as ff:
         for name, value in args:
