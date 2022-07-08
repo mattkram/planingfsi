@@ -82,13 +82,16 @@ class Mesh:
 
         """
         # TODO: Split method into several
-        point = Point(id=id_, mesh=self)
 
         if method == "dir":
             # Direct coordinate specification
+            point = Point(id=id_, mesh=self)
+            self.points.append(point)
             point.position = np.array(position)
         elif method == "rel":
             # Relative coordinate specification using polar coordinates
+            point = Point(id=id_, mesh=self)
+            self.points.append(point)
             base_pt_id, ang, radius = position
             point.position = self.get_point(int(base_pt_id)).position + radius * trig.angd2vec2d(
                 float(ang)
@@ -96,6 +99,8 @@ class Mesh:
         elif method == "con":
             # Constrained coordinate specification
             # Either extrapolating at an angle or going horizontally or vertically
+            point = Point(id=id_, mesh=self)
+            self.points.append(point)
             base_pt_id, dim, val = position
             ang = kwargs.get("angle", 0.0 if dim == "x" else 90.0)
 
@@ -119,8 +124,6 @@ class Mesh:
         else:
             raise NameError(f"Incorrect position specification method for point, ID: {id_}")
 
-        # Add the point at the end so that the "pct" method can overwrite the point variable
-        self.points.append(point)
         return point
 
     def add_point_along_curve(self, id_: int, curve: "Curve", pct: float) -> "Point":
