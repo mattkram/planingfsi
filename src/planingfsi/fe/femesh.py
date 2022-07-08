@@ -482,13 +482,6 @@ class Curve(_ShapeBase):
         self.curvature = 0.0
 
     @property
-    def index(self) -> int:
-        """The index of the point within the mesh curves list."""
-        if self.mesh is None:
-            raise ValueError("Curve is not associated with a mesh")
-        return self.mesh.curves.index(self)
-
-    @property
     def chord(self) -> float:
         """The chord length, i.e. the distance between start and end points."""
         return np.linalg.norm(self._end_pts[1].position - self._end_pts[0].position)
