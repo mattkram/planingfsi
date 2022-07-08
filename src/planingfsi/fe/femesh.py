@@ -321,11 +321,11 @@ class Submesh:
         curve.set_end_pts_by_id(pt_id1, pt_id2)
 
         if arc_length is not None:
-            curve.set_arc_length(arc_length)
+            curve.arc_length = arc_length
         elif radius is not None:
             curve.radius = radius
         else:
-            curve.set_arc_length(0.0)
+            curve.arc_length = 0.0
 
         curve.distribute_points(num_elements)
 
@@ -537,21 +537,18 @@ class Curve(_ShapeBase):
         self._curvature = 1 / value if value != 0 else 0.0
         self.calculate_arc_length()
 
-    def set_arc_length(self, arc_length: float) -> None:
-        if self.chord >= arc_length:
-            self._curvature = 0.0
-        else:
-            self._arc_length = arc_length
-            self._curvature = self.calculate_curvature()
-        self.calculate_arc_length()
-
     @property
     def arc_length(self) -> float:
         return self._arc_length
 
     @arc_length.setter
     def arc_length(self, value: float) -> None:
-        self._arc_length = value
+        if self.chord >= value:
+            self._curvature = 0.0
+        else:
+            self._arc_length = value
+            self._curvature = self.calculate_curvature()
+        self.calculate_arc_length()
 
     def calculate_arc_length(self) -> None:
         if self._curvature == 0:
