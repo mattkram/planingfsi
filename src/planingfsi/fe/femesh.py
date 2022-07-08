@@ -493,7 +493,6 @@ class Curve(_ShapeBase):
         self.plot_sty = "b-"
 
         self._curvature = 0.0
-        self._radius = 0.0
         self.arc_length = 0.0
 
     @property
@@ -531,11 +530,11 @@ class Curve(_ShapeBase):
 
     @property
     def radius(self) -> float:
-        return self._radius
+        return 1 / self._curvature if self._curvature != 0 else 0.0
 
     @radius.setter
     def radius(self, value: float) -> None:
-        self._radius = value
+        self._curvature = 1 / value if value != 0 else 0.0
         self.calculate_arc_length()
 
     def set_arc_length(self, arc_length: float) -> None:
