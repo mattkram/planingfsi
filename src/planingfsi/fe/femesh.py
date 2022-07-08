@@ -436,7 +436,7 @@ class Point(_ShapeBase):
         # Kept for backwards-compatibility with old meshDicts
         return self.y_pos
 
-    def rotate(self, base_pt: Union["Point", int], angle: float) -> None:
+    def rotate(self, base_pt: "Point", angle: float) -> None:
         """Rotate this point about another base point.
 
         Args:
@@ -444,10 +444,6 @@ class Point(_ShapeBase):
             angle: The angle to rotate, in degrees, positive counter-clockwise.
 
         """
-        if isinstance(base_pt, int):
-            if self.mesh is None:
-                raise ValueError("Only points with an ID can be rotated by ID.")
-            base_pt = self.mesh.get_point(base_pt)
         self.position = (
             trig.rotate_vec_2d(self.position - base_pt.position, angle) + base_pt.position
         )
