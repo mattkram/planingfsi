@@ -303,3 +303,13 @@ def test_plot_mesh(monkeypatch: MonkeyPatch, tmp_path: Path, mesh: Mesh, submesh
     submesh.add_curve(0, 10)
     mesh.plot(save=True)
     assert (tmp_path / "meshLayout.eps").exists()
+
+
+def test_point_index(mesh: Mesh) -> None:
+    """The point index is only available if the point is added via mesh.add_point."""
+    point_in_mesh = mesh.add_point(200, "dir", [0, 0])
+    assert point_in_mesh.index is not None
+
+    point_not_in_mesh = Point(id=200)
+    with pytest.raises(ValueError):
+        _ = point_not_in_mesh.index
