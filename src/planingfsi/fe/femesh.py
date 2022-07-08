@@ -598,23 +598,8 @@ class Curve(_ShapeBase):
     def get_element_coords(self) -> List[Point]:
         return self.pt
 
-    def get_pt_ids(self) -> List[int]:
-        out: List[int] = []
-        for pt in self.pt:
-            id_ = pt.id
-            if id_ is not None:
-                out.append(id_)
-        return out
-
     def display(self) -> None:
-        logger.info(
-            " ".join(
-                [
-                    f"{self.__class__.__name__} {self.index}:",
-                    f"ID = {self.id}, Pt IDs = {self.get_pt_ids()}",
-                ]
-            )
-        )
+        return
 
     def plot(self) -> None:
         """Plot the curve as a line by chaining all component points together."""
