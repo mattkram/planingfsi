@@ -493,7 +493,6 @@ class Curve(_ShapeBase):
         self.plot_sty = "b-"
 
         self._curvature = 0.0
-        self._arc_length = 0.0
 
     @property
     def index(self) -> int:
@@ -535,49 +534,40 @@ class Curve(_ShapeBase):
     @radius.setter
     def radius(self, value: float) -> None:
         self._curvature = 1 / value if value != 0 else 0.0
-        self.calculate_arc_length()
 
     @property
     def arc_length(self) -> float:
-        return self._arc_length
+        """The arclength of the curve."""
+        if self._curvature == 0:
+            return self.chord
+        else:
+
+            def f(s: float) -> float:
+                return self.chord / (2 * self.radius) - np.sin(s / (2 * self.radius))
+
+            return fzero(f, self.chord + 1e-6)
 
     @arc_length.setter
     def arc_length(self, value: float) -> None:
         if self.chord >= value:
             self._curvature = 0.0
         else:
-            self._curvature = self.calculate_curvature(value)
-        self.calculate_arc_length()
 
-    def calculate_arc_length(self) -> None:
-        if self._curvature == 0:
-            self._arc_length = self.chord
-        else:
-
-            def f(s: float) -> float:
-                return self.chord / (2 * self.radius) - np.sin(s / (2 * self.radius))
+            def f(x: float) -> float:
+                return x * self.chord / 2 - np.sin(x * value / 2)
 
             # Keep increasing guess until fsolve finds the first non-zero root
-            self._arc_length = fzero(f, self.chord + 1e-6)
+            kap = 0.0
+            kap0 = 0.0
+            while kap <= 1e-6:
+                kap = fzero(f, kap0)
+                kap0 += 0.02
+
+            self._curvature = kap
 
     @property
     def curvature(self) -> float:
-        return self.calculate_curvature(self._arc_length)
-
-    def calculate_curvature(self, arc_length: float) -> float:
-        """Given an arclength, calculate the curvature."""
-
-        def f(x: float) -> float:
-            return x * self.chord / 2 - np.sin(x * arc_length / 2)
-
-        # Keep increasing guess until fsolve finds the first non-zero root
-        kap = 0.0
-        kap0 = 0.0
-        while kap <= 1e-6:
-            kap = fzero(f, kap0)
-            kap0 += 0.02
-
-        return kap
+        return self._curvature
 
     def distribute_points(self, num_segments: int = 1) -> None:
         self.pt.append(self._end_pts[0])
