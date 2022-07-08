@@ -83,7 +83,6 @@ class Mesh:
         """
         # TODO: Split method into several
         point = Point(id=id_, mesh=self)
-        self.points.append(point)
 
         if method == "dir":
             # Direct coordinate specification
@@ -114,12 +113,14 @@ class Mesh:
         elif method == "pct":
             # Place a point at a certain percentage along the line between two other points
             base_pt_id, end_pt_id, pct = position
-            base_pt = self.get_point(int(base_pt_id)).position
-            end_pt = self.get_point(int(end_pt_id)).position
-            point.position = (1.0 - float(pct)) * base_pt + float(pct) * end_pt
+            curve = Curve()
+            curve.set_end_pts([self.get_point(int(base_pt_id)), self.get_point(int(end_pt_id))])
+            point = self.add_point_along_curve(id_, curve=curve, pct=float(pct))
         else:
             raise NameError(f"Incorrect position specification method for point, ID: {id_}")
 
+        # Add the point at the end so that the "pct" method can overwrite the point variable
+        self.points.append(point)
         return point
 
     def add_point_along_curve(self, id_: int, curve: "Curve", pct: float) -> "Point":
