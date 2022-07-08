@@ -308,6 +308,19 @@ def test_plot_mesh(monkeypatch: MonkeyPatch, tmp_path: Path, mesh: Mesh, submesh
     assert (tmp_path / "meshLayout.eps").exists()
 
 
+def test_rotate_point(mesh: Mesh) -> None:
+    point = mesh.get_point(20)
+    point.rotate(10, 90)
+    assert numpy.allclose(point.position, numpy.array([-10, 10]))
+
+    point.rotate(mesh.get_point(10), 90)
+    assert numpy.allclose(point.position, numpy.array([0, 0]))
+
+    another_point = Point()
+    with pytest.raises(LookupError):
+        another_point.rotate(10, 90)
+
+
 def test_point_index(mesh: Mesh) -> None:
     """The point index is only available if the point is added via mesh.add_point."""
     point_in_mesh = mesh.add_point(200, "dir", [0, 0])

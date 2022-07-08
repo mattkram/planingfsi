@@ -446,7 +446,9 @@ class Point(_ShapeBase):
         """
         if isinstance(base_pt, int):
             if self.mesh is None:
-                raise ValueError("Only points with an ID can be rotated by ID.")
+                raise LookupError(
+                    "Only points existing in the mesh with an ID can be rotated by ID."
+                )
             base_pt = self.mesh.get_point(base_pt)
         self.position = (
             trig.rotate_vec_2d(self.position - base_pt.position, angle) + base_pt.position
