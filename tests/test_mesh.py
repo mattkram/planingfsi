@@ -297,8 +297,9 @@ def test_get_position() -> None:
     assert point.y_pos == pytest.approx(20.0)
 
 
-def test_plot_mesh(monkeypatch: MonkeyPatch, tmp_path: Path, mesh: Mesh) -> None:
+def test_plot_mesh(monkeypatch: MonkeyPatch, tmp_path: Path, mesh: Mesh, submesh: Submesh) -> None:
     """Smoke test for plotting the mesh."""
     monkeypatch.chdir(tmp_path)
+    submesh.add_curve(0, 10)
     mesh.plot(save=True)
     assert (tmp_path / "meshLayout.eps").exists()
