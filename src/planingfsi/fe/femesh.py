@@ -5,7 +5,6 @@ import itertools
 import os
 from pathlib import Path
 from typing import Any
-from typing import Callable
 from typing import Iterable
 from typing import List
 from typing import Optional
@@ -131,7 +130,7 @@ class Mesh:
         """Add a point at a certain percentage along a curve."""
         point = Point(id=id_, mesh=self)
         self.points.append(point)
-        point.position = curve.get_shape_func()(pct)
+        point.position = curve.get_coords(pct)
         return point
 
     def add_load(self, pt_id: int, load: np.ndarray) -> None:
@@ -547,17 +546,25 @@ class Curve(_ShapeBase):
         assert self.mesh is not None
         self.set_end_pts([self.mesh.get_point(pid) for pid in [pt_id1, pt_id2]])
 
-    def get_shape_func(self) -> Callable[[float], np.ndarray]:
-        """A shape function, which, given an arclength, provides the (x,y) coordinates along the curve."""
+    def get_coords(self, s: float) -> np.ndarray:
+        """Get the coordinates of any point along the curve.
+
+        Args:
+            s: The position along the curve (as a fraction of total arclength).
+
+        Returns:
+            The (x,y) coordinates of the point, as a numpy array.
+
+        """
         xy = [pt.position for pt in self._end_pts]
         if self.curvature == 0.0:
-            return lambda s: xy[0] * (1 - s) + xy[1] * s
+            return xy[0] * (1 - s) + xy[1] * s
         else:
             x, y = list(zip(*xy))
             gam = np.arctan2(y[1] - y[0], x[1] - x[0])
             alf = self.arc_length / (2 * self.radius)
             return (
-                lambda s: self._end_pts[0].position
+                self._end_pts[0].position
                 + 2.0 * self.radius * np.sin(s * alf) * trig.ang2vec(gam + (s - 1.0) * alf)[:2]
             )
 
@@ -566,7 +573,7 @@ class Curve(_ShapeBase):
         if num_segments > 1:
             # Distribute N points along a parametric curve defined by f(s), s in [0,1]
             s = np.linspace(0.0, 1.0, num_segments + 1)[1:-1]
-            for xy in map(self.get_shape_func(), s):
+            for xy in map(self.get_coords, s):
                 point = Point(mesh=self.mesh)
                 point.is_used = True
                 if self.mesh is not None:
