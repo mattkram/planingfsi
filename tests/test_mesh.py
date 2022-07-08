@@ -204,14 +204,14 @@ def test_add_curve(
 
 
 @pytest.fixture()
-def written_mesh(tmp_path: Path, mesh: Mesh) -> Mesh:
-    mesh.mesh_dir = tmp_path / "mesh"
+def written_mesh_dir(tmp_path: Path, mesh: Mesh) -> Path:
+    mesh_dir = tmp_path / "mesh"
     mesh.get_point(0).set_fixed_dof("x", "y")
     mesh.get_point(10).set_fixed_dof("x")
     mesh.get_point(20).set_fixed_dof("y")
     mesh.get_point(20).add_fixed_load(numpy.array([1.0, 2.0]))
-    mesh.write()
-    return mesh
+    mesh.write(mesh_dir)
+    return mesh_dir
 
 
 @pytest.mark.parametrize(
@@ -222,8 +222,8 @@ def written_mesh(tmp_path: Path, mesh: Mesh) -> Mesh:
         ("fixedLoad.txt", numpy.array([[0.0, 0.0], [0.0, 0.0], [1.0, 2.0]])),
     ],
 )
-def test_mesh_write(written_mesh: Mesh, filename: str, expected_data: numpy.ndarray) -> None:
-    file_path = written_mesh.mesh_dir / filename
+def test_mesh_write(written_mesh_dir: Path, filename: str, expected_data: numpy.ndarray) -> None:
+    file_path = written_mesh_dir / filename
     assert file_path.exists()
 
     data = numpy.loadtxt(file_path)

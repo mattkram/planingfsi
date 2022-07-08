@@ -74,9 +74,9 @@ def generate_mesh(
     if not Path(config.path.mesh_dict_dir).exists():
         raise FileNotFoundError(f"File {config.path.mesh_dict_dir} does not exist")
 
-    mesh = Mesh(mesh_dir=config.path.mesh_dir)
+    mesh = Mesh()
     exec(Path(config.path.mesh_dict_dir).open("r").read())
 
     mesh.display(disp=verbose)
     mesh.plot(show=plot_show, save=plot_save)
-    mesh.write()
+    mesh.write(mesh_dir=config.path.mesh_dir)

@@ -31,8 +31,7 @@ class Mesh:
 
     """
 
-    def __init__(self, mesh_dir: Union[Path, str] = Path("mesh")) -> None:
-        self.mesh_dir = Path(mesh_dir)
+    def __init__(self) -> None:
         self.points: List["Point"] = []
         self.submesh: List["Submesh"] = []
         self.add_point(0, "dir", [0, 0])
@@ -249,16 +248,17 @@ class Mesh:
         if show:
             plt.show()  # pragma: no cover
 
-    def write(self) -> None:
+    def write(self, mesh_dir: Union[Path, str] = Path("mesh")) -> None:
         """Write the mesh to text files."""
-        self.mesh_dir.mkdir(exist_ok=True)
+        mesh_dir = Path(mesh_dir)
+        mesh_dir.mkdir(exist_ok=True)
 
         x, y = list(zip(*(pt.position for pt in self.points)))
-        write_as_list(self.mesh_dir / "nodes.txt", ["x", x], ["y", y])
+        write_as_list(mesh_dir / "nodes.txt", ["x", x], ["y", y])
 
         x, y = list(zip(*(pt.is_dof_fixed for pt in self.points)))
         write_as_list(
-            self.mesh_dir / "fixedDOF.txt",
+            mesh_dir / "fixedDOF.txt",
             ["x", x],
             ["y", y],
             header_format=">1",
@@ -267,7 +267,7 @@ class Mesh:
 
         x, y = list(zip(*(pt.fixed_load for pt in self.points)))
         write_as_list(
-            self.mesh_dir / "fixedLoad.txt",
+            mesh_dir / "fixedLoad.txt",
             ["x", x],
             ["y", y],
             header_format=">6",
@@ -275,7 +275,7 @@ class Mesh:
         )
 
         for sm in self.submesh:
-            sm.write()
+            sm.write(mesh_dir)
 
 
 class Submesh:
@@ -321,7 +321,7 @@ class Submesh:
 
         return curve
 
-    def write(self) -> None:
+    def write(self, mesh_dir: Path) -> None:
         """Write the submesh to file.
 
         The submesh is stored as a list of Point IDs for each line segment in the submesh.
@@ -337,7 +337,7 @@ class Submesh:
 
         pt_l, pt_r = list(zip(*point_indices))
         write_as_list(
-            self.mesh.mesh_dir / f"elements_{self.name}.txt",
+            mesh_dir / f"elements_{self.name}.txt",
             ["ptL", pt_l],
             ["ptR", pt_r],
             header_format="<4",
