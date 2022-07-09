@@ -6,6 +6,7 @@ Contents
 .. toctree::
    :maxdepth: 5
 
+   meshing
    api
 
 Indices and tables

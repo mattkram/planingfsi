@@ -3,13 +3,16 @@ from typing import Any
 from typing import List
 from typing import Optional
 from typing import Tuple
+from typing import TYPE_CHECKING
 
 import numpy as np
 
 from .. import logger
 from .. import trig
 from ..config import NUM_DIM
-from .substructure import Substructure
+
+if TYPE_CHECKING:
+    from .substructure import Substructure
 
 
 class Node:
@@ -58,7 +61,7 @@ class Node:
 class Element(abc.ABC):
     __all: List["Element"] = []
 
-    def __init__(self, parent: Optional[Substructure] = None) -> None:
+    def __init__(self, parent: Optional["Substructure"] = None) -> None:
         self.element_num = len(Element.__all)
         Element.__all.append(self)
 

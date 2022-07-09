@@ -16,12 +16,10 @@ from .config import Config
 from .fe.femesh import Mesh
 from .fsi.simulation import Simulation
 
-click_log.basic_config(logger)
-
 
 @click.group(name="planingfsi", help="Run the PlaningFSI program")
 def cli() -> None:
-    pass
+    click_log.basic_config(logger)
 
 
 @cli.command(name="run")
@@ -76,9 +74,10 @@ def generate_mesh(
     if not Path(config.path.mesh_dict_dir).exists():
         raise FileNotFoundError(f"File {config.path.mesh_dict_dir} does not exist")
 
-    mesh = Mesh(mesh_dir=config.path.mesh_dir)
-    exec(Path(config.path.mesh_dict_dir).open("r").read())
+    mesh = Mesh()
+    with Path(config.path.mesh_dict_dir).open() as fp:
+        exec(fp.read())
 
     mesh.display(disp=verbose)
     mesh.plot(show=plot_show, save=plot_save)
-    mesh.write()
+    mesh.write(mesh_dir=config.path.mesh_dir)

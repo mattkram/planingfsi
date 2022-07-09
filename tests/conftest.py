@@ -64,17 +64,9 @@ def _cleanup_globals() -> None:
     """
     from planingfsi.fe.felib import Element
     from planingfsi.fe.felib import Node
-    from planingfsi.fe.femesh import Curve
-    from planingfsi.fe.femesh import Line
-    from planingfsi.fe.femesh import Point
-    from planingfsi.fe.femesh import Shape
     from planingfsi.fe.substructure import FlexibleSubstructure
     from planingfsi.fe.substructure import Substructure
 
-    Shape._Shape__all = []  # type: ignore
-    Point._Point__all = []  # type: ignore
-    Curve._Curve__all = []  # type: ignore
-    Line._Line__all = []  # type: ignore
     Node._Node__all = []  # type: ignore
     Element._Element__all = []  # type: ignore
     Substructure._Substructure__all = []  # type: ignore

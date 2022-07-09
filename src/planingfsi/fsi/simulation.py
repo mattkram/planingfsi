@@ -3,16 +3,15 @@ import os
 from pathlib import Path
 from typing import List
 from typing import Optional
+from typing import TYPE_CHECKING
 from typing import Union
 
 import numpy as np
 
 # TODO: There is an import cycle making this noreorder line necessary
-from .figure import FSIFigure  # noreorder
 from planingfsi.config import Config
 from .. import logger
 from ..dictionary import load_dict_from_file
-from ..fe.structure import StructuralSolver
 from .. import writers
 from ..potentialflow.solver import PotentialPlaningSolver
 from .interpolator import Interpolator
@@ -35,10 +34,13 @@ class Simulation:
     it_dirs: List[Path]
 
     def __init__(self) -> None:
+        # TODO: Remove after circular dependencies resolved
+        from ..fe.structure import StructuralSolver  # noqa: F811
+
         self.config = Config()
         self.solid_solver = StructuralSolver(self)
         self.fluid_solver = PotentialPlaningSolver(self)
-        self._figure: Optional[FSIFigure] = None
+        self._figure: Optional["FSIFigure"] = None
         self.it = 0
         self.ramp = 1.0
 
@@ -50,8 +52,10 @@ class Simulation:
         return simulation
 
     @property
-    def figure(self) -> Optional[FSIFigure]:
+    def figure(self) -> Optional["FSIFigure"]:
         """Use a property for the figure object to initialize lazily."""
+        from .figure import FSIFigure  # noreorder
+
         if self._figure is None and self.config.plotting.plot_any:
             self._figure = FSIFigure(simulation=self, config=self.config)
         return self._figure
@@ -286,3 +290,8 @@ class Simulation:
         dict_ = load_dict_from_file(os.path.join(self.it_dir, "overallQuantities.txt"))
         self.ramp = dict_.get("Ramp", 0.0)
         self.solid_solver.res = dict_.get("Residual", 0.0)
+
+
+if TYPE_CHECKING:
+    from .figure import FSIFigure  # noreorder, noqa: F401
+    from ..fe.structure import StructuralSolver  # noqa: F401

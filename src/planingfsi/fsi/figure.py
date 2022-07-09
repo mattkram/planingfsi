@@ -3,6 +3,7 @@ from pathlib import Path
 from typing import Any
 from typing import Callable
 from typing import List
+from typing import TYPE_CHECKING
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -11,9 +12,7 @@ from matplotlib.axes import Axes
 from .. import trig
 from ..config import Config
 from ..fe import rigid_body
-from ..fe.structure import StructuralSolver
 from ..fsi import simulation as fsi_simulation
-from ..potentialflow.solver import PotentialPlaningSolver
 
 
 class FSIFigure:
@@ -120,11 +119,11 @@ class FSIFigure:
         self.subplot.append(ResidualSubplot([0.40, 0.05, 0.25, 0.45], self.solid, parent=self))
 
     @property
-    def solid(self) -> StructuralSolver:
+    def solid(self) -> "StructuralSolver":
         return self.simulation.solid_solver
 
     @property
-    def fluid(self) -> PotentialPlaningSolver:
+    def fluid(self) -> "PotentialPlaningSolver":
         return self.simulation.fluid_solver
 
     def plot_free_surface(self) -> None:
@@ -476,7 +475,7 @@ class CofRPlot:
         self.lineCofG.set_data(self.body.xCofG, self.body.yCofG)
 
 
-def plot_pressure(solver: PotentialPlaningSolver, fig_format: str = "png") -> None:
+def plot_pressure(solver: "PotentialPlaningSolver", fig_format: str = "png") -> None:
     """Create a plot of the pressure and shear stress profiles."""
     fig, ax = plt.subplots(1, 1, figsize=(5.0, 5.0))
 
@@ -501,3 +500,8 @@ def plot_pressure(solver: PotentialPlaningSolver, fig_format: str = "png") -> No
     ax.set_ylim(ymin=0.0)
 
     fig.savefig(f"pressureElements.{fig_format}", format=fig_format)
+
+
+if TYPE_CHECKING:
+    from ..fe.structure import StructuralSolver
+    from ..potentialflow.solver import PotentialPlaningSolver

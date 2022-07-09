@@ -21,9 +21,9 @@ from .. import trig
 from .. import writers
 from ..config import Config
 from ..config import NUM_DIM
-from ..fsi.interpolator import Interpolator
 
 if TYPE_CHECKING:
+    from ..fsi.interpolator import Interpolator
     from .rigid_body import RigidBody
     from .structure import StructuralSolver
 
@@ -52,7 +52,7 @@ class Substructure(abc.ABC):
         self.dict_ = dict_
         self.name = self.dict_.get("substructureName", "")
         self.type_ = self.dict_.get("substructureType", "rigid")
-        self.interpolator: Optional[Interpolator] = None
+        self.interpolator: Optional["Interpolator"] = None
 
         self.seal_pressure = self.get_or_config("Ps", 0.0)
         self.seal_pressure_method = self.dict_.get("PsMethod", "constant")

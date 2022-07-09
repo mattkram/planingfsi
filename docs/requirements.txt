@@ -1,6 +1,7 @@
-m2r2
 poetry
 sphinx
 sphinx_autodoc_typehints
-sphinx-rtd-theme
 toml
+pydata-sphinx-theme
+sphinx-autobuild
+myst-parser
