@@ -6,10 +6,10 @@ from typing import Type
 import numpy
 import pytest
 
-from planingfsi.fsi.simulation import Simulation  # noreorder
+import planingfsi.fe.substructure as ss
 from planingfsi.fe.rigid_body import RigidBody
 from planingfsi.fe.structure import StructuralSolver
-import planingfsi.fe.substructure as ss
+from planingfsi.fsi.simulation import Simulation  # noreorder
 
 
 @pytest.fixture()

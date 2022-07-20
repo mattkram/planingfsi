@@ -9,6 +9,7 @@ import numpy as np
 from scipy.optimize import fmin
 
 from . import pressurepatch
+from .pressureelement import PressureElement
 from .. import logger
 from .. import math_helpers
 from .. import solver
@@ -16,7 +17,6 @@ from .. import writers
 from ..config import Config
 from ..fsi import figure
 from ..fsi import simulation as fsi_simulation
-from .pressureelement import PressureElement
 
 
 class PotentialPlaningSolver:

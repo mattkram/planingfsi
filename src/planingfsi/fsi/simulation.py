@@ -1,20 +1,21 @@
 """High-level control of a `planingfsi` simulation."""
 import os
 from pathlib import Path
+from typing import TYPE_CHECKING
 from typing import List
 from typing import Optional
-from typing import TYPE_CHECKING
 from typing import Union
 
 import numpy as np
 
 # TODO: There is an import cycle making this noreorder line necessary
 from planingfsi.config import Config
-from .. import logger
-from ..dictionary import load_dict_from_file
-from .. import writers
-from ..potentialflow.solver import PotentialPlaningSolver
+
 from .interpolator import Interpolator
+from .. import logger
+from .. import writers
+from ..dictionary import load_dict_from_file
+from ..potentialflow.solver import PotentialPlaningSolver
 
 
 class Simulation:
