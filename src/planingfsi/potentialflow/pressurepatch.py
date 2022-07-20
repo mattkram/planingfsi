@@ -220,11 +220,6 @@ class PressureCushion(PressurePatch):
         elif cushion_pressure is None:
             cushion_pressure = getattr(self.config, "cushionPressure", 0.0)
 
-        # TODO: This assertion can fail because cushionPressure may not be a float. It could be "Pc".
-        #       This should be handled better somehow
-        assert isinstance(
-            cushion_pressure, float
-        ), f"{cushion_pressure=} is not a float, it is a {type(cushion_pressure)}"
         self.cushion_pressure = cushion_pressure  # type: ignore
 
         self.neighbor_up = PlaningSurface.find_by_name(dict_.get("upstreamPlaningSurface"))
