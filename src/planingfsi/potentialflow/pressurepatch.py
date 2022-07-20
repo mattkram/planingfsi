@@ -401,7 +401,7 @@ class PlaningSurface(PressurePatch):
             self.minimum_length = 0.0
             self.maximum_length = 0.0
 
-        num_elements = dict_.get("Nfl", 0)
+        num_elements = dict_.get("Nfl", 1)
 
         self.pressure_elements.append(
             pe.ForwardHalfTriangularPressureElement(parent=self, is_on_body=False)
