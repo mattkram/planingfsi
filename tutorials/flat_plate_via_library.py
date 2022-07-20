@@ -53,11 +53,7 @@ def main() -> None:
 
     substructure = simulation.solid_solver.add_substructure(dict_)
     planing_surface = simulation.fluid_solver.add_planing_surface(dict_)
-
-    interpolator = Interpolator(substructure, planing_surface, dict_)
-    # TODO: We should be able to assign these functions in the __init__ method
-    interpolator.solid_position_function = substructure.get_coordinates
-    interpolator.fluid_pressure_function = planing_surface.get_loads_in_range
+    Interpolator(substructure, planing_surface, dict_)
 
     simulation.run()
 
