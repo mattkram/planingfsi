@@ -215,9 +215,11 @@ class PressureCushion(PressurePatch):
         )
 
         cushion_pressure = dict_.get("cushionPressure")
-        if cushion_pressure is None:
+        if cushion_pressure == "Pc":
+            cushion_pressure = self.config.body.Pc
+        elif cushion_pressure is None:
             cushion_pressure = getattr(self.config, "cushionPressure", 0.0)
-        assert isinstance(cushion_pressure, float)
+
         self.cushion_pressure = cushion_pressure
 
         self.neighbor_up = PlaningSurface.find_by_name(dict_.get("upstreamPlaningSurface"))
@@ -233,15 +235,17 @@ class PressureCushion(PressurePatch):
         if self.cushion_type == "infinite":
             # Dummy element, will have 0 pressure
             self.pressure_elements.append(
-                pe.AftSemiInfinitePressureBand(is_source=True, is_on_body=False)
+                pe.AftSemiInfinitePressureBand(is_source=True, is_on_body=False, parent=self)
             )
             self.pressure_elements.append(
-                pe.AftSemiInfinitePressureBand(is_source=True, is_on_body=False)
+                pe.AftSemiInfinitePressureBand(is_source=True, is_on_body=False, parent=self)
             )
             self._end_pts[0] = -1000.0  # doesn't matter where
         else:
             self.pressure_elements.append(
-                pe.ForwardHalfTriangularPressureElement(is_source=True, is_on_body=False)
+                pe.ForwardHalfTriangularPressureElement(
+                    is_source=True, is_on_body=False, parent=self
+                )
             )
 
             self.smoothing_factor = dict_.get("smoothingFactor", np.nan)
@@ -250,7 +254,9 @@ class PressureCushion(PressurePatch):
                 if n is None and ~np.isnan(self.smoothing_factor):
                     self.pressure_elements.extend(
                         [
-                            pe.CompleteTriangularPressureElement(is_source=True, is_on_body=False)
+                            pe.CompleteTriangularPressureElement(
+                                is_source=True, is_on_body=False, parent=self
+                            )
                             for _ in range(dict_.get("numElements", 10))
                         ]
                     )
@@ -262,7 +268,7 @@ class PressureCushion(PressurePatch):
                 self._end_pts[i] = value
 
             self.pressure_elements.append(
-                pe.AftHalfTriangularPressureElement(is_source=True, is_on_body=False)
+                pe.AftHalfTriangularPressureElement(is_source=True, is_on_body=False, parent=self)
             )
         self.update_end_pts()
 

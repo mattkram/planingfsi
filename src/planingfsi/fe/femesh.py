@@ -27,7 +27,7 @@ class Mesh:
     optionally be associated with a planing surface.
 
     Attributes:
-        mesh_dir: The directory in which to store the mesh files on export.
+        points: A list of all points in the mesh.
         submesh: A list of submeshes belonging to the parent mesh.
 
     """

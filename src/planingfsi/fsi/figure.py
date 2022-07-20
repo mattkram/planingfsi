@@ -65,26 +65,21 @@ class FSIFigure:
         xMin, xMax = min(x), max(x)
         yMin, yMax = min(y), max(y)
 
-        try:
+        if config.plotting.xmin is not None:
             xMin = config.plotting.xmin
             config.plotting.ext_w = 0.0
-        except AttributeError:
-            pass
-        try:
+
+        if config.plotting.xmax is not None:
             xMax = config.plotting.xmax
             config.plotting.ext_e = 0.0
-        except AttributeError:
-            pass
-        try:
+
+        if config.plotting.ymin is not None:
             yMin = config.plotting.ymin
             config.plotting.ext_s = 0.0
-        except AttributeError:
-            pass
-        try:
+
+        if config.plotting.ymax is not None:
             yMax = config.plotting.ymax
             config.plotting.ext_n = 0.0
-        except AttributeError:
-            pass
 
         plt.xlabel(r"$x$ [m]", fontsize=22)
         plt.ylabel(r"$y$ [m]", fontsize=22)
