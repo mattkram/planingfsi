@@ -393,8 +393,10 @@ class RigidBody:
             disp[self.Jit - 1] = -float(self.config.body.motion_jacobian_first_step)
         self.disp_old = disp
         if self.Jit >= self.num_dim:
-            assert isinstance(self.J, np.ndarray)
-            self.J[:] = self.J_tmp
+            if self.J is None:
+                self.J = self.J_tmp.copy()
+            else:
+                self.J[:] = self.J_tmp
             self.J_tmp = None
             self.disp_old = None
 
@@ -461,7 +463,7 @@ class RigidBody:
             dx = np.zeros_like(self.x)
             dx[np.ix_(dof)] = np.linalg.solve(
                 -self.J[np.ix_(dof, dof)], self.f.reshape(self.num_dim, 1)[np.ix_(dof)]
-            )
+            ).flatten()  # TODO: Check that the flatten() is required
 
             if self.res_old is not None:
                 if any(np.abs(self.f) - np.abs(self.res_old) > 0.0):
