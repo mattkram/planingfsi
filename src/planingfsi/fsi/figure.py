@@ -9,10 +9,10 @@ import matplotlib.pyplot as plt
 import numpy as np
 from matplotlib.axes import Axes
 
-from .. import trig
-from ..config import Config
-from ..fe import rigid_body
-from ..fsi import simulation as fsi_simulation
+from planingfsi import trig
+from planingfsi.config import Config
+from planingfsi.fe import rigid_body
+from planingfsi.fsi import simulation as fsi_simulation
 
 
 class FSIFigure:
@@ -498,5 +498,5 @@ def plot_pressure(solver: "PotentialPlaningSolver", fig_format: str = "png") -> 
 
 
 if TYPE_CHECKING:
-    from ..fe.structure import StructuralSolver
-    from ..potentialflow.solver import PotentialPlaningSolver
+    from planingfsi.fe.structure import StructuralSolver
+    from planingfsi.potentialflow.solver import PotentialPlaningSolver

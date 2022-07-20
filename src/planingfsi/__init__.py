@@ -13,7 +13,7 @@ import logging
 logger = logging.getLogger("planingfsi")
 logger.setLevel(logging.INFO)
 
-from .fe.femesh import Mesh
+from planingfsi.fe.femesh import Mesh
 
 # # Use tk by default. Otherwise try Agg. Otherwise, disable plotting.
 # _fallback_engine = "Agg"

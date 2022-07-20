@@ -11,14 +11,14 @@ import numpy as np
 from scipy.interpolate import interp1d
 from scipy.optimize import fmin
 
-from . import pressureelement as pe
-from . import solver
-from .. import math_helpers
-from .. import trig
-from .. import writers
-from ..config import Config
-from ..dictionary import load_dict_from_file
-from ..fsi import interpolator  # noqa: F401
+from planingfsi import math_helpers
+from planingfsi import trig
+from planingfsi import writers
+from planingfsi.config import Config
+from planingfsi.dictionary import load_dict_from_file
+from planingfsi.fsi import interpolator  # noqa: F401
+from planingfsi.potentialflow import pressureelement as pe
+from planingfsi.potentialflow import solver
 
 
 class PressurePatch(abc.ABC):

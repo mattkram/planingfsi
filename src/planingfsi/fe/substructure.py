@@ -13,19 +13,19 @@ from typing import Type
 import numpy as np
 from scipy.interpolate import interp1d
 
-from . import felib as fe
-from . import rigid_body
-from .. import logger
-from .. import math_helpers
-from .. import trig
-from .. import writers
-from ..config import NUM_DIM
-from ..config import Config
+from planingfsi import logger
+from planingfsi import math_helpers
+from planingfsi import trig
+from planingfsi import writers
+from planingfsi.config import NUM_DIM
+from planingfsi.config import Config
+from planingfsi.fe import felib as fe
+from planingfsi.fe import rigid_body
 
 if TYPE_CHECKING:
-    from .rigid_body import RigidBody
-    from .structure import StructuralSolver
-    from ..fsi.interpolator import Interpolator
+    from planingfsi.fe.rigid_body import RigidBody
+    from planingfsi.fe.structure import StructuralSolver
+    from planingfsi.fsi.interpolator import Interpolator
 
 
 class Substructure(abc.ABC):

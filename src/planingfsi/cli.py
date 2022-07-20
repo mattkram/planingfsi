@@ -11,10 +11,10 @@ from typing import Optional
 import click
 import click_log
 
-from . import logger
-from .config import Config
-from .fe.femesh import Mesh
-from .fsi.simulation import Simulation
+from planingfsi import logger
+from planingfsi.config import Config
+from planingfsi.fe.femesh import Mesh
+from planingfsi.fsi.simulation import Simulation
 
 
 @click.group(name="planingfsi", help="Run the PlaningFSI program")

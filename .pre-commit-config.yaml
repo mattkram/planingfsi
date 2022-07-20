@@ -11,12 +11,15 @@ repos:
   hooks:
   - id: pretty-format-yaml
     args: [--autofix, --preserve-quotes, --indent, '2']
+- repo: https://github.com/MarcoGorelli/absolufy-imports
+  rev: v0.3.1
+  hooks:
+  - id: absolufy-imports
 - repo: https://github.com/pycqa/isort
   rev: 5.10.1
   hooks:
   - id: isort
     name: isort
-    args: ["--reverse-relative", "--force-single-line-imports"]
 - repo: https://github.com/psf/black
   rev: 22.6.0
   hooks:

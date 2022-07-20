@@ -7,17 +7,17 @@ from typing import Type
 
 import numpy as np
 
-from . import felib as fe
-from . import rigid_body as rigid_body_mod
-from .. import logger
-from ..config import Config
-from ..fsi import simulation as fsi_simulation
+from planingfsi import logger
+from planingfsi.config import Config
+from planingfsi.fe import felib as fe
+from planingfsi.fe import rigid_body as rigid_body_mod
+from planingfsi.fsi import simulation as fsi_simulation
 
 if TYPE_CHECKING:
-    from .substructure import FlexibleSubstructure  # noqa: F401
-    from .substructure import RigidSubstructure  # noqa: F401
-    from .substructure import Substructure
-    from .substructure import TorsionalSpringSubstructure  # noqa: F401
+    from planingfsi.fe.substructure import FlexibleSubstructure  # noqa: F401
+    from planingfsi.fe.substructure import RigidSubstructure  # noqa: F401
+    from planingfsi.fe.substructure import Substructure
+    from planingfsi.fe.substructure import TorsionalSpringSubstructure  # noqa: F401
 
 
 class StructuralSolver:
@@ -92,10 +92,10 @@ class StructuralSolver:
 
         """
         # TODO: Remove after circular dependencies resolved
-        from .substructure import FlexibleSubstructure  # noqa: F811
-        from .substructure import RigidSubstructure  # noqa: F811
-        from .substructure import Substructure
-        from .substructure import TorsionalSpringSubstructure  # noqa: F811
+        from planingfsi.fe.substructure import FlexibleSubstructure  # noqa: F811
+        from planingfsi.fe.substructure import RigidSubstructure  # noqa: F811
+        from planingfsi.fe.substructure import Substructure
+        from planingfsi.fe.substructure import TorsionalSpringSubstructure  # noqa: F811
 
         if dict_ is None:
             dict_ = {}
@@ -147,7 +147,7 @@ class StructuralSolver:
     def get_residual(self) -> None:
         """Calculate the residual."""
         # TODO: Remove after circular dependencies resolved
-        from .substructure import FlexibleSubstructure  # noqa: F811
+        from planingfsi.fe.substructure import FlexibleSubstructure  # noqa: F811
 
         self.res = 0.0
         for bd in self.rigid_body:

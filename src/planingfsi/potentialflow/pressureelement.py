@@ -7,9 +7,9 @@ from typing import Union
 import numpy as np
 from scipy.special import sici
 
-from . import pressurepatch
-from .. import math_helpers
-from ..config import Config
+from planingfsi import math_helpers
+from planingfsi.config import Config
+from planingfsi.potentialflow import pressurepatch
 
 
 def _get_aux_fg(lam: float) -> Tuple[float, float]:
