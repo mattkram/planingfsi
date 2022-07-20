@@ -104,7 +104,9 @@ class PotentialPlaningSolver:
         self.pressure_patches.append(instance)
         self.pressure_elements.extend([el for el in instance.pressure_elements])
 
-    def add_planing_surface(self, dict_: dict[str, Any]) -> "pressurepatch.PlaningSurface":
+    def add_planing_surface(
+            self, dict_: dict[str, Any] | None, /
+    ) -> "pressurepatch.PlaningSurface":
         """Add planing surface to the calculation from a dictionary file name.
 
         Args:
@@ -114,7 +116,8 @@ class PotentialPlaningSolver:
             Instance created from dictionary.
 
         """
-        instance = pressurepatch.PlaningSurface(self, dict_)
+        instance = pressurepatch.PlaningSurface(dict_)
+        instance.parent = self
         self.planing_surfaces.append(instance)
         self._add_pressure_patch(instance)
         return instance
@@ -129,7 +132,7 @@ class PotentialPlaningSolver:
             Instance created from dictionary.
 
         """
-        instance = pressurepatch.PressureCushion(self, dict_)
+        instance = pressurepatch.PressureCushion(dict_, parent=self)
         self.pressure_cushions.append(instance)
         self._add_pressure_patch(instance)
         return instance

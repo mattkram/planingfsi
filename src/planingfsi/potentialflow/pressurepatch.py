@@ -30,7 +30,7 @@ class PressurePatch(abc.ABC):
 
     """
 
-    def __init__(self, parent: "solver.PotentialPlaningSolver") -> None:
+    def __init__(self, *, parent: "solver.PotentialPlaningSolver" | None) -> None:
         self.parent = parent
         self.patch_name = "AbstractPressurePatch"
         self.pressure_elements: list[pe.PressureElement] = []
@@ -52,6 +52,12 @@ class PressurePatch(abc.ABC):
     @property
     def config(self) -> Config:
         """A reference to the simulation configuration."""
+        if self.parent is None:
+            raise ValueError(
+                "The parent must be set to access its configuration. "
+                "This can be done either with the 'parent=parent' keyword argument, by setting it explicitly, "
+                "or by using the `.add_planing_surface()` method."
+            )
         return self.parent.config
 
     @property
@@ -205,8 +211,15 @@ class PressureCushion(PressurePatch):
 
     _count = 0
 
-    def __init__(self, parent: "solver.PotentialPlaningSolver", dict_: dict[str, Any]) -> None:
-        super().__init__(parent)
+    def __init__(
+        self,
+        dict_: dict[str, Any] | None = None,
+        /,
+        *,
+        parent: "solver.PotentialPlaningSolver" | None = None,
+    ) -> None:
+        super().__init__(parent=parent)
+        dict_ = dict_ or {}
         PressureCushion._count += 1
         self.patch_name = dict_.get(
             "pressureCushionName", f"pressureCushion{PressureCushion._count}"
@@ -355,8 +368,15 @@ class PlaningSurface(PressurePatch):
                     return obj
         return None
 
-    def __init__(self, parent: "solver.PotentialPlaningSolver", dict_: dict[str, Any]) -> None:
-        super().__init__(parent)
+    def __init__(
+        self,
+        dict_: dict[str, Any] | None = None,
+        /,
+        *,
+        parent: "solver.PotentialPlaningSolver" | None = None,
+    ) -> None:
+        super().__init__(parent=parent)
+        dict_ = dict_ or {}
         PlaningSurface._all.append(self)
 
         self.patch_name = dict_.get("substructureName", "")
