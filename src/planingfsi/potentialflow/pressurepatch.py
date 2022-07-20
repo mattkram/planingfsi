@@ -429,7 +429,7 @@ class PlaningSurface(PressurePatch):
             )
         else:
             self.relative_position = np.linspace(0.0, 1.0, num_elements + 1)
-        print(self.relative_position)
+
         self.relative_position /= self.relative_position[-2]
         self.relative_position = np.hstack((0.0, self.relative_position))
 
