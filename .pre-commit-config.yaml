@@ -20,7 +20,6 @@ repos:
   hooks:
   - id: isort
     name: isort
-    args: ["--reverse-relative", "--force-single-line-imports"]
 - repo: https://github.com/psf/black
   rev: 22.6.0
   hooks:
