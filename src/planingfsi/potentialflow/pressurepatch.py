@@ -215,7 +215,9 @@ class PressureCushion(PressurePatch):
         )
 
         cushion_pressure = dict_.get("cushionPressure")
-        if cushion_pressure is None:
+        if cushion_pressure == "Pc":
+            cushion_pressure = self.config.body.Pc
+        elif cushion_pressure is None:
             cushion_pressure = getattr(self.config, "cushionPressure", 0.0)
 
         # TODO: This assertion can fail because cushionPressure may not be a float. It could be "Pc".
