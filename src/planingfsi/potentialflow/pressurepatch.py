@@ -220,7 +220,7 @@ class PressureCushion(PressurePatch):
         elif cushion_pressure is None:
             cushion_pressure = getattr(self.config, "cushionPressure", 0.0)
 
-        self.cushion_pressure = cushion_pressure  # type: ignore
+        self.cushion_pressure = cushion_pressure
 
         self.neighbor_up = PlaningSurface.find_by_name(dict_.get("upstreamPlaningSurface"))
         self.neighbor_down = PlaningSurface.find_by_name(dict_.get("downstreamPlaningSurface"))
