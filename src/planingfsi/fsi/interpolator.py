@@ -2,7 +2,6 @@ from __future__ import annotations
 
 from collections.abc import Callable
 from typing import Any
-from typing import Optional
 
 import numpy as np
 from scipy.optimize import fmin
@@ -25,12 +24,12 @@ class Interpolator:
         self.solid.interpolator = self
         self.fluid.interpolator = self
 
-        self.solid_position_function: Optional[Callable[[float], np.ndarray]] = None
-        self.fluid_pressure_function: Optional[Callable[[float, float], np.ndarray]] = None
+        self.solid_position_function: Callable[[float], np.ndarray] | None = None
+        self.fluid_pressure_function: Callable[[float, float], np.ndarray] | None = None
         self.get_body_height = self.get_surface_height_fixed_x
 
-        self._separation_arclength: Optional[float] = None
-        self._immersed_arclength: Optional[float] = None
+        self._separation_arclength: float | None = None
+        self._immersed_arclength: float | None = None
 
         if dict_ is None:
             dict_ = {}

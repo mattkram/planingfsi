@@ -4,8 +4,6 @@ from __future__ import annotations
 import os
 from pathlib import Path
 from typing import TYPE_CHECKING
-from typing import Optional
-from typing import Union
 
 import numpy as np
 
@@ -42,19 +40,19 @@ class Simulation:
         self.config = Config()
         self.solid_solver = StructuralSolver(self)
         self.fluid_solver = PotentialPlaningSolver(self)
-        self._figure: Optional["FSIFigure"] = None
+        self._figure: FSIFigure | None = None
         self.it = 0
         self.ramp = 1.0
 
     @classmethod
-    def from_input_files(cls, config_filename: Union[Path, str]) -> "Simulation":
+    def from_input_files(cls, config_filename: Path | str) -> "Simulation":
         """Construct a `Simulation` object by loading input files."""
         simulation = cls()
         simulation.load_input_files(config_filename)
         return simulation
 
     @property
-    def figure(self) -> Optional["FSIFigure"]:
+    def figure(self) -> FSIFigure | None:
         """Use a property for the figure object to initialize lazily."""
         from planingfsi.fsi.figure import FSIFigure  # noreorder
 
@@ -91,7 +89,7 @@ class Simulation:
                 for f in os.listdir(self.config.path.fig_dir_name):
                     os.remove(os.path.join(self.config.path.fig_dir_name, f))
 
-    def load_input_files(self, config_filename: Union[Path, str]) -> None:
+    def load_input_files(self, config_filename: Path | str) -> None:
         """Load all of the input files."""
         self.config.load_from_file(config_filename)
         self._load_rigid_bodies()

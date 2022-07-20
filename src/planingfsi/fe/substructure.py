@@ -6,7 +6,6 @@ from collections.abc import Iterable
 from pathlib import Path
 from typing import TYPE_CHECKING
 from typing import Any
-from typing import Optional
 
 import numpy as np
 from scipy.interpolate import interp1d
@@ -30,7 +29,7 @@ class Substructure(abc.ABC):
 
     __all: list["Substructure"] = []
 
-    element_type: type["fe.Element"]
+    element_type: type[fe.Element]
 
     is_free = False
 
@@ -50,7 +49,7 @@ class Substructure(abc.ABC):
         self.dict_ = dict_
         self.name = self.dict_.get("substructureName", "")
         self.type_ = self.dict_.get("substructureType", "rigid")
-        self.interpolator: Optional["Interpolator"] = None
+        self.interpolator: Interpolator | None = None
 
         self.seal_pressure = self.get_or_config("Ps", 0.0)
         self.seal_pressure_method = self.dict_.get("PsMethod", "constant")
@@ -63,14 +62,14 @@ class Substructure(abc.ABC):
         self.struct_extrap = self.dict_.get("structExtrap", True)
         self.line_fluid_pressure = None
         self.line_air_pressure = None
-        self.fluidS: Optional[np.ndarray] = None
-        self.fluidP: Optional[np.ndarray] = None
-        self.airS: Optional[np.ndarray] = None
-        self.airP: Optional[np.ndarray] = None
-        self.U: Optional[np.ndarray] = None
+        self.fluidS: np.ndarray | None = None
+        self.fluidP: np.ndarray | None = None
+        self.airS: np.ndarray | None = None
+        self.airP: np.ndarray | None = None
+        self.U: np.ndarray | None = None
         self.node: list[fe.Node] = []
         self.el: list[fe.Element] = []
-        self.parent: Optional[rigid_body.RigidBody] = None
+        self.parent: rigid_body.RigidBody | None = None
         self.node_arc_length = np.zeros(len(self.node))
 
         self.D = 0.0
@@ -82,8 +81,8 @@ class Substructure(abc.ABC):
         self.La = 0.0
         self.Ma = 0.0
 
-        self.interp_func_x: Optional[interp1d] = None
-        self.interp_func_y: Optional[interp1d] = None
+        self.interp_func_x: interp1d | None = None
+        self.interp_func_y: interp1d | None = None
 
     @property
     def config(self) -> Config:
@@ -522,9 +521,9 @@ class FlexibleSubstructure(Substructure):
         self.pretension = dict_.get("pretension", -0.5)
         self.EA = dict_.get("EA", 5e7)
 
-        self.K: Optional[np.ndarray] = None
-        self.F: Optional[np.ndarray] = None
-        self.U: Optional[np.ndarray] = None
+        self.K: np.ndarray | None = None
+        self.F: np.ndarray | None = None
+        self.U: np.ndarray | None = None
 
     def get_residual(self) -> float:
         return np.max(np.abs(self.U))
@@ -619,15 +618,15 @@ class TorsionalSpringSubstructure(FlexibleSubstructure, RigidSubstructure):
         self.spring_constant = dict_.get("spring_constant", 1000.0)
         self.theta = 0.0
         self.Mt = 0.0  # TODO
-        self.MOld: Optional[float] = None
+        self.MOld: float | None = None
         self.relax = dict_.get("relaxAng", self.config.body.relax_rigid_body)
         self.attach_pct = dict_.get("attachPct", 0.0)
-        self.attached_node: Optional[fe.Node] = None
-        self.attached_element: Optional[fe.Element] = None
+        self.attached_node: fe.Node | None = None
+        self.attached_element: fe.Element | None = None
         self.minimum_angle = dict_.get("minimumAngle", -float("Inf"))
         self.max_angle_step = dict_.get("maxAngleStep", float("Inf"))
         self.attached_ind = 0
-        self.attached_substructure: Optional[Substructure] = None
+        self.attached_substructure: Substructure | None = None
         self.residual = 1.0
 
     def load_mesh(self) -> None:

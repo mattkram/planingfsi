@@ -6,7 +6,6 @@ import re
 from pathlib import Path
 from re import Match
 from typing import Any
-from typing import Union
 
 from planingfsi import logger
 from planingfsi import unit  # noqa: F401
@@ -84,7 +83,7 @@ def jsonify_string(string: str) -> str:
     return string
 
 
-def load_dict_from_file(filename: Union[Path, str]) -> dict[str, Any]:
+def load_dict_from_file(filename: Path | str) -> dict[str, Any]:
     """Read a file, which is a less strict JSON format, and return a dictionary."""
     logger.debug('Loading Dictionary from file "{}"'.format(filename))
 

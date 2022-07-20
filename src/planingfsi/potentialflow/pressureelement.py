@@ -3,7 +3,6 @@ from __future__ import annotations
 
 import abc
 from typing import Any
-from typing import Union
 
 import numpy as np
 from scipy.special import sici
@@ -121,7 +120,7 @@ class PressureElement(abc.ABC):
         z_coord: float = np.nan,
         pressure: float = np.nan,
         shear_stress: float = 0.0,
-        width: Union[np.ndarray, float] = np.nan,
+        width: np.ndarray | float = np.nan,
         is_source: bool = False,
         is_on_body: bool = False,
         parent: "pressurepatch.PressurePatch" = None,

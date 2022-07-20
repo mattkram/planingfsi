@@ -5,8 +5,9 @@ results from file. It reads the fluid and solid body properties from dictionary
 files, assembles the problem, and runs it.
 
 """
+from __future__ import annotations
+
 from pathlib import Path
-from typing import Optional
 
 import click
 import click_log
@@ -62,9 +63,7 @@ def run_planingfsi(post_mode: bool, plot_save: bool, plot_show: bool, new_case: 
 @click.option("plot_show", "--show", is_flag=True)
 @click.option("plot_save", "--save", is_flag=True)
 @click.option("--verbose", is_flag=True)
-def generate_mesh(
-    mesh_dict: Optional[str], plot_show: bool, plot_save: bool, verbose: bool
-) -> None:
+def generate_mesh(mesh_dict: str | None, plot_show: bool, plot_save: bool, verbose: bool) -> None:
     """Generate the initial mesh."""
     config = Config.from_file("configDict")
 

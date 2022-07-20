@@ -12,8 +12,6 @@ from __future__ import annotations
 import math
 from pathlib import Path
 from typing import Any
-from typing import Optional
-from typing import Union
 
 from planingfsi import logger
 from planingfsi.dictionary import load_dict_from_file
@@ -34,7 +32,7 @@ class ConfigItem:
 
     def __init__(self, *alt_keys: str, **kwargs: Any):
         self.alt_keys: list[str] = list(alt_keys)
-        self.type_: Optional[type] = kwargs.get("type")
+        self.type_: type | None = kwargs.get("type")
         try:
             self.default = kwargs["default"]
             if self.default is not None:
@@ -93,7 +91,7 @@ class SubConfig:
     different sections. Also useful in helping define the namespace scopes.
     """
 
-    def __init__(self, parent: Optional["Config"] = None):
+    def __init__(self, parent: Config | None = None):
         self._parent = parent
 
     @property
@@ -103,7 +101,7 @@ class SubConfig:
             raise ValueError("Must assign a parent to access this property.")
         return self._parent
 
-    def load_from_file(self, filename: Union[Path, str]) -> None:
+    def load_from_file(self, filename: Path | str) -> None:
         """Load the configuration from a dictionary file.
 
         Args:
@@ -572,12 +570,12 @@ class Config:
         self.solver = SolverConfig(parent=self)
 
     @classmethod
-    def from_file(cls, filename: Union[Path, str]) -> "Config":
+    def from_file(cls, filename: Path | str) -> "Config":
         obj = cls()
         obj.load_from_file(filename)
         return obj
 
-    def load_from_file(self, filename: Union[Path, str]) -> None:
+    def load_from_file(self, filename: Path | str) -> None:
         """Load the configuration from a file.
 
         Args:

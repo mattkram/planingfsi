@@ -6,8 +6,6 @@ import itertools
 from collections.abc import Iterable
 from pathlib import Path
 from typing import Any
-from typing import Optional
-from typing import Union
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -60,7 +58,7 @@ class Mesh:
         return submesh
 
     def add_point(
-        self, id_: int, method: str, position: Iterable[Union[float, int, str]], **kwargs: Any
+        self, id_: int, method: str, position: Iterable[float | int | str], **kwargs: Any
     ) -> "Point":
         """Add a new point to the mesh, returning the created point.
 
@@ -248,7 +246,7 @@ class Mesh:
         if show:
             plt.show()  # pragma: no cover
 
-    def write(self, mesh_dir: Union[Path, str] = Path("mesh")) -> None:
+    def write(self, mesh_dir: Path | str = Path("mesh")) -> None:
         """Write the mesh to text files."""
         mesh_dir = Path(mesh_dir)
         mesh_dir.mkdir(exist_ok=True)
@@ -348,7 +346,7 @@ class Submesh:
 class _ShapeBase:
     """An abstract base class for all Shapes."""
 
-    def __init__(self, id: Optional[int] = None, mesh: Optional[Mesh] = None) -> None:
+    def __init__(self, id: int | None = None, mesh: Mesh | None = None) -> None:
         self.id = id
         self.mesh = mesh
 
@@ -358,7 +356,7 @@ class _ShapeBase:
 
 
 class Point(_ShapeBase):
-    def __init__(self, id: Optional[int] = None, mesh: Optional[Mesh] = None) -> None:
+    def __init__(self, id: int | None = None, mesh: Mesh | None = None) -> None:
         super().__init__(id=id, mesh=mesh)
         self.position = np.zeros(2)
         self.is_dof_fixed = [True, True]
@@ -436,7 +434,7 @@ class Point(_ShapeBase):
         # Kept for backwards-compatibility with old meshDicts
         return self.y_pos
 
-    def rotate(self, base_pt: Union["Point", int], angle: float) -> None:
+    def rotate(self, base_pt: Point | int, angle: float) -> None:
         """Rotate this point about another base point.
 
         Args:
@@ -478,7 +476,7 @@ class Point(_ShapeBase):
 
 
 class Curve(_ShapeBase):
-    def __init__(self, id: Optional[int] = None, mesh: Optional[Mesh] = None):
+    def __init__(self, id: int | None = None, mesh: Mesh | None = None):
         super().__init__(id=id, mesh=mesh)
         self.pt: list[Point] = []
         self.lines: list["Line"] = []

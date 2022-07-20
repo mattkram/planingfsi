@@ -3,7 +3,6 @@ from __future__ import annotations
 
 import weakref
 from typing import Any
-from typing import Optional
 
 import numpy as np
 from scipy.optimize import fmin
@@ -41,7 +40,7 @@ class PotentialPlaningSolver:
         self.x_coord_fs = np.array([])
         self.z_coord_fs = np.array([])
 
-        self.solver: Optional[solver.RootFinder] = None
+        self.solver: solver.RootFinder | None = None
         self.fluid_it = 0
 
         self.min_len = np.array([])

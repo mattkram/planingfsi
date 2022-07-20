@@ -3,7 +3,6 @@ from __future__ import annotations
 import abc
 from typing import TYPE_CHECKING
 from typing import Any
-from typing import Optional
 
 import numpy as np
 
@@ -61,14 +60,14 @@ class Node:
 class Element(abc.ABC):
     __all: list["Element"] = []
 
-    def __init__(self, parent: Optional["Substructure"] = None) -> None:
+    def __init__(self, parent: Substructure | None = None) -> None:
         self.element_num = len(Element.__all)
         Element.__all.append(self)
 
         self.node: list[Node] = []
         self.dof = [0] * NUM_DIM
         self.length = 0.0
-        self.initial_length: Optional[float] = None
+        self.initial_length: float | None = None
         self.qp = np.zeros((2,))
         self.qs = np.zeros((2,))
 
@@ -76,9 +75,9 @@ class Element(abc.ABC):
         self.lineEl0 = None
         self.plot_on = True
 
-        self.axial_force: Optional[float] = None
-        self.initial_axial_force: Optional[float] = None
-        self.EA: Optional[float] = None
+        self.axial_force: float | None = None
+        self.initial_axial_force: float | None = None
+        self.EA: float | None = None
 
         self.gamma = 0.0
         self.init_pos: list[np.ndarray] = []

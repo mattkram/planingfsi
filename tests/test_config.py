@@ -1,7 +1,7 @@
+from __future__ import annotations
+
 import math
 from pathlib import Path
-from typing import Optional
-from typing import Union
 
 import pytest
 from _pytest.fixtures import SubRequest
@@ -57,9 +57,7 @@ def test_config_type_conversion(config_instance: TestClass) -> None:
         (True, True),
     ],
 )
-def test_config_bool_setter(
-    config_instance: TestClass, value: Union[str, bool], expected: bool
-) -> None:
+def test_config_bool_setter(config_instance: TestClass, value: str | bool, expected: bool) -> None:
     """When setting a Boolean value, True and False can be passed in as strings."""
     config_instance.bool_attr = value
     assert config_instance.bool_attr == expected
@@ -185,7 +183,7 @@ def test_load_config_from_file(config_from_file: Config) -> None:
 @pytest.mark.parametrize(
     "attr_to_set_true, expected", [(None, False), ("_watch", True), ("show", True)]
 )
-def test_plot_config_watch(config: Config, attr_to_set_true: Optional[str], expected: bool) -> None:
+def test_plot_config_watch(config: Config, attr_to_set_true: str | None, expected: bool) -> None:
     """By default, we don't watch the plot unless certain attributes are set to True."""
     if attr_to_set_true is not None:
         setattr(config.plotting, attr_to_set_true, True)
@@ -197,7 +195,7 @@ def test_plot_config_watch(config: Config, attr_to_set_true: Optional[str], expe
     [(None, False), ("show", True), ("show_pressure", True), ("watch", True)],
 )
 def test_plot_config_plot_any_getter(
-    config: Config, attr_to_set_true: Optional[str], expected: bool
+    config: Config, attr_to_set_true: str | None, expected: bool
 ) -> None:
     if attr_to_set_true is not None:
         setattr(config.plotting, attr_to_set_true, True)
