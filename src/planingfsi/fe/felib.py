@@ -7,12 +7,12 @@ from typing import Tuple
 
 import numpy as np
 
-from .. import logger
-from .. import trig
-from ..config import NUM_DIM
+from planingfsi import logger
+from planingfsi import trig
+from planingfsi.config import NUM_DIM
 
 if TYPE_CHECKING:
-    from .substructure import Substructure
+    from planingfsi.fe.substructure import Substructure
 
 
 class Node:

@@ -8,9 +8,9 @@ from typing import Tuple
 import numpy as np
 from scipy.optimize import fmin
 
-from ..fe import substructure
-from ..potentialflow import pressurepatch
-from ..solver import fzero
+from planingfsi.fe import substructure
+from planingfsi.potentialflow import pressurepatch
+from planingfsi.solver import fzero
 
 
 class Interpolator:

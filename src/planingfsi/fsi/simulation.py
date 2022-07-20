@@ -8,14 +8,14 @@ from typing import Union
 
 import numpy as np
 
+from planingfsi import logger
+from planingfsi import writers
+
 # TODO: There is an import cycle making this noreorder line necessary
 from planingfsi.config import Config
-
-from .interpolator import Interpolator
-from .. import logger
-from .. import writers
-from ..dictionary import load_dict_from_file
-from ..potentialflow.solver import PotentialPlaningSolver
+from planingfsi.dictionary import load_dict_from_file
+from planingfsi.fsi.interpolator import Interpolator
+from planingfsi.potentialflow.solver import PotentialPlaningSolver
 
 
 class Simulation:
@@ -36,7 +36,7 @@ class Simulation:
 
     def __init__(self) -> None:
         # TODO: Remove after circular dependencies resolved
-        from ..fe.structure import StructuralSolver  # noqa: F811
+        from planingfsi.fe.structure import StructuralSolver  # noqa: F811
 
         self.config = Config()
         self.solid_solver = StructuralSolver(self)
@@ -55,7 +55,7 @@ class Simulation:
     @property
     def figure(self) -> Optional["FSIFigure"]:
         """Use a property for the figure object to initialize lazily."""
-        from .figure import FSIFigure  # noreorder
+        from planingfsi.fsi.figure import FSIFigure  # noreorder
 
         if self._figure is None and self.config.plotting.plot_any:
             self._figure = FSIFigure(simulation=self, config=self.config)
@@ -294,5 +294,5 @@ class Simulation:
 
 
 if TYPE_CHECKING:
-    from .figure import FSIFigure  # noreorder, noqa: F401
-    from ..fe.structure import StructuralSolver  # noqa: F401
+    from planingfsi.fe.structure import StructuralSolver  # noqa: F401
+    from planingfsi.fsi.figure import FSIFigure  # noreorder, noqa: F401

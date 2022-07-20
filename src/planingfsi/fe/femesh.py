@@ -13,10 +13,10 @@ from typing import Union
 import matplotlib.pyplot as plt
 import numpy as np
 
-from .. import logger
-from .. import trig
-from ..solver import fzero
-from ..writers import write_as_list
+from planingfsi import logger
+from planingfsi import trig
+from planingfsi.solver import fzero
+from planingfsi.writers import write_as_list
 
 
 class Mesh:

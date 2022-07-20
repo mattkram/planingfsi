@@ -8,15 +8,15 @@ from typing import Optional
 import numpy as np
 from scipy.optimize import fmin
 
-from . import pressurepatch
-from .pressureelement import PressureElement
-from .. import logger
-from .. import math_helpers
-from .. import solver
-from .. import writers
-from ..config import Config
-from ..fsi import figure
-from ..fsi import simulation as fsi_simulation
+from planingfsi import logger
+from planingfsi import math_helpers
+from planingfsi import solver
+from planingfsi import writers
+from planingfsi.config import Config
+from planingfsi.fsi import figure
+from planingfsi.fsi import simulation as fsi_simulation
+from planingfsi.potentialflow import pressurepatch
+from planingfsi.potentialflow.pressureelement import PressureElement
 
 
 class PotentialPlaningSolver:

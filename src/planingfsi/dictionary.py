@@ -7,8 +7,8 @@ from typing import Dict
 from typing import Match
 from typing import Union
 
-from . import logger
-from . import unit  # noqa: F401
+from planingfsi import logger
+from planingfsi import unit  # noqa: F401
 
 __all__ = ["load_dict_from_file"]
 

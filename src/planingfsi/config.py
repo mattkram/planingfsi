@@ -16,8 +16,8 @@ from typing import Optional
 from typing import Type
 from typing import Union
 
-from . import logger
-from .dictionary import load_dict_from_file
+from planingfsi import logger
+from planingfsi.dictionary import load_dict_from_file
 
 DICT_NAME = "configDict"
 NUM_DIM = 2
