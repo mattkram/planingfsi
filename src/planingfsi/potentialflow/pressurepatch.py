@@ -215,12 +215,13 @@ class PressureCushion(PressurePatch):
         dict_: dict[str, Any] | None = None,
         /,
         *,
+        name: str = "",
         parent: "solver.PotentialPlaningSolver" | None = None,
     ) -> None:
         super().__init__(parent=parent)
         dict_ = dict_ or {}
         PressureCushion._count += 1
-        self.patch_name = dict_.get(
+        self.name = name or dict_.get(
             "pressureCushionName", f"pressureCushion{PressureCushion._count}"
         )
 
@@ -372,13 +373,14 @@ class PlaningSurface(PressurePatch):
         dict_: dict[str, Any] | None = None,
         /,
         *,
+        name: str = "",
         parent: "solver.PotentialPlaningSolver" | None = None,
     ) -> None:
         super().__init__(parent=parent)
         dict_ = dict_ or {}
         PlaningSurface._all.append(self)
 
-        self.name = dict_.get("substructureName", "")
+        self.name = name or dict_.get("substructureName", "")
         self.initial_length = dict_.get("initialLength")
         self.minimum_length = dict_.get("minimumLength", 0.0)
         self.maximum_length = dict_.get("maximum_length", float("Inf"))
