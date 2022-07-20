@@ -30,9 +30,10 @@ class PressurePatch(abc.ABC):
 
     """
 
+    name: str
+
     def __init__(self, *, parent: "solver.PotentialPlaningSolver" | None) -> None:
         self.parent = parent
-        self.patch_name = "AbstractPressurePatch"
         self.pressure_elements: list[pe.PressureElement] = []
         self._end_pts = np.zeros(2)
         self.is_kutta_unknown = False
@@ -162,9 +163,7 @@ class PressurePatch(abc.ABC):
     def _force_file_save_path(self) -> Path:
         """A path to the force file."""
         assert self.parent is not None
-        return (
-            self.parent.simulation.it_dir / f"forces_{self.patch_name}.{self.config.io.data_format}"
-        )
+        return self.parent.simulation.it_dir / f"forces_{self.name}.{self.config.io.data_format}"
 
     def write_forces(self) -> None:
         """Write forces to file."""
@@ -364,7 +363,7 @@ class PlaningSurface(PressurePatch):
         """
         if name:
             for obj in cls._all:
-                if obj.patch_name == name:
+                if obj.name == name:
                     return obj
         return None
 
@@ -379,7 +378,7 @@ class PlaningSurface(PressurePatch):
         dict_ = dict_ or {}
         PlaningSurface._all.append(self)
 
-        self.patch_name = dict_.get("substructureName", "")
+        self.name = dict_.get("substructureName", "")
         self.initial_length = dict_.get("initialLength")
         self.minimum_length = dict_.get("minimumLength", 0.0)
         self.maximum_length = dict_.get("maximum_length", float("Inf"))
