@@ -11,11 +11,12 @@ repos:
   hooks:
   - id: pretty-format-yaml
     args: [--autofix, --preserve-quotes, --indent, '2']
-- repo: https://github.com/asottile/reorder_python_imports
-  rev: v3.8.1
+- repo: https://github.com/pycqa/isort
+  rev: 5.10.1
   hooks:
-  - id: reorder-python-imports
-    args: [--application-directories, '.:src']
+  - id: isort
+    name: isort
+    args: ["--reverse-relative", "--force-single-line-imports"]
 - repo: https://github.com/psf/black
   rev: 22.6.0
   hooks:

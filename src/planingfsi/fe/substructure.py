@@ -1,5 +1,6 @@
 import abc
 from pathlib import Path
+from typing import TYPE_CHECKING
 from typing import Any
 from typing import Callable
 from typing import Dict
@@ -8,7 +9,6 @@ from typing import List
 from typing import Optional
 from typing import Tuple
 from typing import Type
-from typing import TYPE_CHECKING
 
 import numpy as np
 from scipy.interpolate import interp1d
@@ -19,13 +19,13 @@ from .. import logger
 from .. import math_helpers
 from .. import trig
 from .. import writers
-from ..config import Config
 from ..config import NUM_DIM
+from ..config import Config
 
 if TYPE_CHECKING:
-    from ..fsi.interpolator import Interpolator
     from .rigid_body import RigidBody
     from .structure import StructuralSolver
+    from ..fsi.interpolator import Interpolator
 
 
 class Substructure(abc.ABC):
