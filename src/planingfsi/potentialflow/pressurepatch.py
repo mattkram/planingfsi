@@ -23,6 +23,7 @@ class PressurePatch(abc.ABC):
     """Abstract base class representing a patch of pressure elements on the free surface.
 
     Attributes:
+        name: The name of the patch. Should be unique, but currently unenforced.
         pressure_elements: List of pressure elements.
         is_kutta_unknown: True of trailing edge pressure unknown.
         interpolator: Object to get interpolated body position if a `PlaningSurface`
@@ -202,7 +203,7 @@ class PressureCushion(PressurePatch):
         dict_: Dictionary containing patch definitions.
 
     Attributes:
-        patch_name (str): Name of patch
+        name (str): Name of patch
         cushion_type (str): The type of pressure cushion.
         cushion_pressure (float): The value of the pressure in the cushion.
 
