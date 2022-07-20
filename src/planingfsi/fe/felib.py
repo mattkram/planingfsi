@@ -1,9 +1,9 @@
+from __future__ import annotations
+
 import abc
 from typing import TYPE_CHECKING
 from typing import Any
-from typing import List
 from typing import Optional
-from typing import Tuple
 
 import numpy as np
 
@@ -16,14 +16,14 @@ if TYPE_CHECKING:
 
 
 class Node:
-    __all: List["Node"] = []
+    __all: list["Node"] = []
 
     @classmethod
     def get_index(cls, ind: int) -> "Node":
         return cls.__all[ind]
 
     @classmethod
-    def all(cls) -> List["Node"]:
+    def all(cls) -> list["Node"]:
         return list(cls.__all)
 
     @classmethod
@@ -49,7 +49,7 @@ class Node:
         self.x += dx
         self.y += dy
 
-    def get_coordinates(self) -> Tuple[float, float]:
+    def get_coordinates(self) -> tuple[float, float]:
         return self.x, self.y
 
     def plot(self, _: str = None) -> None:
@@ -59,13 +59,13 @@ class Node:
 
 
 class Element(abc.ABC):
-    __all: List["Element"] = []
+    __all: list["Element"] = []
 
     def __init__(self, parent: Optional["Substructure"] = None) -> None:
         self.element_num = len(Element.__all)
         Element.__all.append(self)
 
-        self.node: List[Node] = []
+        self.node: list[Node] = []
         self.dof = [0] * NUM_DIM
         self.length = 0.0
         self.initial_length: Optional[float] = None
@@ -81,7 +81,7 @@ class Element(abc.ABC):
         self.EA: Optional[float] = None
 
         self.gamma = 0.0
-        self.init_pos: List[np.ndarray] = []
+        self.init_pos: list[np.ndarray] = []
 
         self.parent = parent
 
@@ -109,7 +109,7 @@ class Element(abc.ABC):
         if EA is not None:
             self.EA = EA
 
-    def set_nodes(self, node_list: List[Node]) -> None:
+    def set_nodes(self, node_list: list[Node]) -> None:
         self.node = node_list
         self.dof = [dof for nd in self.node for dof in nd.dof]
         self.update_geometry()
@@ -147,7 +147,7 @@ class TrussElement(Element):
         self.initial_axial_force = 0.0
         self.EA = 0.0
 
-    def get_stiffness_and_force(self) -> Tuple[np.ndarray, np.ndarray]:
+    def get_stiffness_and_force(self) -> tuple[np.ndarray, np.ndarray]:
         # Stiffness matrices in local coordinates
         stiffness_linear_local = (
             np.array([[1, 0, -1, 0], [0, 0, 0, 0], [-1, 0, 1, 0], [0, 0, 0, 0]])

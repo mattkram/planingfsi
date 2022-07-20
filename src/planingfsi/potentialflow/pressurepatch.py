@@ -1,11 +1,10 @@
 """Classes representing a pressure patch on the free surface."""
+from __future__ import annotations
+
 import abc
 from pathlib import Path
 from typing import Any
-from typing import Dict
-from typing import List
 from typing import Optional
-from typing import Tuple
 
 import numpy as np
 from scipy.interpolate import interp1d
@@ -35,7 +34,7 @@ class PressurePatch(abc.ABC):
     def __init__(self, parent: "solver.PotentialPlaningSolver") -> None:
         self.parent = parent
         self.patch_name = "AbstractPressurePatch"
-        self.pressure_elements: List[pe.PressureElement] = []
+        self.pressure_elements: list[pe.PressureElement] = []
         self._end_pts = np.zeros(2)
         self.is_kutta_unknown = False
         self._neighbor_up: Optional["PressurePatch"] = None
@@ -207,7 +206,7 @@ class PressureCushion(PressurePatch):
 
     _count = 0
 
-    def __init__(self, parent: "solver.PotentialPlaningSolver", dict_: Dict[str, Any]) -> None:
+    def __init__(self, parent: "solver.PotentialPlaningSolver", dict_: dict[str, Any]) -> None:
         super().__init__(parent)
         PressureCushion._count += 1
         self.patch_name = dict_.get(
@@ -339,7 +338,7 @@ class PlaningSurface(PressurePatch):
     """Planing Surface consisting of unknown elements."""
 
     _count = 0
-    _all: List["PlaningSurface"] = []
+    _all: list["PlaningSurface"] = []
 
     @classmethod
     def find_by_name(cls, name: Optional[str]) -> Optional["PlaningSurface"]:
@@ -357,7 +356,7 @@ class PlaningSurface(PressurePatch):
                     return obj
         return None
 
-    def __init__(self, parent: "solver.PotentialPlaningSolver", dict_: Dict[str, Any]) -> None:
+    def __init__(self, parent: "solver.PotentialPlaningSolver", dict_: dict[str, Any]) -> None:
         super().__init__(parent)
         PlaningSurface._all.append(self)
 
@@ -535,7 +534,7 @@ class PlaningSurface(PressurePatch):
 
         self.drag_wave = self._calculate_wave_drag()
 
-    def get_loads_in_range(self, x0: float, x1: float) -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
+    def get_loads_in_range(self, x0: float, x1: float) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
         """Return pressure and shear stress values at points between two
         arguments.
         """

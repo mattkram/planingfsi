@@ -1,9 +1,8 @@
+from __future__ import annotations
+
 import os
 from typing import TYPE_CHECKING
 from typing import Any
-from typing import Dict
-from typing import List
-from typing import Type
 
 import numpy as np
 
@@ -27,7 +26,7 @@ class StructuralSolver:
 
     def __init__(self, simulation: "fsi_simulation.Simulation") -> None:
         self.simulation = simulation
-        self.rigid_body: List["rigid_body_mod.RigidBody"] = []
+        self.rigid_body: list["rigid_body_mod.RigidBody"] = []
         self.res = 1.0  # TODO: Can this be a property instead?
 
     @property
@@ -60,16 +59,16 @@ class StructuralSolver:
         return self.rigid_body[0].get_res_moment()
 
     @property
-    def substructure(self) -> List["Substructure"]:
+    def substructure(self) -> list["Substructure"]:
         """A combined list of substructures from all rigid bodies."""
         return [ss for body in self.rigid_body for ss in body.substructure]
 
     @property
-    def node(self) -> List["fe.Node"]:
+    def node(self) -> list["fe.Node"]:
         """A combined list of nodes from all substructures."""
         return [nd for ss in self.substructure for nd in ss.node]
 
-    def add_rigid_body(self, dict_: Dict[str, Any] = None) -> "rigid_body_mod.RigidBody":
+    def add_rigid_body(self, dict_: dict[str, Any] = None) -> "rigid_body_mod.RigidBody":
         """Add a rigid body to the structure.
 
         Args
@@ -83,7 +82,7 @@ class StructuralSolver:
         self.rigid_body.append(rigid_body)
         return rigid_body
 
-    def add_substructure(self, dict_: Dict[str, Any] = None) -> "Substructure":
+    def add_substructure(self, dict_: dict[str, Any] = None) -> "Substructure":
         """Add a substructure to the structure, whose type is determined at run-time.
 
         Args
@@ -101,7 +100,7 @@ class StructuralSolver:
             dict_ = {}
         # TODO: This logic is better handled by the factory pattern
         ss_type = dict_.get("substructureType", "rigid")
-        ss_class: Type[Substructure]
+        ss_class: type[Substructure]
         if ss_type.lower() == "flexible" or ss_type.lower() == "truss":
             ss_class = FlexibleSubstructure
         elif ss_type.lower() == "torsionalspring":
@@ -115,7 +114,7 @@ class StructuralSolver:
 
         return ss
 
-    def _assign_substructure_to_body(self, dict_: Dict[str, Any], ss: "Substructure") -> None:
+    def _assign_substructure_to_body(self, dict_: dict[str, Any], ss: "Substructure") -> None:
         """Find parent body and add substructure to it."""
         bodies = [b for b in self.rigid_body if b.name == dict_.get("bodyName", "default")]
         if bodies:

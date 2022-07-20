@@ -1,8 +1,9 @@
 """High-level control of a `planingfsi` simulation."""
+from __future__ import annotations
+
 import os
 from pathlib import Path
 from typing import TYPE_CHECKING
-from typing import List
 from typing import Optional
 from typing import Union
 
@@ -32,7 +33,7 @@ class Simulation:
 
     """
 
-    it_dirs: List[Path]
+    it_dirs: list[Path]
 
     def __init__(self) -> None:
         # TODO: Remove after circular dependencies resolved

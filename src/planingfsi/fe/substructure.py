@@ -1,14 +1,12 @@
+from __future__ import annotations
+
 import abc
+from collections.abc import Callable
+from collections.abc import Iterable
 from pathlib import Path
 from typing import TYPE_CHECKING
 from typing import Any
-from typing import Callable
-from typing import Dict
-from typing import Iterable
-from typing import List
 from typing import Optional
-from typing import Tuple
-from typing import Type
 
 import numpy as np
 from scipy.interpolate import interp1d
@@ -30,9 +28,9 @@ if TYPE_CHECKING:
 
 class Substructure(abc.ABC):
 
-    __all: List["Substructure"] = []
+    __all: list["Substructure"] = []
 
-    element_type: Type["fe.Element"]
+    element_type: type["fe.Element"]
 
     is_free = False
 
@@ -44,7 +42,7 @@ class Substructure(abc.ABC):
                 return o
         raise NameError(f"Cannot find Substructure with name {name}")
 
-    def __init__(self, dict_: Dict[str, Any], solver: "StructuralSolver"):
+    def __init__(self, dict_: dict[str, Any], solver: "StructuralSolver"):
         self.solver: StructuralSolver = solver
         self.index = len(self.__all)
         Substructure.__all.append(self)
@@ -70,8 +68,8 @@ class Substructure(abc.ABC):
         self.airS: Optional[np.ndarray] = None
         self.airP: Optional[np.ndarray] = None
         self.U: Optional[np.ndarray] = None
-        self.node: List[fe.Node] = []
-        self.el: List[fe.Element] = []
+        self.node: list[fe.Node] = []
+        self.el: list[fe.Element] = []
         self.parent: Optional[rigid_body.RigidBody] = None
         self.node_arc_length = np.zeros(len(self.node))
 
@@ -153,7 +151,7 @@ class Substructure(abc.ABC):
             )
 
     @staticmethod
-    def _extrap_coordinates(fxi: Callable, fyi: Callable) -> Tuple[Callable, Callable]:
+    def _extrap_coordinates(fxi: Callable, fyi: Callable) -> tuple[Callable, Callable]:
         """Return a new callable that provides extrapolation."""
 
         def extrap1d(interpolator: interp1d) -> Callable:
@@ -212,10 +210,10 @@ class Substructure(abc.ABC):
             nd.set_coordinates(xx, yy)
 
     def update_fluid_forces(self) -> None:
-        fluid_s: List[float] = []
-        fluid_p: List[float] = []
-        air_s: List[float] = []
-        air_p: List[float] = []
+        fluid_s: list[float] = []
+        fluid_p: list[float] = []
+        air_s: list[float] = []
+        air_p: list[float] = []
         self.D = 0.0
         self.L = 0.0
         self.M = 0.0
@@ -471,7 +469,7 @@ class Substructure(abc.ABC):
 
 class FlexibleSubstructure(Substructure):
 
-    __all: List["FlexibleSubstructure"] = []
+    __all: list["FlexibleSubstructure"] = []
     res = 0.0
     is_free = True
 
@@ -517,7 +515,7 @@ class FlexibleSubstructure(Substructure):
         for ss in cls.__all:
             ss.update_geometry()
 
-    def __init__(self, dict_: Dict[str, Any], **kwargs: Any):
+    def __init__(self, dict_: dict[str, Any], **kwargs: Any):
         super().__init__(dict_, **kwargs)
         self.__all.append(self)
         self.element_type = fe.TrussElement
@@ -612,7 +610,7 @@ class TorsionalSpringSubstructure(FlexibleSubstructure, RigidSubstructure):
     base_pt: np.ndarray
     is_free = True
 
-    def __init__(self, dict_: Dict[str, Any], **kwargs: Any):
+    def __init__(self, dict_: dict[str, Any], **kwargs: Any):
         super().__init__(dict_=dict_, **kwargs)
         self.parent = kwargs.get("parent")
         self.element_type = fe.RigidElement
@@ -663,10 +661,10 @@ class TorsionalSpringSubstructure(FlexibleSubstructure, RigidSubstructure):
             self.attached_element = self.attached_substructure.el[self.attached_ind]
 
     def update_fluid_forces(self) -> None:
-        fluidS: List[float] = []
-        fluidP: List[float] = []
-        airS: List[float] = []
-        airP: List[float] = []
+        fluidS: list[float] = []
+        fluidP: list[float] = []
+        airS: list[float] = []
+        airP: list[float] = []
         self.D = 0.0
         self.L = 0.0
         self.M = 0.0

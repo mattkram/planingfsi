@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import os
 import shutil
 from pathlib import Path
@@ -31,7 +33,7 @@ def run_case(tmpdir: Path, validation_base_dir: Path) -> RunCaseFunction:
 
     """
 
-    def f(case_name: str) -> Tuple[Path, Path]:
+    def f(case_name: str) -> tuple[Path, Path]:
         """Copy all input files from the base directory into the case directory and run the `mesh`
         and `run` CLI subcommands.
 

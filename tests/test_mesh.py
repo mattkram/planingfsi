@@ -2,9 +2,7 @@ from __future__ import annotations
 
 from pathlib import Path
 from typing import Any
-from typing import List
 from typing import Optional
-from typing import Type
 from typing import Union
 
 import numpy
@@ -45,7 +43,7 @@ def mesh() -> Mesh:
     ],
 )
 def test_add_point(
-    mesh: Mesh, method: str, position: List[Union[float, str]], expected_coords: List[float]
+    mesh: Mesh, method: str, position: list[Union[float, str]], expected_coords: list[float]
 ) -> None:
     """We can add points via different methods, and the coordinates should be as expected.
 
@@ -66,7 +64,7 @@ def test_add_point(
     ],
 )
 def test_add_point_error(
-    mesh: Mesh, method: str, position: List[Union[float, str]], expected_error: Type[Exception]
+    mesh: Mesh, method: str, position: list[Union[float, str]], expected_error: type[Exception]
 ) -> None:
     with pytest.raises(expected_error):
         mesh.add_point(1, method, position)
@@ -246,7 +244,7 @@ def test_point_init(kwargs: dict[str, Any], expected_id: Optional[int]) -> None:
 @pytest.mark.parametrize(
     "is_used, expected_is_dof_fixed", [(True, [False, False]), (False, [True, True])]
 )
-def test_point_is_used(is_used: bool, expected_is_dof_fixed: List[bool]) -> None:
+def test_point_is_used(is_used: bool, expected_is_dof_fixed: list[bool]) -> None:
     point = Point()
     point.is_used = is_used
     assert point.is_used == is_used

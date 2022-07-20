@@ -3,10 +3,9 @@ from __future__ import annotations
 
 import abc
 import itertools
+from collections.abc import Iterable
 from pathlib import Path
 from typing import Any
-from typing import Iterable
-from typing import List
 from typing import Optional
 from typing import Union
 
@@ -33,8 +32,8 @@ class Mesh:
     """
 
     def __init__(self) -> None:
-        self.points: List["Point"] = []
-        self.submesh: List["Submesh"] = []
+        self.points: list["Point"] = []
+        self.submesh: list["Submesh"] = []
         self.add_point(0, "dir", [0, 0])
 
     @property
@@ -481,9 +480,9 @@ class Point(_ShapeBase):
 class Curve(_ShapeBase):
     def __init__(self, id: Optional[int] = None, mesh: Optional[Mesh] = None):
         super().__init__(id=id, mesh=mesh)
-        self.pt: List[Point] = []
-        self.lines: List["Line"] = []
-        self._end_pts: List[Point] = []
+        self.pt: list[Point] = []
+        self.lines: list["Line"] = []
+        self._end_pts: list[Point] = []
         self.plot_sty = "b-"
 
         self.curvature = 0.0
@@ -579,10 +578,10 @@ class Curve(_ShapeBase):
             line.set_end_pts([ptSt, ptEnd])
             self.lines.append(line)
 
-    def set_pts(self, pt: List[Point]) -> None:
+    def set_pts(self, pt: list[Point]) -> None:
         self.pt = pt
 
-    def set_end_pts(self, end_pt: List[Point]) -> None:
+    def set_end_pts(self, end_pt: list[Point]) -> None:
         self._end_pts = end_pt
 
     def plot(self) -> None:
@@ -592,6 +591,6 @@ class Curve(_ShapeBase):
 
 
 class Line(Curve):
-    def set_end_pts(self, end_pt: List[Point]) -> None:
+    def set_end_pts(self, end_pt: list[Point]) -> None:
         super().set_end_pts(end_pt)
         self.set_pts(end_pt)

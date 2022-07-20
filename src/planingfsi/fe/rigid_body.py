@@ -1,7 +1,7 @@
+from __future__ import annotations
+
+from collections.abc import Callable
 from typing import Any
-from typing import Callable
-from typing import Dict
-from typing import List
 from typing import Optional
 
 import numpy as np
@@ -39,7 +39,7 @@ class RigidBody:
     time_step: float
     num_damp: int
 
-    def __init__(self, dict_: Dict[str, Any], parent: StructuralSolver):
+    def __init__(self, dict_: dict[str, Any], parent: StructuralSolver):
         self.parent = parent
         self.num_dim = 2
         self.draft = 0.0
@@ -153,8 +153,8 @@ class RigidBody:
                 self.trim_solver = None
                 self.draft_solver = None
 
-        self.substructure: List["substructure.Substructure"] = []
-        self.node: List[fe.Node] = []
+        self.substructure: list["substructure.Substructure"] = []
+        self.node: list[fe.Node] = []
 
         print(("Adding Rigid Body: {0}".format(self.name)))
 

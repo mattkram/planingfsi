@@ -1,7 +1,6 @@
+from __future__ import annotations
+
 from typing import Any
-from typing import Dict
-from typing import Tuple
-from typing import Type
 
 import numpy
 import pytest
@@ -34,7 +33,7 @@ def test_empty_solver_has_no_free_structure(solver: StructuralSolver) -> None:
     ],
 )
 def test_solver_with_rigid_body_has_free_structure(
-    solver: StructuralSolver, data: Dict[str, Any], expected: bool
+    solver: StructuralSolver, data: dict[str, Any], expected: bool
 ) -> None:
     """The solver has a free structure if any rigid body is free in trim or draft."""
     solver.add_rigid_body(data)
@@ -50,7 +49,7 @@ def test_solver_with_rigid_body_has_free_structure(
     ],
 )
 def test_solver_with_substructure_has_free_structure(
-    solver: StructuralSolver, class_: Type[ss.Substructure], expected: bool
+    solver: StructuralSolver, class_: type[ss.Substructure], expected: bool
 ) -> None:
     """
     If the rigid body contains a substructure of a type that is free to move,
@@ -63,7 +62,7 @@ def test_solver_with_substructure_has_free_structure(
 
 
 @pytest.fixture()
-def solver_with_body(solver: StructuralSolver) -> Tuple[StructuralSolver, RigidBody]:
+def solver_with_body(solver: StructuralSolver) -> tuple[StructuralSolver, RigidBody]:
     """Select parameters such that lift residual is simply abs(L-W)."""
     # These make the stagnation pressure equal to 1.0
     solver.config.flow.flow_speed = 1.0
@@ -80,7 +79,7 @@ def solver_with_body(solver: StructuralSolver) -> Tuple[StructuralSolver, RigidB
 
 @pytest.mark.parametrize("lift, expected", [(1.0, 1.0), (numpy.nan, 1.0), (2.0, 0.0)])
 def test_solver_lift_residual(
-    solver_with_body: Tuple[StructuralSolver, RigidBody], lift: float, expected: float
+    solver_with_body: tuple[StructuralSolver, RigidBody], lift: float, expected: float
 ) -> None:
     solver, body = solver_with_body
     body.L = lift
@@ -89,7 +88,7 @@ def test_solver_lift_residual(
 
 @pytest.mark.parametrize("moment, expected", [(1.0, 1.0), (numpy.nan, 1.0)])
 def test_solver_moment_residual(
-    solver_with_body: Tuple[StructuralSolver, RigidBody], moment: float, expected: float
+    solver_with_body: tuple[StructuralSolver, RigidBody], moment: float, expected: float
 ) -> None:
     # TODO: Need to cover change in CoG, CoR
     solver, body = solver_with_body

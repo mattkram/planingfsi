@@ -1,8 +1,8 @@
 """Fundamental module for constructing and solving planing potential flow problems."""
+from __future__ import annotations
+
 import weakref
 from typing import Any
-from typing import Dict
-from typing import List
 from typing import Optional
 
 import numpy as np
@@ -30,10 +30,10 @@ class PotentialPlaningSolver:
     def __init__(self, simulation: "fsi_simulation.Simulation"):
         self._simulation = weakref.ref(simulation)
 
-        self.planing_surfaces: List["pressurepatch.PlaningSurface"] = []
-        self.pressure_cushions: List["pressurepatch.PressureCushion"] = []
-        self.pressure_patches: List["pressurepatch.PressurePatch"] = []
-        self.pressure_elements: List[PressureElement] = []
+        self.planing_surfaces: list["pressurepatch.PlaningSurface"] = []
+        self.pressure_cushions: list["pressurepatch.PressureCushion"] = []
+        self.pressure_patches: list["pressurepatch.PressurePatch"] = []
+        self.pressure_elements: list[PressureElement] = []
 
         self.x_coord = np.array([])
         self.pressure = np.array([])
@@ -105,7 +105,7 @@ class PotentialPlaningSolver:
         self.pressure_patches.append(instance)
         self.pressure_elements.extend([el for el in instance.pressure_elements])
 
-    def add_planing_surface(self, dict_: Dict[str, Any]) -> "pressurepatch.PlaningSurface":
+    def add_planing_surface(self, dict_: dict[str, Any]) -> "pressurepatch.PlaningSurface":
         """Add planing surface to the calculation from a dictionary file name.
 
         Args:
@@ -120,7 +120,7 @@ class PotentialPlaningSolver:
         self._add_pressure_patch(instance)
         return instance
 
-    def add_pressure_cushion(self, dict_: Dict[str, Any]) -> "pressurepatch.PressureCushion":
+    def add_pressure_cushion(self, dict_: dict[str, Any]) -> "pressurepatch.PressureCushion":
         """Add pressure cushion to the calculation from a dictionary file name.
 
         Args:
@@ -303,7 +303,7 @@ class PotentialPlaningSolver:
 
     def calculate_free_surface_profile(self) -> None:
         """Calculate free surface profile."""
-        x_fs: List[float] = []
+        x_fs: list[float] = []
         for surf in self.planing_surfaces:
             if surf.length > 0:
                 # Add points from each planing surface

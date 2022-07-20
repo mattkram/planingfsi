@@ -1,6 +1,8 @@
 """Solvers for single and multi-dimensional nonlinear problems."""
+from __future__ import annotations
+
+from collections.abc import Callable
 from typing import Any
-from typing import Callable
 
 import numpy
 
