@@ -41,10 +41,10 @@ def main() -> None:
         "substructureName": "plate",
         "substructureType": "rigid",
         "hasPlaningSurface": True,
-        "Nfl": 40,
-        "pointSpacing": "cosine",
-        "kuttaPressure": 0.0,
-        "minimumLength": 0.01,
+        # "Nfl": 40,
+        # "pointSpacing": "cosine",
+        # "kuttaPressure": 0.0,
+        # "minimumLength": 0.01,
         "structInterpType": "cubic",
         "structExtrap": True,
         "sSepPctStart": 0.5,
@@ -53,7 +53,13 @@ def main() -> None:
 
     substructure = simulation.solid_solver.add_substructure(dict_)
     planing_surface = simulation.fluid_solver.add_planing_surface(
-        PlaningSurface(dict_, name="plate", initial_length=0.48)
+        PlaningSurface(
+            name="plate",
+            initial_length=0.48,
+            minimum_length=0.01,
+            num_fluid_elements=40,
+            point_spacing="cosine",
+        )
     )
     Interpolator(substructure, planing_surface, dict_)
 

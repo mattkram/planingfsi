@@ -4,6 +4,7 @@ from __future__ import annotations
 import abc
 from pathlib import Path
 from typing import Any
+from typing import Literal
 
 import numpy as np
 from scipy.interpolate import interp1d
@@ -372,41 +373,45 @@ class PlaningSurface(PressurePatch):
 
     def __init__(
         self,
-        dict_: dict[str, Any] | None = None,
-        /,
         *,
         name: str = "",
-        initial_length: float | None = None,
+        initial_length: float = 0.1,
+        minimum_length: float = 0.0,
+        maximum_length: float = float("Inf"),
+        num_fluid_elements: int = 1,
+        kutta_pressure: float | str = 0.0,
+        upstream_pressure: float = 0.0,
+        is_sprung: bool = False,
+        spring_constant: float = 1e4,
+        point_spacing: Literal["linear"] | Literal["cosine"] = "linear",
         parent: "solver.PotentialPlaningSolver" | None = None,
         **_: Any,
     ) -> None:
         super().__init__(parent=parent)
-        dict_ = dict_ or {}
         PlaningSurface._all.append(self)
 
         self.name = name
         self.initial_length = initial_length
-        self.minimum_length = dict_.get("minimumLength", 0.0)
-        self.maximum_length = dict_.get("maximum_length", float("Inf"))
+        self.minimum_length = minimum_length
+        self.maximum_length = maximum_length
 
-        self.spring_constant = dict_.get("springConstant", 1e4)
-        self.kutta_pressure = dict_.get("kuttaPressure", 0.0)
+        self.kutta_pressure = kutta_pressure
         if isinstance(self.kutta_pressure, str):
             self.kutta_pressure = getattr(self.config.body, self.kutta_pressure)
-        self._upstream_pressure = dict_.get("upstreamPressure", 0.0)
+        self._upstream_pressure = upstream_pressure
         if isinstance(self._upstream_pressure, str):
             self._upstream_pressure = getattr(self.config, self._upstream_pressure)
 
         self.is_initialized = False
         self.is_active = True
         self.is_kutta_unknown = True
-        self.is_sprung = dict_.get("isSprung", False)
+
+        self.is_sprung = is_sprung
+        self.spring_constant = spring_constant
         if self.is_sprung:
             self.initial_length = 0.0
             self.minimum_length = 0.0
             self.maximum_length = 0.0
-
-        num_elements = dict_.get("Nfl", 1)
 
         self.pressure_elements.append(
             pe.ForwardHalfTriangularPressureElement(parent=self, is_on_body=False)
@@ -417,7 +422,10 @@ class PlaningSurface(PressurePatch):
             )
         )
         self.pressure_elements.extend(
-            [pe.CompleteTriangularPressureElement(parent=self) for _ in range(num_elements - 1)]
+            [
+                pe.CompleteTriangularPressureElement(parent=self)
+                for _ in range(num_fluid_elements - 1)
+            ]
         )
         self.pressure_elements.append(
             pe.AftHalfTriangularPressureElement(
@@ -426,14 +434,15 @@ class PlaningSurface(PressurePatch):
         )
 
         # Define point spacing
-        point_spacing = dict_.get("pointSpacing", "linear")
         self.relative_position: np.ndarray
         if point_spacing == "cosine":
             self.relative_position = 0.5 * (
-                1 - trig.cosd(np.linspace(0.0, 180.0, num_elements + 1))
+                1 - trig.cosd(np.linspace(0.0, 180.0, num_fluid_elements + 1))
             )
+        elif point_spacing == "linear":
+            self.relative_position = np.linspace(0.0, 1.0, num_fluid_elements + 1)
         else:
-            self.relative_position = np.linspace(0.0, 1.0, num_elements + 1)
+            raise ValueError("point_spacing must be 'cosine' or 'linear'")
 
         self.relative_position /= self.relative_position[-2]
         self.relative_position = np.hstack((0.0, self.relative_position))

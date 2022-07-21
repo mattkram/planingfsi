@@ -119,8 +119,7 @@ class PotentialPlaningSolver:
         if isinstance(dict_or_instance, pressurepatch.PlaningSurface):
             instance = dict_or_instance
         elif dict_or_instance is not None:
-            # TODO: Once all the keys are mapped, we can remove the first argument
-            instance = pressurepatch.PlaningSurface(dict_or_instance, **dict_or_instance)
+            instance = pressurepatch.PlaningSurface(**dict_or_instance)
         else:
             instance = pressurepatch.PlaningSurface()
         instance.parent = self

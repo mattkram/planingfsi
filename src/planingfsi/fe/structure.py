@@ -98,6 +98,10 @@ class StructuralSolver:
 
         if dict_ is None:
             dict_ = {}
+
+        # TODO: Remove this remapping after name is added as a kwarg
+        dict_["substructureName"] = dict_["name"]
+
         # TODO: This logic is better handled by the factory pattern
         ss_type = dict_.get("substructureType", "rigid")
         ss_class: type[Substructure]

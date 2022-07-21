@@ -117,6 +117,14 @@ class Simulation:
                 key_map={
                     "substructureName": "name",
                     "initialLength": "initial_length",
+                    "Nfl": "num_fluid_elements",
+                    "minimumLength": "minimum_length",
+                    "maximumLength": "maximum_length",
+                    "kuttaPressure": "kutta_pressure",
+                    "upstreamPressure": "upstream_pressure",
+                    "isSprung": "is_sprung",
+                    "springConstant": "spring_constant",
+                    "pointSpacing": "point_spacing",
                 },
             )
             substructure = self.solid_solver.add_substructure(dict_)
