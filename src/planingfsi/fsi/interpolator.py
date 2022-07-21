@@ -25,7 +25,9 @@ class Interpolator:
         self.fluid.interpolator = self
 
         self.solid_position_function: Callable[[float], np.ndarray] | None = solid.get_coordinates
-        self.fluid_pressure_function: Callable[[float, float], np.ndarray] | None = fluid.get_loads_in_range
+        self.fluid_pressure_function: Callable[
+            [float, float], np.ndarray
+        ] | None = fluid.get_loads_in_range
         self.get_body_height = self.get_surface_height_fixed_x
 
         self._separation_arclength: float | None = None
