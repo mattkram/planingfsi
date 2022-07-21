@@ -1,6 +1,7 @@
 from planingfsi import Mesh
 from planingfsi.fsi.interpolator import Interpolator
 from planingfsi.fsi.simulation import Simulation
+from planingfsi.potentialflow.pressurepatch import PlaningSurface
 
 
 def generate_mesh(angle_of_attack: float) -> Mesh:
@@ -52,7 +53,7 @@ def main() -> None:
     }
 
     substructure = simulation.solid_solver.add_substructure(dict_)
-    planing_surface = simulation.fluid_solver.add_planing_surface(dict_)
+    planing_surface = simulation.fluid_solver.add_planing_surface(PlaningSurface(dict_))
     Interpolator(substructure, planing_surface, dict_)
 
     simulation.run()
