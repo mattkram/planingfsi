@@ -16,7 +16,11 @@ class Interpolator:
         self,
         solid: "substructure.Substructure",
         fluid: "pressurepatch.PlaningSurface",
-        dict_: dict[str, Any] = None,
+        *,
+        waterline_height: float = 0.0,
+        separation_arclength_start_pct: float = 0.5,
+        immersion_arclength_start_pct: float = 0.9,
+        **_: Any,
     ):
         self.solid = solid
         self.fluid = fluid
@@ -24,21 +28,18 @@ class Interpolator:
         self.solid.interpolator = self
         self.fluid.interpolator = self
 
-        self.solid_position_function: Callable[[float], np.ndarray] | None = solid.get_coordinates
+        self.solid_position_function: Callable[[float], np.ndarray] = solid.get_coordinates
         self.fluid_pressure_function: Callable[
-            [float, float], np.ndarray
-        ] | None = fluid.get_loads_in_range
+            [float, float], tuple[np.ndarray, np.ndarray, np.ndarray]
+        ] = fluid.get_loads_in_range
         self.get_body_height = self.get_surface_height_fixed_x
 
         self._separation_arclength: float | None = None
         self._immersed_arclength: float | None = None
 
-        if dict_ is None:
-            dict_ = {}
-
-        self._waterline_height = dict_.get("waterline_height", 0.0)
-        self.sSepPctStart = dict_.get("sSepPctStart", 0.5)
-        self.sImmPctStart = dict_.get("sImmPctStart", 0.9)
+        self._waterline_height = waterline_height
+        self._separation_arclength_start_pct = separation_arclength_start_pct
+        self._immersion_arclength_start_pct = immersion_arclength_start_pct
 
     def get_surface_height_fixed_x(self, x: float) -> float:
         s = np.max([self.get_s_fixed_x(x, 0.5), 0.0])
@@ -61,7 +62,7 @@ class Interpolator:
     @property
     def immersed_length(self) -> float:
         if self._immersed_arclength is None:
-            self._immersed_arclength = self.sImmPctStart * self.solid.arc_length
+            self._immersed_arclength = self._immersion_arclength_start_pct * self.solid.arc_length
 
         self._immersed_arclength = fzero(
             lambda s: self.get_coordinates(s)[1] - self._waterline_height,
@@ -75,7 +76,9 @@ class Interpolator:
             return self.get_coordinates(s)[1]
 
         if self._separation_arclength is None:
-            self._separation_arclength = self.sSepPctStart * self.solid.arc_length
+            self._separation_arclength = (
+                self._separation_arclength_start_pct * self.solid.arc_length
+            )
 
         self._separation_arclength = fmin(
             get_y_coords, self._separation_arclength, disp=False, xtol=1e-6

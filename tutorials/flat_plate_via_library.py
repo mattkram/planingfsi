@@ -43,8 +43,6 @@ def main() -> None:
         "hasPlaningSurface": True,
         "structInterpType": "cubic",
         "structExtrap": True,
-        "sSepPctStart": 0.5,
-        "waterline_height": 0.0,
     }
 
     substructure = simulation.solid_solver.add_substructure(dict_)
@@ -57,7 +55,7 @@ def main() -> None:
             point_spacing="cosine",
         )
     )
-    Interpolator(substructure, planing_surface, dict_)
+    Interpolator(substructure, planing_surface)
 
     simulation.run()
 
