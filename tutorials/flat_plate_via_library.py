@@ -38,6 +38,7 @@ def main() -> None:
     simulation.solid_solver.add_rigid_body()
 
     dict_ = {
+        "substructureName": "plate",
         "substructureType": "rigid",
         "hasPlaningSurface": True,
         "Nfl": 40,
