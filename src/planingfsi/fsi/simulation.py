@@ -112,7 +112,13 @@ class Simulation:
         from planingfsi.fsi.interpolator import Interpolator
 
         for dict_path in Path(self.config.path.input_dict_dir).glob("*"):
-            dict_ = load_dict_from_file(dict_path)
+            dict_ = load_dict_from_file(
+                dict_path,
+                key_map={
+                    "substructureName": "name",
+                    "initialLength": "initial_length",
+                },
+            )
             substructure = self.solid_solver.add_substructure(dict_)
 
             if dict_.get("hasPlaningSurface", False):

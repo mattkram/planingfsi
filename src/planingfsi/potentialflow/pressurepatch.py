@@ -359,6 +359,7 @@ class PlaningSurface(PressurePatch):
 
         Args:
             name: The name of the planing surface.
+            initial_length: An initial guessed wetted length of the planing surface.
         Returns:
             PlaningSurface instance or None of no match found.
 
@@ -375,14 +376,16 @@ class PlaningSurface(PressurePatch):
         /,
         *,
         name: str = "",
+        initial_length: float | None = None,
         parent: "solver.PotentialPlaningSolver" | None = None,
+        **_: Any,
     ) -> None:
         super().__init__(parent=parent)
         dict_ = dict_ or {}
         PlaningSurface._all.append(self)
 
-        self.name = name or dict_.get("substructureName", "")
-        self.initial_length = dict_.get("initialLength")
+        self.name = name
+        self.initial_length = initial_length
         self.minimum_length = dict_.get("minimumLength", 0.0)
         self.maximum_length = dict_.get("maximum_length", float("Inf"))
 
