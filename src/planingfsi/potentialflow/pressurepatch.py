@@ -349,7 +349,22 @@ class PressureCushion(PressurePatch):
 
 
 class PlaningSurface(PressurePatch):
-    """Planing Surface consisting of unknown elements."""
+    """Planing Surface consisting of unknown elements.
+
+    Attributes:
+        name: The name of the planing surface (should be unique, but that is unenforced).
+        initial_length: An initial guessed wetted length of the planing surface.
+        minimum_length: The minimum length of the surface allowed to be wetted.
+        maximum_length: The maximum length of the surface allowed to be wetted.
+        num_fluid_elements: The number of elements to discretize surface into.
+        point_spacing: Method to use for distributing pressure elements. Either "linear" or "cosine".
+        kutta_pressure: The target pressure at the trailing edge.
+        upstream_pressure: The target pressure upstream of the stagnation point.
+        is_sprung: If true, contribution due to numerical spring is added to the lift force.
+        spring_constant: The spring constant.
+        parent: The solver to which this planing surface belongs.
+
+    """
 
     _count = 0
     _all: list["PlaningSurface"] = []
@@ -360,7 +375,7 @@ class PlaningSurface(PressurePatch):
 
         Args:
             name: The name of the planing surface.
-            initial_length: An initial guessed wetted length of the planing surface.
+
         Returns:
             PlaningSurface instance or None of no match found.
 
@@ -379,11 +394,11 @@ class PlaningSurface(PressurePatch):
         minimum_length: float = 0.0,
         maximum_length: float = float("Inf"),
         num_fluid_elements: int = 1,
+        point_spacing: Literal["linear"] | Literal["cosine"] = "linear",
         kutta_pressure: float | str = 0.0,
         upstream_pressure: float = 0.0,
         is_sprung: bool = False,
         spring_constant: float = 1e4,
-        point_spacing: Literal["linear"] | Literal["cosine"] = "linear",
         parent: "solver.PotentialPlaningSolver" | None = None,
         **_: Any,
     ) -> None:
