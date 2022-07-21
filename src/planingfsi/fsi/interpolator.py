@@ -1,21 +1,24 @@
 from __future__ import annotations
 
 from collections.abc import Callable
+from typing import TYPE_CHECKING
 from typing import Any
 
 import numpy as np
 from scipy.optimize import fmin
 
-from planingfsi.fe import substructure
-from planingfsi.potentialflow import pressurepatch
 from planingfsi.solver import fzero
+
+if TYPE_CHECKING:
+    from planingfsi.fe.substructure import Substructure
+    from planingfsi.potentialflow.pressurepatch import PlaningSurface
 
 
 class Interpolator:
     def __init__(
         self,
-        solid: "substructure.Substructure",
-        fluid: "pressurepatch.PlaningSurface",
+        solid: Substructure,
+        fluid: PlaningSurface,
         *,
         waterline_height: float = 0.0,
         separation_arclength_start_pct: float = 0.5,

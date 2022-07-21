@@ -108,9 +108,6 @@ class Simulation:
 
     def _load_substructures(self) -> None:
         """Load all substructures from files."""
-        # TODO: This is here due to circular import, but can be removed with TODO below
-        from planingfsi.fsi.interpolator import Interpolator
-
         for dict_path in Path(self.config.path.input_dict_dir).glob("*"):
             dict_ = load_dict_from_file(
                 dict_path,
@@ -130,15 +127,14 @@ class Simulation:
                     "sImmPctStart": "immersion_arclength_start_pct",
                 },
             )
+            # TODO: This default fallback to config could be handled in the PlaningSurface class
+            dict_.setdefault("waterline_height", self.config.flow.waterline_height)
+
             substructure = self.solid_solver.add_substructure(dict_)
 
             if dict_.get("hasPlaningSurface", False):
                 planing_surface = self.fluid_solver.add_planing_surface(dict_)
-                # TODO: This default fallback to config could be handled in the PlaningSurface class
-                dict_.setdefault("waterline_height", self.config.flow.waterline_height)
-                # TODO: This should probably be handled by assigning the planing surface to the
-                #       substructure, instead of instantiating an object.
-                Interpolator(substructure, planing_surface, **dict_)
+                substructure.add_planing_surface(planing_surface, **dict_)
         print(f"Substructures: {self.solid_solver.substructure}")
 
     def _load_pressure_cushions(self) -> None:

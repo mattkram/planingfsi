@@ -18,11 +18,12 @@ from planingfsi.config import NUM_DIM
 from planingfsi.config import Config
 from planingfsi.fe import felib as fe
 from planingfsi.fe import rigid_body
+from planingfsi.fsi.interpolator import Interpolator
 
 if TYPE_CHECKING:
     from planingfsi.fe.rigid_body import RigidBody
     from planingfsi.fe.structure import StructuralSolver
-    from planingfsi.fsi.interpolator import Interpolator
+    from planingfsi.potentialflow.pressurepatch import PlaningSurface
 
 
 class Substructure(abc.ABC):
@@ -96,6 +97,19 @@ class Substructure(abc.ABC):
             logger.warning("No parent assigned, ramp will be set to 1.0.")
             return 1.0
         return self.solver.simulation.ramp
+
+    def add_planing_surface(self, planing_surface: PlaningSurface, **kwargs: Any) -> None:
+        """Add a planing surface to the substructure, and configure the interpolator.
+
+        Args:
+            planing_surface: The planing surface.
+            **kwargs: Keyword arguments to pass through to the Interpolator.
+
+        """
+        # Assign the same interpolator to both the substructure and planing_surface
+        planing_surface.interpolator = self.interpolator = Interpolator(
+            self, planing_surface, **kwargs
+        )
 
     def set_element_properties(self) -> None:
         """Set the properties of each element."""
