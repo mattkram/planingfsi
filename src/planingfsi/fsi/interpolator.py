@@ -40,9 +40,6 @@ class Interpolator:
         self.sSepPctStart = dict_.get("sSepPctStart", 0.5)
         self.sImmPctStart = dict_.get("sImmPctStart", 0.9)
 
-    def set_body_height_function(self, func_name: str) -> None:
-        self.get_body_height = getattr(self, func_name)
-
     def get_surface_height_fixed_x(self, x: float) -> float:
         s = np.max([self.get_s_fixed_x(x, 0.5), 0.0])
         return self.get_coordinates(s)[1]
