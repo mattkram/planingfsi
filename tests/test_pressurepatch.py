@@ -24,7 +24,7 @@ def test_must_set_parent_to_access_config() -> None:
     "named_pressure_patch",
     [
         PlaningSurface({"substructureName": TEST_NAME}),
-        PlaningSurface(name=TEST_NAME),
+        PlaningSurface({"substructureName": "wrong_name"}, name=TEST_NAME),
         PressureCushion(
             {"pressureCushionName": TEST_NAME, "cushionPressure": 0.0},
             parent=PotentialPlaningSolver(Simulation()),
