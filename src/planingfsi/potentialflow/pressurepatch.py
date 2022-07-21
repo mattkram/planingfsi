@@ -360,7 +360,8 @@ class PlaningSurface(PressurePatch):
         point_spacing: Method to use for distributing pressure elements. Either "linear" or "cosine".
         kutta_pressure: The target pressure at the trailing edge.
         upstream_pressure: The target pressure upstream of the stagnation point.
-        is_sprung: If true, contribution due to numerical spring is added to the lift force.
+        is_sprung: If true, contribution due to numerical spring is added to the lift force in order to ensure
+            the tip of the surface lies on the free surface.
         spring_constant: The spring constant.
         parent: The solver to which this planing surface belongs.
 
