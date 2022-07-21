@@ -38,7 +38,6 @@ def main() -> None:
     simulation.solid_solver.add_rigid_body()
 
     dict_ = {
-        "substructureName": "plate",
         "substructureType": "rigid",
         "hasPlaningSurface": True,
         "Nfl": 40,
@@ -53,7 +52,9 @@ def main() -> None:
     }
 
     substructure = simulation.solid_solver.add_substructure(dict_)
-    planing_surface = simulation.fluid_solver.add_planing_surface(PlaningSurface(dict_))
+    planing_surface = simulation.fluid_solver.add_planing_surface(
+        PlaningSurface(dict_, name="plate")
+    )
     Interpolator(substructure, planing_surface, dict_)
 
     simulation.run()
