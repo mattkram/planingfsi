@@ -1,9 +1,10 @@
+from __future__ import annotations
+
 import os
+from collections.abc import Callable
 from pathlib import Path
 from typing import TYPE_CHECKING
 from typing import Any
-from typing import Callable
-from typing import List
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -38,7 +39,7 @@ class FSIFigure:
                 (el.lineEl0,) = plt.plot([], [], "k--")
                 (el.lineEl,) = plt.plot([], [], "k-", linewidth=2)
 
-        self.lineCofR: List["CofRPlot"] = []
+        self.lineCofR: list["CofRPlot"] = []
         for bodies in self.solid.rigid_body:
             CofRPlot(
                 self.geometry_ax,
@@ -99,7 +100,7 @@ class FSIFigure:
         plt.gca().set_aspect("equal")
         self.TXT = plt.text(0.05, 0.95, "", ha="left", va="top", transform=plt.gca().transAxes)
 
-        self.subplot: List["TimeHistory"] = []
+        self.subplot: list["TimeHistory"] = []
 
         if self.solid.rigid_body:
             body = self.solid.rigid_body[0]
@@ -177,9 +178,9 @@ class PlotSeries:
     def __init__(
         self, x_func: Callable[[], float], y_func: Callable[[], float], **kwargs: Any
     ) -> None:
-        self.x: List[float] = []
-        self.y: List[float] = []
-        self.additionalSeries: List["PlotSeries"] = []
+        self.x: list[float] = []
+        self.y: list[float] = []
+        self.additionalSeries: list["PlotSeries"] = []
 
         self.get_x = x_func
         self.get_y = y_func
@@ -225,10 +226,10 @@ class PlotSeries:
 
 
 class TimeHistory:
-    def __init__(self, pos: List[float], name: str = "default", *, parent: FSIFigure) -> None:
+    def __init__(self, pos: list[float], name: str = "default", *, parent: FSIFigure) -> None:
         self.parent = parent
-        self.series: List["PlotSeries"] = []
-        self.ax: List[Axes] = []
+        self.series: list["PlotSeries"] = []
+        self.ax: list[Axes] = []
         self.title = ""
         self.xlabel = ""
         self.ylabel = ""
@@ -298,7 +299,7 @@ class TimeHistory:
 
 
 class MotionSubplot(TimeHistory):
-    def __init__(self, pos: List[float], body: "rigid_body.RigidBody", parent: FSIFigure):
+    def __init__(self, pos: list[float], body: "rigid_body.RigidBody", parent: FSIFigure):
         TimeHistory.__init__(self, pos, body.name, parent=parent)
 
         def itFunc() -> float:
@@ -344,7 +345,7 @@ class MotionSubplot(TimeHistory):
 
 
 class ForceSubplot(TimeHistory):
-    def __init__(self, pos: List[float], body: "rigid_body.RigidBody", parent: FSIFigure):
+    def __init__(self, pos: list[float], body: "rigid_body.RigidBody", parent: FSIFigure):
         TimeHistory.__init__(self, pos, body.name, parent=parent)
 
         def itFunc() -> float:
@@ -399,7 +400,7 @@ class ForceSubplot(TimeHistory):
 
 
 class ResidualSubplot(TimeHistory):
-    def __init__(self, pos: List[float], solid: "StructuralSolver", parent: FSIFigure):
+    def __init__(self, pos: list[float], solid: "StructuralSolver", parent: FSIFigure):
         TimeHistory.__init__(self, pos, "residuals", parent=parent)
 
         def itFunc() -> float:

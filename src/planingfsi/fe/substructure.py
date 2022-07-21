@@ -1,14 +1,11 @@
+from __future__ import annotations
+
 import abc
+from collections.abc import Callable
+from collections.abc import Iterable
 from pathlib import Path
 from typing import TYPE_CHECKING
 from typing import Any
-from typing import Callable
-from typing import Dict
-from typing import Iterable
-from typing import List
-from typing import Optional
-from typing import Tuple
-from typing import Type
 
 import numpy as np
 from scipy.interpolate import interp1d
@@ -30,9 +27,9 @@ if TYPE_CHECKING:
 
 class Substructure(abc.ABC):
 
-    __all: List["Substructure"] = []
+    __all: list["Substructure"] = []
 
-    element_type: Type["fe.Element"]
+    element_type: type[fe.Element]
 
     is_free = False
 
@@ -44,7 +41,7 @@ class Substructure(abc.ABC):
                 return o
         raise NameError(f"Cannot find Substructure with name {name}")
 
-    def __init__(self, dict_: Dict[str, Any], solver: "StructuralSolver"):
+    def __init__(self, dict_: dict[str, Any], solver: "StructuralSolver"):
         self.solver: StructuralSolver = solver
         self.index = len(self.__all)
         Substructure.__all.append(self)
@@ -52,7 +49,7 @@ class Substructure(abc.ABC):
         self.dict_ = dict_
         self.name = self.dict_.get("substructureName", "")
         self.type_ = self.dict_.get("substructureType", "rigid")
-        self.interpolator: Optional["Interpolator"] = None
+        self.interpolator: Interpolator | None = None
 
         self.seal_pressure = self.get_or_config("Ps", 0.0)
         self.seal_pressure_method = self.dict_.get("PsMethod", "constant")
@@ -65,14 +62,14 @@ class Substructure(abc.ABC):
         self.struct_extrap = self.dict_.get("structExtrap", True)
         self.line_fluid_pressure = None
         self.line_air_pressure = None
-        self.fluidS: Optional[np.ndarray] = None
-        self.fluidP: Optional[np.ndarray] = None
-        self.airS: Optional[np.ndarray] = None
-        self.airP: Optional[np.ndarray] = None
-        self.U: Optional[np.ndarray] = None
-        self.node: List[fe.Node] = []
-        self.el: List[fe.Element] = []
-        self.parent: Optional[rigid_body.RigidBody] = None
+        self.fluidS: np.ndarray | None = None
+        self.fluidP: np.ndarray | None = None
+        self.airS: np.ndarray | None = None
+        self.airP: np.ndarray | None = None
+        self.U: np.ndarray | None = None
+        self.node: list[fe.Node] = []
+        self.el: list[fe.Element] = []
+        self.parent: rigid_body.RigidBody | None = None
         self.node_arc_length = np.zeros(len(self.node))
 
         self.D = 0.0
@@ -84,8 +81,8 @@ class Substructure(abc.ABC):
         self.La = 0.0
         self.Ma = 0.0
 
-        self.interp_func_x: Optional[interp1d] = None
-        self.interp_func_y: Optional[interp1d] = None
+        self.interp_func_x: interp1d | None = None
+        self.interp_func_y: interp1d | None = None
 
     @property
     def config(self) -> Config:
@@ -153,7 +150,7 @@ class Substructure(abc.ABC):
             )
 
     @staticmethod
-    def _extrap_coordinates(fxi: Callable, fyi: Callable) -> Tuple[Callable, Callable]:
+    def _extrap_coordinates(fxi: Callable, fyi: Callable) -> tuple[Callable, Callable]:
         """Return a new callable that provides extrapolation."""
 
         def extrap1d(interpolator: interp1d) -> Callable:
@@ -212,10 +209,10 @@ class Substructure(abc.ABC):
             nd.set_coordinates(xx, yy)
 
     def update_fluid_forces(self) -> None:
-        fluid_s: List[float] = []
-        fluid_p: List[float] = []
-        air_s: List[float] = []
-        air_p: List[float] = []
+        fluid_s: list[float] = []
+        fluid_p: list[float] = []
+        air_s: list[float] = []
+        air_p: list[float] = []
         self.D = 0.0
         self.L = 0.0
         self.M = 0.0
@@ -471,7 +468,7 @@ class Substructure(abc.ABC):
 
 class FlexibleSubstructure(Substructure):
 
-    __all: List["FlexibleSubstructure"] = []
+    __all: list["FlexibleSubstructure"] = []
     res = 0.0
     is_free = True
 
@@ -517,16 +514,16 @@ class FlexibleSubstructure(Substructure):
         for ss in cls.__all:
             ss.update_geometry()
 
-    def __init__(self, dict_: Dict[str, Any], **kwargs: Any):
+    def __init__(self, dict_: dict[str, Any], **kwargs: Any):
         super().__init__(dict_, **kwargs)
         self.__all.append(self)
         self.element_type = fe.TrussElement
         self.pretension = dict_.get("pretension", -0.5)
         self.EA = dict_.get("EA", 5e7)
 
-        self.K: Optional[np.ndarray] = None
-        self.F: Optional[np.ndarray] = None
-        self.U: Optional[np.ndarray] = None
+        self.K: np.ndarray | None = None
+        self.F: np.ndarray | None = None
+        self.U: np.ndarray | None = None
 
     def get_residual(self) -> float:
         return np.max(np.abs(self.U))
@@ -612,7 +609,7 @@ class TorsionalSpringSubstructure(FlexibleSubstructure, RigidSubstructure):
     base_pt: np.ndarray
     is_free = True
 
-    def __init__(self, dict_: Dict[str, Any], **kwargs: Any):
+    def __init__(self, dict_: dict[str, Any], **kwargs: Any):
         super().__init__(dict_=dict_, **kwargs)
         self.parent = kwargs.get("parent")
         self.element_type = fe.RigidElement
@@ -621,15 +618,15 @@ class TorsionalSpringSubstructure(FlexibleSubstructure, RigidSubstructure):
         self.spring_constant = dict_.get("spring_constant", 1000.0)
         self.theta = 0.0
         self.Mt = 0.0  # TODO
-        self.MOld: Optional[float] = None
+        self.MOld: float | None = None
         self.relax = dict_.get("relaxAng", self.config.body.relax_rigid_body)
         self.attach_pct = dict_.get("attachPct", 0.0)
-        self.attached_node: Optional[fe.Node] = None
-        self.attached_element: Optional[fe.Element] = None
+        self.attached_node: fe.Node | None = None
+        self.attached_element: fe.Element | None = None
         self.minimum_angle = dict_.get("minimumAngle", -float("Inf"))
         self.max_angle_step = dict_.get("maxAngleStep", float("Inf"))
         self.attached_ind = 0
-        self.attached_substructure: Optional[Substructure] = None
+        self.attached_substructure: Substructure | None = None
         self.residual = 1.0
 
     def load_mesh(self) -> None:
@@ -663,10 +660,10 @@ class TorsionalSpringSubstructure(FlexibleSubstructure, RigidSubstructure):
             self.attached_element = self.attached_substructure.el[self.attached_ind]
 
     def update_fluid_forces(self) -> None:
-        fluidS: List[float] = []
-        fluidP: List[float] = []
-        airS: List[float] = []
-        airP: List[float] = []
+        fluidS: list[float] = []
+        fluidP: list[float] = []
+        airS: list[float] = []
+        airP: list[float] = []
         self.D = 0.0
         self.L = 0.0
         self.M = 0.0

@@ -1,8 +1,8 @@
 """Module containing definitions of different types of pressure element."""
+from __future__ import annotations
+
 import abc
 from typing import Any
-from typing import Tuple
-from typing import Union
 
 import numpy as np
 from scipy.special import sici
@@ -12,7 +12,7 @@ from planingfsi.config import Config
 from planingfsi.potentialflow import pressurepatch
 
 
-def _get_aux_fg(lam: float) -> Tuple[float, float]:
+def _get_aux_fg(lam: float) -> tuple[float, float]:
     """Return f and g functions, which are dependent on the auxiliary
     sine and cosine functions. Combined into one function to reduce number of
     calls to scipy.special.sici().
@@ -120,7 +120,7 @@ class PressureElement(abc.ABC):
         z_coord: float = np.nan,
         pressure: float = np.nan,
         shear_stress: float = 0.0,
-        width: Union[np.ndarray, float] = np.nan,
+        width: np.ndarray | float = np.nan,
         is_source: bool = False,
         is_on_body: bool = False,
         parent: "pressurepatch.PressurePatch" = None,
@@ -215,7 +215,7 @@ class PressureElement(abc.ABC):
         )
 
     @property
-    def plot_coords(self) -> Tuple[np.ndarray, np.ndarray]:
+    def plot_coords(self) -> tuple[np.ndarray, np.ndarray]:
         """Coordinates for pressure plot."""
         return np.array([]), np.array([])
 
@@ -251,7 +251,7 @@ class AftHalfTriangularPressureElement(PressureElement):
         return influence
 
     @property
-    def plot_coords(self) -> Tuple[np.ndarray, np.ndarray]:
+    def plot_coords(self) -> tuple[np.ndarray, np.ndarray]:
         """Coordinates for pressure plot."""
         return self.x_coord - np.array([self.width, 0]), np.array([0.0, self.pressure])
 
@@ -299,7 +299,7 @@ class ForwardHalfTriangularPressureElement(PressureElement):
         return influence
 
     @property
-    def plot_coords(self) -> Tuple[np.ndarray, np.ndarray]:
+    def plot_coords(self) -> tuple[np.ndarray, np.ndarray]:
         """Coordinates for pressure plot."""
         return self.x_coord + np.array([0.0, self.width]), np.array([self.pressure, 0.0])
 
@@ -359,7 +359,7 @@ class CompleteTriangularPressureElement(PressureElement):
         return influence / self.config.flow.k0
 
     @property
-    def plot_coords(self) -> Tuple[np.ndarray, np.ndarray]:
+    def plot_coords(self) -> tuple[np.ndarray, np.ndarray]:
         """Coordinates for pressure plot."""
         return (
             self.x_coord + np.array([-self._width[0], 0.0, self._width[1]]),
@@ -385,7 +385,7 @@ class AftSemiInfinitePressureBand(PressureElement):
         return influence
 
     @property
-    def plot_coords(self) -> Tuple[np.ndarray, np.ndarray]:
+    def plot_coords(self) -> tuple[np.ndarray, np.ndarray]:
         """Coordinates for pressure plot."""
         return (
             np.array([self.config.plotting.x_fs_min, self.x_coord]),
@@ -413,7 +413,7 @@ class ForwardSemiInfinitePressureBand(PressureElement):
         return influence
 
     @property
-    def plot_coords(self) -> Tuple[np.ndarray, np.ndarray]:
+    def plot_coords(self) -> tuple[np.ndarray, np.ndarray]:
         """Coordinates for pressure plot."""
         return (
             np.array([self.x_coord, self.config.plotting.x_fs_max]),

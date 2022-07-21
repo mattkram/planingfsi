@@ -1,11 +1,11 @@
+from __future__ import annotations
+
 import json
 import os
 import re
 from pathlib import Path
+from re import Match
 from typing import Any
-from typing import Dict
-from typing import Match
-from typing import Union
 
 from planingfsi import logger
 from planingfsi import unit  # noqa: F401
@@ -83,7 +83,7 @@ def jsonify_string(string: str) -> str:
     return string
 
 
-def load_dict_from_file(filename: Union[Path, str]) -> Dict[str, Any]:
+def load_dict_from_file(filename: Path | str) -> dict[str, Any]:
     """Read a file, which is a less strict JSON format, and return a dictionary."""
     logger.debug('Loading Dictionary from file "{}"'.format(filename))
 
@@ -109,7 +109,7 @@ def load_dict_from_file(filename: Union[Path, str]) -> Dict[str, Any]:
     return dict_
 
 
-def load_dict_from_string(string: str) -> Dict[str, Any]:
+def load_dict_from_string(string: str) -> dict[str, Any]:
     """Convert string to JSON string, convert to a dictionary, and return."""
     logger.debug('Loading Dictionary from string: "{}"'.format(string))
 

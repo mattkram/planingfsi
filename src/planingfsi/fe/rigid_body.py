@@ -1,8 +1,7 @@
+from __future__ import annotations
+
+from collections.abc import Callable
 from typing import Any
-from typing import Callable
-from typing import Dict
-from typing import List
-from typing import Optional
 
 import numpy as np
 
@@ -39,7 +38,7 @@ class RigidBody:
     time_step: float
     num_damp: int
 
-    def __init__(self, dict_: Dict[str, Any], parent: StructuralSolver):
+    def __init__(self, dict_: dict[str, Any], parent: StructuralSolver):
         self.parent = parent
         self.num_dim = 2
         self.draft = 0.0
@@ -114,24 +113,24 @@ class RigidBody:
         self.La = 0.0
         self.Ma = 0.0
 
-        self.solver: Optional[solver.RootFinder] = None
-        self.disp_old: Optional[np.ndarray] = None
-        self.res_old: Optional[np.ndarray] = None
-        self.two_ago_disp: Optional[np.ndarray] = None
+        self.solver: solver.RootFinder | None = None
+        self.disp_old: np.ndarray | None = None
+        self.res_old: np.ndarray | None = None
+        self.two_ago_disp: np.ndarray = None
         self.predictor = True
-        self.f_old: Optional[np.ndarray] = None
-        self.two_ago_f: Optional[np.ndarray] = None
+        self.f_old: np.ndarray = None
+        self.two_ago_f: np.ndarray = None
         self.res_l = 1.0
         self.res_m = 1.0
 
-        self.J: Optional[np.ndarray] = None
-        self.J_tmp: Optional[np.ndarray] = None
-        self.Jfo: Optional[np.ndarray] = None
+        self.J: np.ndarray | None = None
+        self.J_tmp: np.ndarray | None = None
+        self.Jfo: np.ndarray | None = None
         self.Jit = 0
-        self.x: Optional[np.ndarray] = None
-        self.f: Optional[np.ndarray] = None
+        self.x: np.ndarray | None = None
+        self.f: np.ndarray | None = None
         self.step = 0
-        self.resFun: Optional[Callable[[np.ndarray], np.ndarray]] = None
+        self.resFun: Callable[[np.ndarray], np.ndarray] | None = None
 
         # Assign displacement function depending on specified method
         self.get_disp = lambda: (0.0, 0.0)
@@ -153,8 +152,8 @@ class RigidBody:
                 self.trim_solver = None
                 self.draft_solver = None
 
-        self.substructure: List["substructure.Substructure"] = []
-        self.node: List[fe.Node] = []
+        self.substructure: list["substructure.Substructure"] = []
+        self.node: list[fe.Node] = []
 
         print(("Adding Rigid Body: {0}".format(self.name)))
 

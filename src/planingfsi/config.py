@@ -7,14 +7,11 @@ In general, the configuration is attached to the `Simulation`
 instance, which then serves as a reference point elsewhere in the code.
 
 """
+from __future__ import annotations
+
 import math
 from pathlib import Path
 from typing import Any
-from typing import Dict
-from typing import List
-from typing import Optional
-from typing import Type
-from typing import Union
 
 from planingfsi import logger
 from planingfsi.dictionary import load_dict_from_file
@@ -34,8 +31,8 @@ class ConfigItem:
     default: Any
 
     def __init__(self, *alt_keys: str, **kwargs: Any):
-        self.alt_keys: List[str] = list(alt_keys)
-        self.type_: Optional[Type] = kwargs.get("type")
+        self.alt_keys: list[str] = list(alt_keys)
+        self.type_: type | None = kwargs.get("type")
         try:
             self.default = kwargs["default"]
             if self.default is not None:
@@ -72,11 +69,11 @@ class ConfigItem:
         self.name = name
 
     @property
-    def keys(self) -> List[str]:
+    def keys(self) -> list[str]:
         """A list of keys to look for when reading in the value."""
         return [self.name] + self.alt_keys
 
-    def get_from_dict(self, dict_: Dict[str, Any]) -> Any:
+    def get_from_dict(self, dict_: dict[str, Any]) -> Any:
         """Try to read all keys from the dictionary until a non-None value is found.
 
         Returns the default value if no appropriate value is found in the dictionary.
@@ -94,7 +91,7 @@ class SubConfig:
     different sections. Also useful in helping define the namespace scopes.
     """
 
-    def __init__(self, parent: Optional["Config"] = None):
+    def __init__(self, parent: Config | None = None):
         self._parent = parent
 
     @property
@@ -104,7 +101,7 @@ class SubConfig:
             raise ValueError("Must assign a parent to access this property.")
         return self._parent
 
-    def load_from_file(self, filename: Union[Path, str]) -> None:
+    def load_from_file(self, filename: Path | str) -> None:
         """Load the configuration from a dictionary file.
 
         Args:
@@ -573,12 +570,12 @@ class Config:
         self.solver = SolverConfig(parent=self)
 
     @classmethod
-    def from_file(cls, filename: Union[Path, str]) -> "Config":
+    def from_file(cls, filename: Path | str) -> "Config":
         obj = cls()
         obj.load_from_file(filename)
         return obj
 
-    def load_from_file(self, filename: Union[Path, str]) -> None:
+    def load_from_file(self, filename: Path | str) -> None:
         """Load the configuration from a file.
 
         Args:

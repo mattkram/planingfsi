@@ -3,12 +3,9 @@ from __future__ import annotations
 
 import abc
 import itertools
+from collections.abc import Iterable
 from pathlib import Path
 from typing import Any
-from typing import Iterable
-from typing import List
-from typing import Optional
-from typing import Union
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -33,8 +30,8 @@ class Mesh:
     """
 
     def __init__(self) -> None:
-        self.points: List["Point"] = []
-        self.submesh: List["Submesh"] = []
+        self.points: list["Point"] = []
+        self.submesh: list["Submesh"] = []
         self.add_point(0, "dir", [0, 0])
 
     @property
@@ -61,7 +58,7 @@ class Mesh:
         return submesh
 
     def add_point(
-        self, id_: int, method: str, position: Iterable[Union[float, int, str]], **kwargs: Any
+        self, id_: int, method: str, position: Iterable[float | int | str], **kwargs: Any
     ) -> "Point":
         """Add a new point to the mesh, returning the created point.
 
@@ -249,7 +246,7 @@ class Mesh:
         if show:
             plt.show()  # pragma: no cover
 
-    def write(self, mesh_dir: Union[Path, str] = Path("mesh")) -> None:
+    def write(self, mesh_dir: Path | str = Path("mesh")) -> None:
         """Write the mesh to text files."""
         mesh_dir = Path(mesh_dir)
         mesh_dir.mkdir(exist_ok=True)
@@ -349,7 +346,7 @@ class Submesh:
 class _ShapeBase:
     """An abstract base class for all Shapes."""
 
-    def __init__(self, id: Optional[int] = None, mesh: Optional[Mesh] = None) -> None:
+    def __init__(self, id: int | None = None, mesh: Mesh | None = None) -> None:
         self.id = id
         self.mesh = mesh
 
@@ -359,7 +356,7 @@ class _ShapeBase:
 
 
 class Point(_ShapeBase):
-    def __init__(self, id: Optional[int] = None, mesh: Optional[Mesh] = None) -> None:
+    def __init__(self, id: int | None = None, mesh: Mesh | None = None) -> None:
         super().__init__(id=id, mesh=mesh)
         self.position = np.zeros(2)
         self.is_dof_fixed = [True, True]
@@ -437,7 +434,7 @@ class Point(_ShapeBase):
         # Kept for backwards-compatibility with old meshDicts
         return self.y_pos
 
-    def rotate(self, base_pt: Union["Point", int], angle: float) -> None:
+    def rotate(self, base_pt: Point | int, angle: float) -> None:
         """Rotate this point about another base point.
 
         Args:
@@ -479,11 +476,11 @@ class Point(_ShapeBase):
 
 
 class Curve(_ShapeBase):
-    def __init__(self, id: Optional[int] = None, mesh: Optional[Mesh] = None):
+    def __init__(self, id: int | None = None, mesh: Mesh | None = None):
         super().__init__(id=id, mesh=mesh)
-        self.pt: List[Point] = []
-        self.lines: List["Line"] = []
-        self._end_pts: List[Point] = []
+        self.pt: list[Point] = []
+        self.lines: list["Line"] = []
+        self._end_pts: list[Point] = []
         self.plot_sty = "b-"
 
         self.curvature = 0.0
@@ -579,10 +576,10 @@ class Curve(_ShapeBase):
             line.set_end_pts([ptSt, ptEnd])
             self.lines.append(line)
 
-    def set_pts(self, pt: List[Point]) -> None:
+    def set_pts(self, pt: list[Point]) -> None:
         self.pt = pt
 
-    def set_end_pts(self, end_pt: List[Point]) -> None:
+    def set_end_pts(self, end_pt: list[Point]) -> None:
         self._end_pts = end_pt
 
     def plot(self) -> None:
@@ -592,6 +589,6 @@ class Curve(_ShapeBase):
 
 
 class Line(Curve):
-    def set_end_pts(self, end_pt: List[Point]) -> None:
+    def set_end_pts(self, end_pt: list[Point]) -> None:
         super().set_end_pts(end_pt)
         self.set_pts(end_pt)

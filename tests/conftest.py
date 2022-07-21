@@ -1,7 +1,8 @@
+from __future__ import annotations
+
 import os
 from pathlib import Path
 from typing import Any
-from typing import Dict
 
 import pytest
 from _pytest.config.argparsing import Parser
@@ -34,7 +35,7 @@ def validation_base_dir(test_dir: Path) -> Path:
 
 
 @pytest.fixture()
-def test_dict(input_dir: Path) -> Dict[str, Any]:
+def test_dict(input_dir: Path) -> dict[str, Any]:
     os.environ["HOME"] = "Dummy"
     return load_dict_from_file(input_dir / "testDict")
 

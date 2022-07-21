@@ -1,11 +1,9 @@
 """Classes representing a pressure patch on the free surface."""
+from __future__ import annotations
+
 import abc
 from pathlib import Path
 from typing import Any
-from typing import Dict
-from typing import List
-from typing import Optional
-from typing import Tuple
 
 import numpy as np
 from scipy.interpolate import interp1d
@@ -35,12 +33,12 @@ class PressurePatch(abc.ABC):
     def __init__(self, parent: "solver.PotentialPlaningSolver") -> None:
         self.parent = parent
         self.patch_name = "AbstractPressurePatch"
-        self.pressure_elements: List[pe.PressureElement] = []
+        self.pressure_elements: list[pe.PressureElement] = []
         self._end_pts = np.zeros(2)
         self.is_kutta_unknown = False
-        self._neighbor_up: Optional["PressurePatch"] = None
-        self._neighbor_down: Optional["PressurePatch"] = None
-        self.interpolator: Optional["interpolator.Interpolator"] = None
+        self._neighbor_up: PressurePatch | None = None
+        self._neighbor_down: PressurePatch | None = None
+        self.interpolator: interpolator.Interpolator | None = None
 
         self.drag_total = np.nan
         self.drag_pressure = np.nan
@@ -75,7 +73,7 @@ class PressurePatch(abc.ABC):
         raise NotImplementedError
 
     @property
-    def neighbor_up(self) -> Optional["PressurePatch"]:
+    def neighbor_up(self) -> PressurePatch | None:
         """PressurePatch instance upstream of this one.
 
         When setting, this patch is set as the other's downstream neighbor.
@@ -84,13 +82,13 @@ class PressurePatch(abc.ABC):
         return self._neighbor_up
 
     @neighbor_up.setter
-    def neighbor_up(self, obj: Optional["PressurePatch"]) -> None:
+    def neighbor_up(self, obj: PressurePatch | None) -> None:
         self._neighbor_up = obj
         if self._neighbor_up is not None:
             self._neighbor_up._neighbor_down = self
 
     @property
-    def neighbor_down(self) -> Optional["PressurePatch"]:
+    def neighbor_down(self) -> PressurePatch | None:
         """PressurePatch instance downstream of this one.
 
         When setting, this patch is set as the other's upstream neighbor.
@@ -99,7 +97,7 @@ class PressurePatch(abc.ABC):
         return self._neighbor_down
 
     @neighbor_down.setter
-    def neighbor_down(self, obj: Optional["PressurePatch"]) -> None:
+    def neighbor_down(self, obj: PressurePatch | None) -> None:
         self._neighbor_down = obj
         if self._neighbor_down is not None:
             self._neighbor_down._neighbor_up = self
@@ -207,7 +205,7 @@ class PressureCushion(PressurePatch):
 
     _count = 0
 
-    def __init__(self, parent: "solver.PotentialPlaningSolver", dict_: Dict[str, Any]) -> None:
+    def __init__(self, parent: "solver.PotentialPlaningSolver", dict_: dict[str, Any]) -> None:
         super().__init__(parent)
         PressureCushion._count += 1
         self.patch_name = dict_.get(
@@ -339,10 +337,10 @@ class PlaningSurface(PressurePatch):
     """Planing Surface consisting of unknown elements."""
 
     _count = 0
-    _all: List["PlaningSurface"] = []
+    _all: list["PlaningSurface"] = []
 
     @classmethod
-    def find_by_name(cls, name: Optional[str]) -> Optional["PlaningSurface"]:
+    def find_by_name(cls, name: str | None) -> PlaningSurface | None:
         """Return first planing surface matching provided name.
 
         Args:
@@ -357,7 +355,7 @@ class PlaningSurface(PressurePatch):
                     return obj
         return None
 
-    def __init__(self, parent: "solver.PotentialPlaningSolver", dict_: Dict[str, Any]) -> None:
+    def __init__(self, parent: "solver.PotentialPlaningSolver", dict_: dict[str, Any]) -> None:
         super().__init__(parent)
         PlaningSurface._all.append(self)
 
@@ -535,7 +533,7 @@ class PlaningSurface(PressurePatch):
 
         self.drag_wave = self._calculate_wave_drag()
 
-    def get_loads_in_range(self, x0: float, x1: float) -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
+    def get_loads_in_range(self, x0: float, x1: float) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
         """Return pressure and shear stress values at points between two
         arguments.
         """

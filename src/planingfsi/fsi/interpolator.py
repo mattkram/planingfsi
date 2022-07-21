@@ -1,9 +1,7 @@
+from __future__ import annotations
+
+from collections.abc import Callable
 from typing import Any
-from typing import Callable
-from typing import Dict
-from typing import List
-from typing import Optional
-from typing import Tuple
 
 import numpy as np
 from scipy.optimize import fmin
@@ -18,7 +16,7 @@ class Interpolator:
         self,
         solid: "substructure.Substructure",
         fluid: "pressurepatch.PlaningSurface",
-        dict_: Dict[str, Any] = None,
+        dict_: dict[str, Any] = None,
     ):
         self.solid = solid
         self.fluid = fluid
@@ -26,12 +24,12 @@ class Interpolator:
         self.solid.interpolator = self
         self.fluid.interpolator = self
 
-        self.solid_position_function: Optional[Callable[[float], np.ndarray]] = None
-        self.fluid_pressure_function: Optional[Callable[[float, float], np.ndarray]] = None
+        self.solid_position_function: Callable[[float], np.ndarray] | None = None
+        self.fluid_pressure_function: Callable[[float, float], np.ndarray] | None = None
         self.get_body_height = self.get_surface_height_fixed_x
 
-        self._separation_arclength: Optional[float] = None
-        self._immersed_arclength: Optional[float] = None
+        self._separation_arclength: float | None = None
+        self._immersed_arclength: float | None = None
 
         if dict_ is None:
             dict_ = {}
@@ -51,7 +49,7 @@ class Interpolator:
         assert self.solid_position_function is not None
         return self.solid_position_function(s)
 
-    def get_min_max_s(self) -> List[float]:
+    def get_min_max_s(self) -> list[float]:
         pts = self.fluid.get_element_coords()
         return [self.get_s_fixed_x(x) for x in [pts[0], pts[-1]]]
 
@@ -86,7 +84,7 @@ class Interpolator:
         self._separation_arclength = float(np.max([self._separation_arclength, 0.0]))
         return self.get_coordinates(self._separation_arclength)
 
-    def get_loads_in_range(self, s0: float, s1: float) -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
+    def get_loads_in_range(self, s0: float, s1: float) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
         assert self.solid_position_function is not None
         assert self.fluid_pressure_function is not None
         x = [self.solid_position_function(s)[0] for s in [s0, s1]]

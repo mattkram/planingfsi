@@ -1,11 +1,12 @@
 """Functions for writing results to a file on disk."""
+from __future__ import annotations
+
 from pathlib import Path
 from typing import Any
 from typing import TextIO
-from typing import Union
 
 
-def write_as_dict(filename: Union[Path, str], *args: Any, data_format: str = ">10.8e") -> None:
+def write_as_dict(filename: Path | str, *args: Any, data_format: str = ">10.8e") -> None:
     """Write arguments to a file as a dictionary."""
     with Path(filename).open("w") as ff:
         for name, value in args:
@@ -13,7 +14,7 @@ def write_as_dict(filename: Union[Path, str], *args: Any, data_format: str = ">1
 
 
 def write_as_list(
-    filename: Union[Path, str], *args: Any, header_format: str = "<15", data_format: str = ">+10.8e"
+    filename: Path | str, *args: Any, header_format: str = "<15", data_format: str = ">+10.8e"
 ) -> None:
     """Write the arguments to a file as a list."""
     with Path(filename).open("w") as ff:
