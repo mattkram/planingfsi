@@ -83,7 +83,9 @@ def jsonify_string(string: str) -> str:
     return string
 
 
-def load_dict_from_file(filename: Path | str) -> dict[str, Any]:
+def load_dict_from_file(
+    filename: Path | str, key_map: dict[str, str] | None = None
+) -> dict[str, Any]:
     """Read a file, which is a less strict JSON format, and return a dictionary."""
     logger.debug('Loading Dictionary from file "{}"'.format(filename))
 
@@ -106,6 +108,19 @@ def load_dict_from_file(filename: Path | str) -> dict[str, Any]:
         base_dict = load_dict_from_file(base_dict_dir)
         dict_.update({k: v for k, v in base_dict.items() if k not in dict_})
 
+    if key_map:
+        dict_ = _apply_key_map(dict_, key_map)
+
+    return dict_
+
+
+def _apply_key_map(dict_: dict[str, Any], key_map: dict[str, str]) -> dict[str, Any]:
+    """Map old keys to new keys."""
+    for old_key, new_key in key_map.items():
+        if old_key in dict_ and new_key in dict_:
+            raise KeyError(f"Cannot use both '{old_key}' and '{new_key}'")
+        if old_key in dict_:
+            dict_[new_key] = dict_.pop(old_key)
     return dict_
 
 
