@@ -413,6 +413,7 @@ class PlaningSurface(PressurePatch):
         self.kutta_pressure = kutta_pressure
         if isinstance(self.kutta_pressure, str):
             self.kutta_pressure = getattr(self.config.body, self.kutta_pressure)
+
         self._upstream_pressure = upstream_pressure
         if isinstance(self._upstream_pressure, str):
             self._upstream_pressure = getattr(self.config, self._upstream_pressure)
