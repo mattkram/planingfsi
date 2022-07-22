@@ -15,12 +15,11 @@ from planingfsi import math_helpers
 from planingfsi import trig
 from planingfsi import writers
 from planingfsi.config import NUM_DIM
-from planingfsi.config import Config
 from planingfsi.fe import felib as fe
-from planingfsi.fe import rigid_body
 from planingfsi.fsi.interpolator import Interpolator
 
 if TYPE_CHECKING:
+    from planingfsi.config import Config
     from planingfsi.fe.rigid_body import RigidBody
     from planingfsi.fe.structure import StructuralSolver
     from planingfsi.potentialflow.pressurepatch import PlaningSurface
@@ -70,7 +69,7 @@ class Substructure(abc.ABC):
         self.U: np.ndarray | None = None
         self.node: list[fe.Node] = []
         self.el: list[fe.Element] = []
-        self.parent: rigid_body.RigidBody | None = None
+        self.parent: RigidBody | None = None
         self.node_arc_length = np.zeros(len(self.node))
 
         self.D = 0.0
