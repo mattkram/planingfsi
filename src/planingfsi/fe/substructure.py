@@ -44,9 +44,6 @@ class Substructure(abc.ABC):
 
     def __init__(
         self,
-        dict_: dict[str, Any] | None = None,
-        /,
-        solver: "StructuralSolver" | None = None,
         *,
         name: str = "",
         seal_pressure: float = 0.0,
@@ -57,6 +54,7 @@ class Substructure(abc.ABC):
         tip_constraint_height: float | None = None,
         struct_interp_type: Literal["linear"] | Literal["quadratic"] | Literal["cubic"] = "linear",
         struct_extrap: bool = True,
+        solver: "StructuralSolver" | None = None,
         parent: RigidBody | None = None,
         **_: Any,
     ):
@@ -64,7 +62,6 @@ class Substructure(abc.ABC):
         self.index = len(self.__all)
         Substructure.__all.append(self)
 
-        self.dict_ = dict_ or {}
         self.name = name
         self.interpolator: Interpolator | None = None
 
@@ -492,12 +489,6 @@ class Substructure(abc.ABC):
     def set_angle(self, _: float) -> None:
         return None
 
-    def get_or_config(self, key: str, default: Any) -> Any:
-        value = self.dict_.get(key, default)
-        if isinstance(value, str):
-            value = getattr(self.config, value)
-        return value
-
     @abc.abstractmethod
     def set_fixed_dof(self) -> None:
         raise NotImplementedError
@@ -551,13 +542,18 @@ class FlexibleSubstructure(Substructure):
         for ss in cls.__all:
             ss.update_geometry()
 
-    def __init__(self, dict_: dict[str, Any] | None = None, /, **kwargs: Any):
-        super().__init__(dict_, **kwargs)
-        dict_ = dict_ or {}
+    def __init__(
+        self,
+        *,
+        pretension: float = -0.5,
+        axial_stiffness: float = 5e7,
+        **kwargs: Any,
+    ):
+        super().__init__(**kwargs)
         self.__all.append(self)
         self.element_type = fe.TrussElement
-        self.pretension = dict_.get("pretension", -0.5)
-        self.EA = dict_.get("EA", 5e7)
+        self.pretension = pretension
+        self.EA = axial_stiffness
 
         self.K: np.ndarray | None = None
         self.F: np.ndarray | None = None
@@ -627,8 +623,8 @@ class FlexibleSubstructure(Substructure):
 
 
 class RigidSubstructure(Substructure):
-    def __init__(self, dict_: dict[str, Any] | None = None, /, *args: Any, **kwargs: Any):
-        super().__init__(dict_, *args, **kwargs)
+    def __init__(self, **kwargs: Any):
+        super().__init__(**kwargs)
         self.element_type = fe.RigidElement
 
     def set_attachments(self) -> None:
@@ -649,8 +645,6 @@ class TorsionalSpringSubstructure(FlexibleSubstructure, RigidSubstructure):
 
     def __init__(
         self,
-        dict_: dict[str, Any] | None = None,
-        /,
         *,
         initial_angle: float = 0.0,
         tip_load_pct: float = 0.0,
@@ -660,9 +654,11 @@ class TorsionalSpringSubstructure(FlexibleSubstructure, RigidSubstructure):
         attach_pct: float = 0.0,
         minimum_angle: float = -float("Inf"),
         max_angle_step: float = float("Inf"),
+        attached_substructure_name: str | None = None,
+        attached_substructure_end: Literal["start"] | Literal["end"] = "end",
         **kwargs: Any,
     ):
-        super().__init__(dict_, **kwargs)
+        super().__init__(**kwargs)
         self.initial_angle = initial_angle
         self.element_type = fe.RigidElement
         self.tip_load_pct = tip_load_pct
@@ -678,6 +674,8 @@ class TorsionalSpringSubstructure(FlexibleSubstructure, RigidSubstructure):
         self.attached_element: fe.Element | None = None
         self.minimum_angle = minimum_angle
         self.max_angle_step = max_angle_step
+        self.attached_substructure_name = attached_substructure_name
+        self.attached_substructure_end = attached_substructure_end
         self.attached_ind = 0
         self.attached_substructure: Substructure | None = None
         self.residual = 1.0
@@ -697,13 +695,12 @@ class TorsionalSpringSubstructure(FlexibleSubstructure, RigidSubstructure):
         self.set_angle(self.initial_angle)
 
     def set_attachments(self) -> None:
-        attached_substructure_name = self.dict_.get("attachedSubstructure", None)
-        if attached_substructure_name is not None:
-            self.attached_substructure = Substructure.find_by_name(attached_substructure_name)
+        if self.attached_substructure_name is not None:
+            self.attached_substructure = Substructure.find_by_name(self.attached_substructure_name)
         else:
             self.attached_substructure = None
 
-        if self.dict_.get("attachedSubstructureEnd", "End").lower() == "start":
+        if self.attached_substructure_end == "start":
             self.attached_ind = 0
         else:
             self.attached_ind = -1

@@ -141,6 +141,9 @@ class Simulation:
                     "attachPct": "attach_pct",
                     "minimumAngle": "minimum_angle",
                     "maxAngleStep": "max_angle_step",
+                    "attachedSubstructure": "attached_substructure_name",
+                    "attachedSubstructureEnd": "attached_substructure_end",
+                    "EA": "axial_stiffness",
                 },
             )
             # TODO: This default fallback to config could be handled in the PlaningSurface class

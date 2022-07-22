@@ -103,7 +103,7 @@ class StructuralSolver:
                 ss_class = TorsionalSpringSubstructure
             else:
                 ss_class = RigidSubstructure
-            ss = ss_class(dict_, **dict_)
+            ss = ss_class(**dict_)
         ss.solver = self
         self.substructure.append(ss)
 
