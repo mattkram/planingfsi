@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import os
-from typing import TYPE_CHECKING
 from typing import Any
 
 import numpy as np
@@ -10,13 +9,11 @@ from planingfsi import logger
 from planingfsi.config import Config
 from planingfsi.fe import felib as fe
 from planingfsi.fe import rigid_body as rigid_body_mod
+from planingfsi.fe.substructure import FlexibleSubstructure
+from planingfsi.fe.substructure import RigidSubstructure
+from planingfsi.fe.substructure import Substructure
+from planingfsi.fe.substructure import TorsionalSpringSubstructure
 from planingfsi.fsi import simulation as fsi_simulation
-
-if TYPE_CHECKING:
-    from planingfsi.fe.substructure import FlexibleSubstructure  # noqa: F401
-    from planingfsi.fe.substructure import RigidSubstructure  # noqa: F401
-    from planingfsi.fe.substructure import Substructure
-    from planingfsi.fe.substructure import TorsionalSpringSubstructure  # noqa: F401
 
 
 class StructuralSolver:
@@ -91,12 +88,6 @@ class StructuralSolver:
             dict_or_instance: A dictionary of values, or a Substructure instance.
 
         """
-        # TODO: Remove after circular dependencies resolved
-        from planingfsi.fe.substructure import FlexibleSubstructure  # noqa: F811
-        from planingfsi.fe.substructure import RigidSubstructure  # noqa: F811
-        from planingfsi.fe.substructure import Substructure
-        from planingfsi.fe.substructure import TorsionalSpringSubstructure  # noqa: F811
-
         if isinstance(dict_or_instance, Substructure):
             ss = dict_or_instance
             dict_ = {}
