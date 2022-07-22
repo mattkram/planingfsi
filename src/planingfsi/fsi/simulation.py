@@ -125,6 +125,7 @@ class Simulation:
                     "waterlineHeight": "waterline_height",
                     "sSepPctStart": "separation_arclength_start_pct",
                     "sImmPctStart": "immersion_arclength_start_pct",
+                    "bodyName": "body_name",
                 },
             )
             # TODO: This default fallback to config could be handled in the PlaningSurface class

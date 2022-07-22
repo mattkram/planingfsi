@@ -1,4 +1,5 @@
 from planingfsi import Mesh
+from planingfsi.fe.substructure import RigidSubstructure
 from planingfsi.fsi.simulation import Simulation
 from planingfsi.potentialflow.pressurepatch import PlaningSurface
 
@@ -20,7 +21,7 @@ def generate_mesh(angle_of_attack: float) -> Mesh:
 
 def main() -> None:
     froude_num = 1.0
-    mesh = generate_mesh(10.0)
+    mesh = generate_mesh(angle_of_attack=10.0)
     # mesh.plot(show=True)
 
     # TODO: We currently require writing to mesh files, because the structure is loaded from files
@@ -28,6 +29,7 @@ def main() -> None:
 
     simulation = Simulation()
 
+    # Set some global configuration values
     simulation.config.flow.froude_num = froude_num
     simulation.config.plotting.show = True
     simulation.config.plotting._pressure_scale_pct = 1e-8
@@ -44,7 +46,7 @@ def main() -> None:
         "structExtrap": True,
     }
 
-    substructure = simulation.solid_solver.add_substructure(dict_)
+    substructure = simulation.solid_solver.add_substructure(RigidSubstructure(dict_))
     planing_surface = simulation.fluid_solver.add_planing_surface(
         PlaningSurface(
             name="plate",

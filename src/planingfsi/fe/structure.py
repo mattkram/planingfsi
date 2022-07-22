@@ -82,12 +82,13 @@ class StructuralSolver:
         self.rigid_body.append(rigid_body)
         return rigid_body
 
-    def add_substructure(self, dict_: dict[str, Any] = None) -> "Substructure":
+    def add_substructure(
+        self, dict_or_instance: dict[str, Any] | Substructure | None = None
+    ) -> "Substructure":
         """Add a substructure to the structure, whose type is determined at run-time.
 
-        Args
-        ----
-        dict_: A dictionary containing substructure specifications.
+        Args:
+            dict_or_instance: A dictionary of values, or a Substructure instance.
 
         """
         # TODO: Remove after circular dependencies resolved
@@ -96,32 +97,35 @@ class StructuralSolver:
         from planingfsi.fe.substructure import Substructure
         from planingfsi.fe.substructure import TorsionalSpringSubstructure  # noqa: F811
 
-        if dict_ is None:
+        if isinstance(dict_or_instance, Substructure):
+            ss = dict_or_instance
             dict_ = {}
-
-        # TODO: Remove this remapping after name is added as a kwarg
-        if "name" in dict_:
-            dict_["substructureName"] = dict_["name"]
-
-        # TODO: This logic is better handled by the factory pattern
-        ss_type = dict_.get("substructureType", "rigid")
-        ss_class: type[Substructure]
-        if ss_type.lower() == "flexible" or ss_type.lower() == "truss":
-            ss_class = FlexibleSubstructure
-        elif ss_type.lower() == "torsionalspring":
-            ss_class = TorsionalSpringSubstructure
         else:
-            ss_class = RigidSubstructure
-        ss: Substructure = ss_class(dict_, solver=self)
+            dict_ = dict_or_instance or {}
+            # TODO: Remove this remapping after name is added as a kwarg
+            if "name" in dict_:
+                dict_["substructureName"] = dict_["name"]
+
+            # TODO: This logic is better handled by the factory pattern
+            ss_type = dict_.get("substructureType", "rigid")
+            ss_class: type[Substructure]
+            if ss_type.lower() == "flexible" or ss_type.lower() == "truss":
+                ss_class = FlexibleSubstructure
+            elif ss_type.lower() == "torsionalspring":
+                ss_class = TorsionalSpringSubstructure
+            else:
+                ss_class = RigidSubstructure
+            ss = ss_class(dict_)
+        ss.solver = self
         self.substructure.append(ss)
 
-        self._assign_substructure_to_body(dict_, ss)
+        self._assign_substructure_to_body(ss, **dict_)
 
         return ss
 
-    def _assign_substructure_to_body(self, dict_: dict[str, Any], ss: "Substructure") -> None:
+    def _assign_substructure_to_body(self, ss: "Substructure", body_name: str = "default") -> None:
         """Find parent body and add substructure to it."""
-        bodies = [b for b in self.rigid_body if b.name == dict_.get("bodyName", "default")]
+        bodies = [b for b in self.rigid_body if b.name == body_name]
         if bodies:
             body = bodies[0]
         else:
