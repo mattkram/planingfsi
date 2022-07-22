@@ -43,13 +43,14 @@ class Substructure(abc.ABC):
 
     def __init__(
         self,
-        dict_: dict[str, Any],
+        dict_: dict[str, Any] | None = None,
         /,
         solver: "StructuralSolver" | None = None,
         *,
         name: str = "",
         **_: Any,
     ):
+        dict_ = dict_ or {}
         self.solver = solver
         self.index = len(self.__all)
         Substructure.__all.append(self)
@@ -541,8 +542,9 @@ class FlexibleSubstructure(Substructure):
         for ss in cls.__all:
             ss.update_geometry()
 
-    def __init__(self, dict_: dict[str, Any], **kwargs: Any):
+    def __init__(self, dict_: dict[str, Any] | None = None, /, **kwargs: Any):
         super().__init__(dict_, **kwargs)
+        dict_ = dict_ or {}
         self.__all.append(self)
         self.element_type = fe.TrussElement
         self.pretension = dict_.get("pretension", -0.5)
@@ -616,8 +618,8 @@ class FlexibleSubstructure(Substructure):
 
 
 class RigidSubstructure(Substructure):
-    def __init__(self, *args: Any, **kwargs: Any):
-        super().__init__(*args, **kwargs)
+    def __init__(self, dict_: dict[str, Any] | None = None, /, *args: Any, **kwargs: Any):
+        super().__init__(dict_, *args, **kwargs)
         self.element_type = fe.RigidElement
 
     def set_attachments(self) -> None:
@@ -636,8 +638,9 @@ class TorsionalSpringSubstructure(FlexibleSubstructure, RigidSubstructure):
     base_pt: np.ndarray
     is_free = True
 
-    def __init__(self, dict_: dict[str, Any], **kwargs: Any):
-        super().__init__(dict_=dict_, **kwargs)
+    def __init__(self, dict_: dict[str, Any] | None = None, /, **kwargs: Any):
+        super().__init__(dict_, **kwargs)
+        dict_ = dict_ or {}
         self.parent = kwargs.get("parent")
         self.element_type = fe.RigidElement
         self.tip_load_pct = dict_.get("tipLoadPct", 0.0)

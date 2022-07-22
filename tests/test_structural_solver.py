@@ -56,8 +56,7 @@ def test_solver_with_substructure_has_free_structure(
     then the solver has a free structure.
     """
     rigid_body = solver.add_rigid_body()
-    # TODO: We shouldn't require a dict_ to be passed in
-    rigid_body.add_substructure(class_(dict_={}, solver=solver))
+    rigid_body.add_substructure(class_(solver=solver))
     assert solver.has_free_structure is expected
 
 
