@@ -4,6 +4,7 @@ from __future__ import annotations
 import os
 from pathlib import Path
 from typing import TYPE_CHECKING
+from typing import Any
 
 import numpy as np
 
@@ -14,6 +15,9 @@ from planingfsi import writers
 from planingfsi.config import Config
 from planingfsi.dictionary import load_dict_from_file
 from planingfsi.potentialflow.solver import PotentialPlaningSolver
+
+if TYPE_CHECKING:
+    from planingfsi.fe.rigid_body import RigidBody
 
 
 class Simulation:
@@ -59,6 +63,15 @@ class Simulation:
             self._figure = FSIFigure(simulation=self, config=self.config)
         return self._figure
 
+    def add_rigid_body(self, rigid_body: dict[str, Any] | None = None) -> RigidBody:
+        """Add a rigid body to the simulation and solid solver.
+
+        Args:
+            rigid_body: An optional dictionary of values to construct the rigid body.
+
+        """
+        return self.solid_solver.add_rigid_body(rigid_body)
+
     def update_fluid_response(self) -> None:
         """Update the fluid response and apply to the structural solver."""
         self.fluid_solver.calculate_response()
@@ -100,10 +113,10 @@ class Simulation:
         if Path(self.config.path.body_dict_dir).exists():
             for dict_path in Path(self.config.path.body_dict_dir).glob("*"):
                 dict_ = load_dict_from_file(str(dict_path))
-                self.solid_solver.add_rigid_body(dict_)
+                self.add_rigid_body(dict_)
         else:
             # Add a dummy rigid body that cannot move
-            self.solid_solver.add_rigid_body()
+            self.add_rigid_body()
         print(f"Rigid Bodies: {self.solid_solver.rigid_body}")
 
     def _load_substructures(self) -> None:

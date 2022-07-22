@@ -36,7 +36,7 @@ def main() -> None:
 
     # TODO: This should happen implicitly, not during load
     # Add the default rigid body
-    simulation.solid_solver.add_rigid_body()
+    simulation.add_rigid_body()
 
     substructure = simulation.solid_solver.add_substructure(RigidSubstructure(name="plate"))
     planing_surface = simulation.fluid_solver.add_planing_surface(
