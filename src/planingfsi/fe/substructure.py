@@ -6,6 +6,7 @@ from collections.abc import Iterable
 from pathlib import Path
 from typing import TYPE_CHECKING
 from typing import Any
+from typing import Literal
 
 import numpy as np
 from scipy.interpolate import interp1d
@@ -48,26 +49,36 @@ class Substructure(abc.ABC):
         solver: "StructuralSolver" | None = None,
         *,
         name: str = "",
+        seal_pressure: float = 0.0,
+        seal_pressure_method: Literal["constant"] | Literal["hydrostatic"] = "constant",
+        seal_over_pressure_pct: float = 1.0,
+        cushion_pressure_type: str | None = None,
+        tip_load: float = 0.0,
+        tip_constraint_height: float | None = None,
+        struct_interp_type: Literal["linear"] | Literal["quadratic"] | Literal["cubic"] = "linear",
+        struct_extrap: bool = True,
+        parent: RigidBody | None = None,
         **_: Any,
     ):
-        dict_ = dict_ or {}
         self.solver = solver
         self.index = len(self.__all)
         Substructure.__all.append(self)
 
-        self.dict_ = dict_
+        self.dict_ = dict_ or {}
         self.name = name
         self.interpolator: Interpolator | None = None
 
-        self.seal_pressure = self.get_or_config("Ps", 0.0)
-        self.seal_pressure_method = self.dict_.get("PsMethod", "constant")
+        self.seal_pressure = seal_pressure
+        self.seal_pressure_method = seal_pressure_method
 
-        self.seal_over_pressure_pct = self.get_or_config("overPressurePct", 1.0)
-        self.cushion_pressure_type = self.dict_.get("cushionPressureType", None)
-        self.tip_load = self.get_or_config("tipLoad", 0.0)
-        self.tip_constraint_height = self.dict_.get("tipConstraintHt", None)
-        self.struct_interp_type = self.dict_.get("structInterpType", "linear")
-        self.struct_extrap = self.dict_.get("structExtrap", True)
+        self.seal_over_pressure_pct = seal_over_pressure_pct
+        self.cushion_pressure_type = cushion_pressure_type
+        self.tip_load = tip_load
+        self.tip_constraint_height = tip_constraint_height
+        self.struct_interp_type = struct_interp_type
+        self.struct_extrap = struct_extrap
+        self.parent = parent
+
         self.line_fluid_pressure = None
         self.line_air_pressure = None
         self.fluidS: np.ndarray | None = None
@@ -77,7 +88,6 @@ class Substructure(abc.ABC):
         self.U: np.ndarray | None = None
         self.node: list[fe.Node] = []
         self.el: list[fe.Element] = []
-        self.parent: RigidBody | None = None
         self.node_arc_length = np.zeros(len(self.node))
 
         self.D = 0.0
@@ -637,23 +647,37 @@ class TorsionalSpringSubstructure(FlexibleSubstructure, RigidSubstructure):
     base_pt: np.ndarray
     is_free = True
 
-    def __init__(self, dict_: dict[str, Any] | None = None, /, **kwargs: Any):
+    def __init__(
+        self,
+        dict_: dict[str, Any] | None = None,
+        /,
+        *,
+        initial_angle: float = 0.0,
+        tip_load_pct: float = 0.0,
+        base_pt_pct: float = 1.0,
+        spring_constant: float = 1e3,
+        relaxation_angle: float | None = None,
+        attach_pct: float = 0.0,
+        minimum_angle: float = -float("Inf"),
+        max_angle_step: float = float("Inf"),
+        **kwargs: Any,
+    ):
         super().__init__(dict_, **kwargs)
-        dict_ = dict_ or {}
-        self.parent = kwargs.get("parent")
+        self.initial_angle = initial_angle
         self.element_type = fe.RigidElement
-        self.tip_load_pct = dict_.get("tipLoadPct", 0.0)
-        self.base_pt_pct = dict_.get("basePtPct", 1.0)
-        self.spring_constant = dict_.get("spring_constant", 1000.0)
+        self.tip_load_pct = tip_load_pct
+        self.base_pt_pct = base_pt_pct
+        self.spring_constant = spring_constant
+
         self.theta = 0.0
         self.Mt = 0.0  # TODO
         self.MOld: float | None = None
-        self.relax = dict_.get("relaxAng", self.config.body.relax_rigid_body)
-        self.attach_pct = dict_.get("attachPct", 0.0)
+        self.relax = relaxation_angle or self.config.body.relax_rigid_body
+        self.attach_pct = attach_pct
         self.attached_node: fe.Node | None = None
         self.attached_element: fe.Element | None = None
-        self.minimum_angle = dict_.get("minimumAngle", -float("Inf"))
-        self.max_angle_step = dict_.get("maxAngleStep", float("Inf"))
+        self.minimum_angle = minimum_angle
+        self.max_angle_step = max_angle_step
         self.attached_ind = 0
         self.attached_substructure: Substructure | None = None
         self.residual = 1.0
@@ -670,7 +694,7 @@ class TorsionalSpringSubstructure(FlexibleSubstructure, RigidSubstructure):
 
         self.set_element_properties()
 
-        self.set_angle(self.dict_.get("initialAngle", 0.0))
+        self.set_angle(self.initial_angle)
 
     def set_attachments(self) -> None:
         attached_substructure_name = self.dict_.get("attachedSubstructure", None)
