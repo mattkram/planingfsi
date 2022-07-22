@@ -6,6 +6,7 @@ from collections.abc import Iterable
 from pathlib import Path
 from typing import TYPE_CHECKING
 from typing import Any
+from typing import ClassVar
 from typing import Literal
 
 import numpy as np
@@ -30,7 +31,7 @@ class Substructure(abc.ABC):
 
     __all: list["Substructure"] = []
 
-    element_type: type[fe.Element]
+    _element_type: ClassVar[type[fe.Element]]
 
     is_free = False
 
@@ -151,7 +152,7 @@ class Substructure(abc.ABC):
         self.node = [fe.Node.get_index(i) for i in ndInd]
 
         self.set_interp_function()
-        self.el = [self.element_type(parent=self) for _ in nd_st]
+        self.el = [self._element_type(parent=self) for _ in nd_st]
         self.set_element_properties()
         for ndSti, ndEndi, el in zip(nd_st, nd_end, self.el):
             el.set_nodes([fe.Node.get_index(ndSti), fe.Node.get_index(ndEndi)])
@@ -499,6 +500,7 @@ class FlexibleSubstructure(Substructure):
     __all: list["FlexibleSubstructure"] = []
     res = 0.0
     is_free = True
+    _element_type: ClassVar[type[fe.Element]] = fe.TrussElement
 
     @classmethod
     def update_all(cls, rigid_body: "RigidBody") -> None:
@@ -551,7 +553,6 @@ class FlexibleSubstructure(Substructure):
     ):
         super().__init__(**kwargs)
         self.__all.append(self)
-        self.element_type = fe.TrussElement
         self.pretension = pretension
         self.EA = axial_stiffness
 
@@ -623,9 +624,7 @@ class FlexibleSubstructure(Substructure):
 
 
 class RigidSubstructure(Substructure):
-    def __init__(self, **kwargs: Any):
-        super().__init__(**kwargs)
-        self.element_type = fe.RigidElement
+    _element_type: ClassVar[type[fe.Element]] = fe.RigidElement
 
     def set_attachments(self) -> None:
         return None
@@ -642,6 +641,7 @@ class RigidSubstructure(Substructure):
 class TorsionalSpringSubstructure(FlexibleSubstructure, RigidSubstructure):
     base_pt: np.ndarray
     is_free = True
+    _element_type: ClassVar[type[fe.Element]] = fe.RigidElement
 
     def __init__(
         self,
@@ -660,7 +660,6 @@ class TorsionalSpringSubstructure(FlexibleSubstructure, RigidSubstructure):
     ):
         super().__init__(**kwargs)
         self.initial_angle = initial_angle
-        self.element_type = fe.RigidElement
         self.tip_load_pct = tip_load_pct
         self.base_pt_pct = base_pt_pct
         self.spring_constant = spring_constant
