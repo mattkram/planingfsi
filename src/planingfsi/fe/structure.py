@@ -1,19 +1,22 @@
 from __future__ import annotations
 
 import os
+from typing import TYPE_CHECKING
 from typing import Any
 
 import numpy as np
 
 from planingfsi import logger
 from planingfsi.config import Config
-from planingfsi.fe import felib as fe
-from planingfsi.fe import rigid_body as rigid_body_mod
+from planingfsi.fe.felib import Node
+from planingfsi.fe.rigid_body import RigidBody
 from planingfsi.fe.substructure import FlexibleSubstructure
 from planingfsi.fe.substructure import RigidSubstructure
 from planingfsi.fe.substructure import Substructure
 from planingfsi.fe.substructure import TorsionalSpringSubstructure
-from planingfsi.fsi import simulation as fsi_simulation
+
+if TYPE_CHECKING:
+    from planingfsi.fsi.simulation import Simulation
 
 
 class StructuralSolver:
@@ -21,9 +24,9 @@ class StructuralSolver:
     several rigid bodies and substructures.
     """
 
-    def __init__(self, simulation: "fsi_simulation.Simulation") -> None:
+    def __init__(self, simulation: Simulation) -> None:
         self.simulation = simulation
-        self.rigid_body: list["rigid_body_mod.RigidBody"] = []
+        self.rigid_body: list[RigidBody] = []
         self.res = 1.0  # TODO: Can this be a property instead?
 
     @property
@@ -61,11 +64,11 @@ class StructuralSolver:
         return [ss for body in self.rigid_body for ss in body.substructure]
 
     @property
-    def node(self) -> list["fe.Node"]:
+    def node(self) -> list[Node]:
         """A combined list of nodes from all substructures."""
         return [nd for ss in self.substructure for nd in ss.node]
 
-    def add_rigid_body(self, dict_: dict[str, Any] = None) -> "rigid_body_mod.RigidBody":
+    def add_rigid_body(self, dict_: dict[str, Any] = None) -> RigidBody:
         """Add a rigid body to the structure.
 
         Args
@@ -75,7 +78,7 @@ class StructuralSolver:
         """
         if dict_ is None:
             dict_ = {}
-        rigid_body = rigid_body_mod.RigidBody(dict_, parent=self)
+        rigid_body = RigidBody(dict_, parent=self)
         self.rigid_body.append(rigid_body)
         return rigid_body
 
@@ -146,9 +149,6 @@ class StructuralSolver:
 
     def get_residual(self) -> None:
         """Calculate the residual."""
-        # TODO: Remove after circular dependencies resolved
-        from planingfsi.fe.substructure import FlexibleSubstructure  # noqa: F811
-
         self.res = 0.0
         for bd in self.rigid_body:
             if bd.free_in_draft or bd.free_in_trim:
@@ -188,7 +188,7 @@ class StructuralSolver:
         fx, fy = np.loadtxt(os.path.join(self.config.path.mesh_dir, "fixedLoad.txt"), unpack=True)
 
         for xx, yy, xxf, yyf, ffx, ffy in zip(x, y, xf, yf, fx, fy):
-            nd = fe.Node()
+            nd = Node()
             nd.set_coordinates(xx, yy)
             nd.is_dof_fixed = [bool(xxf), bool(yyf)]
             nd.fixed_load = np.array([ffx, ffy])

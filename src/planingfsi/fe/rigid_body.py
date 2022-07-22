@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from collections.abc import Callable
+from typing import TYPE_CHECKING
 from typing import Any
 
 import numpy as np
@@ -11,10 +12,12 @@ from planingfsi import trig
 from planingfsi import writers
 from planingfsi.config import Config
 from planingfsi.dictionary import load_dict_from_file
-from planingfsi.fe import felib as fe
 from planingfsi.fe import substructure
-from planingfsi.fe.structure import StructuralSolver
 from planingfsi.solver import RootFinder
+
+if TYPE_CHECKING:
+    from planingfsi.fe import felib as fe
+    from planingfsi.fe.structure import StructuralSolver
 
 
 class RigidBody:

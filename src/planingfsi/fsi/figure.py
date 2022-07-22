@@ -12,8 +12,12 @@ from matplotlib.axes import Axes
 
 from planingfsi import trig
 from planingfsi.config import Config
-from planingfsi.fe import rigid_body
-from planingfsi.fsi import simulation as fsi_simulation
+
+if TYPE_CHECKING:
+    from planingfsi.fe import rigid_body
+    from planingfsi.fe.structure import StructuralSolver
+    from planingfsi.fsi import simulation as fsi_simulation
+    from planingfsi.potentialflow.solver import PotentialPlaningSolver
 
 
 class FSIFigure:
@@ -496,8 +500,3 @@ def plot_pressure(solver: "PotentialPlaningSolver", fig_format: str = "png") -> 
     ax.set_ylim(ymin=0.0)
 
     fig.savefig(f"pressureElements.{fig_format}", format=fig_format)
-
-
-if TYPE_CHECKING:
-    from planingfsi.fe.structure import StructuralSolver
-    from planingfsi.potentialflow.solver import PotentialPlaningSolver

@@ -14,10 +14,12 @@ from planingfsi import writers
 # TODO: There is an import cycle making this noreorder line necessary
 from planingfsi.config import Config
 from planingfsi.dictionary import load_dict_from_file
+from planingfsi.fsi.figure import FSIFigure
 from planingfsi.potentialflow.solver import PotentialPlaningSolver
 
 if TYPE_CHECKING:
     from planingfsi.fe.rigid_body import RigidBody
+    from planingfsi.fe.structure import StructuralSolver  # noqa: F401
 
 
 class Simulation:
@@ -57,8 +59,6 @@ class Simulation:
     @property
     def figure(self) -> FSIFigure | None:
         """Use a property for the figure object to initialize lazily."""
-        from planingfsi.fsi.figure import FSIFigure  # noreorder
-
         if self._figure is None and self.config.plotting.plot_any:
             self._figure = FSIFigure(simulation=self, config=self.config)
         return self._figure
@@ -338,8 +338,3 @@ class Simulation:
         dict_ = load_dict_from_file(os.path.join(self.it_dir, "overallQuantities.txt"))
         self.ramp = dict_.get("Ramp", 0.0)
         self.solid_solver.res = dict_.get("Residual", 0.0)
-
-
-if TYPE_CHECKING:
-    from planingfsi.fe.structure import StructuralSolver  # noqa: F401
-    from planingfsi.fsi.figure import FSIFigure  # noreorder, noqa: F401
