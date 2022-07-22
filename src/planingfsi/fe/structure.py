@@ -120,7 +120,9 @@ class StructuralSolver:
 
         return ss
 
-    def _assign_substructure_to_body(self, ss: "Substructure", body_name: str = "default") -> None:
+    def _assign_substructure_to_body(
+        self, ss: "Substructure", body_name: str = "default", **_: Any
+    ) -> None:
         """Find parent body and add substructure to it."""
         bodies = [b for b in self.rigid_body if b.name == body_name]
         if bodies:
