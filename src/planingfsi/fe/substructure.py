@@ -57,7 +57,6 @@ class Substructure(abc.ABC):
 
         self.dict_ = dict_
         self.name = name
-        self.type_ = self.dict_.get("substructureType", "rigid")
         self.interpolator: Interpolator | None = None
 
         self.seal_pressure = self.get_or_config("Ps", 0.0)

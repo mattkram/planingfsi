@@ -128,7 +128,9 @@ class StructuralSolver:
         else:
             body = self.rigid_body[0]
         body.add_substructure(ss)
-        logger.info(f"Adding Substructure {ss.name} of type {ss.type_} to rigid body {body.name}")
+        logger.info(
+            f"Adding Substructure {ss.name} of type {type(ss).__name__} to rigid body {body.name}"
+        )
 
     def initialize_rigid_bodies(self) -> None:
         """Initialize the position of all rigid bodies."""
@@ -201,11 +203,7 @@ class StructuralSolver:
 
         for struct in self.substructure:
             struct.load_mesh()
-            if (
-                struct.type_ == "rigid"
-                or struct.type_ == "rotating"
-                or struct.type_ == "torsionalSpring"
-            ):
+            if isinstance(struct, (RigidSubstructure, TorsionalSpringSubstructure)):
                 struct.set_fixed_dof()
 
         for ss in self.substructure:
