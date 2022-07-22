@@ -41,13 +41,21 @@ class Substructure(abc.ABC):
                 return o
         raise NameError(f"Cannot find Substructure with name {name}")
 
-    def __init__(self, dict_: dict[str, Any], solver: "StructuralSolver" | None = None):
+    def __init__(
+        self,
+        dict_: dict[str, Any],
+        /,
+        solver: "StructuralSolver" | None = None,
+        *,
+        name: str = "",
+        **_: Any,
+    ):
         self.solver = solver
         self.index = len(self.__all)
         Substructure.__all.append(self)
 
         self.dict_ = dict_
-        self.name = self.dict_.get("substructureName", "")
+        self.name = name
         self.type_ = self.dict_.get("substructureType", "rigid")
         self.interpolator: Interpolator | None = None
 

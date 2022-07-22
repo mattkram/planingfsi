@@ -102,9 +102,6 @@ class StructuralSolver:
             dict_ = {}
         else:
             dict_ = dict_or_instance or {}
-            # TODO: Remove this remapping after name is added as a kwarg
-            if "name" in dict_:
-                dict_["substructureName"] = dict_["name"]
 
             # TODO: This logic is better handled by the factory pattern
             ss_type = dict_.get("substructureType", "rigid")
@@ -115,7 +112,7 @@ class StructuralSolver:
                 ss_class = TorsionalSpringSubstructure
             else:
                 ss_class = RigidSubstructure
-            ss = ss_class(dict_)
+            ss = ss_class(dict_, **dict_)
         ss.solver = self
         self.substructure.append(ss)
 

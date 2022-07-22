@@ -39,14 +39,12 @@ def main() -> None:
     simulation.solid_solver.add_rigid_body()
 
     dict_ = {
-        "substructureName": "plate",
-        "substructureType": "rigid",
         "hasPlaningSurface": True,
         "structInterpType": "cubic",
         "structExtrap": True,
     }
 
-    substructure = simulation.solid_solver.add_substructure(RigidSubstructure(dict_))
+    substructure = simulation.solid_solver.add_substructure(RigidSubstructure(dict_, name="plate"))
     planing_surface = simulation.fluid_solver.add_planing_surface(
         PlaningSurface(
             name="plate",
