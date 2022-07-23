@@ -170,10 +170,11 @@ class RigidBody:
         """The ramping coefficient from the high-level simulation object."""
         return self.parent.simulation.ramp
 
-    def add_substructure(self, ss: "substructure.Substructure") -> None:
+    def add_substructure(self, ss: "substructure.Substructure") -> substructure.Substructure:
         """Add a substructure to the rigid body."""
         self.substructure.append(ss)
         ss.parent = self
+        return ss
 
     def store_nodes(self) -> None:
         """Store references to all nodes in each substructure."""

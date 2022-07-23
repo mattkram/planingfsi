@@ -59,7 +59,6 @@ class Substructure(abc.ABC):
         parent: RigidBody | None = None,
         **_: Any,
     ):
-        self.solver = solver
         self.index = len(self.__all)
         Substructure.__all.append(self)
 
@@ -75,6 +74,8 @@ class Substructure(abc.ABC):
         self.tip_constraint_height = tip_constraint_height
         self.struct_interp_type = struct_interp_type
         self.struct_extrap = struct_extrap
+
+        self._solver = solver
         self.parent = parent
 
         self.line_fluid_pressure = None
@@ -99,6 +100,17 @@ class Substructure(abc.ABC):
 
         self.interp_func_x: interp1d | None = None
         self.interp_func_y: interp1d | None = None
+
+    @property
+    def solver(self) -> StructuralSolver | None:
+        """A reference to the structural solver. Can be explicitly set, or else traverses the parents."""
+        if self._solver is None and self.parent is not None:
+            return self.parent.parent
+        return self._solver
+
+    @solver.setter
+    def solver(self, solver: StructuralSolver) -> None:
+        self._solver = solver
 
     @property
     def config(self) -> Config:
