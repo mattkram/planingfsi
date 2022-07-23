@@ -86,7 +86,23 @@ def jsonify_string(string: str) -> str:
 def load_dict_from_file(
     filename: Path | str, key_map: dict[str, str] | None = None
 ) -> dict[str, Any]:
-    """Read a file, which is a less strict JSON format, and return a dictionary."""
+    """Read a file, which is a less strict JSON format, and return a dictionary.
+
+    Optionally, a key map may be provided to allow loading older files by
+    replacing keys with updated spellings. For example, a `key_map = {"oldKey": "old_key"}`
+    could read a file containing the key "oldKey", but the dictionary that is
+    returned will have replaced that key with "old_key". When using the `key_map`
+    functionality, an exception will be raised if both the old and new keys exist
+    in the dictionary being loaded.
+
+    Args:
+        filename: A filename or path to the file to be loaded.
+        key_map: An optional mapping of keys.
+
+    Returns:
+        A dictionary mapping keys to values from the input file.
+
+    """
     logger.debug('Loading Dictionary from file "{}"'.format(filename))
 
     with Path(filename).open() as f:
