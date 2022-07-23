@@ -117,8 +117,6 @@ class Substructure(abc.ABC):
     @property
     def config(self) -> Config:
         """A reference to the simulation configuration."""
-        if self.solver is None:
-            raise AttributeError("Must set solver to access config.")
         return self.solver.config
 
     @property
@@ -127,8 +125,6 @@ class Substructure(abc.ABC):
         if self.parent is None:
             logger.warning("No parent assigned, ramp will be set to 1.0.")
             return 1.0
-        if self.solver is None:
-            raise AttributeError("Must assign solver explicitly")
         return self.solver.simulation.ramp
 
     def add_planing_surface(self, planing_surface: PlaningSurface, **kwargs: Any) -> None:
@@ -237,9 +233,6 @@ class Substructure(abc.ABC):
 
     @property
     def it_dir(self) -> Path:
-        assert self.parent is not None
-        if self.solver is None:
-            raise AttributeError("Must assign solver explicitly")
         return self.solver.simulation.it_dir
 
     def write_coordinates(self) -> None:
