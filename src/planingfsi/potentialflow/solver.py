@@ -127,17 +127,26 @@ class PotentialPlaningSolver:
         self._add_pressure_patch(instance)
         return instance
 
-    def add_pressure_cushion(self, dict_: dict[str, Any]) -> "pressurepatch.PressureCushion":
+    def add_pressure_cushion(
+        self,
+        dict_or_instance: dict[str, Any] | pressurepatch.PressureCushion | None,
+    ) -> "pressurepatch.PressureCushion":
         """Add pressure cushion to the calculation from a dictionary file name.
 
         Args:
-            dict_: The dictionary file.
+            dict_or_instance: A dictionary of values, or a PressureCushion instance.
 
         Returns:
             Instance created from dictionary.
 
         """
-        instance = pressurepatch.PressureCushion(dict_, parent=self)
+        if isinstance(dict_or_instance, pressurepatch.PressureCushion):
+            instance = dict_or_instance
+        elif dict_or_instance is not None:
+            instance = pressurepatch.PressureCushion(**dict_or_instance)
+        else:
+            instance = pressurepatch.PressureCushion()
+        instance.parent = self
         self.pressure_cushions.append(instance)
         self._add_pressure_patch(instance)
         return instance

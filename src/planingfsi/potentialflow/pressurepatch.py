@@ -214,11 +214,10 @@ class PressureCushion(PressurePatch):
 
     def __init__(
         self,
-        dict_: dict[str, Any] | None = None,
-        /,
         *,
         name: str = "",
         parent: "solver.PotentialPlaningSolver" | None = None,
+        **dict_: Any,
     ) -> None:
         super().__init__(parent=parent)
         dict_ = dict_ or {}
