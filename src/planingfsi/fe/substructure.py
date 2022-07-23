@@ -102,10 +102,12 @@ class Substructure(abc.ABC):
         self.interp_func_y: interp1d | None = None
 
     @property
-    def solver(self) -> StructuralSolver | None:
+    def solver(self) -> StructuralSolver:
         """A reference to the structural solver. Can be explicitly set, or else traverses the parents."""
         if self._solver is None and self.parent is not None:
             return self.parent.parent
+        if self._solver is None:
+            raise AttributeError("solver must be set before use.")
         return self._solver
 
     @solver.setter
@@ -141,6 +143,7 @@ class Substructure(abc.ABC):
         planing_surface.interpolator = self.interpolator = Interpolator(
             self, planing_surface, **kwargs
         )
+        self.solver.simulation.fluid_solver.add_planing_surface(planing_surface)
 
     def set_element_properties(self) -> None:
         """Set the properties of each element."""

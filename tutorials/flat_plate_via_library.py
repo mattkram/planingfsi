@@ -34,12 +34,9 @@ def main() -> None:
     simulation.config.plotting.show = True
     simulation.config.plotting._pressure_scale_pct = 1e-8
 
-    # TODO: This should happen implicitly, not during load
-    # Add the default rigid body
     body = simulation.add_rigid_body()
-
     substructure = body.add_substructure(RigidSubstructure(name="plate"))
-    planing_surface = simulation.fluid_solver.add_planing_surface(
+    substructure.add_planing_surface(
         PlaningSurface(
             name="plate",
             initial_length=0.48,
@@ -48,7 +45,6 @@ def main() -> None:
             point_spacing="cosine",
         )
     )
-    substructure.add_planing_surface(planing_surface)
 
     simulation.run()
 

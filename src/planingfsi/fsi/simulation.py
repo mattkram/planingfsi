@@ -10,16 +10,15 @@ import numpy as np
 
 from planingfsi import logger
 from planingfsi import writers
-
-# TODO: There is an import cycle making this noreorder line necessary
 from planingfsi.config import Config
 from planingfsi.dictionary import load_dict_from_file
+from planingfsi.fe.structure import StructuralSolver
 from planingfsi.fsi.figure import FSIFigure
+from planingfsi.potentialflow.pressurepatch import PlaningSurface
 from planingfsi.potentialflow.solver import PotentialPlaningSolver
 
 if TYPE_CHECKING:
     from planingfsi.fe.rigid_body import RigidBody
-    from planingfsi.fe.structure import StructuralSolver  # noqa: F401
 
 
 class Simulation:
@@ -39,9 +38,6 @@ class Simulation:
     it_dirs: list[Path]
 
     def __init__(self) -> None:
-        # TODO: Remove after circular dependencies resolved
-        from planingfsi.fe.structure import StructuralSolver  # noqa: F811
-
         self.config = Config()
         self.solid_solver = StructuralSolver(self)
         self.fluid_solver = PotentialPlaningSolver(self)
@@ -165,7 +161,7 @@ class Simulation:
             substructure = self.solid_solver.add_substructure(dict_)
 
             if dict_.get("hasPlaningSurface", False):
-                planing_surface = self.fluid_solver.add_planing_surface(dict_)
+                planing_surface = PlaningSurface(**dict_)
                 substructure.add_planing_surface(planing_surface, **dict_)
         print(f"Substructures: {self.solid_solver.substructure}")
 
