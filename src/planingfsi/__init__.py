@@ -10,6 +10,8 @@ and the structural solver considers a large-deformation simple beam element.
 """
 import logging
 
+logging.basicConfig()
+
 logger = logging.getLogger("planingfsi")
 logger.setLevel(logging.INFO)
 
