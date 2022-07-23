@@ -6,6 +6,8 @@ from collections.abc import Iterable
 from pathlib import Path
 from typing import TYPE_CHECKING
 from typing import Any
+from typing import ClassVar
+from typing import Literal
 
 import numpy as np
 from scipy.interpolate import interp1d
@@ -15,21 +17,21 @@ from planingfsi import math_helpers
 from planingfsi import trig
 from planingfsi import writers
 from planingfsi.config import NUM_DIM
-from planingfsi.config import Config
 from planingfsi.fe import felib as fe
-from planingfsi.fe import rigid_body
+from planingfsi.fsi.interpolator import Interpolator
 
 if TYPE_CHECKING:
+    from planingfsi.config import Config
     from planingfsi.fe.rigid_body import RigidBody
     from planingfsi.fe.structure import StructuralSolver
-    from planingfsi.fsi.interpolator import Interpolator
+    from planingfsi.potentialflow.pressurepatch import PlaningSurface
 
 
 class Substructure(abc.ABC):
 
     __all: list["Substructure"] = []
 
-    element_type: type[fe.Element]
+    _element_type: ClassVar[type[fe.Element]]
 
     is_free = False
 
@@ -41,25 +43,41 @@ class Substructure(abc.ABC):
                 return o
         raise NameError(f"Cannot find Substructure with name {name}")
 
-    def __init__(self, dict_: dict[str, Any], solver: "StructuralSolver"):
-        self.solver: StructuralSolver = solver
+    def __init__(
+        self,
+        *,
+        name: str = "",
+        seal_pressure: float = 0.0,
+        seal_pressure_method: Literal["constant"] | Literal["hydrostatic"] = "constant",
+        seal_over_pressure_pct: float = 1.0,
+        cushion_pressure_type: str | None = None,
+        tip_load: float = 0.0,
+        tip_constraint_height: float | None = None,
+        struct_interp_type: Literal["linear"] | Literal["quadratic"] | Literal["cubic"] = "linear",
+        struct_extrap: bool = True,
+        solver: "StructuralSolver" | None = None,
+        parent: RigidBody | None = None,
+        **_: Any,
+    ):
         self.index = len(self.__all)
         Substructure.__all.append(self)
 
-        self.dict_ = dict_
-        self.name = self.dict_.get("substructureName", "")
-        self.type_ = self.dict_.get("substructureType", "rigid")
+        self.name = name
         self.interpolator: Interpolator | None = None
 
-        self.seal_pressure = self.get_or_config("Ps", 0.0)
-        self.seal_pressure_method = self.dict_.get("PsMethod", "constant")
+        self.seal_pressure = seal_pressure
+        self.seal_pressure_method = seal_pressure_method
 
-        self.seal_over_pressure_pct = self.get_or_config("overPressurePct", 1.0)
-        self.cushion_pressure_type = self.dict_.get("cushionPressureType", None)
-        self.tip_load = self.get_or_config("tipLoad", 0.0)
-        self.tip_constraint_height = self.dict_.get("tipConstraintHt", None)
-        self.struct_interp_type = self.dict_.get("structInterpType", "linear")
-        self.struct_extrap = self.dict_.get("structExtrap", True)
+        self.seal_over_pressure_pct = seal_over_pressure_pct
+        self.cushion_pressure_type = cushion_pressure_type
+        self.tip_load = tip_load
+        self.tip_constraint_height = tip_constraint_height
+        self.struct_interp_type = struct_interp_type
+        self.struct_extrap = struct_extrap
+
+        self._solver = solver
+        self.parent = parent
+
         self.line_fluid_pressure = None
         self.line_air_pressure = None
         self.fluidS: np.ndarray | None = None
@@ -69,7 +87,6 @@ class Substructure(abc.ABC):
         self.U: np.ndarray | None = None
         self.node: list[fe.Node] = []
         self.el: list[fe.Element] = []
-        self.parent: rigid_body.RigidBody | None = None
         self.node_arc_length = np.zeros(len(self.node))
 
         self.D = 0.0
@@ -85,6 +102,19 @@ class Substructure(abc.ABC):
         self.interp_func_y: interp1d | None = None
 
     @property
+    def solver(self) -> StructuralSolver:
+        """A reference to the structural solver. Can be explicitly set, or else traverses the parents."""
+        if self._solver is None and self.parent is not None:
+            return self.parent.parent
+        if self._solver is None:
+            raise AttributeError("solver must be set before use.")
+        return self._solver
+
+    @solver.setter
+    def solver(self, solver: StructuralSolver) -> None:
+        self._solver = solver
+
+    @property
     def config(self) -> Config:
         """A reference to the simulation configuration."""
         return self.solver.config
@@ -96,6 +126,20 @@ class Substructure(abc.ABC):
             logger.warning("No parent assigned, ramp will be set to 1.0.")
             return 1.0
         return self.solver.simulation.ramp
+
+    def add_planing_surface(self, planing_surface: PlaningSurface, **kwargs: Any) -> None:
+        """Add a planing surface to the substructure, and configure the interpolator.
+
+        Args:
+            planing_surface: The planing surface.
+            **kwargs: Keyword arguments to pass through to the Interpolator.
+
+        """
+        # Assign the same interpolator to both the substructure and planing_surface
+        planing_surface.interpolator = self.interpolator = Interpolator(
+            self, planing_surface, **kwargs
+        )
+        self.solver.simulation.fluid_solver.add_planing_surface(planing_surface)
 
     def set_element_properties(self) -> None:
         """Set the properties of each element."""
@@ -119,7 +163,7 @@ class Substructure(abc.ABC):
         self.node = [fe.Node.get_index(i) for i in ndInd]
 
         self.set_interp_function()
-        self.el = [self.element_type(parent=self) for _ in nd_st]
+        self.el = [self._element_type(parent=self) for _ in nd_st]
         self.set_element_properties()
         for ndSti, ndEndi, el in zip(nd_st, nd_end, self.el):
             el.set_nodes([fe.Node.get_index(ndSti), fe.Node.get_index(ndEndi)])
@@ -189,7 +233,6 @@ class Substructure(abc.ABC):
 
     @property
     def it_dir(self) -> Path:
-        assert self.parent is not None
         return self.solver.simulation.it_dir
 
     def write_coordinates(self) -> None:
@@ -455,12 +498,6 @@ class Substructure(abc.ABC):
     def set_angle(self, _: float) -> None:
         return None
 
-    def get_or_config(self, key: str, default: Any) -> Any:
-        value = self.dict_.get(key, default)
-        if isinstance(value, str):
-            value = getattr(self.config, value)
-        return value
-
     @abc.abstractmethod
     def set_fixed_dof(self) -> None:
         raise NotImplementedError
@@ -471,6 +508,7 @@ class FlexibleSubstructure(Substructure):
     __all: list["FlexibleSubstructure"] = []
     res = 0.0
     is_free = True
+    _element_type: ClassVar[type[fe.Element]] = fe.TrussElement
 
     @classmethod
     def update_all(cls, rigid_body: "RigidBody") -> None:
@@ -514,12 +552,17 @@ class FlexibleSubstructure(Substructure):
         for ss in cls.__all:
             ss.update_geometry()
 
-    def __init__(self, dict_: dict[str, Any], **kwargs: Any):
-        super().__init__(dict_, **kwargs)
+    def __init__(
+        self,
+        *,
+        pretension: float = -0.5,
+        axial_stiffness: float = 5e7,
+        **kwargs: Any,
+    ):
+        super().__init__(**kwargs)
         self.__all.append(self)
-        self.element_type = fe.TrussElement
-        self.pretension = dict_.get("pretension", -0.5)
-        self.EA = dict_.get("EA", 5e7)
+        self.pretension = pretension
+        self.EA = axial_stiffness
 
         self.K: np.ndarray | None = None
         self.F: np.ndarray | None = None
@@ -589,9 +632,7 @@ class FlexibleSubstructure(Substructure):
 
 
 class RigidSubstructure(Substructure):
-    def __init__(self, *args: Any, **kwargs: Any):
-        super().__init__(*args, **kwargs)
-        self.element_type = fe.RigidElement
+    _element_type: ClassVar[type[fe.Element]] = fe.RigidElement
 
     def set_attachments(self) -> None:
         return None
@@ -608,23 +649,40 @@ class RigidSubstructure(Substructure):
 class TorsionalSpringSubstructure(FlexibleSubstructure, RigidSubstructure):
     base_pt: np.ndarray
     is_free = True
+    _element_type: ClassVar[type[fe.Element]] = fe.RigidElement
 
-    def __init__(self, dict_: dict[str, Any], **kwargs: Any):
-        super().__init__(dict_=dict_, **kwargs)
-        self.parent = kwargs.get("parent")
-        self.element_type = fe.RigidElement
-        self.tip_load_pct = dict_.get("tipLoadPct", 0.0)
-        self.base_pt_pct = dict_.get("basePtPct", 1.0)
-        self.spring_constant = dict_.get("spring_constant", 1000.0)
+    def __init__(
+        self,
+        *,
+        initial_angle: float = 0.0,
+        tip_load_pct: float = 0.0,
+        base_pt_pct: float = 1.0,
+        spring_constant: float = 1e3,
+        relaxation_angle: float | None = None,
+        attach_pct: float = 0.0,
+        minimum_angle: float = -float("Inf"),
+        max_angle_step: float = float("Inf"),
+        attached_substructure_name: str | None = None,
+        attached_substructure_end: Literal["start"] | Literal["end"] = "end",
+        **kwargs: Any,
+    ):
+        super().__init__(**kwargs)
+        self.initial_angle = initial_angle
+        self.tip_load_pct = tip_load_pct
+        self.base_pt_pct = base_pt_pct
+        self.spring_constant = spring_constant
+
         self.theta = 0.0
         self.Mt = 0.0  # TODO
         self.MOld: float | None = None
-        self.relax = dict_.get("relaxAng", self.config.body.relax_rigid_body)
-        self.attach_pct = dict_.get("attachPct", 0.0)
+        self.relax = relaxation_angle or self.config.body.relax_rigid_body
+        self.attach_pct = attach_pct
         self.attached_node: fe.Node | None = None
         self.attached_element: fe.Element | None = None
-        self.minimum_angle = dict_.get("minimumAngle", -float("Inf"))
-        self.max_angle_step = dict_.get("maxAngleStep", float("Inf"))
+        self.minimum_angle = minimum_angle
+        self.max_angle_step = max_angle_step
+        self.attached_substructure_name = attached_substructure_name
+        self.attached_substructure_end = attached_substructure_end
         self.attached_ind = 0
         self.attached_substructure: Substructure | None = None
         self.residual = 1.0
@@ -641,16 +699,15 @@ class TorsionalSpringSubstructure(FlexibleSubstructure, RigidSubstructure):
 
         self.set_element_properties()
 
-        self.set_angle(self.dict_.get("initialAngle", 0.0))
+        self.set_angle(self.initial_angle)
 
     def set_attachments(self) -> None:
-        attached_substructure_name = self.dict_.get("attachedSubstructure", None)
-        if attached_substructure_name is not None:
-            self.attached_substructure = Substructure.find_by_name(attached_substructure_name)
+        if self.attached_substructure_name is not None:
+            self.attached_substructure = Substructure.find_by_name(self.attached_substructure_name)
         else:
             self.attached_substructure = None
 
-        if self.dict_.get("attachedSubstructureEnd", "End").lower() == "start":
+        if self.attached_substructure_end == "start":
             self.attached_ind = 0
         else:
             self.attached_ind = -1

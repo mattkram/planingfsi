@@ -4,6 +4,7 @@ from __future__ import annotations
 import abc
 from pathlib import Path
 from typing import Any
+from typing import Literal
 
 import numpy as np
 from scipy.interpolate import interp1d
@@ -23,6 +24,7 @@ class PressurePatch(abc.ABC):
     """Abstract base class representing a patch of pressure elements on the free surface.
 
     Attributes:
+        name: The name of the patch. Should be unique, but currently unenforced.
         pressure_elements: List of pressure elements.
         is_kutta_unknown: True of trailing edge pressure unknown.
         interpolator: Object to get interpolated body position if a `PlaningSurface`
@@ -30,9 +32,10 @@ class PressurePatch(abc.ABC):
 
     """
 
-    def __init__(self, parent: "solver.PotentialPlaningSolver") -> None:
+    name: str
+
+    def __init__(self, *, parent: "solver.PotentialPlaningSolver" | None) -> None:
         self.parent = parent
-        self.patch_name = "AbstractPressurePatch"
         self.pressure_elements: list[pe.PressureElement] = []
         self._end_pts = np.zeros(2)
         self.is_kutta_unknown = False
@@ -52,6 +55,12 @@ class PressurePatch(abc.ABC):
     @property
     def config(self) -> Config:
         """A reference to the simulation configuration."""
+        if self.parent is None:
+            raise ValueError(
+                "The parent must be set to access its configuration. "
+                "This can be done either with the 'parent=parent' keyword argument, by setting it explicitly, "
+                "or by using the `.add_planing_surface()` method."
+            )
         return self.parent.config
 
     @property
@@ -156,9 +165,7 @@ class PressurePatch(abc.ABC):
     def _force_file_save_path(self) -> Path:
         """A path to the force file."""
         assert self.parent is not None
-        return (
-            self.parent.simulation.it_dir / f"forces_{self.patch_name}.{self.config.io.data_format}"
-        )
+        return self.parent.simulation.it_dir / f"forces_{self.name}.{self.config.io.data_format}"
 
     def write_forces(self) -> None:
         """Write forces to file."""
@@ -197,7 +204,7 @@ class PressureCushion(PressurePatch):
         dict_: Dictionary containing patch definitions.
 
     Attributes:
-        patch_name (str): Name of patch
+        name (str): Name of patch
         cushion_type (str): The type of pressure cushion.
         cushion_pressure (float): The value of the pressure in the cushion.
 
@@ -205,10 +212,18 @@ class PressureCushion(PressurePatch):
 
     _count = 0
 
-    def __init__(self, parent: "solver.PotentialPlaningSolver", dict_: dict[str, Any]) -> None:
-        super().__init__(parent)
+    def __init__(
+        self,
+        dict_: dict[str, Any] | None = None,
+        /,
+        *,
+        name: str = "",
+        parent: "solver.PotentialPlaningSolver" | None = None,
+    ) -> None:
+        super().__init__(parent=parent)
+        dict_ = dict_ or {}
         PressureCushion._count += 1
-        self.patch_name = dict_.get(
+        self.name = name or dict_.get(
             "pressureCushionName", f"pressureCushion{PressureCushion._count}"
         )
 
@@ -334,7 +349,23 @@ class PressureCushion(PressurePatch):
 
 
 class PlaningSurface(PressurePatch):
-    """Planing Surface consisting of unknown elements."""
+    """Planing Surface consisting of unknown elements.
+
+    Attributes:
+        name: The name of the planing surface (should be unique, but that is unenforced).
+        initial_length: An initial guessed wetted length of the planing surface.
+        minimum_length: The minimum length of the surface allowed to be wetted.
+        maximum_length: The maximum length of the surface allowed to be wetted.
+        num_fluid_elements: The number of elements to discretize surface into.
+        point_spacing: Method to use for distributing pressure elements. Either "linear" or "cosine".
+        kutta_pressure: The target pressure at the trailing edge.
+        upstream_pressure: The target pressure upstream of the stagnation point.
+        is_sprung: If true, contribution due to numerical spring is added to the lift force in order to ensure
+            the tip of the surface lies on the free surface.
+        spring_constant: The spring constant.
+        parent: The solver to which this planing surface belongs.
+
+    """
 
     _count = 0
     _all: list["PlaningSurface"] = []
@@ -345,43 +376,59 @@ class PlaningSurface(PressurePatch):
 
         Args:
             name: The name of the planing surface.
+
         Returns:
             PlaningSurface instance or None of no match found.
 
         """
         if name:
             for obj in cls._all:
-                if obj.patch_name == name:
+                if obj.name == name:
                     return obj
         return None
 
-    def __init__(self, parent: "solver.PotentialPlaningSolver", dict_: dict[str, Any]) -> None:
-        super().__init__(parent)
+    def __init__(
+        self,
+        *,
+        name: str = "",
+        initial_length: float = 0.1,
+        minimum_length: float = 0.0,
+        maximum_length: float = float("Inf"),
+        num_fluid_elements: int = 1,
+        point_spacing: Literal["linear"] | Literal["cosine"] = "linear",
+        kutta_pressure: float | str = 0.0,
+        upstream_pressure: float = 0.0,
+        is_sprung: bool = False,
+        spring_constant: float = 1e4,
+        parent: "solver.PotentialPlaningSolver" | None = None,
+        **_: Any,
+    ) -> None:
+        super().__init__(parent=parent)
         PlaningSurface._all.append(self)
 
-        self.patch_name = dict_.get("substructureName", "")
-        self.initial_length = dict_.get("initialLength")
-        self.minimum_length = dict_.get("minimumLength", 0.0)
-        self.maximum_length = dict_.get("maximum_length", float("Inf"))
+        self.name = name
+        self.initial_length = initial_length
+        self.minimum_length = minimum_length
+        self.maximum_length = maximum_length
 
-        self.spring_constant = dict_.get("springConstant", 1e4)
-        self.kutta_pressure = dict_.get("kuttaPressure", 0.0)
+        self.kutta_pressure = kutta_pressure
         if isinstance(self.kutta_pressure, str):
             self.kutta_pressure = getattr(self.config.body, self.kutta_pressure)
-        self._upstream_pressure = dict_.get("upstreamPressure", 0.0)
+
+        self._upstream_pressure = upstream_pressure
         if isinstance(self._upstream_pressure, str):
             self._upstream_pressure = getattr(self.config, self._upstream_pressure)
 
         self.is_initialized = False
         self.is_active = True
         self.is_kutta_unknown = True
-        self.is_sprung = dict_.get("isSprung", False)
+
+        self.is_sprung = is_sprung
+        self.spring_constant = spring_constant
         if self.is_sprung:
             self.initial_length = 0.0
             self.minimum_length = 0.0
             self.maximum_length = 0.0
-
-        num_elements = dict_.get("Nfl", 0)
 
         self.pressure_elements.append(
             pe.ForwardHalfTriangularPressureElement(parent=self, is_on_body=False)
@@ -392,7 +439,10 @@ class PlaningSurface(PressurePatch):
             )
         )
         self.pressure_elements.extend(
-            [pe.CompleteTriangularPressureElement(parent=self) for _ in range(num_elements - 1)]
+            [
+                pe.CompleteTriangularPressureElement(parent=self)
+                for _ in range(num_fluid_elements - 1)
+            ]
         )
         self.pressure_elements.append(
             pe.AftHalfTriangularPressureElement(
@@ -401,15 +451,16 @@ class PlaningSurface(PressurePatch):
         )
 
         # Define point spacing
-        point_spacing = dict_.get("pointSpacing", "linear")
         self.relative_position: np.ndarray
         if point_spacing == "cosine":
             self.relative_position = 0.5 * (
-                1 - trig.cosd(np.linspace(0.0, 180.0, num_elements + 1))
+                1 - trig.cosd(np.linspace(0.0, 180.0, num_fluid_elements + 1))
             )
+        elif point_spacing == "linear":
+            self.relative_position = np.linspace(0.0, 1.0, num_fluid_elements + 1)
         else:
-            self.relative_position = np.linspace(0.0, 1.0, num_elements + 1)
-        print(self.relative_position)
+            raise ValueError("point_spacing must be 'cosine' or 'linear'")
+
         self.relative_position /= self.relative_position[-2]
         self.relative_position = np.hstack((0.0, self.relative_position))
 

@@ -4,17 +4,21 @@ from __future__ import annotations
 import os
 from pathlib import Path
 from typing import TYPE_CHECKING
+from typing import Any
 
 import numpy as np
 
 from planingfsi import logger
 from planingfsi import writers
-
-# TODO: There is an import cycle making this noreorder line necessary
 from planingfsi.config import Config
 from planingfsi.dictionary import load_dict_from_file
-from planingfsi.fsi.interpolator import Interpolator
+from planingfsi.fe.structure import StructuralSolver
+from planingfsi.fsi.figure import FSIFigure
+from planingfsi.potentialflow.pressurepatch import PlaningSurface
 from planingfsi.potentialflow.solver import PotentialPlaningSolver
+
+if TYPE_CHECKING:
+    from planingfsi.fe.rigid_body import RigidBody
 
 
 class Simulation:
@@ -34,9 +38,6 @@ class Simulation:
     it_dirs: list[Path]
 
     def __init__(self) -> None:
-        # TODO: Remove after circular dependencies resolved
-        from planingfsi.fe.structure import StructuralSolver  # noqa: F811
-
         self.config = Config()
         self.solid_solver = StructuralSolver(self)
         self.fluid_solver = PotentialPlaningSolver(self)
@@ -54,11 +55,18 @@ class Simulation:
     @property
     def figure(self) -> FSIFigure | None:
         """Use a property for the figure object to initialize lazily."""
-        from planingfsi.fsi.figure import FSIFigure  # noreorder
-
         if self._figure is None and self.config.plotting.plot_any:
             self._figure = FSIFigure(simulation=self, config=self.config)
         return self._figure
+
+    def add_rigid_body(self, rigid_body: dict[str, Any] | None = None) -> RigidBody:
+        """Add a rigid body to the simulation and solid solver.
+
+        Args:
+            rigid_body: An optional dictionary of values to construct the rigid body.
+
+        """
+        return self.solid_solver.add_rigid_body(rigid_body)
 
     def update_fluid_response(self) -> None:
         """Update the fluid response and apply to the structural solver."""
@@ -101,24 +109,60 @@ class Simulation:
         if Path(self.config.path.body_dict_dir).exists():
             for dict_path in Path(self.config.path.body_dict_dir).glob("*"):
                 dict_ = load_dict_from_file(str(dict_path))
-                self.solid_solver.add_rigid_body(dict_)
+                self.add_rigid_body(dict_)
         else:
             # Add a dummy rigid body that cannot move
-            self.solid_solver.add_rigid_body()
+            self.add_rigid_body()
         print(f"Rigid Bodies: {self.solid_solver.rigid_body}")
 
     def _load_substructures(self) -> None:
         """Load all substructures from files."""
         for dict_path in Path(self.config.path.input_dict_dir).glob("*"):
-            dict_ = load_dict_from_file(dict_path)
+            dict_ = load_dict_from_file(
+                dict_path,
+                key_map={
+                    "substructureName": "name",
+                    "initialLength": "initial_length",
+                    "Nfl": "num_fluid_elements",
+                    "minimumLength": "minimum_length",
+                    "maximumLength": "maximum_length",
+                    "kuttaPressure": "kutta_pressure",
+                    "upstreamPressure": "upstream_pressure",
+                    "isSprung": "is_sprung",
+                    "springConstant": "spring_constant",
+                    "pointSpacing": "point_spacing",
+                    "waterlineHeight": "waterline_height",
+                    "sSepPctStart": "separation_arclength_start_pct",
+                    "sImmPctStart": "immersion_arclength_start_pct",
+                    "bodyName": "body_name",
+                    "Ps": "seal_pressure",
+                    "PsMethod": "seal_pressure_method",
+                    "overPressurePct": "seal_over_pressure_pct",
+                    "cushionPressureType": "cushion_pressure_type",
+                    "tipLoad": "tip_load",
+                    "tipLoadPct": "tip_load_pct",
+                    "tipConstraintHt": "tip_constraint_height",
+                    "structInterpType": "struct_interp_type",
+                    "structExtrap": "struct_extrap",
+                    "initialAngle": "initial_angle",
+                    "basePtPct": "base_pt_pct",
+                    "relaxAng": "relaxation_angle",
+                    "attachPct": "attach_pct",
+                    "minimumAngle": "minimum_angle",
+                    "maxAngleStep": "max_angle_step",
+                    "attachedSubstructure": "attached_substructure_name",
+                    "attachedSubstructureEnd": "attached_substructure_end",
+                    "EA": "axial_stiffness",
+                },
+            )
+            # TODO: This default fallback to config could be handled in the PlaningSurface class
+            dict_.setdefault("waterline_height", self.config.flow.waterline_height)
+
             substructure = self.solid_solver.add_substructure(dict_)
 
             if dict_.get("hasPlaningSurface", False):
-                planing_surface = self.fluid_solver.add_planing_surface(dict_)
-                dict_.setdefault("waterline_height", self.config.flow.waterline_height)
-                interpolator = Interpolator(substructure, planing_surface, dict_)
-                interpolator.solid_position_function = substructure.get_coordinates
-                interpolator.fluid_pressure_function = planing_surface.get_loads_in_range
+                planing_surface = PlaningSurface(**dict_)
+                substructure.add_planing_surface(planing_surface, **dict_)
         print(f"Substructures: {self.solid_solver.substructure}")
 
     def _load_pressure_cushions(self) -> None:
@@ -290,8 +334,3 @@ class Simulation:
         dict_ = load_dict_from_file(os.path.join(self.it_dir, "overallQuantities.txt"))
         self.ramp = dict_.get("Ramp", 0.0)
         self.solid_solver.res = dict_.get("Residual", 0.0)
-
-
-if TYPE_CHECKING:
-    from planingfsi.fe.structure import StructuralSolver  # noqa: F401
-    from planingfsi.fsi.figure import FSIFigure  # noreorder, noqa: F401
