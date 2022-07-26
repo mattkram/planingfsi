@@ -204,9 +204,17 @@ class PressureCushion(PressurePatch):
         dict_: Dictionary containing patch definitions.
 
     Attributes:
-        name (str): Name of patch
-        cushion_type (str): The type of pressure cushion.
-        cushion_pressure (float): The value of the pressure in the cushion.
+        name: Name of patch.
+        cushion_pressure: The value of the pressure in the cushion. If "Pc" is provided, the value will be
+            loaded from the simulation-global `config.body.Pc` variable.
+        cushion_type: The type of pressure cushion, either "finite" or "infinite".
+        smoothing_factor: Used for standalone finite pressure cushions without upstream and downstream surfaces.
+        num_elements: The number of pressure elements used to represent the pressure cushion.
+        upstream_planing_surface: The `PlaningSurface` upstream of the cushion, used to determine bounds.
+        downstream_planing_surface: The `PlaningSurface` downstream of the cushion, used to determine bounds.
+        upstream_loc: If there is no upstream `PlaningSurface` instance, this is the fixed upstream bound.
+        downstream_loc: If there is no downstream `PlaningSurface` instance, this is the fixed downstream bound.
+        parent: The `PotentialPlaningSolver` to which this `PressureCushion` belongs.
 
     """
 
@@ -217,7 +225,7 @@ class PressureCushion(PressurePatch):
         *,
         name: str = "",
         cushion_pressure: float | Literal["Pc"] | None = None,
-        cushion_type: str = "",
+        cushion_type: Literal["finite"] | Literal["infinite"] = "finite",
         smoothing_factor: float = np.nan,
         num_elements: int = 10,
         upstream_planing_surface: PlaningSurface | str | None = None,
@@ -231,10 +239,8 @@ class PressureCushion(PressurePatch):
         PressureCushion._count += 1
         self.name = name or f"pressureCushion{PressureCushion._count}"
 
-        if cushion_pressure == "Pc":
-            self.cushion_pressure = self.config.body.Pc
-        elif cushion_pressure is None:
-            self.cushion_pressure = getattr(self.config, "cushionPressure", 0.0)
+        if cushion_pressure == "Pc" or cushion_pressure is None:
+            self.cushion_pressure = getattr(self.config.body, "Pc", 0.0)
         else:
             self.cushion_pressure = cushion_pressure
 
@@ -284,6 +290,7 @@ class PressureCushion(PressurePatch):
                         ]
                     )
 
+            # TODO: This should be determined automatically if up/downstream surfaces are assigned.
             self._end_pts[:] = [
                 downstream_loc
                 if downstream_loc is not None
