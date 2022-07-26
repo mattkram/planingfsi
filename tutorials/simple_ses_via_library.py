@@ -1,7 +1,10 @@
+import numpy as np
+
 from planingfsi import Mesh
 from planingfsi.fe.substructure import RigidSubstructure
 from planingfsi.fsi.simulation import Simulation
 from planingfsi.potentialflow.pressurepatch import PlaningSurface
+from planingfsi.potentialflow.pressurepatch import PressureCushion
 
 
 def generate_mesh() -> Mesh:
@@ -89,15 +92,17 @@ def main() -> None:
 
     # TODO: Not sure how to apply cushion pressure to rigid elements without PlaningSurface
     simulation.fluid_solver.add_pressure_cushion(
-        {
-            "pressureCushionName": "cushion",
-            "cushionPressure": 1000.0,
-            "upstreamPlaningSurface": "fwd_plate",
-            "downstreamPlaningSurface": "aft_plate",
-            "upstreamLoc": 0.0,
-            "downstreamLoc": -5.0,
-            "numElements": 30,
-        }
+        PressureCushion(
+            name="cushion",
+            cushion_type="",
+            smoothing_factor=np.nan,
+            cushion_pressure=1000.0,
+            upstream_planing_surface="fwd_plate",
+            downstream_planing_surface="aft_plate",
+            upstream_loc=0.0,
+            downstream_loc=-5.0,
+            num_elements=30,
+        )
     )
 
     simulation.run()

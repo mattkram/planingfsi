@@ -216,26 +216,37 @@ class PressureCushion(PressurePatch):
         self,
         *,
         name: str = "",
-        parent: "solver.PotentialPlaningSolver" | None = None,
-        **dict_: Any,
+        cushion_pressure: float | Literal["Pc"] | None = None,
+        cushion_type: str = "",
+        smoothing_factor: float = np.nan,
+        num_elements: int = 10,
+        upstream_planing_surface: PlaningSurface | str | None = None,
+        downstream_planing_surface: PlaningSurface | str | None = None,
+        upstream_loc: float | None = None,
+        downstream_loc: float | None = None,
+        parent: solver.PotentialPlaningSolver | None = None,
+        **_: Any,
     ) -> None:
         super().__init__(parent=parent)
-        dict_ = dict_ or {}
         PressureCushion._count += 1
-        self.name = name or dict_.get(
-            "pressureCushionName", f"pressureCushion{PressureCushion._count}"
-        )
+        self.name = name or f"pressureCushion{PressureCushion._count}"
 
-        cushion_pressure = dict_.get("cushionPressure")
         if cushion_pressure == "Pc":
-            cushion_pressure = self.config.body.Pc
+            self.cushion_pressure = self.config.body.Pc
         elif cushion_pressure is None:
-            cushion_pressure = getattr(self.config, "cushionPressure", 0.0)
+            self.cushion_pressure = getattr(self.config, "cushionPressure", 0.0)
+        else:
+            self.cushion_pressure = cushion_pressure
 
-        self.cushion_pressure = cushion_pressure
+        if isinstance(upstream_planing_surface, PlaningSurface):
+            self.neighbor_up = upstream_planing_surface
+        else:
+            self.neighbor_up = PlaningSurface.find_by_name(upstream_planing_surface)
 
-        self.neighbor_up = PlaningSurface.find_by_name(dict_.get("upstreamPlaningSurface"))
-        self.neighbor_down = PlaningSurface.find_by_name(dict_.get("downstreamPlaningSurface"))
+        if isinstance(downstream_planing_surface, PlaningSurface):
+            self.neighbor_down = downstream_planing_surface
+        else:
+            self.neighbor_down = PlaningSurface.find_by_name(downstream_planing_surface)
 
         if self.neighbor_down is not None:
             self.neighbor_down.upstream_pressure = self.cushion_pressure
@@ -243,7 +254,7 @@ class PressureCushion(PressurePatch):
             self.neighbor_up.kutta_pressure = self.cushion_pressure
 
         # TODO: cushion_type variability should be managed by sub-classing PressurePatch
-        self.cushion_type = dict_.get("cushionType", "")
+        self.cushion_type = cushion_type
         if self.cushion_type == "infinite":
             # Dummy element, will have 0 pressure
             self.pressure_elements.append(
@@ -260,7 +271,7 @@ class PressureCushion(PressurePatch):
                 )
             )
 
-            self.smoothing_factor = dict_.get("smoothingFactor", np.nan)
+            self.smoothing_factor = smoothing_factor
             # TODO: Are we adding these elements twice?
             for n in [self.neighbor_down, self.neighbor_up]:
                 if n is None and ~np.isnan(self.smoothing_factor):
@@ -269,15 +280,18 @@ class PressureCushion(PressurePatch):
                             pe.CompleteTriangularPressureElement(
                                 is_source=True, is_on_body=False, parent=self
                             )
-                            for _ in range(dict_.get("numElements", 10))
+                            for _ in range(num_elements)
                         ]
                     )
 
-            for i, key in enumerate(["downstreamLoc", "upstreamLoc"]):
-                value = dict_.get(key)
-                if value is None:
-                    value = getattr(self.config, key, 0.0)
-                self._end_pts[i] = value
+            self._end_pts[:] = [
+                downstream_loc
+                if downstream_loc is not None
+                else getattr(self.config, "downstream_loc", 0.0),
+                upstream_loc
+                if upstream_loc is not None
+                else getattr(self.config, "upstream_loc", 0.0),
+            ]
 
             self.pressure_elements.append(
                 pe.AftHalfTriangularPressureElement(is_source=True, is_on_body=False, parent=self)
