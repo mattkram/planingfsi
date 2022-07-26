@@ -94,7 +94,7 @@ def main() -> None:
     simulation.fluid_solver.add_pressure_cushion(
         PressureCushion(
             name="cushion",
-            cushion_type="",
+            cushion_type="finite",
             smoothing_factor=np.nan,
             cushion_pressure=1000.0,
             upstream_planing_surface="fwd_plate",
