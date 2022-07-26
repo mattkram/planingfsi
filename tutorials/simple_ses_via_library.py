@@ -90,7 +90,6 @@ def main() -> None:
     simulation.config.body._cushion_pressure = 1000.0
     ss.cushion_pressure_type = "Total"
 
-    # TODO: Not sure how to apply cushion pressure to rigid elements without PlaningSurface
     simulation.fluid_solver.add_pressure_cushion(
         PressureCushion(
             name="cushion",
