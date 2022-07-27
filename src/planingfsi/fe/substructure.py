@@ -107,7 +107,7 @@ class Substructure(abc.ABC):
     @property
     def solver(self) -> StructuralSolver:
         """A reference to the structural solver. Can be explicitly set, or else traverses the parents."""
-        if self._solver is None and self.parent is not None:
+        if self._solver is None and self.parent is not None and self.parent.parent is not None:
             return self.parent.parent
         if self._solver is None:
             raise AttributeError("solver must be set before use.")

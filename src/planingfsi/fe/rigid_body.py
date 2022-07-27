@@ -47,7 +47,7 @@ class RigidBody:
     res_l: float
     res_m: float
 
-    def __init__(self, dict_: dict[str, Any], parent: StructuralSolver):
+    def __init__(self, parent: StructuralSolver | None = None, **dict_: Any):
         self.parent = parent
         self.num_dim = 2
         self.draft = 0.0
@@ -169,11 +169,15 @@ class RigidBody:
     @property
     def config(self) -> Config:
         """A reference to the simulation configuration."""
+        if self.parent is None:
+            raise AttributeError("parent must be set before config can be accessed.")
         return self.parent.config
 
     @property
     def ramp(self) -> float:
         """The ramping coefficient from the high-level simulation object."""
+        if self.parent is None:
+            raise AttributeError("parent must be set before simulation can be accessed.")
         return self.parent.simulation.ramp
 
     def add_substructure(self, ss: "substructure.Substructure") -> substructure.Substructure:
@@ -558,6 +562,8 @@ class RigidBody:
 
     def write_motion(self) -> None:
         """Write the motion results to file."""
+        if self.parent is None:
+            raise AttributeError("parent must be set before simulation can be accessed.")
         writers.write_as_dict(
             self.parent.simulation.it_dir / f"motion_{self.name}.{self.config.io.data_format}",
             ["xCofR", self.xCofR],
@@ -580,6 +586,8 @@ class RigidBody:
                 ss.write_deformation()
 
     def load_motion(self) -> None:
+        if self.parent is None:
+            raise AttributeError("parent must be set before simulation can be accessed.")
         dict_ = load_dict_from_file(
             self.parent.simulation.it_dir / f"motion_{self.name}.{self.config.io.data_format}"
         )

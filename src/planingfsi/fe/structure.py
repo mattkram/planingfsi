@@ -71,17 +71,21 @@ class StructuralSolver:
         """A combined list of all nodes from all substructures."""
         return [nd for ss in self.substructures for nd in ss.node]
 
-    def add_rigid_body(self, dict_: dict[str, Any] = None) -> RigidBody:
+    def add_rigid_body(
+        self, dict_or_instance: dict[str, Any] | RigidBody | None = None
+    ) -> RigidBody:
         """Add a rigid body to the structure.
 
-        Args
-        ----
-        dict_: A dictionary containing rigid body specifications.
+        Args:
+            dict_or_instance: A dictionary of values, or a RigidBody instance.
 
         """
-        if dict_ is None:
-            dict_ = {}
-        rigid_body = RigidBody(dict_, parent=self)
+        if isinstance(dict_or_instance, RigidBody):
+            rigid_body = dict_or_instance
+            rigid_body.parent = self
+        else:
+            dict_ = dict_or_instance or {}
+            rigid_body = RigidBody(**dict_, parent=self)
         self.rigid_bodies.append(rigid_body)
         return rigid_body
 
