@@ -40,6 +40,11 @@ class RigidBody:
     relax_trim: float
     time_step: float
     num_damp: int
+    L: float
+    D: float
+    weight: float
+    res_l: float
+    res_m: float
 
     def __init__(self, dict_: dict[str, Any], parent: StructuralSolver):
         self.parent = parent

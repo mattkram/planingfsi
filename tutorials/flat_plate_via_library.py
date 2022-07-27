@@ -1,7 +1,7 @@
 from planingfsi import Mesh
+from planingfsi import PlaningSurface
+from planingfsi import RigidSubstructure
 from planingfsi import Simulation
-from planingfsi.fe.substructure import RigidSubstructure
-from planingfsi.potentialflow.pressurepatch import PlaningSurface
 
 
 def generate_mesh(angle_of_attack: float) -> Mesh:

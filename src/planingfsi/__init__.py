@@ -16,7 +16,22 @@ logger = logging.getLogger("planingfsi")
 logger.setLevel(logging.INFO)
 
 from planingfsi.fe.femesh import Mesh
+from planingfsi.fe.substructure import FlexibleSubstructure
+from planingfsi.fe.substructure import RigidSubstructure
+from planingfsi.fe.substructure import TorsionalSpringSubstructure
+from planingfsi.potentialflow.pressurepatch import PlaningSurface
+from planingfsi.potentialflow.pressurepatch import PressureCushion
 from planingfsi.simulation import Simulation
+
+__all__ = [
+    "Mesh",
+    "Simulation",
+    "RigidSubstructure",
+    "FlexibleSubstructure",
+    "TorsionalSpringSubstructure",
+    "PlaningSurface",
+    "PressureCushion",
+]
 
 # # Use tk by default. Otherwise try Agg. Otherwise, disable plotting.
 # _fallback_engine = "Agg"
