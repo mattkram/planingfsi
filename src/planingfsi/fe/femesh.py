@@ -9,7 +9,6 @@ from typing import Any
 
 import matplotlib.pyplot as plt
 import numpy as np
-from numpy import floating
 
 from planingfsi import logger
 from planingfsi import trig
@@ -93,8 +92,8 @@ class Mesh:
             base_pt_id, ang, radius = position
 
             # TODO: Consider removing this and fixing static types
-            assert isinstance(radius, float)
-            assert isinstance(ang, float)
+            assert isinstance(radius, (float, int)), type(radius)
+            assert isinstance(ang, (float, int)), type(ang)
 
             point.position = self.get_point(int(base_pt_id)).position + radius * trig.angd2vec2d(
                 float(ang)
