@@ -92,7 +92,7 @@ class Interpolator:
     def get_loads_in_range(self, s0: float, s1: float) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
         assert self.solid_position_function is not None
         assert self.fluid_pressure_function is not None
-        x = [self.solid_position_function(s)[0] for s in [s0, s1]]
-        x, p, tau = self.fluid_pressure_function(x[0], x[1])
+        xs = [self.solid_position_function(s)[0] for s in [s0, s1]]
+        x, p, tau = self.fluid_pressure_function(xs[0], xs[1])
         s = np.array([self.get_s_fixed_x(xx, 0.5) for xx in x])
         return s, p, tau

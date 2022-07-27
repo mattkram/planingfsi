@@ -9,6 +9,7 @@ from typing import Any
 
 import matplotlib.pyplot as plt
 import numpy as np
+from numpy import floating
 
 from planingfsi import logger
 from planingfsi import trig
@@ -90,6 +91,11 @@ class Mesh:
             point = Point(id=id_, mesh=self)
             self.points.append(point)
             base_pt_id, ang, radius = position
+
+            # TODO: Consider removing this and fixing static types
+            assert isinstance(radius, float)
+            assert isinstance(ang, float)
+
             point.position = self.get_point(int(base_pt_id)).position + radius * trig.angd2vec2d(
                 float(ang)
             )
@@ -195,7 +201,7 @@ class Mesh:
 
     def get_length(self, pt0: int, pt1: int) -> float:
         """The Cartesian distance of the line between two points."""
-        return np.linalg.norm(self.get_diff(pt0, pt1))
+        return float(np.linalg.norm(self.get_diff(pt0, pt1)))
 
     def display(self, disp: bool = False) -> None:
         """Display information about the mesh.
@@ -488,7 +494,7 @@ class Curve(_ShapeBase):
     @property
     def chord(self) -> float:
         """The chord length, i.e. the distance between start and end points."""
-        return np.linalg.norm(self._end_pts[1].position - self._end_pts[0].position)
+        return float(np.linalg.norm(self._end_pts[1].position - self._end_pts[0].position))
 
     @property
     def radius(self) -> float:

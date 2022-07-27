@@ -136,7 +136,7 @@ class RigidBody:
         self.resFun: Callable[[np.ndarray], np.ndarray] | None = None
 
         # Assign displacement function depending on specified method
-        self.get_disp = lambda: (0.0, 0.0)
+        self.get_disp = lambda: np.array((0.0, 0.0))
         if any(self.free_dof):
             if self.config.body.motion_method == "Secant":
                 self.get_disp = self.get_disp_secant
@@ -195,6 +195,9 @@ class RigidBody:
         """Update the position of the rigid body by passing the change in draft and trim."""
         if draft_delta is None or trim_delta is None:
             draft_delta, trim_delta = self.get_disp()
+            # TODO: Consider removing this and fixing static types
+            assert draft_delta is not None
+            assert trim_delta is not None
             if np.isnan(draft_delta):
                 draft_delta = 0.0
             if np.isnan(trim_delta):

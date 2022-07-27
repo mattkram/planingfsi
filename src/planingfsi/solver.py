@@ -159,6 +159,9 @@ class RootFinder:
         if self.it == 0 or self.jacobian is None:
             self.reset_jacobian()
 
+        # TODO: Consider removing this and fixing static types
+        assert self.jacobian is not None
+
         dx = numpy.reshape(self.dx, (self.dim, 1))
         df = numpy.reshape(self.df, (self.dim, 1))
 

@@ -79,7 +79,7 @@ def atand(slope: ArrayLike) -> ArrayLike:
     return numpy.degrees(numpy.arctan(slope))
 
 
-def atand2(delta_y: ArrayLike, delta_x: ArrayLike) -> ArrayLike:
+def atand2(delta_y: ArrayLike, delta_x: ArrayLike) -> float:
     """Return the arctan2 of an angle specified in degrees.
 
     Returns
@@ -88,7 +88,7 @@ def atand2(delta_y: ArrayLike, delta_x: ArrayLike) -> ArrayLike:
        An angle, in degrees.
 
     """
-    return numpy.degrees(numpy.arctan2(delta_y, delta_x))
+    return float(numpy.degrees(numpy.arctan2(delta_y, delta_x)))
 
 
 def ang2vec(ang: ArrayLike) -> numpy.ndarray:
