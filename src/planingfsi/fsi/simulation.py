@@ -267,7 +267,7 @@ class Simulation:
         if self.figure is not None and self.config.plotting.plot_any:
             self.figure.update()
 
-    def get_body_res(self, x: np.array) -> np.array:
+    def get_body_res(self, x: np.ndarray) -> np.ndarray:
         # self.solid_solver.get_pt_disp_rb(x[0], x[1])
         # self.solid_solver.update_nodal_positions()
         self.update_fluid_response()

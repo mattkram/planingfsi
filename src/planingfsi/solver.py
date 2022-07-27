@@ -43,14 +43,14 @@ class RootFinder:
         self.derivative_method = kwargs.get("derivativeMethod", "right")
         self.err = 1.0
         self.it = 0
-        self.jacobian: numpy.array = None
+        self.jacobian: numpy.ndarray | None = None
         self.x_prev = numpy.zeros((self.dim,))
         self.f_prev = numpy.zeros((self.dim,))
         self.max_jacobian_reset_step = kwargs.get("maxJacobianResetStep", 5)
         self.is_converged = False
 
         # Calculate function value at initial point
-        self.dx = numpy.zeros_like(xo)
+        self.dx: numpy.ndarray = numpy.zeros_like(xo)
         self.df = numpy.zeros_like(xo)
 
         self.evaluate_function()
