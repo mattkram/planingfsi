@@ -52,16 +52,14 @@ class StructuralSolver:
         return False
 
     @property
-    def res_l(self) -> float:
-        """The lift residual."""
-        # TODO: This should handle multiple rigid bodies
-        return self.rigid_bodies[0].get_res_lift()
+    def lift_residual(self) -> float:
+        """The maximum lift force residual."""
+        return max(body.get_res_lift() for body in self.rigid_bodies)
 
     @property
-    def res_m(self) -> float:
-        """The trim moment residual."""
-        # TODO: This should handle multiple rigid bodies
-        return self.rigid_bodies[0].get_res_moment()
+    def moment_residual(self) -> float:
+        """The maximum trim moment residual."""
+        return max(body.get_res_moment() for body in self.rigid_bodies)
 
     @property
     def substructure(self) -> list["Substructure"]:

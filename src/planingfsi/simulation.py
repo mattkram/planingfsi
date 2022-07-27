@@ -289,8 +289,8 @@ class Simulation:
         else:
             self.it += 1
 
-        res_l = self.solid_solver.res_l
-        res_m = self.solid_solver.res_m
+        res_l = self.solid_solver.lift_residual
+        res_m = self.solid_solver.moment_residual
 
         logger.info("Rigid Body Residuals:")
         logger.info("  Lift:   {0:0.4e}".format(res_l))

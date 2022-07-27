@@ -42,6 +42,7 @@ class RigidBody:
     num_damp: int
     L: float
     D: float
+    M: float
     weight: float
     res_l: float
     res_m: float
