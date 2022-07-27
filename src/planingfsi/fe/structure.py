@@ -62,14 +62,14 @@ class StructuralSolver:
         return max(body.get_res_moment() for body in self.rigid_bodies)
 
     @property
-    def substructure(self) -> list["Substructure"]:
-        """A combined list of substructures from all rigid bodies."""
+    def substructures(self) -> list[Substructure]:
+        """A combined list of all substructures from all rigid bodies."""
         return [ss for body in self.rigid_bodies for ss in body.substructures]
 
     @property
-    def node(self) -> list[Node]:
-        """A combined list of nodes from all substructures."""
-        return [nd for ss in self.substructure for nd in ss.node]
+    def nodes(self) -> list[Node]:
+        """A combined list of all nodes from all substructures."""
+        return [nd for ss in self.substructures for nd in ss.node]
 
     def add_rigid_body(self, dict_: dict[str, Any] = None) -> RigidBody:
         """Add a rigid body to the structure.
@@ -111,7 +111,7 @@ class StructuralSolver:
                 ss_class = RigidSubstructure
             ss = ss_class(**dict_)
         ss.solver = self
-        self.substructure.append(ss)
+        self.substructures.append(ss)
 
         self._assign_substructure_to_body(ss, **dict_)
 
@@ -195,12 +195,12 @@ class StructuralSolver:
             nd.set_coordinates(xx, yy)
             nd.is_dof_fixed = [bool(xxf), bool(yyf)]
             nd.fixed_load = np.array([ffx, ffy])
-            self.node.append(nd)
+            self.nodes.append(nd)
 
-        for struct in self.substructure:
+        for struct in self.substructures:
             struct.load_mesh()
             if isinstance(struct, (RigidSubstructure, TorsionalSpringSubstructure)):
                 struct.set_fixed_dof()
 
-        for ss in self.substructure:
+        for ss in self.substructures:
             ss.set_attachments()

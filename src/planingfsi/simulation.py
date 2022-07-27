@@ -163,7 +163,7 @@ class Simulation:
             if dict_.get("hasPlaningSurface", False):
                 planing_surface = PlaningSurface(**dict_)
                 substructure.add_planing_surface(planing_surface, **dict_)
-        print(f"Substructures: {self.solid_solver.substructure}")
+        print(f"Substructures: {self.solid_solver.substructures}")
 
     def _load_pressure_cushions(self) -> None:
         """Load all pressure cushions from files."""

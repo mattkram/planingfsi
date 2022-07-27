@@ -30,13 +30,13 @@ class FSIFigure:
             plt.ion()
         self.geometry_ax = fig.add_axes([0.05, 0.6, 0.9, 0.35])
 
-        for nd in self.solid.node:
+        for nd in self.solid.nodes:
             (nd.line_xy,) = plt.plot([], [], "ro")
 
         (self.lineFS,) = plt.plot([], [], "b-")
         (self.lineFSi,) = plt.plot([], [], "b--")
 
-        for struct in self.solid.substructure:
+        for struct in self.solid.substructures:
             (struct.line_air_pressure,) = plt.plot([], [], "g-")
             (struct.line_fluid_pressure,) = plt.plot([], [], "r-")
             for el in struct.el:
@@ -65,8 +65,8 @@ class FSIFigure:
                 )
             )
 
-        x = [nd.x for struct in self.solid.substructure for nd in struct.node]
-        y = [nd.y for struct in self.solid.substructure for nd in struct.node]
+        x = [nd.x for struct in self.solid.substructures for nd in struct.node]
+        y = [nd.y for struct in self.solid.substructures for nd in struct.node]
         xMin, xMax = min(x), max(x)
         yMin, yMax = min(y), max(y)
 
