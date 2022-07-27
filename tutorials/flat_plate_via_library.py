@@ -1,6 +1,6 @@
 from planingfsi import Mesh
+from planingfsi import Simulation
 from planingfsi.fe.substructure import RigidSubstructure
-from planingfsi.fsi.simulation import Simulation
 from planingfsi.potentialflow.pressurepatch import PlaningSurface
 
 

@@ -16,7 +16,7 @@ from planingfsi.fe.substructure import Substructure
 from planingfsi.fe.substructure import TorsionalSpringSubstructure
 
 if TYPE_CHECKING:
-    from planingfsi.fsi.simulation import Simulation
+    from planingfsi.simulation import Simulation
 
 
 class StructuralSolver:

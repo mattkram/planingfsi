@@ -14,14 +14,14 @@ from planingfsi import trig
 from planingfsi.config import Config
 
 if TYPE_CHECKING:
-    from planingfsi.fe import rigid_body
+    from planingfsi.fe.rigid_body import RigidBody
     from planingfsi.fe.structure import StructuralSolver
-    from planingfsi.fsi import simulation as fsi_simulation
     from planingfsi.potentialflow.solver import PotentialPlaningSolver
+    from planingfsi.simulation import Simulation
 
 
 class FSIFigure:
-    def __init__(self, simulation: "fsi_simulation.Simulation", config: Config):
+    def __init__(self, simulation: Simulation, config: Config):
         self.config = config
         self.simulation = simulation
 
@@ -303,7 +303,7 @@ class TimeHistory:
 
 
 class MotionSubplot(TimeHistory):
-    def __init__(self, pos: list[float], body: "rigid_body.RigidBody", parent: FSIFigure):
+    def __init__(self, pos: list[float], body: RigidBody, parent: FSIFigure):
         TimeHistory.__init__(self, pos, body.name, parent=parent)
 
         def itFunc() -> float:
@@ -349,7 +349,7 @@ class MotionSubplot(TimeHistory):
 
 
 class ForceSubplot(TimeHistory):
-    def __init__(self, pos: list[float], body: "rigid_body.RigidBody", parent: FSIFigure):
+    def __init__(self, pos: list[float], body: RigidBody, parent: FSIFigure):
         TimeHistory.__init__(self, pos, body.name, parent=parent)
 
         def itFunc() -> float:
@@ -449,7 +449,7 @@ class ResidualSubplot(TimeHistory):
 
 
 class CofRPlot:
-    def __init__(self, ax: Axes, body: "rigid_body.RigidBody", **kwargs: Any):
+    def __init__(self, ax: Axes, body: RigidBody, **kwargs: Any):
         self.ax = ax
         self.body = body
         self.symbol = kwargs.get("symbol", True)
