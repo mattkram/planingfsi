@@ -48,8 +48,8 @@ class Node:
         self.x += dx
         self.y += dy
 
-    def get_coordinates(self) -> tuple[float, float]:
-        return self.x, self.y
+    def get_coordinates(self) -> np.ndarray:
+        return np.array([self.x, self.y])
 
     def plot(self, _: str = None) -> None:
         # TODO: Move to plotting module
