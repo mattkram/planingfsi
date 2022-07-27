@@ -38,4 +38,4 @@ repos:
   hooks:
   - id: mypy
     # We need to ensure we capture all the proper dependencies here so mypy doesn't miss errors
-    additional_dependencies: [types-toml, numpy, scipy]
+    additional_dependencies: [types-toml, numpy]
