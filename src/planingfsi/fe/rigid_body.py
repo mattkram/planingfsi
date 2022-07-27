@@ -119,10 +119,10 @@ class RigidBody:
         self.solver: solver.RootFinder | None = None
         self.disp_old: np.ndarray | None = None
         self.res_old: np.ndarray | None = None
-        self.two_ago_disp: np.ndarray = None
+        self.two_ago_disp: np.ndarray | None = None
         self.predictor = True
-        self.f_old: np.ndarray = None
-        self.two_ago_f: np.ndarray = None
+        self.f_old: np.ndarray | None = None
+        self.two_ago_f: np.ndarray | None = None
         self.res_l = 1.0
         self.res_m = 1.0
 
