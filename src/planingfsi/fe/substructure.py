@@ -25,6 +25,7 @@ if TYPE_CHECKING:
     from planingfsi.fe.rigid_body import RigidBody
     from planingfsi.fe.structure import StructuralSolver
     from planingfsi.potentialflow.pressurepatch import PlaningSurface
+    from planingfsi.potentialflow.pressurepatch import PressureCushion
 
 
 class Substructure(abc.ABC):
@@ -65,6 +66,7 @@ class Substructure(abc.ABC):
         self.name = name
         self.interpolator: Interpolator | None = None
 
+        self.external_pressure: float | None = None
         self.seal_pressure = seal_pressure
         self.seal_pressure_method = seal_pressure_method
 
@@ -127,12 +129,15 @@ class Substructure(abc.ABC):
             return 1.0
         return self.solver.simulation.ramp
 
-    def add_planing_surface(self, planing_surface: PlaningSurface, **kwargs: Any) -> None:
+    def add_planing_surface(self, planing_surface: PlaningSurface, **kwargs: Any) -> PlaningSurface:
         """Add a planing surface to the substructure, and configure the interpolator.
 
         Args:
             planing_surface: The planing surface.
             **kwargs: Keyword arguments to pass through to the Interpolator.
+
+        Returns:
+            The same planing surface passed in as an argument (useful for chaining).
 
         """
         # Assign the same interpolator to both the substructure and planing_surface
@@ -140,6 +145,23 @@ class Substructure(abc.ABC):
             self, planing_surface, **kwargs
         )
         self.solver.simulation.fluid_solver.add_planing_surface(planing_surface)
+        return planing_surface
+
+    def add_pressure_cushion(self, pressure_cushion: PressureCushion) -> PressureCushion:
+        """Add a constant pressure cushion to the substructure. The cushion acts as a constant
+        external pressure applied to the surface, which is integrated into a normal force.
+
+        Args:
+            pressure_cushion: The planing surface.
+
+        Returns:
+            The same pressure cushion passed in as an argument (useful for chaining).
+
+        """
+        self.solver.simulation.fluid_solver.add_pressure_cushion(pressure_cushion)
+        self.cushion_pressure_type = "Total"
+        self.external_pressure = pressure_cushion.cushion_pressure
+        return pressure_cushion
 
     def set_element_properties(self) -> None:
         """Set the properties of each element."""
@@ -295,7 +317,7 @@ class Substructure(abc.ABC):
                 elif ss < s_min:
                     Pc = self.interpolator.fluid.downstream_pressure
             elif self.cushion_pressure_type == "Total":
-                Pc = self.config.body.Pc
+                Pc = self.external_pressure or self.config.body.Pc
 
             # Store fluid and air pressure components for element (for
             # plotting)
@@ -764,7 +786,7 @@ class TorsionalSpringSubstructure(FlexibleSubstructure, RigidSubstructure):
                 elif ss < s_min:
                     Pc = self.interpolator.fluid.downstream_pressure
             elif self.cushion_pressure_type == "Total":
-                Pc = self.config.body.Pc
+                Pc = self.external_pressure or self.config.body.Pc
 
             # Store fluid and air pressure components for element (for
             # plotting)

@@ -65,7 +65,7 @@ def main() -> None:
 
     body = simulation.add_rigid_body()
     fwd_substructure = body.add_substructure(RigidSubstructure(name="fwd_plate"))
-    fwd_substructure.add_planing_surface(
+    fwd_planing_surface = fwd_substructure.add_planing_surface(
         PlaningSurface(
             name="fwd_plate",
             initial_length=0.73,
@@ -76,7 +76,7 @@ def main() -> None:
     )
 
     aft_substructure = body.add_substructure(RigidSubstructure(name="aft_plate"))
-    aft_substructure.add_planing_surface(
+    aft_planing_surface = aft_substructure.add_planing_surface(
         PlaningSurface(
             name="aft_plate",
             initial_length=1.0,
@@ -86,18 +86,15 @@ def main() -> None:
         )
     )
 
-    ss = body.add_substructure(RigidSubstructure(name="wetdeck"))
-    simulation.config.body._cushion_pressure = 1000.0
-    ss.cushion_pressure_type = "Total"
-
-    simulation.fluid_solver.add_pressure_cushion(
+    wetdeck = body.add_substructure(RigidSubstructure(name="wetdeck"))
+    wetdeck.add_pressure_cushion(
         PressureCushion(
             name="cushion",
             cushion_type="finite",
             smoothing_factor=np.nan,
             cushion_pressure=1000.0,
-            upstream_planing_surface="fwd_plate",
-            downstream_planing_surface="aft_plate",
+            upstream_planing_surface=fwd_planing_surface,
+            downstream_planing_surface=aft_planing_surface,
             upstream_loc=0.0,
             downstream_loc=-5.0,
             num_elements=30,
