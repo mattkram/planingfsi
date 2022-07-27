@@ -169,7 +169,20 @@ class Simulation:
         """Load all pressure cushions from files."""
         if Path(self.config.path.cushion_dict_dir).exists():
             for dict_path in Path(self.config.path.cushion_dict_dir).glob("*"):
-                dict_ = load_dict_from_file(dict_path)
+                dict_ = load_dict_from_file(
+                    dict_path,
+                    key_map={
+                        "pressureCushionName": "name",
+                        "cushionPressure": "cushion_pressure",
+                        "upstreamPlaningSurface": "upstream_planing_surface",
+                        "downstreamPlaningSurface": "downstream_planing_surface",
+                        "upstreamLoc": "upstream_loc",
+                        "downstreamLoc": "downstream_loc",
+                        "numElements": "num_elements",
+                        "cushionType": "cushion_type",
+                        "smoothingFactor": "smoothing_factor",
+                    },
+                )
                 self.fluid_solver.add_pressure_cushion(dict_)
         print(f"Pressure Cushions: {self.fluid_solver.pressure_cushions}")
 

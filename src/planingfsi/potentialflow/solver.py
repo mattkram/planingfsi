@@ -127,17 +127,26 @@ class PotentialPlaningSolver:
         self._add_pressure_patch(instance)
         return instance
 
-    def add_pressure_cushion(self, dict_: dict[str, Any]) -> "pressurepatch.PressureCushion":
+    def add_pressure_cushion(
+        self,
+        dict_or_instance: dict[str, Any] | pressurepatch.PressureCushion | None,
+    ) -> "pressurepatch.PressureCushion":
         """Add pressure cushion to the calculation from a dictionary file name.
 
         Args:
-            dict_: The dictionary file.
+            dict_or_instance: A dictionary of values, or a PressureCushion instance.
 
         Returns:
             Instance created from dictionary.
 
         """
-        instance = pressurepatch.PressureCushion(dict_, parent=self)
+        if isinstance(dict_or_instance, pressurepatch.PressureCushion):
+            instance = dict_or_instance
+        elif dict_or_instance is not None:
+            instance = pressurepatch.PressureCushion(**dict_or_instance)
+        else:
+            instance = pressurepatch.PressureCushion()
+        instance.parent = self
         self.pressure_cushions.append(instance)
         self._add_pressure_patch(instance)
         return instance
@@ -334,24 +343,24 @@ class PotentialPlaningSolver:
                 self.config.plotting.growth_rate,
             )
         )
+
         # Add points from each pressure cushion
-        #             for patch in self.pressure_cushions:
-        #                 if patch.neighborDown is not None:
-        #                     ptsL = patch.neighborDown._get_element_coords()
-        #                 else:
-        #                     ptsL = np.array([patch.endPt[0] - 0.01, patch.endPt[0]])
-        #
-        #                 if patch.neighborDown is not None:
-        #                     ptsR = patch.neighborUp._get_element_coords()
-        #                 else:
-        #                     ptsR = np.array([patch.endPt[1], patch.endPt[1] + 0.01])
-        #
-        #                 xEnd = ptsL[-1] + 0.5 * patch.get_length()
-        #                 xFS.append(
-        #                     kp.growPoints(ptsL[-2], ptsL[-1],
-        #                                   xEnd, config.growthRate))
-        #                 xFS.append(
-        # kp.growPoints(ptsR[1],  ptsR[0],  xEnd, config.growthRate))
+        for patch in self.pressure_cushions:
+            if patch.neighbor_down is not None:
+                pts_down = np.unique(patch.neighbor_down.get_element_coords())
+            else:
+                pts_down = np.array([patch._end_pts[0] - 0.01, patch._end_pts[0]])
+
+            if patch.neighbor_up is not None:
+                pts_up = np.unique(patch.neighbor_up.get_element_coords())
+            else:
+                pts_up = np.array([patch._end_pts[1], patch._end_pts[1] + 0.01])
+
+            x_mid = 0.5 * (pts_down[-1] + pts_up[0])
+            x_fs.extend(
+                _grow_points(pts_down[-2], pts_down[-1], x_mid, self.config.plotting.growth_rate)
+            )
+            x_fs.extend(_grow_points(pts_up[1], pts_up[0], x_mid, self.config.plotting.growth_rate))
 
         # Sort x locations and calculate surface heights
         self.x_coord_fs = np.unique(x_fs)
