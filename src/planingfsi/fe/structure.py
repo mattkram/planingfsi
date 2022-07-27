@@ -20,14 +20,19 @@ if TYPE_CHECKING:
 
 
 class StructuralSolver:
-    """Parent object for solving the finite-element structure. Consists of
-    several rigid bodies and substructures.
+    """High-level finite-element structural solver, consisting of a number of rigid bodies.
+
+    Attributes:
+        simulation: A reference to the parent `Simulation` object.
+        rigid_bodies: A list of all `RigidBody` instances in the simulation.
+        residual: The current residual of the structural solver.
+
     """
 
-    def __init__(self, simulation: Simulation) -> None:
+    def __init__(self, simulation: Simulation):
         self.simulation = simulation
-        self.rigid_body: list[RigidBody] = []
-        self.res = 1.0  # TODO: Can this be a property instead?
+        self.rigid_bodies: list[RigidBody] = []
+        self.residual = 1.0  # TODO: Can this be a property instead?
 
     @property
     def config(self) -> Config:
@@ -37,7 +42,7 @@ class StructuralSolver:
     @property
     def has_free_structure(self) -> bool:
         """True if any rigid body or substructure are free to move."""
-        for rigid_body in self.rigid_body:
+        for rigid_body in self.rigid_bodies:
             if rigid_body.free_in_draft or rigid_body.free_in_trim:
                 return True
 
@@ -50,18 +55,18 @@ class StructuralSolver:
     def res_l(self) -> float:
         """The lift residual."""
         # TODO: This should handle multiple rigid bodies
-        return self.rigid_body[0].get_res_lift()
+        return self.rigid_bodies[0].get_res_lift()
 
     @property
     def res_m(self) -> float:
         """The trim moment residual."""
         # TODO: This should handle multiple rigid bodies
-        return self.rigid_body[0].get_res_moment()
+        return self.rigid_bodies[0].get_res_moment()
 
     @property
     def substructure(self) -> list["Substructure"]:
         """A combined list of substructures from all rigid bodies."""
-        return [ss for body in self.rigid_body for ss in body.substructure]
+        return [ss for body in self.rigid_bodies for ss in body.substructure]
 
     @property
     def node(self) -> list[Node]:
@@ -79,7 +84,7 @@ class StructuralSolver:
         if dict_ is None:
             dict_ = {}
         rigid_body = RigidBody(dict_, parent=self)
-        self.rigid_body.append(rigid_body)
+        self.rigid_bodies.append(rigid_body)
         return rigid_body
 
     def add_substructure(
@@ -118,11 +123,11 @@ class StructuralSolver:
         self, ss: "Substructure", body_name: str = "default", **_: Any
     ) -> None:
         """Find parent body and add substructure to it."""
-        bodies = [b for b in self.rigid_body if b.name == body_name]
+        bodies = [b for b in self.rigid_bodies if b.name == body_name]
         if bodies:
             body = bodies[0]
         else:
-            body = self.rigid_body[0]
+            body = self.rigid_bodies[0]
         body.add_substructure(ss)
         logger.info(
             f"Adding Substructure {ss.name} of type {type(ss).__name__} to rigid body {body.name}"
@@ -130,12 +135,12 @@ class StructuralSolver:
 
     def initialize_rigid_bodies(self) -> None:
         """Initialize the position of all rigid bodies."""
-        for bd in self.rigid_body:
+        for bd in self.rigid_bodies:
             bd.initialize_position()
 
     def update_fluid_forces(self) -> None:
         """Update fluid forces on all rigid bodies."""
-        for bd in self.rigid_body:
+        for bd in self.rigid_bodies:
             bd.update_fluid_forces()
 
     def calculate_response(self) -> None:
@@ -143,24 +148,24 @@ class StructuralSolver:
         if self.config.io.results_from_file:
             self._load_response()
         else:
-            for bd in self.rigid_body:
+            for bd in self.rigid_bodies:
                 bd.update_position()
                 bd.update_substructure_positions()
 
     def get_residual(self) -> None:
         """Calculate the residual."""
-        self.res = 0.0
-        for bd in self.rigid_body:
+        self.residual = 0.0
+        for bd in self.rigid_bodies:
             if bd.free_in_draft or bd.free_in_trim:
-                self.res = np.max([np.abs(bd.res_l), self.res])
-                self.res = np.max([np.abs(bd.res_m), self.res])
-            self.res = np.max([FlexibleSubstructure.res, self.res])
+                self.residual = np.max([np.abs(bd.res_l), self.residual])
+                self.residual = np.max([np.abs(bd.res_m), self.residual])
+            self.residual = np.max([FlexibleSubstructure.res, self.residual])
 
     def _load_response(self) -> None:
         """Load the response from files."""
         self.update_fluid_forces()
 
-        for bd in self.rigid_body:
+        for bd in self.rigid_bodies:
             bd.load_motion()
             for ss in bd.substructure:
                 ss.load_coordinates()
@@ -168,7 +173,7 @@ class StructuralSolver:
 
     def write_results(self) -> None:
         """Write the results to file."""
-        for bd in self.rigid_body:
+        for bd in self.rigid_bodies:
             bd.write_motion()
             for ss in bd.substructure:
                 ss.write_coordinates()
@@ -176,7 +181,7 @@ class StructuralSolver:
     def plot(self) -> None:
         """Plot the results."""
         # TODO: Move to figure module
-        for body in self.rigid_body:
+        for body in self.rigid_bodies:
             for struct in body.substructure:
                 struct.plot()
 

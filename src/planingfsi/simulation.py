@@ -113,7 +113,7 @@ class Simulation:
         else:
             # Add a dummy rigid body that cannot move
             self.add_rigid_body()
-        print(f"Rigid Bodies: {self.solid_solver.rigid_body}")
+        print(f"Rigid Bodies: {self.solid_solver.rigid_bodies}")
 
     def _load_substructures(self) -> None:
         """Load all substructures from files."""
@@ -214,7 +214,7 @@ class Simulation:
                 self.update_fluid_response()
                 self.solid_solver.get_residual()
             else:
-                self.solid_solver.res = 0.0
+                self.solid_solver.residual = 0.0
 
             # Write, print, and plot results
             self.create_dirs()
@@ -318,7 +318,7 @@ class Simulation:
                 "Residual", 0.0
             )
         else:
-            return self.solid_solver.res
+            return self.solid_solver.residual
 
     def print_status(self) -> None:
         logger.info(
@@ -337,7 +337,7 @@ class Simulation:
             writers.write_as_dict(
                 os.path.join(self.it_dir, "overallQuantities.txt"),
                 ["Ramp", self.ramp],
-                ["Residual", self.solid_solver.res],
+                ["Residual", self.solid_solver.residual],
             )
 
             self.fluid_solver.write_results()
@@ -346,4 +346,4 @@ class Simulation:
     def load_results(self) -> None:
         dict_ = load_dict_from_file(os.path.join(self.it_dir, "overallQuantities.txt"))
         self.ramp = dict_.get("Ramp", 0.0)
-        self.solid_solver.res = dict_.get("Residual", 0.0)
+        self.solid_solver.residual = dict_.get("Residual", 0.0)

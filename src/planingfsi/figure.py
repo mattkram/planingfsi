@@ -44,7 +44,7 @@ class FSIFigure:
                 (el.lineEl,) = plt.plot([], [], "k-", linewidth=2)
 
         self.lineCofR: list["CofRPlot"] = []
-        for bodies in self.solid.rigid_body:
+        for bodies in self.solid.rigid_bodies:
             CofRPlot(
                 self.geometry_ax,
                 bodies,
@@ -106,13 +106,13 @@ class FSIFigure:
 
         self.subplot: list["TimeHistory"] = []
 
-        if self.solid.rigid_body:
-            body = self.solid.rigid_body[0]
+        if self.solid.rigid_bodies:
+            body = self.solid.rigid_bodies[0]
             self.subplot.append(ForceSubplot([0.70, 0.30, 0.25, 0.2], body, parent=self))
             self.subplot.append(MotionSubplot([0.70, 0.05, 0.25, 0.2], body, parent=self))
 
-        if len(self.solid.rigid_body) > 1:
-            body = self.solid.rigid_body[1]
+        if len(self.solid.rigid_bodies) > 1:
+            body = self.solid.rigid_bodies[1]
             self.subplot.append(ForceSubplot([0.05, 0.30, 0.25, 0.2], body, parent=self))
             self.subplot.append(MotionSubplot([0.05, 0.05, 0.25, 0.2], body, parent=self))
 
@@ -148,7 +148,7 @@ class FSIFigure:
         # Update each lower subplot
         for s in self.subplot:
             s.update(
-                self.solid.res < self.config.solver.max_residual
+                self.solid.residual < self.config.solver.max_residual
                 and self.simulation.it > self.config.solver.num_ramp_it
             )
 
@@ -411,7 +411,7 @@ class ResidualSubplot(TimeHistory):
             return 0.0  # config.it
 
         col = ["r", "b", "g"]
-        for bd, coli in zip(solid.rigid_body, col):
+        for bd, coli in zip(solid.rigid_bodies, col):
             self.add_series(
                 PlotSeries(
                     itFunc,
@@ -436,7 +436,7 @@ class ResidualSubplot(TimeHistory):
         self.add_series(
             PlotSeries(
                 itFunc,
-                lambda: np.abs(solid.res),
+                lambda: np.abs(solid.residual),
                 sty="k-",
                 type="history+curr",
                 legEnt="Total",
