@@ -125,13 +125,14 @@ class PressurePatch(abc.ABC):
                 el.z_coord = self.interpolator.get_surface_height_fixed_x(x[i])
 
             if isinstance(el, pe.CompleteTriangularPressureElement):
-                el.width = np.array([x[i] - x[i - 1], x[i + 1] - x[i]])
+                # TODO: Remove ignore
+                el.width = np.array([x[i] - x[i - 1], x[i + 1] - x[i]])  # type: ignore
             elif isinstance(el, pe.ForwardHalfTriangularPressureElement):
-                el.width = x[i + 1] - x[i]
+                el.width = x[i + 1] - x[i]  # type: ignore
             elif isinstance(el, pe.AftHalfTriangularPressureElement):
-                el.width = x[i] - x[i - 1]
+                el.width = x[i] - x[i - 1]  # type: ignore
             elif isinstance(el, pe.AftSemiInfinitePressureBand):
-                el.width = np.inf
+                el.width = np.inf  # type: ignore
             else:
                 raise ValueError("Invalid Element Type!")
 
@@ -477,7 +478,8 @@ class PlaningSurface(PressurePatch):
         # Define point spacing
         self.relative_position: np.ndarray
         if point_spacing == "cosine":
-            self.relative_position = 0.5 * (
+            # TODO: Remove ignore
+            self.relative_position = 0.5 * (  # type: ignore
                 1 - trig.cosd(np.linspace(0.0, 180.0, num_fluid_elements + 1))
             )
         elif point_spacing == "linear":
@@ -604,7 +606,7 @@ class PlaningSurface(PressurePatch):
             self.lift_friction = 0.0
             self.lift_total = 0.0
             self.moment_total = 0.0
-            self.x_coords = []
+            self.x_coords = np.array([])
 
         self.drag_wave = self._calculate_wave_drag()
 

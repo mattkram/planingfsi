@@ -241,7 +241,7 @@ class Substructure(abc.ABC):
     def get_coordinates(self, si: float) -> np.ndarray:
         assert self.interp_func_x is not None
         assert self.interp_func_y is not None
-        return [self.interp_func_x(si), self.interp_func_y(si)]
+        return np.array([self.interp_func_x(si), self.interp_func_y(si)])
 
     def get_x_coordinates(self, s: float) -> float:
         return self.get_coordinates(s)[0]
@@ -545,6 +545,11 @@ class FlexibleSubstructure(Substructure):
         for ss in cls.__all:
             ss.update_fluid_forces()
             ss.assemble_global_stiffness_and_force()
+
+            # TODO: Consider removing this and fixing static types
+            assert ss.K is not None
+            assert ss.F is not None
+
             Kg += ss.K
             Fg += ss.F
 
@@ -591,6 +596,8 @@ class FlexibleSubstructure(Substructure):
         self.U: np.ndarray | None = None
 
     def get_residual(self) -> float:
+        # TODO: Consider removing this and fixing static types
+        assert self.U is not None
         return np.max(np.abs(self.U))
 
     def initialize_matrices(self) -> None:

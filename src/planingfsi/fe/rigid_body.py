@@ -119,10 +119,10 @@ class RigidBody:
         self.solver: solver.RootFinder | None = None
         self.disp_old: np.ndarray | None = None
         self.res_old: np.ndarray | None = None
-        self.two_ago_disp: np.ndarray = None
+        self.two_ago_disp: np.ndarray | None = None
         self.predictor = True
-        self.f_old: np.ndarray = None
-        self.two_ago_f: np.ndarray = None
+        self.f_old: np.ndarray | None = None
+        self.two_ago_f: np.ndarray | None = None
         self.res_l = 1.0
         self.res_m = 1.0
 
@@ -136,7 +136,7 @@ class RigidBody:
         self.resFun: Callable[[np.ndarray], np.ndarray] | None = None
 
         # Assign displacement function depending on specified method
-        self.get_disp = lambda: (0.0, 0.0)
+        self.get_disp = lambda: np.array((0.0, 0.0))
         if any(self.free_dof):
             if self.config.body.motion_method == "Secant":
                 self.get_disp = self.get_disp_secant
@@ -195,6 +195,9 @@ class RigidBody:
         """Update the position of the rigid body by passing the change in draft and trim."""
         if draft_delta is None or trim_delta is None:
             draft_delta, trim_delta = self.get_disp()
+            # TODO: Consider removing this and fixing static types
+            assert draft_delta is not None
+            assert trim_delta is not None
             if np.isnan(draft_delta):
                 draft_delta = 0.0
             if np.isnan(trim_delta):
@@ -374,7 +377,9 @@ class RigidBody:
 
     def reset_jacobian(self) -> np.ndarray:
         """Reset the solver Jacobian and modify displacement."""
+        # TODO: These are here for mypy, fix the types instead
         assert self.resFun is not None
+        assert self.x is not None
         if self.J_tmp is None:
             self.Jit = 0
             self.J_tmp = np.zeros((self.num_dim, self.num_dim))
@@ -440,6 +445,10 @@ class RigidBody:
 
     def get_disp_broyden(self) -> np.ndarray:
         """Get the rigid body displacement using Broyden's method."""
+        # TODO: These are here for mypy, fix the types instead
+        assert self.resFun is not None
+        assert self.x is not None
+
         if self.solver is None:
             self.resFun = lambda x: np.array(
                 [self.L - self.weight, self.M - self.weight * (self.xCofG - self.xCofR)]

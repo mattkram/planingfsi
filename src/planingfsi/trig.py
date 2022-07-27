@@ -4,7 +4,7 @@ from typing import Union
 
 import numpy
 
-ArrayLike = Union[float, numpy.array]
+ArrayLike = Union[float, numpy.ndarray]
 
 
 def cosd(ang: ArrayLike) -> ArrayLike:
@@ -79,7 +79,7 @@ def atand(slope: ArrayLike) -> ArrayLike:
     return numpy.degrees(numpy.arctan(slope))
 
 
-def atand2(delta_y: ArrayLike, delta_x: ArrayLike) -> ArrayLike:
+def atand2(delta_y: ArrayLike, delta_x: ArrayLike) -> float:
     """Return the arctan2 of an angle specified in degrees.
 
     Returns
@@ -88,7 +88,7 @@ def atand2(delta_y: ArrayLike, delta_x: ArrayLike) -> ArrayLike:
        An angle, in degrees.
 
     """
-    return numpy.degrees(numpy.arctan2(delta_y, delta_x))
+    return float(numpy.degrees(numpy.arctan2(delta_y, delta_x)))
 
 
 def ang2vec(ang: ArrayLike) -> numpy.ndarray:
@@ -96,22 +96,22 @@ def ang2vec(ang: ArrayLike) -> numpy.ndarray:
     return numpy.array([numpy.cos(ang), numpy.sin(ang), 0.0])
 
 
-def ang2vecd(ang: float) -> numpy.array:
+def ang2vecd(ang: float) -> numpy.ndarray:
     """Convert angle in degrees to a 3-d unit vector in the x-y plane."""
     return ang2vec(numpy.radians(ang))
 
 
-def angd2vec(ang: float) -> numpy.array:
+def angd2vec(ang: float) -> numpy.ndarray:
     """Deprecated alias for ang2vecd."""
     return ang2vecd(ang)
 
 
-def angd2vec2d(ang: float) -> numpy.array:
+def angd2vec2d(ang: float) -> numpy.ndarray:
     """Convert angle in degrees to a 2-d unit vector in the x-y plane."""
     return ang2vecd(ang)[:2]
 
 
-def rotate_vec_2d(vec: numpy.array, ang: float) -> numpy.array:
+def rotate_vec_2d(vec: numpy.ndarray, ang: float) -> numpy.ndarray:
     """Rotate a 2d vector v by angle ang in degrees."""
     vec3d = numpy.zeros(3)
     vec3d[:2] = vec
@@ -119,12 +119,12 @@ def rotate_vec_2d(vec: numpy.array, ang: float) -> numpy.array:
 
 
 def rotate_vec(
-    vec: numpy.array,
+    vec: numpy.ndarray,
     ang_x: float = 0.0,
     ang_y: float = 0.0,
     ang_z: float = 0.0,
-    about: numpy.array = numpy.zeros(3),
-) -> numpy.array:
+    about: numpy.ndarray = numpy.zeros(3),
+) -> numpy.ndarray:
     """Rotate a 3d vector v by angle ang in degrees."""
     rot_x = numpy.array([[1, 0, 0], [0, cosd(ang_x), -sind(ang_x)], [0, sind(ang_x), cosd(ang_x)]])
     rot_y = numpy.array([[cosd(ang_y), 0, sind(ang_y)], [0, 1, 0], [-sind(ang_y), 0, cosd(ang_y)]])
