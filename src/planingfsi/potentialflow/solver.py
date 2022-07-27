@@ -2,20 +2,23 @@
 from __future__ import annotations
 
 import weakref
+from typing import TYPE_CHECKING
 from typing import Any
 
 import numpy as np
 from scipy.optimize import fmin
 
+from planingfsi import figure
 from planingfsi import logger
 from planingfsi import math_helpers
 from planingfsi import solver
 from planingfsi import writers
 from planingfsi.config import Config
-from planingfsi.fsi import figure
-from planingfsi.fsi import simulation as fsi_simulation
 from planingfsi.potentialflow import pressurepatch
 from planingfsi.potentialflow.pressureelement import PressureElement
+
+if TYPE_CHECKING:
+    from planingfsi.simulation import Simulation
 
 
 class PotentialPlaningSolver:
@@ -26,7 +29,7 @@ class PotentialPlaningSolver:
     calculation is then solved during iteration with the structural solver.
     """
 
-    def __init__(self, simulation: "fsi_simulation.Simulation"):
+    def __init__(self, simulation: Simulation):
         self._simulation = weakref.ref(simulation)
 
         self.planing_surfaces: list["pressurepatch.PlaningSurface"] = []
@@ -53,7 +56,7 @@ class PotentialPlaningSolver:
         return self.simulation.config
 
     @property
-    def simulation(self) -> "fsi_simulation.Simulation":
+    def simulation(self) -> Simulation:
         """A reference to the simulation object by resolving the weak reference."""
         simulation = self._simulation()
         if simulation is None:

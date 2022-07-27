@@ -16,6 +16,7 @@ logger = logging.getLogger("planingfsi")
 logger.setLevel(logging.INFO)
 
 from planingfsi.fe.femesh import Mesh
+from planingfsi.simulation import Simulation
 
 # # Use tk by default. Otherwise try Agg. Otherwise, disable plotting.
 # _fallback_engine = "Agg"

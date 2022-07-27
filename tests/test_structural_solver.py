@@ -8,7 +8,7 @@ import pytest
 import planingfsi.fe.substructure as ss
 from planingfsi.fe.rigid_body import RigidBody
 from planingfsi.fe.structure import StructuralSolver
-from planingfsi.fsi.simulation import Simulation  # noreorder
+from planingfsi.simulation import Simulation
 
 
 @pytest.fixture()

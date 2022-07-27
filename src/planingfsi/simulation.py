@@ -13,7 +13,7 @@ from planingfsi import writers
 from planingfsi.config import Config
 from planingfsi.dictionary import load_dict_from_file
 from planingfsi.fe.structure import StructuralSolver
-from planingfsi.fsi.figure import FSIFigure
+from planingfsi.figure import FSIFigure
 from planingfsi.potentialflow.pressurepatch import PlaningSurface
 from planingfsi.potentialflow.solver import PotentialPlaningSolver
 

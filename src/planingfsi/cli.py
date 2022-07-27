@@ -15,7 +15,7 @@ import click_log
 from planingfsi import logger
 from planingfsi.config import Config
 from planingfsi.fe.femesh import Mesh
-from planingfsi.fsi.simulation import Simulation
+from planingfsi.simulation import Simulation
 
 
 @click.group(name="planingfsi", help="Run the PlaningFSI program")
