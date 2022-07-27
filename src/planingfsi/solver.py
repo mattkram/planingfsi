@@ -76,6 +76,7 @@ class RootFinder:
     def limit_step(self, dx: numpy.ndarray = None) -> numpy.ndarray:
         if dx is None:
             dx = self.dx
+        assert dx is not None
         dx *= self.relax
 
         x = self.x + dx
@@ -87,12 +88,14 @@ class RootFinder:
 
         dx_lim_pct = numpy.ones_like(dx)
         for i in range(len(dx_lim_pct)):
+            assert dx is not None
             if dx[i] > 0:
                 dx_lim_pct[i] = numpy.min([dx[i], self.dx_max_increase[i]]) / dx[i]
             elif dx[i] < 0:
                 dx_lim_pct[i] = numpy.max([dx[i], -self.dx_max_decrease[i]]) / dx[i]
 
         dx *= numpy.min(dx_lim_pct)
+        assert dx is not None
         self.dx = dx
 
         return dx
@@ -167,6 +170,7 @@ class RootFinder:
             not x <= xMin and not x >= xMax for x, xMin, xMax in zip(self.x, self.x_min, self.x_max)
         ]
         if any(dof):
+            assert self.jacobian is not None
             b = self.f.reshape(self.dim, 1)
             dx[numpy.ix_(dof)] = numpy.linalg.solve(
                 -self.jacobian[numpy.ix_(dof, dof)], b[numpy.ix_(dof)]

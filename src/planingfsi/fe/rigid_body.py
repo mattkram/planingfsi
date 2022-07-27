@@ -374,7 +374,9 @@ class RigidBody:
 
     def reset_jacobian(self) -> np.ndarray:
         """Reset the solver Jacobian and modify displacement."""
+        # TODO: These are here for mypy, fix the types instead
         assert self.resFun is not None
+        assert self.x is not None
         if self.J_tmp is None:
             self.Jit = 0
             self.J_tmp = np.zeros((self.num_dim, self.num_dim))
@@ -440,6 +442,10 @@ class RigidBody:
 
     def get_disp_broyden(self) -> np.ndarray:
         """Get the rigid body displacement using Broyden's method."""
+        # TODO: These are here for mypy, fix the types instead
+        assert self.resFun is not None
+        assert self.x is not None
+
         if self.solver is None:
             self.resFun = lambda x: np.array(
                 [self.L - self.weight, self.M - self.weight * (self.xCofG - self.xCofR)]
