@@ -37,4 +37,5 @@ repos:
   rev: v0.971
   hooks:
   - id: mypy
-    additional_dependencies: [types-toml]
+    # We need to ensure we capture all the proper dependencies here so mypy doesn't miss errors
+    additional_dependencies: [types-toml, numpy, scipy]
