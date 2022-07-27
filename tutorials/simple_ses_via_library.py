@@ -1,5 +1,3 @@
-import numpy as np
-
 from planingfsi import Mesh
 from planingfsi.fe.substructure import RigidSubstructure
 from planingfsi.fsi.simulation import Simulation
@@ -90,14 +88,9 @@ def main() -> None:
     wetdeck.add_pressure_cushion(
         PressureCushion(
             name="cushion",
-            cushion_type="finite",
-            smoothing_factor=np.nan,
             cushion_pressure=1000.0,
             upstream_planing_surface=fwd_planing_surface,
             downstream_planing_surface=aft_planing_surface,
-            upstream_loc=0.0,
-            downstream_loc=-5.0,
-            num_elements=30,
         )
     )
 

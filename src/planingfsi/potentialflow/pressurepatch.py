@@ -290,15 +290,19 @@ class PressureCushion(PressurePatch):
                         ]
                     )
 
-            # TODO: This should be determined automatically if up/downstream surfaces are assigned.
-            self._end_pts[:] = [
-                downstream_loc
-                if downstream_loc is not None
-                else getattr(self.config, "downstream_loc", 0.0),
-                upstream_loc
-                if upstream_loc is not None
-                else getattr(self.config, "upstream_loc", 0.0),
-            ]
+            if downstream_planing_surface is None:
+                self._end_pts[0] = (
+                    downstream_loc
+                    if downstream_loc is not None
+                    else getattr(self.config, "downstream_loc", 0.0)
+                )
+
+            if upstream_planing_surface is None:
+                self._end_pts[1] = (
+                    upstream_loc
+                    if upstream_loc is not None
+                    else getattr(self.config, "upstream_loc", 0.0)
+                )
 
             self.pressure_elements.append(
                 pe.AftHalfTriangularPressureElement(is_source=True, is_on_body=False, parent=self)
