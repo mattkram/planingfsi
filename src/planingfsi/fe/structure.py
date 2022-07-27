@@ -46,7 +46,7 @@ class StructuralSolver:
             if rigid_body.free_in_draft or rigid_body.free_in_trim:
                 return True
 
-            for ss in rigid_body.substructure:
+            for ss in rigid_body.substructures:
                 if ss.is_free:
                     return True
         return False
@@ -66,7 +66,7 @@ class StructuralSolver:
     @property
     def substructure(self) -> list["Substructure"]:
         """A combined list of substructures from all rigid bodies."""
-        return [ss for body in self.rigid_bodies for ss in body.substructure]
+        return [ss for body in self.rigid_bodies for ss in body.substructures]
 
     @property
     def node(self) -> list[Node]:
@@ -167,7 +167,7 @@ class StructuralSolver:
 
         for bd in self.rigid_bodies:
             bd.load_motion()
-            for ss in bd.substructure:
+            for ss in bd.substructures:
                 ss.load_coordinates()
                 ss.update_geometry()
 
@@ -175,14 +175,14 @@ class StructuralSolver:
         """Write the results to file."""
         for bd in self.rigid_bodies:
             bd.write_motion()
-            for ss in bd.substructure:
+            for ss in bd.substructures:
                 ss.write_coordinates()
 
     def plot(self) -> None:
         """Plot the results."""
         # TODO: Move to figure module
         for body in self.rigid_bodies:
-            for struct in body.substructure:
+            for struct in body.substructures:
                 struct.plot()
 
     def load_mesh(self) -> None:

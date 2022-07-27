@@ -160,7 +160,7 @@ class RigidBody:
                 self.trim_solver = None
                 self.draft_solver = None
 
-        self.substructure: list["substructure.Substructure"] = []
+        self.substructures: list["substructure.Substructure"] = []
         self.node: list[fe.Node] = []
 
         print(("Adding Rigid Body: {0}".format(self.name)))
@@ -177,13 +177,13 @@ class RigidBody:
 
     def add_substructure(self, ss: "substructure.Substructure") -> substructure.Substructure:
         """Add a substructure to the rigid body."""
-        self.substructure.append(ss)
+        self.substructures.append(ss)
         ss.parent = self
         return ss
 
     def store_nodes(self) -> None:
         """Store references to all nodes in each substructure."""
-        for ss in self.substructure:
+        for ss in self.substructures:
             for nd in ss.node:
                 if not any([n.node_num == nd.node_num for n in self.node]):
                     self.node.append(nd)
@@ -218,7 +218,7 @@ class RigidBody:
             )
             nd.move_coordinates(new_pos[0] - xo, new_pos[1] - yo - draft_delta)
 
-        for s in self.substructure:
+        for s in self.substructures:
             s.update_geometry()
 
         self.xCofG, self.yCofG = trig.rotate_point(
@@ -235,7 +235,7 @@ class RigidBody:
     def update_substructure_positions(self) -> None:
         """Update the positions of all substructures."""
         substructure.FlexibleSubstructure.update_all(self)
-        for ss in self.substructure:
+        for ss in self.substructures:
             logger.info(f"Updating position for substructure: {ss.name}")
             if isinstance(ss, substructure.RigidSubstructure):
                 ss.update_angle()
@@ -243,7 +243,7 @@ class RigidBody:
     def update_fluid_forces(self) -> None:
         """Update the fluid forces by summing the force from each substructure."""
         self.reset_loads()
-        for ss in self.substructure:
+        for ss in self.substructures:
             ss.update_fluid_forces()
             self.D += ss.D
             self.L += ss.L
@@ -574,7 +574,7 @@ class RigidBody:
             ["DragAir", self.Da],
             ["MomentAir", self.Ma],
         )
-        for ss in self.substructure:
+        for ss in self.substructures:
             if isinstance(ss, substructure.TorsionalSpringSubstructure):
                 ss.write_deformation()
 
