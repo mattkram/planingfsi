@@ -190,9 +190,9 @@ class StructuralSolver:
     def load_mesh(self) -> None:
         """Load the mesh from files."""
         # Create all nodes
-        x, y = np.loadtxt(os.path.join(self.config.path.mesh_dir, "nodes.txt"), unpack=True)
-        xf, yf = np.loadtxt(os.path.join(self.config.path.mesh_dir, "fixedDOF.txt"), unpack=True)
-        fx, fy = np.loadtxt(os.path.join(self.config.path.mesh_dir, "fixedLoad.txt"), unpack=True)
+        x, y = np.loadtxt(os.path.join(self.config.path.mesh_dir_name, "nodes.txt"), unpack=True)
+        xf, yf = np.loadtxt(os.path.join(self.config.path.mesh_dir_name, "fixedDOF.txt"), unpack=True)
+        fx, fy = np.loadtxt(os.path.join(self.config.path.mesh_dir_name, "fixedLoad.txt"), unpack=True)
 
         for xx, yy, xxf, yyf, ffx, ffy in zip(x, y, xf, yf, fx, fy):
             nd = Node()

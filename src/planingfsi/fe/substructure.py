@@ -171,7 +171,7 @@ class Substructure(abc.ABC):
 
     def load_mesh(self) -> None:
         nd_st, nd_end = np.loadtxt(
-            str(Path(self.config.path.mesh_dir, f"elements_{self.name}.txt")),
+            str(Path(self.config.path.mesh_dir_name, f"elements_{self.name}.txt")),
             unpack=True,
         )
         if isinstance(nd_st, float):
