@@ -34,10 +34,10 @@ class Simulation:
         it: The current iteration.
         ramp: The current ramping coefficient, used when applying loads and moving nodes.
             The value is between 1.0 and 0.0.
+        it_dirs: A list of paths to iteration directories stored in the filesystem, used when loading
+            existing results to "replay" a simulation.
 
     """
-
-    it_dirs: list[Path]
 
     def __init__(self) -> None:
         self.config = Config()
@@ -46,6 +46,7 @@ class Simulation:
         self._figure: FSIFigure | None = None
         self.it = 0
         self.ramp = 1.0
+        self.it_dirs: list[Path] = []
 
     @classmethod
     def from_input_files(cls, config_filename: Path | str) -> Simulation:
