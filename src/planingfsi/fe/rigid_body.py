@@ -205,8 +205,6 @@ class RigidBody:
         self.substructures: list["substructure.Substructure"] = []
         self.node: list[fe.Node] = []
 
-        print(("Adding Rigid Body: {0}".format(self.name)))
-
     @property
     def config(self) -> Config:
         """A reference to the simulation configuration."""
