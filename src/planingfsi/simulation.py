@@ -108,7 +108,21 @@ class Simulation:
         """Load all rigid bodies from files."""
         if Path(self.config.path.body_dict_dir).exists():
             for dict_path in Path(self.config.path.body_dict_dir).glob("*"):
-                dict_ = load_dict_from_file(str(dict_path))
+                # TODO: I may be missing old spellings in the key_map
+                dict_ = load_dict_from_file(
+                    dict_path,
+                    key_map={
+                        "bodyName": "name",
+                        "W": "weight",
+                        "loadPct": "load_pct",
+                        "m": "mass",
+                        "Iz": "rotational_inertia",
+                        "xCofG": "x_cg",
+                        "yCofG": "y_cg",
+                        "xCofR": "x_cr",
+                        "yCofR": "y_cr",
+                    },
+                )
                 self.add_rigid_body(dict_)
         else:
             # Add a dummy rigid body that cannot move
