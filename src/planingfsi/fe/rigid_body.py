@@ -198,7 +198,7 @@ class RigidBody:
                 self.draft_solver = None
 
         self.substructures: list["substructure.Substructure"] = []
-        self.node: list[fe.Node] = []
+        self.nodes: list[fe.Node] = []
 
     @property
     def config(self) -> Config:
@@ -240,8 +240,8 @@ class RigidBody:
         """Store references to all nodes in each substructure."""
         for ss in self.substructures:
             for nd in ss.node:
-                if not any([n.node_num == nd.node_num for n in self.node]):
-                    self.node.append(nd)
+                if not any([n.node_num == nd.node_num for n in self.nodes]):
+                    self.nodes.append(nd)
 
     def initialize_position(self) -> None:
         """Initialize the position of the rigid body."""
@@ -263,10 +263,10 @@ class RigidBody:
             if np.isnan(trim_delta):
                 trim_delta = 0.0
 
-        if not self.node:
+        if not self.nodes:
             self.store_nodes()
 
-        for nd in self.node:
+        for nd in self.nodes:
             xo, yo = nd.get_coordinates()
             new_pos = trig.rotate_point(
                 np.array([xo, yo]), np.array([self.xCofR, self.yCofR]), trim_delta
