@@ -71,7 +71,7 @@ class Simulation:
     @property
     def it_dir(self) -> Path:
         """A path to the directory for the current iteration."""
-        return Path(self.case_dir, str(self.it))
+        return self.case_dir / str(self.it)
 
     def add_rigid_body(self, rigid_body: dict[str, Any] | RigidBody | None = None) -> RigidBody:
         """Add a rigid body to the simulation and solid solver.
@@ -94,18 +94,23 @@ class Simulation:
         """Update the structural response."""
         self.structural_solver.calculate_response()
 
-    def create_dirs(self) -> None:
-        self.config.path.fig_dir_name = os.path.join(self.case_dir, self.config.path.fig_dir_name)
+    def _create_dirs(self) -> None:
+        """Ensure all required directories exist, including the case, iteration, and figure directories.
 
+        Remove all existing figures if they exist and it's the first iteration.
+
+        """
+        # TODO: This method may not be required with some refactoring
         if self.check_output_interval() and not self.config.io.results_from_file:
-            Path(self.case_dir).mkdir(exist_ok=True)
-            Path(self.it_dir).mkdir(exist_ok=True)
+            self.case_dir.mkdir(exist_ok=True)
+            self.it_dir.mkdir(exist_ok=True)
 
         if self.config.plotting.save:
-            Path(self.config.path.fig_dir_name).mkdir(exist_ok=True)
+            fig_dir = self.case_dir / self.config.path.fig_dir_name
+            fig_dir.mkdir(exist_ok=True)
             if self.it == 0:
-                for f in os.listdir(self.config.path.fig_dir_name):
-                    os.remove(os.path.join(self.config.path.fig_dir_name, f))
+                for f in fig_dir.glob("*"):
+                    f.unlink()
 
     def load_input_files(self, config_filename: Path | str) -> None:
         """Load all of the input files."""
@@ -219,7 +224,7 @@ class Simulation:
         self.reset()
 
         if self.config.io.results_from_file:
-            self.create_dirs()
+            self._create_dirs()
             self.apply_ramp()
             self.it_dirs = sorted(Path(".").glob("[0-9]*"), key=lambda x: int(x.name))
 
@@ -241,7 +246,7 @@ class Simulation:
                 self.structural_solver.residual = 0.0
 
             # Write, print, and plot results
-            self.create_dirs()
+            self._create_dirs()
             self.write_results()
             self.print_status()
             self.update_figure()
@@ -283,7 +288,7 @@ class Simulation:
                 self.it = int(self.it_dirs[old_ind + 1])
             else:
                 self.it = self.config.solver.max_it + 1
-            self.create_dirs()
+            self._create_dirs()
         else:
             self.it += 1
 
@@ -297,7 +302,7 @@ class Simulation:
         self.update_fluid_response()
 
         # Write, print, and plot results
-        self.create_dirs()
+        self._create_dirs()
         self.write_results()
         self.print_status()
         self.update_figure()
