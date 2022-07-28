@@ -27,11 +27,13 @@ class Simulation:
     Handles the iteration between the fluid and solid solvers.
 
     Attributes:
-        solid_solver (StructuralSolver): The structural solver.
-        fluid_solver (PotentialPlaningSolver): The fluid solver.
-        it (int): The current iteration.
-        ramp (float): The current ramping coefficient, used when applying loads
-            and moving nodes. The value is between 1.0 and 0.0.
+        config: A reference to the `Config` object, which stores values "global" to this simulation.
+            Each `Simulation` instance has its own independent config.
+        structural_solver: The structural solver.
+        fluid_solver: The fluid solver.
+        it: The current iteration.
+        ramp: The current ramping coefficient, used when applying loads and moving nodes.
+            The value is between 1.0 and 0.0.
 
     """
 
@@ -39,14 +41,14 @@ class Simulation:
 
     def __init__(self) -> None:
         self.config = Config()
-        self.solid_solver = StructuralSolver(self)
+        self.structural_solver = StructuralSolver(self)
         self.fluid_solver = PotentialPlaningSolver(self)
         self._figure: FSIFigure | None = None
         self.it = 0
         self.ramp = 1.0
 
     @classmethod
-    def from_input_files(cls, config_filename: Path | str) -> "Simulation":
+    def from_input_files(cls, config_filename: Path | str) -> Simulation:
         """Construct a `Simulation` object by loading input files."""
         simulation = cls()
         simulation.load_input_files(config_filename)
@@ -66,16 +68,16 @@ class Simulation:
             rigid_body: An optional dictionary of values to construct the rigid body.
 
         """
-        return self.solid_solver.add_rigid_body(rigid_body)
+        return self.structural_solver.add_rigid_body(rigid_body)
 
     def update_fluid_response(self) -> None:
         """Update the fluid response and apply to the structural solver."""
         self.fluid_solver.calculate_response()
-        self.solid_solver.update_fluid_forces()
+        self.structural_solver.update_fluid_forces()
 
     def update_solid_response(self) -> None:
         """Update the structural response."""
-        self.solid_solver.calculate_response()
+        self.structural_solver.calculate_response()
 
     @property
     def it_dir(self) -> Path:
@@ -127,7 +129,7 @@ class Simulation:
         else:
             # Add a dummy rigid body that cannot move
             self.add_rigid_body()
-        print(f"Rigid Bodies: {self.solid_solver.rigid_bodies}")
+        print(f"Rigid Bodies: {self.structural_solver.rigid_bodies}")
 
     def _load_substructures(self) -> None:
         """Load all substructures from files."""
@@ -172,12 +174,12 @@ class Simulation:
             # TODO: This default fallback to config could be handled in the PlaningSurface class
             dict_.setdefault("waterline_height", self.config.flow.waterline_height)
 
-            substructure = self.solid_solver.add_substructure(dict_)
+            substructure = self.structural_solver.add_substructure(dict_)
 
             if dict_.get("hasPlaningSurface", False):
                 planing_surface = PlaningSurface(**dict_)
                 substructure.add_planing_surface(planing_surface, **dict_)
-        print(f"Substructures: {self.solid_solver.substructures}")
+        print(f"Substructures: {self.structural_solver.substructures}")
 
     def _load_pressure_cushions(self) -> None:
         """Load all pressure cushions from files."""
@@ -222,13 +224,13 @@ class Simulation:
         ):
 
             # Calculate response
-            if self.solid_solver.has_free_structure:
+            if self.structural_solver.has_free_structure:
                 self.apply_ramp()
                 self.update_solid_response()
                 self.update_fluid_response()
-                self.solid_solver.get_residual()
+                self.structural_solver.get_residual()
             else:
-                self.solid_solver.residual = 0.0
+                self.structural_solver.residual = 0.0
 
             # Write, print, and plot results
             self.create_dirs()
@@ -258,11 +260,11 @@ class Simulation:
     def reset(self) -> None:
         """Reset iteration counter and load the structural mesh."""
         self.it = 0
-        self.solid_solver.load_mesh()
+        self.structural_solver.load_mesh()
 
     def initialize_solvers(self) -> None:
         """Initialize body at specified trim and draft and solve initial fluid problem."""
-        self.solid_solver.initialize_rigid_bodies()
+        self.structural_solver.initialize_rigid_bodies()
         self.update_fluid_response()
 
     def increment(self) -> None:
@@ -303,8 +305,8 @@ class Simulation:
         else:
             self.it += 1
 
-        res_l = self.solid_solver.lift_residual
-        res_m = self.solid_solver.moment_residual
+        res_l = self.structural_solver.lift_residual
+        res_m = self.structural_solver.moment_residual
 
         logger.info("Rigid Body Residuals:")
         logger.info("  Lift:   {0:0.4e}".format(res_l))
@@ -332,7 +334,7 @@ class Simulation:
                 "Residual", 0.0
             )
         else:
-            return self.solid_solver.residual
+            return self.structural_solver.residual
 
     def print_status(self) -> None:
         logger.info(
@@ -351,13 +353,13 @@ class Simulation:
             writers.write_as_dict(
                 os.path.join(self.it_dir, "overallQuantities.txt"),
                 ["Ramp", self.ramp],
-                ["Residual", self.solid_solver.residual],
+                ["Residual", self.structural_solver.residual],
             )
 
             self.fluid_solver.write_results()
-            self.solid_solver.write_results()
+            self.structural_solver.write_results()
 
     def load_results(self) -> None:
         dict_ = load_dict_from_file(os.path.join(self.it_dir, "overallQuantities.txt"))
         self.ramp = dict_.get("Ramp", 0.0)
-        self.solid_solver.residual = dict_.get("Residual", 0.0)
+        self.structural_solver.residual = dict_.get("Residual", 0.0)

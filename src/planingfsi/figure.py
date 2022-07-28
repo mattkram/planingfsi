@@ -120,7 +120,7 @@ class FSIFigure:
 
     @property
     def solid(self) -> "StructuralSolver":
-        return self.simulation.solid_solver
+        return self.simulation.structural_solver
 
     @property
     def fluid(self) -> "PotentialPlaningSolver":

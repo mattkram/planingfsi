@@ -9,5 +9,5 @@ def simulation() -> Simulation:
 
 
 def test_has_references_to_solvers(simulation: Simulation) -> None:
-    assert simulation.solid_solver is not None
+    assert simulation.structural_solver is not None
     assert simulation.fluid_solver is not None
