@@ -56,17 +56,31 @@ class Simulation:
         return simulation
 
     @property
+    def case_dir(self) -> Path:
+        """The base path for the simulation."""
+        # TODO: Think about storing this as an attribute instead
+        return self.config.path.case_dir
+
+    @property
     def figure(self) -> FSIFigure | None:
-        """Use a property for the figure object to initialize lazily."""
+        """The `FSIFigure` object where results are drawn. Will be None if plotting is disabled."""
         if self._figure is None and self.config.plotting.plot_any:
             self._figure = FSIFigure(simulation=self, config=self.config)
         return self._figure
 
-    def add_rigid_body(self, rigid_body: dict[str, Any] | None = None) -> RigidBody:
+    @property
+    def it_dir(self) -> Path:
+        """A path to the directory for the current iteration."""
+        return Path(self.case_dir, str(self.it))
+
+    def add_rigid_body(self, rigid_body: dict[str, Any] | RigidBody | None = None) -> RigidBody:
         """Add a rigid body to the simulation and solid solver.
 
         Args:
-            rigid_body: An optional dictionary of values to construct the rigid body.
+            rigid_body: A `RigidBody` object, or optional dictionary of values to construct the rigid body.
+
+        Returns:
+            The `RigidBody` that was added to the simulation.
 
         """
         return self.structural_solver.add_rigid_body(rigid_body)
@@ -80,18 +94,11 @@ class Simulation:
         """Update the structural response."""
         self.structural_solver.calculate_response()
 
-    @property
-    def it_dir(self) -> Path:
-        """A path to the directory for the current iteration."""
-        return Path(self.config.path.case_dir, str(self.it))
-
     def create_dirs(self) -> None:
-        self.config.path.fig_dir_name = os.path.join(
-            self.config.path.case_dir, self.config.path.fig_dir_name
-        )
+        self.config.path.fig_dir_name = os.path.join(self.case_dir, self.config.path.fig_dir_name)
 
         if self.check_output_interval() and not self.config.io.results_from_file:
-            Path(self.config.path.case_dir).mkdir(exist_ok=True)
+            Path(self.case_dir).mkdir(exist_ok=True)
             Path(self.it_dir).mkdir(exist_ok=True)
 
         if self.config.plotting.save:
