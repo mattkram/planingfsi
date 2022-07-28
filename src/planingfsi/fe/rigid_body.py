@@ -60,14 +60,6 @@ class RigidBody:
 
     """
 
-    # TODO: Yuck
-    L: float
-    D: float
-    M: float
-    weight: float
-    res_l: float
-    res_m: float
-
     def __init__(
         self,
         name: str = "default",
