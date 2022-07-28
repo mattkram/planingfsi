@@ -120,28 +120,34 @@ class Simulation:
         self._load_pressure_cushions()
 
     def _load_rigid_bodies(self) -> None:
-        """Load all rigid bodies from files."""
-        if Path(self.config.path.body_dict_dir_name).exists():
-            for dict_path in Path(self.config.path.body_dict_dir_name).glob("*"):
-                # TODO: I may be missing old spellings in the key_map
-                dict_ = load_dict_from_file(
-                    dict_path,
-                    key_map={
-                        "bodyName": "name",
-                        "W": "weight",
-                        "loadPct": "load_pct",
-                        "m": "mass",
-                        "Iz": "rotational_inertia",
-                        "xCofG": "x_cg",
-                        "yCofG": "y_cg",
-                        "xCofR": "x_cr",
-                        "yCofR": "y_cr",
-                    },
-                )
-                self.add_rigid_body(dict_)
-        else:
+        """Load all rigid bodies from files in the body dict directory.
+
+        If no files are provided, a default stationary rigid body is added.
+
+        """
+        body_dict_dir = self.case_dir / self.config.path.body_dict_dir_name
+        for dict_path in body_dict_dir.glob("*"):
+            # TODO: I may be missing old spellings in the key_map
+            dict_ = load_dict_from_file(
+                dict_path,
+                key_map={
+                    "bodyName": "name",
+                    "W": "weight",
+                    "loadPct": "load_pct",
+                    "m": "mass",
+                    "Iz": "rotational_inertia",
+                    "xCofG": "x_cg",
+                    "yCofG": "y_cg",
+                    "xCofR": "x_cr",
+                    "yCofR": "y_cr",
+                },
+            )
+            self.add_rigid_body(dict_)
+
+        if not self.structural_solver.rigid_bodies:
             # Add a dummy rigid body that cannot move
             self.add_rigid_body()
+
         print(f"Rigid Bodies: {self.structural_solver.rigid_bodies}")
 
     def _load_substructures(self) -> None:
