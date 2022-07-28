@@ -61,24 +61,6 @@ class RigidBody:
     """
 
     # TODO: Yuck
-    max_draft_step: float
-    max_trim_step: float
-    free_in_draft: bool
-    free_in_trim: bool
-    draft_damping: float
-    trim_damping: float
-    max_draft_acc: float
-    max_trim_acc: float
-    xCofG: float
-    yCofG: float
-    xCofR: float
-    yCofR: float
-    initial_draft: float
-    initial_trim: float
-    relax_draft: float
-    relax_trim: float
-    time_step: float
-    num_damp: float
     L: float
     D: float
     M: float
