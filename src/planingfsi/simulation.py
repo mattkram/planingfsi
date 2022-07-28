@@ -152,7 +152,8 @@ class Simulation:
 
     def _load_substructures(self) -> None:
         """Load all substructures from files."""
-        for dict_path in Path(self.config.path.input_dict_dir_name).glob("*"):
+        input_dict_dir = self.case_dir / self.config.path.input_dict_dir_name
+        for dict_path in input_dict_dir.glob("*"):
             dict_ = load_dict_from_file(
                 dict_path,
                 key_map={
@@ -166,6 +167,7 @@ class Simulation:
                     "isSprung": "is_sprung",
                     "springConstant": "spring_constant",
                     "pointSpacing": "point_spacing",
+                    "hasPlaningSurface": "has_planing_surface",
                     "waterlineHeight": "waterline_height",
                     "sSepPctStart": "separation_arclength_start_pct",
                     "sImmPctStart": "immersion_arclength_start_pct",
@@ -195,30 +197,30 @@ class Simulation:
 
             substructure = self.structural_solver.add_substructure(dict_)
 
-            if dict_.get("hasPlaningSurface", False):
+            if dict_.get("has_planing_surface", False):
                 planing_surface = PlaningSurface(**dict_)
                 substructure.add_planing_surface(planing_surface, **dict_)
         print(f"Substructures: {self.structural_solver.substructures}")
 
     def _load_pressure_cushions(self) -> None:
         """Load all pressure cushions from files."""
-        if Path(self.config.path.cushion_dict_dir_name).exists():
-            for dict_path in Path(self.config.path.cushion_dict_dir_name).glob("*"):
-                dict_ = load_dict_from_file(
-                    dict_path,
-                    key_map={
-                        "pressureCushionName": "name",
-                        "cushionPressure": "cushion_pressure",
-                        "upstreamPlaningSurface": "upstream_planing_surface",
-                        "downstreamPlaningSurface": "downstream_planing_surface",
-                        "upstreamLoc": "upstream_loc",
-                        "downstreamLoc": "downstream_loc",
-                        "numElements": "num_elements",
-                        "cushionType": "cushion_type",
-                        "smoothingFactor": "smoothing_factor",
-                    },
-                )
-                self.fluid_solver.add_pressure_cushion(dict_)
+        cushion_dict_dir = self.case_dir / self.config.path.cushion_dict_dir_name
+        for dict_path in cushion_dict_dir.glob("*"):
+            dict_ = load_dict_from_file(
+                dict_path,
+                key_map={
+                    "pressureCushionName": "name",
+                    "cushionPressure": "cushion_pressure",
+                    "upstreamPlaningSurface": "upstream_planing_surface",
+                    "downstreamPlaningSurface": "downstream_planing_surface",
+                    "upstreamLoc": "upstream_loc",
+                    "downstreamLoc": "downstream_loc",
+                    "numElements": "num_elements",
+                    "cushionType": "cushion_type",
+                    "smoothingFactor": "smoothing_factor",
+                },
+            )
+            self.fluid_solver.add_pressure_cushion(dict_)
         print(f"Pressure Cushions: {self.fluid_solver.pressure_cushions}")
 
     def run(self) -> None:
