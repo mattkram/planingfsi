@@ -116,37 +116,40 @@ class RigidBody:
         self.yCofG = y_cg or self.config.body.yCofG
         self.xCofR = x_cr or self.config.body.xCofR
         self.yCofR = y_cr or self.config.body.yCofR
-        self.initial_draft = initial_draft or self.config.body.initial_draft
-        self.initial_trim = initial_trim or self.config.body.initial_trim
-        self.relax_draft = relax_draft or self.config.body.relax_draft
-        self.relax_trim = relax_trim or self.config.body.relax_trim
-        self.time_step = time_step or self.config.body.time_step
-        self.max_draft_step = max_draft_step or self.config.body.max_draft_step
-        self.max_trim_step = max_trim_step or self.config.body.max_trim_step
-        self.free_in_draft = free_in_draft or self.config.body.free_in_draft
-        self.free_in_trim = free_in_trim or self.config.body.free_in_trim
-        self.draft_damping = draft_damping or self.config.body.draft_damping
-        self.trim_damping = trim_damping or self.config.body.trim_damping
-        self.max_draft_acc = max_draft_acc or self.config.body.max_draft_acc
-        self.max_trim_acc = max_trim_acc or self.config.body.max_trim_acc
-        self.num_damp = num_damp or self.config.solver.num_damp
 
         self.xCofR0 = self.xCofR
         self.yCofR0 = self.yCofR
 
-        self.max_disp = np.array([self.max_draft_step, self.max_trim_step])
-        self.free_dof = np.array([self.free_in_draft, self.free_in_trim])
-        self.c_damp = np.array([self.draft_damping, self.trim_damping])
-        self.max_acc = np.array([self.max_draft_acc, self.max_trim_acc])
-        self.relax = np.array([self.relax_draft, self.relax_trim])
+        self.initial_draft = initial_draft or self.config.body.initial_draft
+        self.initial_trim = initial_trim or self.config.body.initial_trim
+
+        free_in_draft = free_in_draft or self.config.body.free_in_draft
+        free_in_trim = free_in_trim or self.config.body.free_in_trim
+        max_draft_step = max_draft_step or self.config.body.max_draft_step
+        max_trim_step = max_trim_step or self.config.body.max_trim_step
+        draft_damping = draft_damping or self.config.body.draft_damping
+        trim_damping = trim_damping or self.config.body.trim_damping
+        max_draft_acc = max_draft_acc or self.config.body.max_draft_acc
+        max_trim_acc = max_trim_acc or self.config.body.max_trim_acc
+        relax_draft = relax_draft or self.config.body.relax_draft
+        relax_trim = relax_trim or self.config.body.relax_trim
+
+        self.time_step = time_step or self.config.body.time_step
+        self.free_dof = np.array([free_in_draft, free_in_trim])
+        self.max_disp = np.array([max_draft_step, max_trim_step])
+        self.c_damp = np.array([draft_damping, trim_damping])
+        self.max_acc = np.array([max_draft_acc, max_trim_acc])
+        self.relax = np.array([relax_draft, relax_trim])
 
         self.v = np.zeros((NUM_DIM,))
         self.a = np.zeros((NUM_DIM,))
         self.v_old = np.zeros((NUM_DIM,))
         self.a_old = np.zeros((NUM_DIM,))
 
+        # Parameters for Newmark-Beta method
         self.beta = beta
         self.gamma = gamma
+        self.num_damp = num_damp or self.config.solver.num_damp
 
         self.D = 0.0
         self.L = 0.0
@@ -210,6 +213,22 @@ class RigidBody:
         if self.parent is None:
             raise AttributeError("parent must be set before simulation can be accessed.")
         return self.parent.simulation.ramp
+
+    @property
+    def free_in_draft(self) -> bool:
+        return self.free_dof[0]
+
+    @free_in_draft.setter
+    def free_in_draft(self, value: bool) -> None:
+        self.free_dof[0] = value
+
+    @property
+    def free_in_trim(self) -> bool:
+        return self.free_dof[1]
+
+    @free_in_trim.setter
+    def free_in_trim(self, value: bool) -> None:
+        self.free_dof[1] = value
 
     def add_substructure(self, ss: "substructure.Substructure") -> substructure.Substructure:
         """Add a substructure to the rigid body."""
@@ -318,7 +337,7 @@ class RigidBody:
         self.a -= self.c_damp * self.v * self.ramp
         self.a /= np.array([self.m, self.Iz])
         self.a = np.min(
-            np.vstack((np.abs(self.a), np.array([self.max_draft_acc, self.max_trim_acc]))),
+            np.vstack((np.abs(self.a), self.max_acc)),
             axis=0,
         ) * np.sign(self.a)
 
@@ -339,7 +358,7 @@ class RigidBody:
         #    self.a -= self.Cdamp * self.v * config.ramp
         self.a /= np.array([self.m, self.Iz])
         self.a = np.min(
-            np.vstack((np.abs(self.a), np.array([self.max_draft_acc, self.max_trim_acc]))),
+            np.vstack((np.abs(self.a), self.max_acc)),
             axis=0,
         ) * np.sign(self.a)
 

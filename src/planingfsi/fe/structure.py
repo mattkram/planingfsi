@@ -43,7 +43,7 @@ class StructuralSolver:
     def has_free_structure(self) -> bool:
         """True if any rigid body or substructure are free to move."""
         for rigid_body in self.rigid_bodies:
-            if rigid_body.free_in_draft or rigid_body.free_in_trim:
+            if any(rigid_body.free_dof):
                 return True
 
             for ss in rigid_body.substructures:
@@ -158,7 +158,7 @@ class StructuralSolver:
         """Calculate the residual."""
         self.residual = 0.0
         for bd in self.rigid_bodies:
-            if bd.free_in_draft or bd.free_in_trim:
+            if any(bd.free_dof):
                 self.residual = np.max([np.abs(bd.res_l), self.residual])
                 self.residual = np.max([np.abs(bd.res_m), self.residual])
             self.residual = np.max([FlexibleSubstructure.res, self.residual])
