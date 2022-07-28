@@ -8,7 +8,7 @@ import pytest
 import planingfsi.fe.substructure as ss
 from planingfsi.fe.rigid_body import RigidBody
 from planingfsi.fe.structure import StructuralSolver
-from planingfsi.fsi.simulation import Simulation  # noreorder
+from planingfsi.simulation import Simulation
 
 
 @pytest.fixture()
@@ -82,7 +82,7 @@ def test_solver_lift_residual(
 ) -> None:
     solver, body = solver_with_body
     body.L = lift
-    assert solver.res_l == pytest.approx(expected)
+    assert solver.lift_residual == pytest.approx(expected)
 
 
 @pytest.mark.parametrize("moment, expected", [(1.0, 1.0), (numpy.nan, 1.0)])
@@ -92,4 +92,4 @@ def test_solver_moment_residual(
     # TODO: Need to cover change in CoG, CoR
     solver, body = solver_with_body
     body.M = moment
-    assert solver.res_m == pytest.approx(expected)
+    assert solver.moment_residual == pytest.approx(expected)

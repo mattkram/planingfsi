@@ -13,7 +13,7 @@ from planingfsi import writers
 from planingfsi.config import Config
 from planingfsi.dictionary import load_dict_from_file
 from planingfsi.fe.structure import StructuralSolver
-from planingfsi.fsi.figure import FSIFigure
+from planingfsi.figure import FSIFigure
 from planingfsi.potentialflow.pressurepatch import PlaningSurface
 from planingfsi.potentialflow.solver import PotentialPlaningSolver
 
@@ -108,12 +108,26 @@ class Simulation:
         """Load all rigid bodies from files."""
         if Path(self.config.path.body_dict_dir).exists():
             for dict_path in Path(self.config.path.body_dict_dir).glob("*"):
-                dict_ = load_dict_from_file(str(dict_path))
+                # TODO: I may be missing old spellings in the key_map
+                dict_ = load_dict_from_file(
+                    dict_path,
+                    key_map={
+                        "bodyName": "name",
+                        "W": "weight",
+                        "loadPct": "load_pct",
+                        "m": "mass",
+                        "Iz": "rotational_inertia",
+                        "xCofG": "x_cg",
+                        "yCofG": "y_cg",
+                        "xCofR": "x_cr",
+                        "yCofR": "y_cr",
+                    },
+                )
                 self.add_rigid_body(dict_)
         else:
             # Add a dummy rigid body that cannot move
             self.add_rigid_body()
-        print(f"Rigid Bodies: {self.solid_solver.rigid_body}")
+        print(f"Rigid Bodies: {self.solid_solver.rigid_bodies}")
 
     def _load_substructures(self) -> None:
         """Load all substructures from files."""
@@ -163,7 +177,7 @@ class Simulation:
             if dict_.get("hasPlaningSurface", False):
                 planing_surface = PlaningSurface(**dict_)
                 substructure.add_planing_surface(planing_surface, **dict_)
-        print(f"Substructures: {self.solid_solver.substructure}")
+        print(f"Substructures: {self.solid_solver.substructures}")
 
     def _load_pressure_cushions(self) -> None:
         """Load all pressure cushions from files."""
@@ -214,7 +228,7 @@ class Simulation:
                 self.update_fluid_response()
                 self.solid_solver.get_residual()
             else:
-                self.solid_solver.res = 0.0
+                self.solid_solver.residual = 0.0
 
             # Write, print, and plot results
             self.create_dirs()
@@ -289,8 +303,8 @@ class Simulation:
         else:
             self.it += 1
 
-        res_l = self.solid_solver.res_l
-        res_m = self.solid_solver.res_m
+        res_l = self.solid_solver.lift_residual
+        res_m = self.solid_solver.moment_residual
 
         logger.info("Rigid Body Residuals:")
         logger.info("  Lift:   {0:0.4e}".format(res_l))
@@ -318,7 +332,7 @@ class Simulation:
                 "Residual", 0.0
             )
         else:
-            return self.solid_solver.res
+            return self.solid_solver.residual
 
     def print_status(self) -> None:
         logger.info(
@@ -337,7 +351,7 @@ class Simulation:
             writers.write_as_dict(
                 os.path.join(self.it_dir, "overallQuantities.txt"),
                 ["Ramp", self.ramp],
-                ["Residual", self.solid_solver.res],
+                ["Residual", self.solid_solver.residual],
             )
 
             self.fluid_solver.write_results()
@@ -346,4 +360,4 @@ class Simulation:
     def load_results(self) -> None:
         dict_ = load_dict_from_file(os.path.join(self.it_dir, "overallQuantities.txt"))
         self.ramp = dict_.get("Ramp", 0.0)
-        self.solid_solver.res = dict_.get("Residual", 0.0)
+        self.solid_solver.residual = dict_.get("Residual", 0.0)

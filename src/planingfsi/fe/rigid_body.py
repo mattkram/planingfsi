@@ -10,6 +10,7 @@ from planingfsi import logger
 from planingfsi import solver
 from planingfsi import trig
 from planingfsi import writers
+from planingfsi.config import NUM_DIM
 from planingfsi.config import Config
 from planingfsi.dictionary import load_dict_from_file
 from planingfsi.fe import substructure
@@ -21,93 +22,134 @@ if TYPE_CHECKING:
 
 
 class RigidBody:
-    # TODO: Yuck
-    max_draft_step: float
-    max_trim_step: float
-    free_in_draft: bool
-    free_in_trim: bool
-    draft_damping: float
-    trim_damping: float
-    max_draft_acc: float
-    max_trim_acc: float
-    xCofG: float
-    yCofG: float
-    xCofR: float
-    yCofR: float
-    initial_draft: float
-    initial_trim: float
-    relax_draft: float
-    relax_trim: float
-    time_step: float
-    num_damp: int
+    """A rigid body, consisting of multiple substructures.
 
-    def __init__(self, dict_: dict[str, Any], parent: StructuralSolver):
+    The rigid body is used as a container for collecting attached substructures, and also
+    allows motion in heave & trim, which is calculated by integrating the total forces
+    and moments applied to the substructures.
+
+    Args:
+        name: A name for the RigidBody instance
+        weight: If provided, the weight to use for the rigid body (scaled by `config.body.seal_load_pct`).
+        load_pct: If `weight` is not provided, this value is multiplied by the global `config.body.weight`,
+            which is then also scaled by `config.body.seal_load_pct`.
+        mass: An optional override for the mass. Otherwise, mass = weight / gravity.
+        rotational_inertia: An optional override for the rotational moment of inertia. Otherwise, will be
+            approximated from the mass and body reference length.
+        x_cg: The x-coordinate of the center of gravity.
+        y_cg: The y-coordinate of the center of gravity.
+        x_cr: The x-coordinate of the center of rotation. Defaults to the CG.
+        y_cr: The y-coordinate of the center of rotation. Defaults to the CG.
+        initial_draft: The initial draft of the body.
+        initial_trim: The initial trim of the body.
+        relax_draft: The relaxation parameter to use for draft.
+        relax_trim: The relaxation parameter to use for trim.
+        time_step: The time step to use when quasi-time-domain method is used.
+        num_damp: Numerical damping coefficient when quasi-time-domain method is used.
+        max_draft_step: The maximum allowable change in draft during an iteration.
+        max_trim_step: The maximum allowable change in trim during an iteration.
+        free_in_draft: True if body is free to move in draft.
+        free_in_trim: True if body is free to move in trim.
+        draft_damping: Damping coefficient to use for draft.
+        trim_damping: Damping coefficient to use for trim.
+        max_draft_acc: The maximum draft acceleration when quasi-time-domain method is used.
+        max_trim_acc: The maximum trim acceleration when quasi-time-domain method is used.
+        beta: The beta parameter when using Newmark-Beta method.
+        gamma: The gamma parameter when using Newmark-Beta method.
+        parent: An optional reference to the parent structural solver.
+
+    """
+
+    def __init__(
+        self,
+        name: str = "default",
+        weight: float | None = None,
+        load_pct: float = 1.0,
+        mass: float | None = None,
+        rotational_inertia: float | None = None,
+        x_cg: float | None = None,
+        y_cg: float | None = None,
+        x_cr: float | None = None,
+        y_cr: float | None = None,
+        initial_draft: float | None = None,
+        initial_trim: float | None = None,
+        relax_draft: float | None = None,
+        relax_trim: float | None = None,
+        time_step: float | None = None,
+        num_damp: float | None = None,
+        max_draft_step: float | None = None,
+        max_trim_step: float | None = None,
+        free_in_draft: bool | None = None,
+        free_in_trim: bool | None = None,
+        draft_damping: float | None = None,
+        trim_damping: float | None = None,
+        max_draft_acc: float | None = None,
+        max_trim_acc: float | None = None,
+        beta: float = 0.25,
+        gamma: float = 0.5,
+        parent: StructuralSolver | None = None,
+        **_: Any,
+    ):
         self.parent = parent
-        self.num_dim = 2
+
         self.draft = 0.0
         self.trim = 0.0
 
-        self.name = dict_.get("bodyName", "default")
-        self.weight = (
-            dict_.get("W", dict_.get("loadPct", 1.0) * self.config.body.weight)
-            * self.config.body.seal_load_pct
+        self.name = name
+
+        if weight is not None:
+            self.weight = weight
+        else:
+            self.weight = load_pct * self.config.body.weight
+
+        self.weight *= self.config.body.seal_load_pct
+
+        self.m = mass if mass is not None else self.weight / self.config.flow.gravity
+        self.Iz = (
+            rotational_inertia
+            if rotational_inertia is not None
+            else self.m * self.config.body.reference_length**2 / 12
         )
-        self.m = dict_.get("m", self.weight / self.config.flow.gravity)
-        self.Iz = dict_.get("Iz", self.m * self.config.body.reference_length**2 / 12)
-        self.has_planing_surface = dict_.get("hasPlaningSurface", False)
 
-        var = [
-            "max_draft_step",
-            "max_trim_step",
-            "free_in_draft",
-            "free_in_trim",
-            "draft_damping",
-            "trim_damping",
-            "max_draft_acc",
-            "max_trim_acc",
-            "xCofG",
-            "yCofG",
-            "xCofR",
-            "yCofR",
-            "initial_draft",
-            "initial_trim",
-            "relax_draft",
-            "relax_trim",
-            "time_step",
-            "num_damp",
-        ]
-        for v in var:
-            if v in dict_:
-                setattr(self, v, dict_.get(v))
-            elif hasattr(self.config.body, v):
-                setattr(self, v, getattr(self.config.body, v))
-            elif hasattr(self.config.solver, v):
-                setattr(self, v, getattr(self.config.solver, v))
-            elif hasattr(self.config, v):
-                setattr(self, v, getattr(self.config, v))
-            else:
-                raise ValueError("Cannot find symbol: {0}".format(v))
-            # setattr(self, v, dict_.read(v, getattr(config.body, getattr(config, v))))
-
-        #    self.xCofR = dict_.read('xCofR', self.xCofG)
-        #    self.yCofR = dict_.read('yCofR', self.yCofG)
+        # TODO: The override logic should probably happen in the input file parsing, and not here
+        self.xCofG = x_cg or self.config.body.xCofG
+        self.yCofG = y_cg or self.config.body.yCofG
+        self.xCofR = x_cr or self.config.body.xCofR
+        self.yCofR = y_cr or self.config.body.yCofR
 
         self.xCofR0 = self.xCofR
         self.yCofR0 = self.yCofR
 
-        self.max_disp = np.array([self.max_draft_step, self.max_trim_step])
-        self.free_dof = np.array([self.free_in_draft, self.free_in_trim])
-        self.c_damp = np.array([self.draft_damping, self.trim_damping])
-        self.max_acc = np.array([self.max_draft_acc, self.max_trim_acc])
-        self.relax = np.array([self.relax_draft, self.relax_trim])
+        self.initial_draft = initial_draft or self.config.body.initial_draft
+        self.initial_trim = initial_trim or self.config.body.initial_trim
 
-        self.v = np.zeros((self.num_dim,))
-        self.a = np.zeros((self.num_dim,))
-        self.v_old = np.zeros((self.num_dim,))
-        self.a_old = np.zeros((self.num_dim,))
+        free_in_draft = free_in_draft or self.config.body.free_in_draft
+        free_in_trim = free_in_trim or self.config.body.free_in_trim
+        max_draft_step = max_draft_step or self.config.body.max_draft_step
+        max_trim_step = max_trim_step or self.config.body.max_trim_step
+        draft_damping = draft_damping or self.config.body.draft_damping
+        trim_damping = trim_damping or self.config.body.trim_damping
+        max_draft_acc = max_draft_acc or self.config.body.max_draft_acc
+        max_trim_acc = max_trim_acc or self.config.body.max_trim_acc
+        relax_draft = relax_draft or self.config.body.relax_draft
+        relax_trim = relax_trim or self.config.body.relax_trim
 
-        self.beta = dict_.get("beta", 0.25)
-        self.gamma = dict_.get("gamma", 0.5)
+        self.time_step = time_step or self.config.body.time_step
+        self.free_dof = np.array([free_in_draft, free_in_trim])
+        self.max_disp = np.array([max_draft_step, max_trim_step])
+        self.c_damp = np.array([draft_damping, trim_damping])
+        self.max_acc = np.array([max_draft_acc, max_trim_acc])
+        self.relax = np.array([relax_draft, relax_trim])
+
+        self.v = np.zeros((NUM_DIM,))
+        self.a = np.zeros((NUM_DIM,))
+        self.v_old = np.zeros((NUM_DIM,))
+        self.a_old = np.zeros((NUM_DIM,))
+
+        # Parameters for Newmark-Beta method
+        self.beta = beta
+        self.gamma = gamma
+        self.num_damp = num_damp or self.config.solver.num_damp
 
         self.D = 0.0
         self.L = 0.0
@@ -155,33 +197,51 @@ class RigidBody:
                 self.trim_solver = None
                 self.draft_solver = None
 
-        self.substructure: list["substructure.Substructure"] = []
-        self.node: list[fe.Node] = []
-
-        print(("Adding Rigid Body: {0}".format(self.name)))
+        self.substructures: list["substructure.Substructure"] = []
+        self.nodes: list[fe.Node] = []
 
     @property
     def config(self) -> Config:
         """A reference to the simulation configuration."""
+        if self.parent is None:
+            raise AttributeError("parent must be set before config can be accessed.")
         return self.parent.config
 
     @property
     def ramp(self) -> float:
         """The ramping coefficient from the high-level simulation object."""
+        if self.parent is None:
+            raise AttributeError("parent must be set before simulation can be accessed.")
         return self.parent.simulation.ramp
+
+    @property
+    def free_in_draft(self) -> bool:
+        return self.free_dof[0]
+
+    @free_in_draft.setter
+    def free_in_draft(self, value: bool) -> None:
+        self.free_dof[0] = value
+
+    @property
+    def free_in_trim(self) -> bool:
+        return self.free_dof[1]
+
+    @free_in_trim.setter
+    def free_in_trim(self, value: bool) -> None:
+        self.free_dof[1] = value
 
     def add_substructure(self, ss: "substructure.Substructure") -> substructure.Substructure:
         """Add a substructure to the rigid body."""
-        self.substructure.append(ss)
+        self.substructures.append(ss)
         ss.parent = self
         return ss
 
     def store_nodes(self) -> None:
         """Store references to all nodes in each substructure."""
-        for ss in self.substructure:
+        for ss in self.substructures:
             for nd in ss.node:
-                if not any([n.node_num == nd.node_num for n in self.node]):
-                    self.node.append(nd)
+                if not any([n.node_num == nd.node_num for n in self.nodes]):
+                    self.nodes.append(nd)
 
     def initialize_position(self) -> None:
         """Initialize the position of the rigid body."""
@@ -203,17 +263,17 @@ class RigidBody:
             if np.isnan(trim_delta):
                 trim_delta = 0.0
 
-        if not self.node:
+        if not self.nodes:
             self.store_nodes()
 
-        for nd in self.node:
+        for nd in self.nodes:
             xo, yo = nd.get_coordinates()
             new_pos = trig.rotate_point(
                 np.array([xo, yo]), np.array([self.xCofR, self.yCofR]), trim_delta
             )
             nd.move_coordinates(new_pos[0] - xo, new_pos[1] - yo - draft_delta)
 
-        for s in self.substructure:
+        for s in self.substructures:
             s.update_geometry()
 
         self.xCofG, self.yCofG = trig.rotate_point(
@@ -230,7 +290,7 @@ class RigidBody:
     def update_substructure_positions(self) -> None:
         """Update the positions of all substructures."""
         substructure.FlexibleSubstructure.update_all(self)
-        for ss in self.substructure:
+        for ss in self.substructures:
             logger.info(f"Updating position for substructure: {ss.name}")
             if isinstance(ss, substructure.RigidSubstructure):
                 ss.update_angle()
@@ -238,7 +298,7 @@ class RigidBody:
     def update_fluid_forces(self) -> None:
         """Update the fluid forces by summing the force from each substructure."""
         self.reset_loads()
-        for ss in self.substructure:
+        for ss in self.substructures:
             ss.update_fluid_forces()
             self.D += ss.D
             self.L += ss.L
@@ -266,7 +326,7 @@ class RigidBody:
         """Get the rigid body displacement using a time-domain model with inertia."""
         disp = self.limit_disp(self.time_step * self.v)
 
-        for i in range(self.num_dim):
+        for i in range(NUM_DIM):
             if np.abs(disp[i]) == np.abs(self.max_disp[i]):
                 self.v[i] = disp[i] / self.time_step
 
@@ -277,7 +337,7 @@ class RigidBody:
         self.a -= self.c_damp * self.v * self.ramp
         self.a /= np.array([self.m, self.Iz])
         self.a = np.min(
-            np.vstack((np.abs(self.a), np.array([self.max_draft_acc, self.max_trim_acc]))),
+            np.vstack((np.abs(self.a), self.max_acc)),
             axis=0,
         ) * np.sign(self.a)
 
@@ -298,7 +358,7 @@ class RigidBody:
         #    self.a -= self.Cdamp * self.v * config.ramp
         self.a /= np.array([self.m, self.Iz])
         self.a = np.min(
-            np.vstack((np.abs(self.a), np.array([self.max_draft_acc, self.max_trim_acc]))),
+            np.vstack((np.abs(self.a), self.max_acc)),
             axis=0,
         ) * np.sign(self.a)
 
@@ -382,7 +442,7 @@ class RigidBody:
         assert self.x is not None
         if self.J_tmp is None:
             self.Jit = 0
-            self.J_tmp = np.zeros((self.num_dim, self.num_dim))
+            self.J_tmp = np.zeros((NUM_DIM, NUM_DIM))
             self.step = 0
             self.Jfo = self.resFun(self.x)
             self.res_old = self.Jfo * 1.0
@@ -392,14 +452,14 @@ class RigidBody:
             self.J_tmp[:, self.Jit] = (f - self.Jfo) / self.disp_old[self.Jit]
             self.Jit += 1
 
-        disp = np.zeros((self.num_dim,))
-        if self.Jit < self.num_dim:
+        disp = np.zeros((NUM_DIM,))
+        if self.Jit < NUM_DIM:
             disp[self.Jit] = float(self.config.body.motion_jacobian_first_step)
 
         if self.Jit > 0:
             disp[self.Jit - 1] = -float(self.config.body.motion_jacobian_first_step)
         self.disp_old = disp
-        if self.Jit >= self.num_dim:
+        if self.Jit >= NUM_DIM:
             if self.J is None:
                 self.J = self.J_tmp.copy()
             else:
@@ -465,15 +525,15 @@ class RigidBody:
             if self.disp_old is not None:
                 self.x += self.disp_old
 
-                dx = np.reshape(self.disp_old, (self.num_dim, 1))
-                df = np.reshape(self.f - self.res_old, (self.num_dim, 1))
+                dx = np.reshape(self.disp_old, (NUM_DIM, 1))
+                df = np.reshape(self.f - self.res_old, (NUM_DIM, 1))
 
                 self.J += np.dot(df - np.dot(self.J, dx), dx.T) / np.linalg.norm(dx) ** 2
 
             dof = self.free_dof
             dx = np.zeros_like(self.x)
             dx[np.ix_(dof)] = np.linalg.solve(
-                -self.J[np.ix_(dof, dof)], self.f.reshape(self.num_dim, 1)[np.ix_(dof)]
+                -self.J[np.ix_(dof, dof)], self.f.reshape(NUM_DIM, 1)[np.ix_(dof)]
             ).flatten()  # TODO: Check that the flatten() is required
 
             if self.res_old is not None:
@@ -484,7 +544,7 @@ class RigidBody:
                 print("\nResetting Jacobian for Motion\n")
                 self.reset_jacobian()
 
-            disp = dx.reshape(self.num_dim)
+            disp = dx.reshape(NUM_DIM)
 
             disp *= self.relax
             disp = self.limit_disp(disp)
@@ -552,6 +612,8 @@ class RigidBody:
 
     def write_motion(self) -> None:
         """Write the motion results to file."""
+        if self.parent is None:
+            raise AttributeError("parent must be set before simulation can be accessed.")
         writers.write_as_dict(
             self.parent.simulation.it_dir / f"motion_{self.name}.{self.config.io.data_format}",
             ["xCofR", self.xCofR],
@@ -569,11 +631,13 @@ class RigidBody:
             ["DragAir", self.Da],
             ["MomentAir", self.Ma],
         )
-        for ss in self.substructure:
+        for ss in self.substructures:
             if isinstance(ss, substructure.TorsionalSpringSubstructure):
                 ss.write_deformation()
 
     def load_motion(self) -> None:
+        if self.parent is None:
+            raise AttributeError("parent must be set before simulation can be accessed.")
         dict_ = load_dict_from_file(
             self.parent.simulation.it_dir / f"motion_{self.name}.{self.config.io.data_format}"
         )

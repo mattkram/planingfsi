@@ -1,8 +1,8 @@
 from planingfsi import Mesh
-from planingfsi.fe.substructure import RigidSubstructure
-from planingfsi.fsi.simulation import Simulation
-from planingfsi.potentialflow.pressurepatch import PlaningSurface
-from planingfsi.potentialflow.pressurepatch import PressureCushion
+from planingfsi import PlaningSurface
+from planingfsi import PressureCushion
+from planingfsi import RigidSubstructure
+from planingfsi import Simulation
 
 
 def generate_mesh() -> Mesh:

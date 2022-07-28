@@ -1,6 +1,6 @@
 import pytest
 
-from planingfsi.fsi.simulation import Simulation
+from planingfsi.simulation import Simulation
 
 
 @pytest.fixture()

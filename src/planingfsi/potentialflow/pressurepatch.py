@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import abc
 from pathlib import Path
+from typing import TYPE_CHECKING
 from typing import Any
 from typing import Literal
 
@@ -15,9 +16,11 @@ from planingfsi import trig
 from planingfsi import writers
 from planingfsi.config import Config
 from planingfsi.dictionary import load_dict_from_file
-from planingfsi.fsi import interpolator  # noqa: F401
 from planingfsi.potentialflow import pressureelement as pe
 from planingfsi.potentialflow import solver
+
+if TYPE_CHECKING:
+    from planingfsi.fe.substructure import Interpolator
 
 
 class PressurePatch(abc.ABC):
@@ -41,7 +44,7 @@ class PressurePatch(abc.ABC):
         self.is_kutta_unknown = False
         self._neighbor_up: PressurePatch | None = None
         self._neighbor_down: PressurePatch | None = None
-        self.interpolator: interpolator.Interpolator | None = None
+        self.interpolator: Interpolator | None = None
 
         self.drag_total = np.nan
         self.drag_pressure = np.nan

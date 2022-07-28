@@ -14,14 +14,14 @@ from planingfsi import trig
 from planingfsi.config import Config
 
 if TYPE_CHECKING:
-    from planingfsi.fe import rigid_body
+    from planingfsi.fe.rigid_body import RigidBody
     from planingfsi.fe.structure import StructuralSolver
-    from planingfsi.fsi import simulation as fsi_simulation
     from planingfsi.potentialflow.solver import PotentialPlaningSolver
+    from planingfsi.simulation import Simulation
 
 
 class FSIFigure:
-    def __init__(self, simulation: "fsi_simulation.Simulation", config: Config):
+    def __init__(self, simulation: Simulation, config: Config):
         self.config = config
         self.simulation = simulation
 
@@ -30,13 +30,13 @@ class FSIFigure:
             plt.ion()
         self.geometry_ax = fig.add_axes([0.05, 0.6, 0.9, 0.35])
 
-        for nd in self.solid.node:
+        for nd in self.solid.nodes:
             (nd.line_xy,) = plt.plot([], [], "ro")
 
         (self.lineFS,) = plt.plot([], [], "b-")
         (self.lineFSi,) = plt.plot([], [], "b--")
 
-        for struct in self.solid.substructure:
+        for struct in self.solid.substructures:
             (struct.line_air_pressure,) = plt.plot([], [], "g-")
             (struct.line_fluid_pressure,) = plt.plot([], [], "r-")
             for el in struct.el:
@@ -44,7 +44,7 @@ class FSIFigure:
                 (el.lineEl,) = plt.plot([], [], "k-", linewidth=2)
 
         self.lineCofR: list["CofRPlot"] = []
-        for bodies in self.solid.rigid_body:
+        for bodies in self.solid.rigid_bodies:
             CofRPlot(
                 self.geometry_ax,
                 bodies,
@@ -65,8 +65,8 @@ class FSIFigure:
                 )
             )
 
-        x = [nd.x for struct in self.solid.substructure for nd in struct.node]
-        y = [nd.y for struct in self.solid.substructure for nd in struct.node]
+        x = [nd.x for struct in self.solid.substructures for nd in struct.node]
+        y = [nd.y for struct in self.solid.substructures for nd in struct.node]
         xMin, xMax = min(x), max(x)
         yMin, yMax = min(y), max(y)
 
@@ -106,13 +106,13 @@ class FSIFigure:
 
         self.subplot: list["TimeHistory"] = []
 
-        if self.solid.rigid_body:
-            body = self.solid.rigid_body[0]
+        if self.solid.rigid_bodies:
+            body = self.solid.rigid_bodies[0]
             self.subplot.append(ForceSubplot([0.70, 0.30, 0.25, 0.2], body, parent=self))
             self.subplot.append(MotionSubplot([0.70, 0.05, 0.25, 0.2], body, parent=self))
 
-        if len(self.solid.rigid_body) > 1:
-            body = self.solid.rigid_body[1]
+        if len(self.solid.rigid_bodies) > 1:
+            body = self.solid.rigid_bodies[1]
             self.subplot.append(ForceSubplot([0.05, 0.30, 0.25, 0.2], body, parent=self))
             self.subplot.append(MotionSubplot([0.05, 0.05, 0.25, 0.2], body, parent=self))
 
@@ -148,7 +148,7 @@ class FSIFigure:
         # Update each lower subplot
         for s in self.subplot:
             s.update(
-                self.solid.res < self.config.solver.max_residual
+                self.solid.residual < self.config.solver.max_residual
                 and self.simulation.it > self.config.solver.num_ramp_it
             )
 
@@ -303,7 +303,7 @@ class TimeHistory:
 
 
 class MotionSubplot(TimeHistory):
-    def __init__(self, pos: list[float], body: "rigid_body.RigidBody", parent: FSIFigure):
+    def __init__(self, pos: list[float], body: RigidBody, parent: FSIFigure):
         TimeHistory.__init__(self, pos, body.name, parent=parent)
 
         def itFunc() -> float:
@@ -349,7 +349,7 @@ class MotionSubplot(TimeHistory):
 
 
 class ForceSubplot(TimeHistory):
-    def __init__(self, pos: list[float], body: "rigid_body.RigidBody", parent: FSIFigure):
+    def __init__(self, pos: list[float], body: RigidBody, parent: FSIFigure):
         TimeHistory.__init__(self, pos, body.name, parent=parent)
 
         def itFunc() -> float:
@@ -411,7 +411,7 @@ class ResidualSubplot(TimeHistory):
             return 0.0  # config.it
 
         col = ["r", "b", "g"]
-        for bd, coli in zip(solid.rigid_body, col):
+        for bd, coli in zip(solid.rigid_bodies, col):
             self.add_series(
                 PlotSeries(
                     itFunc,
@@ -436,7 +436,7 @@ class ResidualSubplot(TimeHistory):
         self.add_series(
             PlotSeries(
                 itFunc,
-                lambda: np.abs(solid.res),
+                lambda: np.abs(solid.residual),
                 sty="k-",
                 type="history+curr",
                 legEnt="Total",
@@ -449,7 +449,7 @@ class ResidualSubplot(TimeHistory):
 
 
 class CofRPlot:
-    def __init__(self, ax: Axes, body: "rigid_body.RigidBody", **kwargs: Any):
+    def __init__(self, ax: Axes, body: RigidBody, **kwargs: Any):
         self.ax = ax
         self.body = body
         self.symbol = kwargs.get("symbol", True)
