@@ -152,7 +152,7 @@ class RigidBody:
         self.num_damp = num_damp or self.config.solver.num_damp
 
         self.D = 0.0
-        self.L = 0.0
+        self.L: float = 0.0
         self.M = 0.0
         self.Da = 0.0
         self.La = 0.0

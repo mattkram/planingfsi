@@ -25,12 +25,12 @@ from planingfsi.simulation import Simulation
 
 __all__ = [
     "Mesh",
-    "Simulation",
-    "RigidSubstructure",
     "FlexibleSubstructure",
+    "RigidSubstructure",
     "TorsionalSpringSubstructure",
     "PlaningSurface",
     "PressureCushion",
+    "Simulation",
 ]
 
 # # Use tk by default. Otherwise try Agg. Otherwise, disable plotting.
