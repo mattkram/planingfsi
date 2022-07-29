@@ -255,7 +255,7 @@ class Simulation:
 
         # Iterate between solid and fluid solvers until equilibrium
         while self.it <= self.config.solver.num_ramp_it or (
-            self.get_residual() >= self.config.solver.max_residual
+            self.residual >= self.config.solver.max_residual
             and self.it <= self.config.solver.max_it
         ):
 
@@ -337,7 +337,8 @@ class Simulation:
                 1 - self.ramp
             ) * self.config.solver.relax_initial + self.ramp * self.config.solver.relax_final
 
-    def get_residual(self) -> float:
+    @property
+    def residual(self) -> float:
         if self.config.io.results_from_file:
             return 1.0
             return load_dict_from_file(os.path.join(self.it_dir, "overallQuantities.txt")).get(
@@ -347,14 +348,12 @@ class Simulation:
             return self.structural_solver.residual
 
     def print_status(self) -> None:
-        logger.info(
-            "Residual after iteration {1:>4d}: {0:5.3e}".format(self.get_residual(), self.it)
-        )
+        logger.info("Residual after iteration {1:>4d}: {0:5.3e}".format(self.residual, self.it))
 
     def check_output_interval(self) -> bool:
         return (
             self.it >= self.config.solver.max_it
-            or self.get_residual() < self.config.solver.max_residual
+            or self.residual < self.config.solver.max_residual
             or np.mod(self.it, self.config.io.write_interval) == 0
         )
 
