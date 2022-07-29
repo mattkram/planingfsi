@@ -169,11 +169,8 @@ class Substructure(abc.ABC):
         for el in self.el:
             el.set_properties(length=self.arc_length / len(self.el))
 
-    def load_mesh(self) -> None:
-        nd_st, nd_end = np.loadtxt(
-            str(Path(self.config.path.mesh_dir_name, f"elements_{self.name}.txt")),
-            unpack=True,
-        )
+    def load_mesh(self, mesh_dir: Path = Path("mesh")) -> None:
+        nd_st, nd_end = np.loadtxt(mesh_dir / f"elements_{self.name}.txt", unpack=True)
         if isinstance(nd_st, float):
             nd_st = [int(nd_st)]
             nd_end = [int(nd_end)]

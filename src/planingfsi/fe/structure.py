@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-import os
+from pathlib import Path
 from typing import TYPE_CHECKING
 from typing import Any
 
@@ -187,22 +187,22 @@ class StructuralSolver:
             for struct in body.substructures:
                 struct.plot()
 
-    def load_mesh(self) -> None:
+    def load_mesh(self, mesh_dir: Path = Path("mesh")) -> None:
         """Load the mesh from files."""
         # Create all nodes
-        x, y = np.loadtxt(os.path.join(self.config.path.mesh_dir_name, "nodes.txt"), unpack=True)
-        xf, yf = np.loadtxt(os.path.join(self.config.path.mesh_dir_name, "fixedDOF.txt"), unpack=True)
-        fx, fy = np.loadtxt(os.path.join(self.config.path.mesh_dir_name, "fixedLoad.txt"), unpack=True)
+        x, y = np.loadtxt(mesh_dir / "nodes.txt", unpack=True)
+        xf, yf = np.loadtxt(mesh_dir / "fixedDOF.txt", unpack=True)
+        fx, fy = np.loadtxt(mesh_dir / "fixedLoad.txt", unpack=True)
 
         for xx, yy, xxf, yyf, ffx, ffy in zip(x, y, xf, yf, fx, fy):
             nd = Node()
             nd.set_coordinates(xx, yy)
-            nd.is_dof_fixed = [bool(xxf), bool(yyf)]
-            nd.fixed_load = np.array([ffx, ffy])
+            nd.is_dof_fixed[:] = [bool(xxf), bool(yyf)]
+            nd.fixed_load[:] = [ffx, ffy]
             self.nodes.append(nd)
 
         for struct in self.substructures:
-            struct.load_mesh()
+            struct.load_mesh(mesh_dir)
             if isinstance(struct, (RigidSubstructure, TorsionalSpringSubstructure)):
                 struct.set_fixed_dof()
 

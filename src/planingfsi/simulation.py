@@ -47,6 +47,7 @@ class Simulation:
         self.it = 0
         self.ramp = 1.0
         self.it_dirs: list[Path] = []
+        self._case_dir: Path | None = None
 
     @classmethod
     def from_input_files(cls, config_filename: Path | str) -> Simulation:
@@ -59,7 +60,16 @@ class Simulation:
     def case_dir(self) -> Path:
         """The base path for the simulation."""
         # TODO: Think about storing this as an attribute instead
-        return Path(self.config.path.case_dir)
+        return self._case_dir or Path(self.config.path.case_dir)
+
+    @case_dir.setter
+    def case_dir(self, value: Path) -> None:
+        self._case_dir = value
+
+    @property
+    def mesh_dir(self) -> Path:
+        """A path to the mesh directory."""
+        return self.case_dir / self.config.path.mesh_dir_name
 
     @property
     def figure(self) -> FSIFigure | None:
@@ -118,7 +128,7 @@ class Simulation:
         self._load_rigid_bodies()
         self._load_substructures()
         self._load_pressure_cushions()
-        self.structural_solver.load_mesh()
+        self.structural_solver.load_mesh(self.mesh_dir)
 
     def _load_rigid_bodies(self) -> None:
         """Load all rigid bodies from files in the body dict directory.

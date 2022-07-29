@@ -1,3 +1,6 @@
+import tempfile
+from pathlib import Path
+
 from planingfsi import Mesh
 from planingfsi import PlaningSurface
 from planingfsi import PressureCushion
@@ -46,56 +49,61 @@ def main() -> None:
 
     mesh = generate_mesh()
 
-    # TODO: We currently require writing to mesh files, because the structure is loaded from files
-    mesh.write("mesh")
+    with tempfile.TemporaryDirectory() as tmpdir:
+        case_dir = Path(tmpdir)
 
-    simulation = Simulation()
+        # TODO: We currently require writing to mesh files, because the structure is loaded from files
+        mesh.write(case_dir / "mesh")
 
-    # Set some global configuration values
-    simulation.config.solver.wetted_length_relax = 0.7
-    simulation.config.flow.froude_num = froude_num
-    simulation.config.plotting.show = True
-    simulation.config.plotting._pressure_scale_pct = 2.5e-8
-    simulation.config.plotting.xmin = -10
-    simulation.config.plotting.ymin = -1
-    simulation.config.plotting.ymax = 1
-    simulation.config.plotting.growth_rate = 1.05
+        simulation = Simulation()
 
-    body = simulation.add_rigid_body()
-    fwd_substructure = body.add_substructure(RigidSubstructure(name="fwd_plate"))
-    fwd_planing_surface = fwd_substructure.add_planing_surface(
-        PlaningSurface(
-            name="fwd_plate",
-            initial_length=0.73,
-            minimum_length=0.1,
-            num_fluid_elements=40,
-            point_spacing="cosine",
+        simulation.case_dir = case_dir
+
+        # Set some global configuration values
+        simulation.config.solver.wetted_length_relax = 0.7
+        simulation.config.flow.froude_num = froude_num
+        simulation.config.plotting.show = True
+        simulation.config.plotting._pressure_scale_pct = 2.5e-8
+        simulation.config.plotting.xmin = -10
+        simulation.config.plotting.ymin = -1
+        simulation.config.plotting.ymax = 1
+        simulation.config.plotting.growth_rate = 1.05
+
+        body = simulation.add_rigid_body()
+        fwd_substructure = body.add_substructure(RigidSubstructure(name="fwd_plate"))
+        fwd_planing_surface = fwd_substructure.add_planing_surface(
+            PlaningSurface(
+                name="fwd_plate",
+                initial_length=0.73,
+                minimum_length=0.1,
+                num_fluid_elements=40,
+                point_spacing="cosine",
+            )
         )
-    )
 
-    aft_substructure = body.add_substructure(RigidSubstructure(name="aft_plate"))
-    aft_planing_surface = aft_substructure.add_planing_surface(
-        PlaningSurface(
-            name="aft_plate",
-            initial_length=1.0,
-            minimum_length=0.1,
-            num_fluid_elements=40,
-            point_spacing="cosine",
+        aft_substructure = body.add_substructure(RigidSubstructure(name="aft_plate"))
+        aft_planing_surface = aft_substructure.add_planing_surface(
+            PlaningSurface(
+                name="aft_plate",
+                initial_length=1.0,
+                minimum_length=0.1,
+                num_fluid_elements=40,
+                point_spacing="cosine",
+            )
         )
-    )
 
-    wetdeck = body.add_substructure(RigidSubstructure(name="wetdeck"))
-    wetdeck.add_pressure_cushion(
-        PressureCushion(
-            name="cushion",
-            cushion_pressure=1000.0,
-            upstream_planing_surface=fwd_planing_surface,
-            downstream_planing_surface=aft_planing_surface,
+        wetdeck = body.add_substructure(RigidSubstructure(name="wetdeck"))
+        wetdeck.add_pressure_cushion(
+            PressureCushion(
+                name="cushion",
+                cushion_pressure=1000.0,
+                upstream_planing_surface=fwd_planing_surface,
+                downstream_planing_surface=aft_planing_surface,
+            )
         )
-    )
 
-    simulation.structural_solver.load_mesh()
-    simulation.run()
+        simulation.structural_solver.load_mesh(case_dir / "mesh")
+        simulation.run()
 
 
 if __name__ == "__main__":
