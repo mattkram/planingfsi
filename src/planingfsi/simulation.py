@@ -249,7 +249,7 @@ class Simulation:
 
         if self.config.io.results_from_file:
             self._create_dirs()
-            self.apply_ramp()
+            self._update_ramp()
 
         self.initialize_solvers()
 
@@ -261,7 +261,7 @@ class Simulation:
 
             # Calculate response
             if self.structural_solver.has_free_structure:
-                self.apply_ramp()
+                self._update_ramp()
                 self.update_solid_response()
                 self.update_fluid_response()
                 self.structural_solver.get_residual()
@@ -323,14 +323,15 @@ class Simulation:
         if self.figure is not None and self.config.io.write_time_histories:
             self.figure.write_time_histories()
 
-    def apply_ramp(self) -> None:
+    def _update_ramp(self) -> None:
+        """Update the ramp value based on the current iteration number."""
         if self.config.io.results_from_file:
             self._load_results()
         else:
             if self.config.solver.num_ramp_it == 0:
                 self.ramp = 1.0
             else:
-                self.ramp = np.min((self.it / float(self.config.solver.num_ramp_it), 1.0))
+                self.ramp = min(self.it / self.config.solver.num_ramp_it, 1.0)
 
             self.config.solver.relax_FEM = (
                 1 - self.ramp
