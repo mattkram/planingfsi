@@ -337,7 +337,7 @@ class Simulation:
 
     def apply_ramp(self) -> None:
         if self.config.io.results_from_file:
-            self.load_results()
+            self._load_results()
         else:
             if self.config.solver.num_ramp_it == 0:
                 self.ramp = 1.0
@@ -380,7 +380,8 @@ class Simulation:
             self.fluid_solver.write_results()
             self.structural_solver.write_results()
 
-    def load_results(self) -> None:
-        dict_ = load_dict_from_file(os.path.join(self.it_dir, "overallQuantities.txt"))
+    def _load_results(self) -> None:
+        """Load the overall quantities from the results file."""
+        dict_ = load_dict_from_file(self.it_dir / "overallQuantities.txt")
         self.ramp = dict_.get("Ramp", 0.0)
         self.structural_solver.residual = dict_.get("Residual", 0.0)
