@@ -348,7 +348,7 @@ class Simulation:
             return self.structural_solver.residual
 
     def print_status(self) -> None:
-        logger.info("Residual after iteration {1:>4d}: {0:5.3e}".format(self.residual, self.it))
+        logger.info("Residual after iteration %4s: %5.3e", self.it, self.residual)
 
     def check_output_interval(self) -> bool:
         return (
