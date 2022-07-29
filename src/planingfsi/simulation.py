@@ -59,7 +59,6 @@ class Simulation:
     @property
     def case_dir(self) -> Path:
         """The base path for the simulation."""
-        # TODO: Think about storing this as an attribute instead
         return self._case_dir or Path(self.config.path.case_dir)
 
     @case_dir.setter
