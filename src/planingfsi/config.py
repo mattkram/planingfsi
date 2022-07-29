@@ -483,7 +483,9 @@ class PathConfig(SubConfig):
     fig_dir_name = ConfigItem("figDirName", default="figures")
     body_dict_dir_name = ConfigItem("bodyDictDir", default="bodyDict")
     input_dict_dir_name = ConfigItem("inputDictDir", default="inputDict")
-    cushion_dict_dir_name = ConfigItem("pressureCushionDictDir", "cushionDictDir", default="cushionDict")
+    cushion_dict_dir_name = ConfigItem(
+        "pressureCushionDictDir", "cushionDictDir", default="cushionDict"
+    )
     mesh_dir_name = ConfigItem("meshDir", default="mesh")
     mesh_dict_name = ConfigItem("meshDictDir", default="meshDict")
 
