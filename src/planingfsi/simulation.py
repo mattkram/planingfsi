@@ -115,11 +115,6 @@ class Simulation:
         Remove all existing figures if they exist and it's the first iteration.
 
         """
-        # TODO: This method may not be required with some refactoring
-        if self.check_output_interval() and not self.config.io.results_from_file:
-            self.case_dir.mkdir(exist_ok=True)
-            self.it_dir.mkdir(exist_ok=True)
-
         if self.config.plotting.save:
             fig_dir = self.case_dir / self.config.path.fig_dir_name
             fig_dir.mkdir(exist_ok=True)
@@ -350,7 +345,9 @@ class Simulation:
     def print_status(self) -> None:
         logger.info("Residual after iteration %4s: %5.3e", self.it, self.residual)
 
-    def check_output_interval(self) -> bool:
+    @property
+    def is_write_iteration(self) -> bool:
+        """True if results should be written at the end of the current iteration."""
         return (
             self.it >= self.config.solver.max_it
             or self.residual < self.config.solver.max_residual
@@ -358,9 +355,11 @@ class Simulation:
         )
 
     def write_results(self) -> None:
-        if self.check_output_interval() and not self.config.io.results_from_file:
+        """Write the current overall results to an iteration directory."""
+        if self.is_write_iteration and not self.config.io.results_from_file:
+            self.it_dir.mkdir(exist_ok=True, parents=True)
             writers.write_as_dict(
-                os.path.join(self.it_dir, "overallQuantities.txt"),
+                self.it_dir / "overallQuantities.txt",
                 ["Ramp", self.ramp],
                 ["Residual", self.structural_solver.residual],
             )
