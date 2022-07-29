@@ -235,7 +235,7 @@ class Simulation:
         if self.config.io.results_from_file:
             self._create_dirs()
             self.apply_ramp()
-            self.it_dirs = sorted(Path(".").glob("[0-9]*"), key=lambda x: int(x.name))
+            self.it_dirs = sorted(self.case_dir.glob("[0-9]*"), key=lambda x: int(x.name))
 
         self.initialize_solvers()
 
