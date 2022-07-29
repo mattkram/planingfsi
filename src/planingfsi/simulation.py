@@ -46,7 +46,7 @@ class Simulation:
         self._figure: FSIFigure | None = None
         self.it = 0
         self.ramp = 1.0
-        self.it_dirs: list[Path] = []
+        self._it_dirs: list[Path] | None = None
         self._case_dir: Path | None = None
 
     @classmethod
@@ -82,6 +82,12 @@ class Simulation:
     def it_dir(self) -> Path:
         """A path to the directory for the current iteration."""
         return self.case_dir / str(self.it)
+
+    @property
+    def it_dirs(self) -> list[Path]:
+        if self._it_dirs is None:
+            self._it_dirs = sorted(self.case_dir.glob("[0-9]*"), key=lambda x: int(x.name))
+        return self._it_dirs
 
     def add_rigid_body(self, rigid_body: dict[str, Any] | RigidBody | None = None) -> RigidBody:
         """Add a rigid body to the simulation and solid solver.
@@ -245,7 +251,6 @@ class Simulation:
         if self.config.io.results_from_file:
             self._create_dirs()
             self.apply_ramp()
-            self.it_dirs = sorted(self.case_dir.glob("[0-9]*"), key=lambda x: int(x.name))
 
         self.initialize_solvers()
 
@@ -292,10 +297,11 @@ class Simulation:
     def increment(self) -> None:
         """Increment iteration counter. If loading from files, use the next stored iteration."""
         if self.config.io.results_from_file:
-            old_ind = np.nonzero(self.it == self.it_dirs)[0][0]
-            if not old_ind == len(self.it_dirs) - 1:
-                self.it = int(self.it_dirs[old_ind + 1].name)
-            else:
+            stored_iterations = [int(it_dir.name) for it_dir in self.it_dirs]
+            current_ind = stored_iterations.index(self.it)
+            try:
+                self.it = stored_iterations[current_ind + 1]
+            except IndexError:
                 self.it = self.config.solver.max_it + 1
             self._create_dirs()
         else:
