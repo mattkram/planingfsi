@@ -323,37 +323,6 @@ class Simulation:
         if self.figure is not None and self.config.io.write_time_histories:
             self.figure.write_time_histories()
 
-    def get_body_res(self, x: np.ndarray) -> np.ndarray:
-        # self.solid_solver.get_pt_disp_rb(x[0], x[1])
-        # self.solid_solver.update_nodal_positions()
-        self.update_fluid_response()
-
-        # Write, print, and plot results
-        self._create_dirs()
-        self.write_results()
-        self.print_status()
-        self._update_figure()
-
-        # Update iteration number depending on whether loading existing or
-        # simply incrementing by 1
-        if self.config.io.results_from_file:
-            if self.it < len(self.it_dirs) - 1:
-                self.it = int(str(self.it_dirs[self.it + 1]))
-            else:
-                self.it = self.config.solver.max_it
-            self.it += 1
-        else:
-            self.it += 1
-
-        res_l = self.structural_solver.lift_residual
-        res_m = self.structural_solver.moment_residual
-
-        logger.info("Rigid Body Residuals:")
-        logger.info("  Lift:   {0:0.4e}".format(res_l))
-        logger.info("  Moment: {0:0.4e}\n".format(res_m))
-
-        return np.array([res_l, res_m])
-
     def apply_ramp(self) -> None:
         if self.config.io.results_from_file:
             self._load_results()
