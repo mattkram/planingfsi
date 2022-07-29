@@ -268,21 +268,12 @@ class Simulation:
             self._create_dirs()
             self.write_results()
             self.print_status()
-            self.update_figure()
+            self._update_figure()
 
             # Increment iteration count
             self.increment()
 
-        if (
-            self.figure is not None
-            and self.config.plotting.save
-            and not self.config.plotting.fig_format == "png"
-        ):
-            self.config.plotting.fig_format = "png"
-            self.figure.save()
-
-        if self.figure is not None and self.config.io.write_time_histories:
-            self.figure.write_time_histories()
+        self._save_figure()
 
         logger.info("Execution complete")
 
@@ -310,9 +301,22 @@ class Simulation:
         else:
             self.it += 1
 
-    def update_figure(self) -> None:
+    def _update_figure(self) -> None:
         if self.figure is not None and self.config.plotting.plot_any:
             self.figure.update()
+
+    def _save_figure(self) -> None:
+        """Save the final figure if configuration is correct."""
+        if (
+            self.figure is not None
+            and self.config.plotting.save
+            and not self.config.plotting.fig_format == "png"
+        ):
+            self.config.plotting.fig_format = "png"
+            self.figure.save()
+
+        if self.figure is not None and self.config.io.write_time_histories:
+            self.figure.write_time_histories()
 
     def get_body_res(self, x: np.ndarray) -> np.ndarray:
         # self.solid_solver.get_pt_disp_rb(x[0], x[1])
@@ -323,7 +327,7 @@ class Simulation:
         self._create_dirs()
         self.write_results()
         self.print_status()
-        self.update_figure()
+        self._update_figure()
 
         # Update iteration number depending on whether loading existing or
         # simply incrementing by 1
