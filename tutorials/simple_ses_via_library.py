@@ -94,6 +94,7 @@ def main() -> None:
         )
     )
 
+    simulation.structural_solver.load_mesh()
     simulation.run()
 
 

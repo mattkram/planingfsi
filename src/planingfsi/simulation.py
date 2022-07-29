@@ -118,6 +118,7 @@ class Simulation:
         self._load_rigid_bodies()
         self._load_substructures()
         self._load_pressure_cushions()
+        self.structural_solver.load_mesh()
 
     def _load_rigid_bodies(self) -> None:
         """Load all rigid bodies from files in the body dict directory.
@@ -279,9 +280,8 @@ class Simulation:
             self.figure.show()
 
     def reset(self) -> None:
-        """Reset iteration counter and load the structural mesh."""
+        """Reset iteration counter."""
         self.it = 0
-        self.structural_solver.load_mesh()
 
     def initialize_solvers(self) -> None:
         """Initialize body at specified trim and draft and solve initial fluid problem."""
@@ -293,7 +293,7 @@ class Simulation:
         if self.config.io.results_from_file:
             old_ind = np.nonzero(self.it == self.it_dirs)[0][0]
             if not old_ind == len(self.it_dirs) - 1:
-                self.it = int(self.it_dirs[old_ind + 1])
+                self.it = int(self.it_dirs[old_ind + 1].name)
             else:
                 self.it = self.config.solver.max_it + 1
             self._create_dirs()
