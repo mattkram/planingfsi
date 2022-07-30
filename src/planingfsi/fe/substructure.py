@@ -23,6 +23,7 @@ from planingfsi.solver import fzero
 
 if TYPE_CHECKING:
     from planingfsi.config import Config
+    from planingfsi.fe.femesh import Submesh
     from planingfsi.fe.rigid_body import RigidBody
     from planingfsi.fe.structure import StructuralSolver
     from planingfsi.potentialflow.pressurepatch import PlaningSurface
@@ -169,8 +170,17 @@ class Substructure(abc.ABC):
         for el in self.el:
             el.set_properties(length=self.arc_length / len(self.el))
 
-    def load_mesh(self, mesh_dir: Path = Path("mesh")) -> None:
-        nd_st, nd_end = np.loadtxt(mesh_dir / f"elements_{self.name}.txt", unpack=True)
+    def load_mesh(self, mesh_dir: Path = Path("mesh"), submesh: Submesh | None = None) -> None:
+        if submesh is not None:
+            nd_st_list, nd_end_list = [], []
+            for curve in submesh.curves:
+                for line in curve.lines:
+                    nd_st_list.append(line.pt[0].index)
+                    nd_end_list.append(line.pt[1].index)
+            nd_st, nd_end = np.array(nd_st_list), np.array(nd_end_list)
+        else:
+            nd_st, nd_end = np.loadtxt(mesh_dir / f"elements_{self.name}.txt", unpack=True)
+
         if isinstance(nd_st, float):
             nd_st = [int(nd_st)]
             nd_end = [int(nd_end)]
@@ -668,6 +678,7 @@ class RigidSubstructure(Substructure):
         return None
 
     def set_fixed_dof(self) -> None:
+        """Set all degrees of freedom of all nodes in the substructure."""
         for nd in self.node:
             for j in range(NUM_DIM):
                 nd.is_dof_fixed[j] = True

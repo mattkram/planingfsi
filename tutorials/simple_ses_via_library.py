@@ -102,7 +102,7 @@ def main() -> None:
             )
         )
 
-        simulation.structural_solver.load_mesh(case_dir / "mesh")
+        simulation.structural_solver.load_mesh(mesh=mesh)
         simulation.run()
 
 
