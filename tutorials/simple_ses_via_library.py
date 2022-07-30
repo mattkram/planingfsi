@@ -47,17 +47,9 @@ def generate_mesh() -> Mesh:
 def main() -> None:
     froude_num = 0.75
 
-    mesh = generate_mesh()
-
     with tempfile.TemporaryDirectory() as tmpdir:
-        case_dir = Path(tmpdir)
-
-        # TODO: We currently require writing to mesh files, because the structure is loaded from files
-        mesh.write(case_dir / "mesh")
-
         simulation = Simulation()
-
-        simulation.case_dir = case_dir
+        simulation.case_dir = Path(tmpdir)
 
         # Set some global configuration values
         simulation.config.solver.wetted_length_relax = 0.7
@@ -102,6 +94,7 @@ def main() -> None:
             )
         )
 
+        mesh = generate_mesh()
         simulation.structural_solver.load_mesh(mesh=mesh)
         simulation.run()
 
