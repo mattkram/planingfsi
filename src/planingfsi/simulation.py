@@ -1,7 +1,6 @@
 """High-level control of a `planingfsi` simulation."""
 from __future__ import annotations
 
-import os
 from pathlib import Path
 from typing import TYPE_CHECKING
 from typing import Any
@@ -87,6 +86,19 @@ class Simulation:
         if self._it_dirs is None:
             self._it_dirs = sorted(self.case_dir.glob("[0-9]*"), key=lambda x: int(x.name))
         return self._it_dirs
+
+    @property
+    def residual(self) -> float:
+        return self.structural_solver.residual
+
+    @property
+    def is_write_iteration(self) -> bool:
+        """True if results should be written at the end of the current iteration."""
+        return (
+            self.it >= self.config.solver.max_it
+            or self.residual < self.config.solver.max_residual
+            or np.mod(self.it, self.config.io.write_interval) == 0
+        )
 
     def add_rigid_body(self, rigid_body: dict[str, Any] | RigidBody | None = None) -> RigidBody:
         """Add a rigid body to the simulation and solid solver.
@@ -332,27 +344,8 @@ class Simulation:
                 1 - self.ramp
             ) * self.config.solver.relax_initial + self.ramp * self.config.solver.relax_final
 
-    @property
-    def residual(self) -> float:
-        if self.config.io.results_from_file:
-            return 1.0
-            return load_dict_from_file(os.path.join(self.it_dir, "overallQuantities.txt")).get(
-                "Residual", 0.0
-            )
-        else:
-            return self.structural_solver.residual
-
     def print_status(self) -> None:
         logger.info("Residual after iteration %4s: %5.3e", self.it, self.residual)
-
-    @property
-    def is_write_iteration(self) -> bool:
-        """True if results should be written at the end of the current iteration."""
-        return (
-            self.it >= self.config.solver.max_it
-            or self.residual < self.config.solver.max_residual
-            or np.mod(self.it, self.config.io.write_interval) == 0
-        )
 
     def write_results(self) -> None:
         """Write the current overall results to an iteration directory."""
