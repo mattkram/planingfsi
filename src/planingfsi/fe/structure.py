@@ -207,14 +207,14 @@ class StructuralSolver:
                     struct.set_fixed_dof()
                 struct.set_attachments()
         else:
-            x, y = np.loadtxt(mesh_dir / "nodes.txt", unpack=True)
-            xf, yf = np.loadtxt(mesh_dir / "fixedDOF.txt", unpack=True)
-            fx, fy = np.loadtxt(mesh_dir / "fixedLoad.txt", unpack=True)
-            for xx, yy, xxf, yyf, ffx, ffy in zip(x, y, xf, yf, fx, fy):
+            coords = np.loadtxt(mesh_dir / "nodes.txt")
+            fixed_dofs = np.loadtxt(mesh_dir / "fixedDOF.txt")
+            loads = np.loadtxt(mesh_dir / "fixedLoad.txt")
+            for c, fixed_dof, load in zip(coords, fixed_dofs, loads):
                 nd = Node()
-                nd.set_coordinates(xx, yy)
-                nd.is_dof_fixed[:] = [bool(xxf), bool(yyf)]
-                nd.fixed_load[:] = [ffx, ffy]
+                nd.set_coordinates(*c)
+                nd.is_dof_fixed[:] = map(bool, fixed_dof)
+                nd.fixed_load[:] = load
                 self.nodes.append(nd)
 
             for struct in self.substructures:
