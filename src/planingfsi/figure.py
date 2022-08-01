@@ -22,6 +22,7 @@ if TYPE_CHECKING:
 
 class FSIFigure:
     def __init__(self, simulation: Simulation, config: Config):
+        # TODO: We can get the config via the simulation in a property
         self.config = config
         self.simulation = simulation
 
@@ -120,7 +121,7 @@ class FSIFigure:
 
     @property
     def solid(self) -> "StructuralSolver":
-        return self.simulation.solid_solver
+        return self.simulation.structural_solver
 
     @property
     def fluid(self) -> "PotentialPlaningSolver":

@@ -1,13 +1,13 @@
 """High-level control of a `planingfsi` simulation."""
 from __future__ import annotations
 
-import os
 from pathlib import Path
 from typing import TYPE_CHECKING
 from typing import Any
 
 import numpy as np
 
+from planingfsi import Mesh
 from planingfsi import logger
 from planingfsi import writers
 from planingfsi.config import Config
@@ -27,75 +27,113 @@ class Simulation:
     Handles the iteration between the fluid and solid solvers.
 
     Attributes:
-        solid_solver (StructuralSolver): The structural solver.
-        fluid_solver (PotentialPlaningSolver): The fluid solver.
-        it (int): The current iteration.
-        ramp (float): The current ramping coefficient, used when applying loads
-            and moving nodes. The value is between 1.0 and 0.0.
+        config: A reference to the `Config` object, which stores values "global" to this simulation.
+            Each `Simulation` instance has its own independent config.
+        structural_solver: The structural solver.
+        fluid_solver: The fluid solver.
+        it: The current iteration.
+        ramp: The current ramping coefficient, used when applying loads and moving nodes.
+            The value is between 1.0 and 0.0.
+        it_dirs: A list of paths to iteration directories stored in the filesystem, used when loading
+            existing results to "replay" a simulation.
 
     """
 
-    it_dirs: list[Path]
-
     def __init__(self) -> None:
         self.config = Config()
-        self.solid_solver = StructuralSolver(self)
+        self.structural_solver = StructuralSolver(self)
         self.fluid_solver = PotentialPlaningSolver(self)
         self._figure: FSIFigure | None = None
         self.it = 0
         self.ramp = 1.0
+        self._it_dirs: list[Path] | None = None
+        self._case_dir: Path | None = None
 
     @classmethod
-    def from_input_files(cls, config_filename: Path | str) -> "Simulation":
+    def from_input_files(cls, config_filename: Path | str) -> Simulation:
         """Construct a `Simulation` object by loading input files."""
         simulation = cls()
         simulation.load_input_files(config_filename)
         return simulation
 
     @property
+    def case_dir(self) -> Path:
+        """The base path for the simulation."""
+        return self._case_dir or Path(self.config.path.case_dir)
+
+    @case_dir.setter
+    def case_dir(self, value: Path) -> None:
+        self._case_dir = value
+
+    @property
+    def mesh_dir(self) -> Path:
+        """A path to the mesh directory."""
+        return self.case_dir / self.config.path.mesh_dir_name
+
+    @property
     def figure(self) -> FSIFigure | None:
-        """Use a property for the figure object to initialize lazily."""
+        """The `FSIFigure` object where results are drawn. Will be None if plotting is disabled."""
         if self._figure is None and self.config.plotting.plot_any:
             self._figure = FSIFigure(simulation=self, config=self.config)
         return self._figure
 
-    def add_rigid_body(self, rigid_body: dict[str, Any] | None = None) -> RigidBody:
+    @property
+    def it_dir(self) -> Path:
+        """A path to the directory for the current iteration."""
+        return self.case_dir / str(self.it)
+
+    @property
+    def it_dirs(self) -> list[Path]:
+        if self._it_dirs is None:
+            self._it_dirs = sorted(self.case_dir.glob("[0-9]*"), key=lambda x: int(x.name))
+        return self._it_dirs
+
+    @property
+    def residual(self) -> float:
+        return self.structural_solver.residual
+
+    @property
+    def is_write_iteration(self) -> bool:
+        """True if results should be written at the end of the current iteration."""
+        return (
+            self.it >= self.config.solver.max_it
+            or self.residual < self.config.solver.max_residual
+            or np.mod(self.it, self.config.io.write_interval) == 0
+        )
+
+    def add_rigid_body(self, rigid_body: dict[str, Any] | RigidBody | None = None) -> RigidBody:
         """Add a rigid body to the simulation and solid solver.
 
         Args:
-            rigid_body: An optional dictionary of values to construct the rigid body.
+            rigid_body: A `RigidBody` object, or optional dictionary of values to construct the rigid body.
+
+        Returns:
+            The `RigidBody` that was added to the simulation.
 
         """
-        return self.solid_solver.add_rigid_body(rigid_body)
+        return self.structural_solver.add_rigid_body(rigid_body)
 
     def update_fluid_response(self) -> None:
         """Update the fluid response and apply to the structural solver."""
         self.fluid_solver.calculate_response()
-        self.solid_solver.update_fluid_forces()
+        self.structural_solver.update_fluid_forces()
 
     def update_solid_response(self) -> None:
         """Update the structural response."""
-        self.solid_solver.calculate_response()
+        self.structural_solver.calculate_response()
 
-    @property
-    def it_dir(self) -> Path:
-        """A path to the directory for the current iteration."""
-        return Path(self.config.path.case_dir, str(self.it))
+    def _create_dirs(self) -> None:
+        """Ensure all required directories exist, including the case, iteration, and figure directories.
 
-    def create_dirs(self) -> None:
-        self.config.path.fig_dir_name = os.path.join(
-            self.config.path.case_dir, self.config.path.fig_dir_name
-        )
+        Remove all existing figures if they exist and it's the first iteration.
 
-        if self.check_output_interval() and not self.config.io.results_from_file:
-            Path(self.config.path.case_dir).mkdir(exist_ok=True)
-            Path(self.it_dir).mkdir(exist_ok=True)
-
+        """
         if self.config.plotting.save:
-            Path(self.config.path.fig_dir_name).mkdir(exist_ok=True)
+            fig_dir = self.case_dir / self.config.path.fig_dir_name
+            fig_dir.mkdir(exist_ok=True)
             if self.it == 0:
-                for f in os.listdir(self.config.path.fig_dir_name):
-                    os.remove(os.path.join(self.config.path.fig_dir_name, f))
+                for f in fig_dir.glob("*"):
+                    f.unlink()
 
     def load_input_files(self, config_filename: Path | str) -> None:
         """Load all of the input files."""
@@ -103,35 +141,43 @@ class Simulation:
         self._load_rigid_bodies()
         self._load_substructures()
         self._load_pressure_cushions()
+        self.load_mesh()
 
     def _load_rigid_bodies(self) -> None:
-        """Load all rigid bodies from files."""
-        if Path(self.config.path.body_dict_dir).exists():
-            for dict_path in Path(self.config.path.body_dict_dir).glob("*"):
-                # TODO: I may be missing old spellings in the key_map
-                dict_ = load_dict_from_file(
-                    dict_path,
-                    key_map={
-                        "bodyName": "name",
-                        "W": "weight",
-                        "loadPct": "load_pct",
-                        "m": "mass",
-                        "Iz": "rotational_inertia",
-                        "xCofG": "x_cg",
-                        "yCofG": "y_cg",
-                        "xCofR": "x_cr",
-                        "yCofR": "y_cr",
-                    },
-                )
-                self.add_rigid_body(dict_)
-        else:
+        """Load all rigid bodies from files in the body dict directory.
+
+        If no files are provided, a default stationary rigid body is added.
+
+        """
+        body_dict_dir = self.case_dir / self.config.path.body_dict_dir_name
+        for dict_path in body_dict_dir.glob("*"):
+            # TODO: I may be missing old spellings in the key_map
+            dict_ = load_dict_from_file(
+                dict_path,
+                key_map={
+                    "bodyName": "name",
+                    "W": "weight",
+                    "loadPct": "load_pct",
+                    "m": "mass",
+                    "Iz": "rotational_inertia",
+                    "xCofG": "x_cg",
+                    "yCofG": "y_cg",
+                    "xCofR": "x_cr",
+                    "yCofR": "y_cr",
+                },
+            )
+            self.add_rigid_body(dict_)
+
+        if not self.structural_solver.rigid_bodies:
             # Add a dummy rigid body that cannot move
             self.add_rigid_body()
-        print(f"Rigid Bodies: {self.solid_solver.rigid_bodies}")
+
+        print(f"Rigid Bodies: {self.structural_solver.rigid_bodies}")
 
     def _load_substructures(self) -> None:
         """Load all substructures from files."""
-        for dict_path in Path(self.config.path.input_dict_dir).glob("*"):
+        input_dict_dir = self.case_dir / self.config.path.input_dict_dir_name
+        for dict_path in input_dict_dir.glob("*"):
             dict_ = load_dict_from_file(
                 dict_path,
                 key_map={
@@ -145,6 +191,7 @@ class Simulation:
                     "isSprung": "is_sprung",
                     "springConstant": "spring_constant",
                     "pointSpacing": "point_spacing",
+                    "hasPlaningSurface": "has_planing_surface",
                     "waterlineHeight": "waterline_height",
                     "sSepPctStart": "separation_arclength_start_pct",
                     "sImmPctStart": "immersion_arclength_start_pct",
@@ -172,33 +219,37 @@ class Simulation:
             # TODO: This default fallback to config could be handled in the PlaningSurface class
             dict_.setdefault("waterline_height", self.config.flow.waterline_height)
 
-            substructure = self.solid_solver.add_substructure(dict_)
+            substructure = self.structural_solver.add_substructure(dict_)
 
-            if dict_.get("hasPlaningSurface", False):
+            if dict_.get("has_planing_surface", False):
                 planing_surface = PlaningSurface(**dict_)
                 substructure.add_planing_surface(planing_surface, **dict_)
-        print(f"Substructures: {self.solid_solver.substructures}")
+        print(f"Substructures: {self.structural_solver.substructures}")
 
     def _load_pressure_cushions(self) -> None:
         """Load all pressure cushions from files."""
-        if Path(self.config.path.cushion_dict_dir).exists():
-            for dict_path in Path(self.config.path.cushion_dict_dir).glob("*"):
-                dict_ = load_dict_from_file(
-                    dict_path,
-                    key_map={
-                        "pressureCushionName": "name",
-                        "cushionPressure": "cushion_pressure",
-                        "upstreamPlaningSurface": "upstream_planing_surface",
-                        "downstreamPlaningSurface": "downstream_planing_surface",
-                        "upstreamLoc": "upstream_loc",
-                        "downstreamLoc": "downstream_loc",
-                        "numElements": "num_elements",
-                        "cushionType": "cushion_type",
-                        "smoothingFactor": "smoothing_factor",
-                    },
-                )
-                self.fluid_solver.add_pressure_cushion(dict_)
+        cushion_dict_dir = self.case_dir / self.config.path.cushion_dict_dir_name
+        for dict_path in cushion_dict_dir.glob("*"):
+            dict_ = load_dict_from_file(
+                dict_path,
+                key_map={
+                    "pressureCushionName": "name",
+                    "cushionPressure": "cushion_pressure",
+                    "upstreamPlaningSurface": "upstream_planing_surface",
+                    "downstreamPlaningSurface": "downstream_planing_surface",
+                    "upstreamLoc": "upstream_loc",
+                    "downstreamLoc": "downstream_loc",
+                    "numElements": "num_elements",
+                    "cushionType": "cushion_type",
+                    "smoothingFactor": "smoothing_factor",
+                },
+            )
+            self.fluid_solver.add_pressure_cushion(dict_)
         print(f"Pressure Cushions: {self.fluid_solver.pressure_cushions}")
+
+    def load_mesh(self, mesh: Path | Mesh = None) -> None:
+        """Load the mesh from files, or directly. By default, will load from "mesh" directory."""
+        self.structural_solver.load_mesh(mesh or self.mesh_dir)
 
     def run(self) -> None:
         """Run the fluid-structure interaction simulation.
@@ -209,36 +260,70 @@ class Simulation:
         self.reset()
 
         if self.config.io.results_from_file:
-            self.create_dirs()
-            self.apply_ramp()
-            self.it_dirs = sorted(Path(".").glob("[0-9]*"), key=lambda x: int(x.name))
+            self._create_dirs()
+            self._update_ramp()
 
         self.initialize_solvers()
 
         # Iterate between solid and fluid solvers until equilibrium
         while self.it <= self.config.solver.num_ramp_it or (
-            self.get_residual() >= self.config.solver.max_residual
+            self.residual >= self.config.solver.max_residual
             and self.it <= self.config.solver.max_it
         ):
 
             # Calculate response
-            if self.solid_solver.has_free_structure:
-                self.apply_ramp()
+            if self.structural_solver.has_free_structure:
+                self._update_ramp()
                 self.update_solid_response()
                 self.update_fluid_response()
-                self.solid_solver.get_residual()
+                self.structural_solver.get_residual()
             else:
-                self.solid_solver.residual = 0.0
+                self.structural_solver.residual = 0.0
 
             # Write, print, and plot results
-            self.create_dirs()
+            self._create_dirs()
             self.write_results()
             self.print_status()
-            self.update_figure()
+            self._update_figure()
 
             # Increment iteration count
             self.increment()
 
+        self._save_figure()
+
+        logger.info("Execution complete")
+
+        if self.figure is not None and self.config.plotting.show:
+            self.figure.show()
+
+    def reset(self) -> None:
+        """Reset iteration counter."""
+        self.it = 0
+
+    def initialize_solvers(self) -> None:
+        """Initialize body at specified trim and draft and solve initial fluid problem."""
+        self.structural_solver.initialize_rigid_bodies()
+        self.update_fluid_response()
+
+    def increment(self) -> None:
+        """Increment iteration counter. If loading from files, use the next stored iteration."""
+        if self.config.io.results_from_file:
+            stored_iterations = [int(it_dir.name) for it_dir in self.it_dirs]
+            current_ind = stored_iterations.index(self.it)
+            try:
+                self.it = stored_iterations[current_ind + 1]
+            except IndexError:
+                self.it = self.config.solver.max_it + 1
+            self._create_dirs()
+        else:
+            self.it += 1
+
+    def _update_figure(self) -> None:
+        if self.figure is not None and self.config.plotting.plot_any:
+            self.figure.update()
+
+    def _save_figure(self) -> None:
+        """Save the final figure if configuration is correct."""
         if (
             self.figure is not None
             and self.config.plotting.save
@@ -250,114 +335,38 @@ class Simulation:
         if self.figure is not None and self.config.io.write_time_histories:
             self.figure.write_time_histories()
 
-        logger.info("Execution complete")
-
-        if self.figure is not None and self.config.plotting.show:
-            self.figure.show()
-
-    def reset(self) -> None:
-        """Reset iteration counter and load the structural mesh."""
-        self.it = 0
-        self.solid_solver.load_mesh()
-
-    def initialize_solvers(self) -> None:
-        """Initialize body at specified trim and draft and solve initial fluid problem."""
-        self.solid_solver.initialize_rigid_bodies()
-        self.update_fluid_response()
-
-    def increment(self) -> None:
-        """Increment iteration counter. If loading from files, use the next stored iteration."""
+    def _update_ramp(self) -> None:
+        """Update the ramp value based on the current iteration number."""
         if self.config.io.results_from_file:
-            old_ind = np.nonzero(self.it == self.it_dirs)[0][0]
-            if not old_ind == len(self.it_dirs) - 1:
-                self.it = int(self.it_dirs[old_ind + 1])
-            else:
-                self.it = self.config.solver.max_it + 1
-            self.create_dirs()
-        else:
-            self.it += 1
-
-    def update_figure(self) -> None:
-        if self.figure is not None and self.config.plotting.plot_any:
-            self.figure.update()
-
-    def get_body_res(self, x: np.ndarray) -> np.ndarray:
-        # self.solid_solver.get_pt_disp_rb(x[0], x[1])
-        # self.solid_solver.update_nodal_positions()
-        self.update_fluid_response()
-
-        # Write, print, and plot results
-        self.create_dirs()
-        self.write_results()
-        self.print_status()
-        self.update_figure()
-
-        # Update iteration number depending on whether loading existing or
-        # simply incrementing by 1
-        if self.config.io.results_from_file:
-            if self.it < len(self.it_dirs) - 1:
-                self.it = int(str(self.it_dirs[self.it + 1]))
-            else:
-                self.it = self.config.solver.max_it
-            self.it += 1
-        else:
-            self.it += 1
-
-        res_l = self.solid_solver.lift_residual
-        res_m = self.solid_solver.moment_residual
-
-        logger.info("Rigid Body Residuals:")
-        logger.info("  Lift:   {0:0.4e}".format(res_l))
-        logger.info("  Moment: {0:0.4e}\n".format(res_m))
-
-        return np.array([res_l, res_m])
-
-    def apply_ramp(self) -> None:
-        if self.config.io.results_from_file:
-            self.load_results()
+            self._load_results()
         else:
             if self.config.solver.num_ramp_it == 0:
                 self.ramp = 1.0
             else:
-                self.ramp = np.min((self.it / float(self.config.solver.num_ramp_it), 1.0))
+                self.ramp = min(self.it / self.config.solver.num_ramp_it, 1.0)
 
             self.config.solver.relax_FEM = (
                 1 - self.ramp
             ) * self.config.solver.relax_initial + self.ramp * self.config.solver.relax_final
 
-    def get_residual(self) -> float:
-        if self.config.io.results_from_file:
-            return 1.0
-            return load_dict_from_file(os.path.join(self.it_dir, "overallQuantities.txt")).get(
-                "Residual", 0.0
-            )
-        else:
-            return self.solid_solver.residual
-
     def print_status(self) -> None:
-        logger.info(
-            "Residual after iteration {1:>4d}: {0:5.3e}".format(self.get_residual(), self.it)
-        )
-
-    def check_output_interval(self) -> bool:
-        return (
-            self.it >= self.config.solver.max_it
-            or self.get_residual() < self.config.solver.max_residual
-            or np.mod(self.it, self.config.io.write_interval) == 0
-        )
+        logger.info("Residual after iteration %4s: %5.3e", self.it, self.residual)
 
     def write_results(self) -> None:
-        if self.check_output_interval() and not self.config.io.results_from_file:
+        """Write the current overall results to an iteration directory."""
+        if self.is_write_iteration and not self.config.io.results_from_file:
+            self.it_dir.mkdir(exist_ok=True, parents=True)
             writers.write_as_dict(
-                os.path.join(self.it_dir, "overallQuantities.txt"),
+                self.it_dir / "overallQuantities.txt",
                 ["Ramp", self.ramp],
-                ["Residual", self.solid_solver.residual],
+                ["Residual", self.structural_solver.residual],
             )
 
             self.fluid_solver.write_results()
-            self.solid_solver.write_results()
+            self.structural_solver.write_results()
 
-    def load_results(self) -> None:
-        dict_ = load_dict_from_file(os.path.join(self.it_dir, "overallQuantities.txt"))
+    def _load_results(self) -> None:
+        """Load the overall quantities from the results file."""
+        dict_ = load_dict_from_file(self.it_dir / "overallQuantities.txt")
         self.ramp = dict_.get("Ramp", 0.0)
-        self.solid_solver.residual = dict_.get("Residual", 0.0)
+        self.structural_solver.residual = dict_.get("Residual", 0.0)

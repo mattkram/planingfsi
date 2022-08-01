@@ -68,15 +68,15 @@ def generate_mesh(mesh_dict: str | None, plot_show: bool, plot_save: bool, verbo
     config = Config.from_file("configDict")
 
     if mesh_dict is not None:
-        config.path.mesh_dict_dir = mesh_dict
+        config.path.mesh_dict_name = mesh_dict
 
-    if not Path(config.path.mesh_dict_dir).exists():
-        raise FileNotFoundError(f"File {config.path.mesh_dict_dir} does not exist")
+    if not Path(config.path.mesh_dict_name).exists():
+        raise FileNotFoundError(f"File {config.path.mesh_dict_name} does not exist")
 
     mesh = Mesh()
-    with Path(config.path.mesh_dict_dir).open() as fp:
+    with Path(config.path.mesh_dict_name).open() as fp:
         exec(fp.read())
 
     mesh.display(disp=verbose)
     mesh.plot(show=plot_show, save=plot_save)
-    mesh.write(mesh_dir=config.path.mesh_dir)
+    mesh.write(mesh_dir=config.path.mesh_dir_name)

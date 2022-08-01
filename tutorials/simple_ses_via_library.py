@@ -1,3 +1,6 @@
+import tempfile
+from pathlib import Path
+
 from planingfsi import Mesh
 from planingfsi import PlaningSurface
 from planingfsi import PressureCushion
@@ -44,57 +47,56 @@ def generate_mesh() -> Mesh:
 def main() -> None:
     froude_num = 0.75
 
-    mesh = generate_mesh()
+    with tempfile.TemporaryDirectory() as tmpdir:
+        simulation = Simulation()
+        simulation.case_dir = Path(tmpdir)
 
-    # TODO: We currently require writing to mesh files, because the structure is loaded from files
-    mesh.write("mesh")
+        # Set some global configuration values
+        simulation.config.solver.wetted_length_relax = 0.7
+        simulation.config.flow.froude_num = froude_num
+        simulation.config.plotting.show = True
+        simulation.config.plotting._pressure_scale_pct = 2.5e-8
+        simulation.config.plotting.xmin = -10
+        simulation.config.plotting.ymin = -1
+        simulation.config.plotting.ymax = 1
+        simulation.config.plotting.growth_rate = 1.05
 
-    simulation = Simulation()
-
-    # Set some global configuration values
-    simulation.config.solver.wetted_length_relax = 0.7
-    simulation.config.flow.froude_num = froude_num
-    simulation.config.plotting.show = True
-    simulation.config.plotting._pressure_scale_pct = 2.5e-8
-    simulation.config.plotting.xmin = -10
-    simulation.config.plotting.ymin = -1
-    simulation.config.plotting.ymax = 1
-    simulation.config.plotting.growth_rate = 1.05
-
-    body = simulation.add_rigid_body()
-    fwd_substructure = body.add_substructure(RigidSubstructure(name="fwd_plate"))
-    fwd_planing_surface = fwd_substructure.add_planing_surface(
-        PlaningSurface(
-            name="fwd_plate",
-            initial_length=0.73,
-            minimum_length=0.1,
-            num_fluid_elements=40,
-            point_spacing="cosine",
+        body = simulation.add_rigid_body()
+        fwd_substructure = body.add_substructure(RigidSubstructure(name="fwd_plate"))
+        fwd_planing_surface = fwd_substructure.add_planing_surface(
+            PlaningSurface(
+                name="fwd_plate",
+                initial_length=0.73,
+                minimum_length=0.1,
+                num_fluid_elements=40,
+                point_spacing="cosine",
+            )
         )
-    )
 
-    aft_substructure = body.add_substructure(RigidSubstructure(name="aft_plate"))
-    aft_planing_surface = aft_substructure.add_planing_surface(
-        PlaningSurface(
-            name="aft_plate",
-            initial_length=1.0,
-            minimum_length=0.1,
-            num_fluid_elements=40,
-            point_spacing="cosine",
+        aft_substructure = body.add_substructure(RigidSubstructure(name="aft_plate"))
+        aft_planing_surface = aft_substructure.add_planing_surface(
+            PlaningSurface(
+                name="aft_plate",
+                initial_length=1.0,
+                minimum_length=0.1,
+                num_fluid_elements=40,
+                point_spacing="cosine",
+            )
         )
-    )
 
-    wetdeck = body.add_substructure(RigidSubstructure(name="wetdeck"))
-    wetdeck.add_pressure_cushion(
-        PressureCushion(
-            name="cushion",
-            cushion_pressure=1000.0,
-            upstream_planing_surface=fwd_planing_surface,
-            downstream_planing_surface=aft_planing_surface,
+        wetdeck = body.add_substructure(RigidSubstructure(name="wetdeck"))
+        wetdeck.add_pressure_cushion(
+            PressureCushion(
+                name="cushion",
+                cushion_pressure=1000.0,
+                upstream_planing_surface=fwd_planing_surface,
+                downstream_planing_surface=aft_planing_surface,
+            )
         )
-    )
 
-    simulation.run()
+        mesh = generate_mesh()
+        simulation.load_mesh(mesh)
+        simulation.run()
 
 
 if __name__ == "__main__":
