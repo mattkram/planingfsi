@@ -9,6 +9,7 @@ import numpy as np
 from planingfsi import logger
 from planingfsi.config import Config
 from planingfsi.fe.felib import Node
+from planingfsi.fe.femesh import Mesh
 from planingfsi.fe.rigid_body import RigidBody
 from planingfsi.fe.substructure import FlexibleSubstructure
 from planingfsi.fe.substructure import RigidSubstructure
@@ -16,7 +17,6 @@ from planingfsi.fe.substructure import Substructure
 from planingfsi.fe.substructure import TorsionalSpringSubstructure
 
 if TYPE_CHECKING:
-    from planingfsi.fe.femesh import Mesh
     from planingfsi.simulation import Simulation
 
 
@@ -222,10 +222,10 @@ class StructuralSolver:
                 struct.set_fixed_dof()
             struct.set_attachments()
 
-    def load_mesh(self, mesh_dir: Path = Path("mesh"), *, mesh: Mesh | None = None) -> None:
-        """Load the mesh from files."""
+    def load_mesh(self, mesh: Path | Mesh = Path("mesh")) -> None:
+        """Load the mesh from a directory of files or an existing mesh object."""
         # Create all nodes
-        if mesh is not None:
+        if isinstance(mesh, Mesh):
             self._load_mesh_from_object(mesh)
         else:
-            self._load_mesh_from_dir(mesh_dir)
+            self._load_mesh_from_dir(mesh)

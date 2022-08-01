@@ -24,9 +24,6 @@ def main() -> None:
     mesh = generate_mesh(angle_of_attack=10.0)
     # mesh.plot(show=True)
 
-    # TODO: We currently require writing to mesh files, because the structure is loaded from files
-    mesh.write("mesh")
-
     simulation = Simulation()
 
     # Set some global configuration values
@@ -46,6 +43,7 @@ def main() -> None:
         )
     )
 
+    simulation.structural_solver.load_mesh(mesh)
     simulation.run()
 
 
