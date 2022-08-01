@@ -207,6 +207,7 @@ class StructuralSolver:
 
     def _load_mesh_from_dir(self, mesh_dir: Path) -> None:
         """Load the mesh from a directory of files."""
+        # TODO: Can we do Mesh.from_dir() instead and then integrate the repeated logic into _load_mesh_from_object?
         coords = np.loadtxt(mesh_dir / "nodes.txt")
         fixed_dofs = np.loadtxt(mesh_dir / "fixedDOF.txt")
         loads = np.loadtxt(mesh_dir / "fixedLoad.txt")
