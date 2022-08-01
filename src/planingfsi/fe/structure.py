@@ -205,6 +205,7 @@ class StructuralSolver:
                 struct.load_mesh(mesh_dir, submesh=submesh)
                 if isinstance(struct, (RigidSubstructure, TorsionalSpringSubstructure)):
                     struct.set_fixed_dof()
+                struct.set_attachments()
         else:
             x, y = np.loadtxt(mesh_dir / "nodes.txt", unpack=True)
             xf, yf = np.loadtxt(mesh_dir / "fixedDOF.txt", unpack=True)
@@ -220,6 +221,4 @@ class StructuralSolver:
                 struct.load_mesh(mesh_dir)
                 if isinstance(struct, (RigidSubstructure, TorsionalSpringSubstructure)):
                     struct.set_fixed_dof()
-
-        for ss in self.substructures:
-            ss.set_attachments()
+                struct.set_attachments()
