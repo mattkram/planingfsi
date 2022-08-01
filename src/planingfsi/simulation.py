@@ -7,6 +7,7 @@ from typing import Any
 
 import numpy as np
 
+from planingfsi import Mesh
 from planingfsi import logger
 from planingfsi import writers
 from planingfsi.config import Config
@@ -140,7 +141,7 @@ class Simulation:
         self._load_rigid_bodies()
         self._load_substructures()
         self._load_pressure_cushions()
-        self.structural_solver.load_mesh(self.mesh_dir)
+        self.load_mesh()
 
     def _load_rigid_bodies(self) -> None:
         """Load all rigid bodies from files in the body dict directory.
@@ -245,6 +246,10 @@ class Simulation:
             )
             self.fluid_solver.add_pressure_cushion(dict_)
         print(f"Pressure Cushions: {self.fluid_solver.pressure_cushions}")
+
+    def load_mesh(self, mesh: Path | Mesh = None) -> None:
+        """Load the mesh from files, or directly. By default, will load from "mesh" directory."""
+        self.structural_solver.load_mesh(mesh or self.mesh_dir)
 
     def run(self) -> None:
         """Run the fluid-structure interaction simulation.
