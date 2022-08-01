@@ -19,11 +19,11 @@ from planingfsi import trig
 from planingfsi import writers
 from planingfsi.config import NUM_DIM
 from planingfsi.fe import felib as fe
+from planingfsi.fe.femesh import Submesh
 from planingfsi.solver import fzero
 
 if TYPE_CHECKING:
     from planingfsi.config import Config
-    from planingfsi.fe.femesh import Submesh
     from planingfsi.fe.rigid_body import RigidBody
     from planingfsi.fe.structure import StructuralSolver
     from planingfsi.potentialflow.pressurepatch import PlaningSurface
@@ -170,8 +170,8 @@ class Substructure(abc.ABC):
         for el in self.el:
             el.set_properties(length=self.arc_length / len(self.el))
 
-    def load_mesh(self, mesh_dir: Path = Path("mesh"), submesh: Submesh | None = None) -> None:
-        if submesh is not None:
+    def load_mesh(self, submesh: Path | Submesh = Path("mesh")) -> None:
+        if isinstance(submesh, Submesh):
             nd_st_list, nd_end_list = [], []
             for curve in submesh.curves:
                 for line in curve.lines:
@@ -179,7 +179,7 @@ class Substructure(abc.ABC):
                     nd_end_list.append(line.pt[1].index)
             nd_st, nd_end = np.array(nd_st_list), np.array(nd_end_list)
         else:
-            nd_st, nd_end = np.loadtxt(mesh_dir / f"elements_{self.name}.txt", unpack=True)
+            nd_st, nd_end = np.loadtxt(submesh / f"elements_{self.name}.txt", unpack=True)
 
         if isinstance(nd_st, float):
             nd_st = [int(nd_st)]

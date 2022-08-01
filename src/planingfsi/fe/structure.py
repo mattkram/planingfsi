@@ -200,7 +200,7 @@ class StructuralSolver:
         for struct in self.substructures:
             # Find submesh with same name as substructure
             submesh = [submesh for submesh in mesh.submesh if submesh.name == struct.name][0]
-            struct.load_mesh(submesh=submesh)
+            struct.load_mesh(submesh)
             if isinstance(struct, (RigidSubstructure, TorsionalSpringSubstructure)):
                 struct.set_fixed_dof()
             struct.set_attachments()
