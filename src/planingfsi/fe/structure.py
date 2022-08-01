@@ -200,6 +200,7 @@ class StructuralSolver:
                 self.nodes.append(nd)
 
             for struct in self.substructures:
+                # Find submesh with same name as substructure
                 submesh = [submesh for submesh in mesh.submesh if submesh.name == struct.name][0]
                 struct.load_mesh(mesh_dir, submesh=submesh)
                 if isinstance(struct, (RigidSubstructure, TorsionalSpringSubstructure)):
