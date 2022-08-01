@@ -188,37 +188,44 @@ class StructuralSolver:
             for struct in body.substructures:
                 struct.plot()
 
-    def load_mesh(self, mesh_dir: Path = Path("mesh"), mesh: Mesh | None = None) -> None:
+    def _load_mesh_from_object(self, mesh: Mesh) -> None:
+        """Load a mesh from an existing object."""
+        for pt in mesh.points:
+            nd = Node()
+            nd.set_coordinates(pt.position[0], pt.position[1])
+            nd.is_dof_fixed[:] = pt.is_dof_fixed
+            nd.fixed_load[:] = pt.fixed_load
+            self.nodes.append(nd)
+
+        for struct in self.substructures:
+            # Find submesh with same name as substructure
+            submesh = [submesh for submesh in mesh.submesh if submesh.name == struct.name][0]
+            struct.load_mesh(submesh=submesh)
+            if isinstance(struct, (RigidSubstructure, TorsionalSpringSubstructure)):
+                struct.set_fixed_dof()
+            struct.set_attachments()
+
+    def _load_mesh_from_dir(self, mesh_dir: Path) -> None:
+        """Load the mesh from a directory of files."""
+        coords = np.loadtxt(mesh_dir / "nodes.txt")
+        fixed_dofs = np.loadtxt(mesh_dir / "fixedDOF.txt")
+        loads = np.loadtxt(mesh_dir / "fixedLoad.txt")
+        for c, fixed_dof, load in zip(coords, fixed_dofs, loads):
+            nd = Node()
+            nd.set_coordinates(*c)
+            nd.is_dof_fixed[:] = map(bool, fixed_dof)
+            nd.fixed_load[:] = load
+            self.nodes.append(nd)
+        for struct in self.substructures:
+            struct.load_mesh(mesh_dir)
+            if isinstance(struct, (RigidSubstructure, TorsionalSpringSubstructure)):
+                struct.set_fixed_dof()
+            struct.set_attachments()
+
+    def load_mesh(self, mesh_dir: Path = Path("mesh"), *, mesh: Mesh | None = None) -> None:
         """Load the mesh from files."""
         # Create all nodes
         if mesh is not None:
-            for pt in mesh.points:
-                nd = Node()
-                nd.set_coordinates(pt.position[0], pt.position[1])
-                nd.is_dof_fixed[:] = pt.is_dof_fixed
-                nd.fixed_load[:] = pt.fixed_load
-                self.nodes.append(nd)
-
-            for struct in self.substructures:
-                # Find submesh with same name as substructure
-                submesh = [submesh for submesh in mesh.submesh if submesh.name == struct.name][0]
-                struct.load_mesh(mesh_dir, submesh=submesh)
-                if isinstance(struct, (RigidSubstructure, TorsionalSpringSubstructure)):
-                    struct.set_fixed_dof()
-                struct.set_attachments()
+            self._load_mesh_from_object(mesh)
         else:
-            coords = np.loadtxt(mesh_dir / "nodes.txt")
-            fixed_dofs = np.loadtxt(mesh_dir / "fixedDOF.txt")
-            loads = np.loadtxt(mesh_dir / "fixedLoad.txt")
-            for c, fixed_dof, load in zip(coords, fixed_dofs, loads):
-                nd = Node()
-                nd.set_coordinates(*c)
-                nd.is_dof_fixed[:] = map(bool, fixed_dof)
-                nd.fixed_load[:] = load
-                self.nodes.append(nd)
-
-            for struct in self.substructures:
-                struct.load_mesh(mesh_dir)
-                if isinstance(struct, (RigidSubstructure, TorsionalSpringSubstructure)):
-                    struct.set_fixed_dof()
-                struct.set_attachments()
+            self._load_mesh_from_dir(mesh_dir)
