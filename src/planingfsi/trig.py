@@ -101,11 +101,6 @@ def ang2vecd(ang: float) -> numpy.ndarray:
     return ang2vec(numpy.radians(ang))
 
 
-def angd2vec(ang: float) -> numpy.ndarray:
-    """Deprecated alias for ang2vecd."""
-    return ang2vecd(ang)
-
-
 def angd2vec2d(ang: float) -> numpy.ndarray:
     """Convert angle in degrees to a 2-d unit vector in the x-y plane."""
     return ang2vecd(ang)[:2]
