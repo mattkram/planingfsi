@@ -596,9 +596,7 @@ class Curve(_ShapeBase):
                 self.pt.append(point)
                 point.position = xy
         self.pt.append(self.end_point)
-        self.generate_lines()
 
-    def generate_lines(self) -> None:
         for ptSt, ptEnd in zip(self.pt[:-1], self.pt[1:]):
             line = Curve(mesh=self.mesh)
             line.start_point, line.end_point = ptSt, ptEnd
