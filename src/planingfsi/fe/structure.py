@@ -195,7 +195,6 @@ class StructuralSolver:
             nd.set_coordinates(pt.position[0], pt.position[1])
             nd.is_dof_fixed[:] = pt.is_dof_fixed
             nd.fixed_load[:] = pt.fixed_load
-            self.nodes.append(nd)
 
         for struct in self.substructures:
             # Find submesh with same name as substructure
@@ -216,7 +215,7 @@ class StructuralSolver:
             nd.set_coordinates(*c)
             nd.is_dof_fixed[:] = map(bool, fixed_dof)
             nd.fixed_load[:] = load
-            self.nodes.append(nd)
+
         for struct in self.substructures:
             struct.load_mesh(mesh_dir)
             if isinstance(struct, (RigidSubstructure, TorsionalSpringSubstructure)):

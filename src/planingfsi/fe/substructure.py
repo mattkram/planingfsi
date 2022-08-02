@@ -19,7 +19,7 @@ from planingfsi import trig
 from planingfsi import writers
 from planingfsi.config import NUM_DIM
 from planingfsi.fe import felib as fe
-from planingfsi.fe.femesh import Submesh
+from planingfsi.fe.femesh import Subcomponent
 from planingfsi.solver import fzero
 
 if TYPE_CHECKING:
@@ -170,8 +170,8 @@ class Substructure(abc.ABC):
         for el in self.el:
             el.set_properties(length=self.arc_length / len(self.el))
 
-    def load_mesh(self, submesh: Path | Submesh = Path("mesh")) -> None:
-        if isinstance(submesh, Submesh):
+    def load_mesh(self, submesh: Path | Subcomponent = Path("mesh")) -> None:
+        if isinstance(submesh, Subcomponent):
             nd_st, nd_end = [], []
             for curve in submesh.curves:
                 for line in curve.lines:
@@ -725,7 +725,7 @@ class TorsionalSpringSubstructure(FlexibleSubstructure, RigidSubstructure):
         self.attached_substructure: Substructure | None = None
         self.residual = 1.0
 
-    def load_mesh(self, submesh: Path | Submesh = Path("mesh")) -> None:
+    def load_mesh(self, submesh: Path | Subcomponent = Path("mesh")) -> None:
         super().load_mesh(submesh)
         self.set_fixed_dof()
         if self.base_pt_pct == 1.0:

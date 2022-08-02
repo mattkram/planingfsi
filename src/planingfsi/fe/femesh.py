@@ -31,7 +31,7 @@ class Mesh:
 
     def __init__(self) -> None:
         self.points: list["Point"] = []
-        self.submesh: list["Submesh"] = []
+        self.submesh: list["Subcomponent"] = []
         self.add_point(0, "dir", [0, 0])
 
     @property
@@ -51,9 +51,9 @@ class Mesh:
     """A method alias, kept for backwards compatibility with old meshDict files."""
     get_pt_by_id = get_point
 
-    def add_submesh(self, name: str = "") -> "Submesh":
+    def add_submesh(self, name: str = "") -> "Subcomponent":
         """Add a submesh to the mesh."""
-        submesh = Submesh(name, mesh=self)
+        submesh = Subcomponent(name, mesh=self)
         self.submesh.append(submesh)
         return submesh
 
@@ -281,8 +281,18 @@ class Mesh:
             sm.write(mesh_dir)
 
 
-class Submesh:
-    """A child component of the mesh used for splitting up different sets of curves."""
+class Subcomponent:
+    """A child component of the mesh used for splitting up different sets of curves.
+
+    The `Subcomponent` will store a set of curves, as well as a set of `Element` objects once the geometry
+    is discretized.
+
+    Attributes:
+        name: The name of the `Subcomponent`, which must correspond to the name of the associated `Substructure`.
+        mesh: A reference to the parent `Mesh` object, to which this `Subcomponent` belongs.
+        curves: A list of control `Curve`s that define the `Subcomponent`.
+
+    """
 
     def __init__(self, name: str, mesh: Mesh):
         self.name = name
