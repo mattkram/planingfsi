@@ -24,6 +24,7 @@ from planingfsi.potentialflow.pressurepatch import PressureCushion
 from planingfsi.simulation import Simulation
 
 __all__ = [
+    "logger",
     "Mesh",
     "FlexibleSubstructure",
     "RigidSubstructure",
