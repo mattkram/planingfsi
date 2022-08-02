@@ -491,6 +491,16 @@ class Point(_ShapeBase):
 
 
 class Curve(_ShapeBase):
+    """A curve connecting two `Point`s.
+
+    The curve is characterized by its curvature, which is zero by default (a straight line).
+
+    Attributes:
+        pt: A list of `Point` objects on the line.
+        curvature: The curvature of the curve, i.e. the inverse of the radius. A value of zero is a straight line.
+
+    """
+
     def __init__(self, id: int | None = None, mesh: Mesh | None = None):
         super().__init__(id=id, mesh=mesh)
         self.pt: list[Point] = []
@@ -514,6 +524,10 @@ class Curve(_ShapeBase):
     def radius(self, value: float) -> None:
         self.curvature = 1 / value if ~np.isinf(value) else 0.0
 
+    def _get_arc_length_residual(self, curvature: float, arc_length: float) -> float:
+        """Return the trigonometric residual for the relationship between curvature and arclength."""
+        return 0.5 * curvature * self.chord - np.sin(0.5 * curvature * arc_length)
+
     @property
     def arc_length(self) -> float:
         """The arclength of the curve."""
@@ -521,25 +535,26 @@ class Curve(_ShapeBase):
             return self.chord
         else:
 
-            def f(s: float) -> float:
-                return self.chord / (2 * self.radius) - np.sin(s / (2 * self.radius))
-
-            return fzero(f, self.chord + 1e-6)
+            return fzero(
+                lambda s: self._get_arc_length_residual(curvature=self.curvature, arc_length=s),
+                self.chord + 1e-6,
+            )
 
     @arc_length.setter
     def arc_length(self, value: float) -> None:
         if self.chord >= value:
             self.curvature = 0.0
         else:
-
-            def f(x: float) -> float:
-                return x * self.chord / 2 - np.sin(x * value / 2)
-
-            # Keep increasing guess until fsolve finds the first non-zero root
-            kap = 0.0
-            kap0 = 0.0
-            while kap <= 1e-6:
-                kap = fzero(f, kap0)
+            # Keep increasing guess until fsolve finds the first non-zero root.
+            # The criterion here is 1e-6, because the zero case is already handled above
+            # and if we set kap = 0, then the residual is always zero, but that case is
+            # singular.
+            kap0 = 0.02
+            while (
+                kap := fzero(
+                    lambda x: self._get_arc_length_residual(curvature=x, arc_length=value), kap0
+                )
+            ) <= 1e-6:
                 kap0 += 0.02
 
             self.curvature = kap
