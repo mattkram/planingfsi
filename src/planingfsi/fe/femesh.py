@@ -121,7 +121,8 @@ class Mesh:
             # Place a point at a certain percentage along the line between two other points
             base_pt_id, end_pt_id, pct = position
             curve = Curve()
-            curve.set_end_pts([self.get_point(int(base_pt_id)), self.get_point(int(end_pt_id))])
+            curve.start_point = self.get_point(int(base_pt_id))
+            curve.end_point = self.get_point(int(end_pt_id))
             point = self.add_point_along_curve(id_, curve=curve, pct=float(pct))
         else:
             raise NameError(f"Incorrect position specification method for point, ID: {id_}")
@@ -322,8 +323,9 @@ class Subcomponent:
         num_elements = kwargs.get("Nel", 1)
 
         curve = Curve(id=id_, mesh=self.mesh)
+        curve.start_point = self.mesh.get_point(pt_id1)
+        curve.end_point = self.mesh.get_point(pt_id2)
         self.curves.append(curve)
-        curve.set_end_pts_by_id(pt_id1, pt_id2)
 
         if arc_length is not None:
             curve.arc_length = arc_length
@@ -504,8 +506,9 @@ class Curve(_ShapeBase):
     def __init__(self, id: int | None = None, mesh: Mesh | None = None):
         super().__init__(id=id, mesh=mesh)
         self.pt: list[Point] = []
-        self.lines: list["Line"] = []
-        self._end_pts: list[Point] = []
+        self.lines: list[Curve] = []
+        self.start_point: Point | None = None
+        self.end_point: Point | None = None
         self.plot_sty = "b-"
 
         self.curvature = 0.0
@@ -513,7 +516,7 @@ class Curve(_ShapeBase):
     @property
     def chord(self) -> float:
         """The chord length, i.e. the distance between start and end points."""
-        return float(np.linalg.norm(self._end_pts[1].position - self._end_pts[0].position))
+        return float(np.linalg.norm(self.end_point.position - self.start_point.position))
 
     @property
     def radius(self) -> float:
@@ -559,10 +562,6 @@ class Curve(_ShapeBase):
 
             self.curvature = kap
 
-    def set_end_pts_by_id(self, pt_id1: int, pt_id2: int) -> None:
-        assert self.mesh is not None
-        self.set_end_pts([self.mesh.get_point(pid) for pid in [pt_id1, pt_id2]])
-
     def get_coords(self, s: float) -> np.ndarray:
         """Get the coordinates of any point along the curve.
 
@@ -573,20 +572,19 @@ class Curve(_ShapeBase):
             The (x,y) coordinates of the point, as a numpy array.
 
         """
-        xy = [pt.position for pt in self._end_pts]
         if self.curvature == 0.0:
-            return xy[0] * (1 - s) + xy[1] * s
+            return self.start_point.position * (1 - s) + self.end_point.position * s
         else:
-            x, y = list(zip(*xy))
-            gam = np.arctan2(y[1] - y[0], x[1] - x[0])
+            diff = self.end_point.position - self.start_point.position
+            gam = np.arctan2(diff[1], diff[0])
             alf = self.arc_length / (2 * self.radius)
             return (
-                self._end_pts[0].position
+                self.start_point.position
                 + 2.0 * self.radius * np.sin(s * alf) * trig.ang2vec(gam + (s - 1.0) * alf)[:2]
             )
 
     def distribute_points(self, num_segments: int = 1) -> None:
-        self.pt.append(self._end_pts[0])
+        self.pt.append(self.start_point)
         if num_segments > 1:
             # Distribute N points along a parametric curve defined by f(s), s in [0,1]
             s = np.linspace(0.0, 1.0, num_segments + 1)[1:-1]
@@ -597,28 +595,17 @@ class Curve(_ShapeBase):
                     self.mesh.points.append(point)
                 self.pt.append(point)
                 point.position = xy
-        self.pt.append(self._end_pts[1])
+        self.pt.append(self.end_point)
         self.generate_lines()
 
     def generate_lines(self) -> None:
         for ptSt, ptEnd in zip(self.pt[:-1], self.pt[1:]):
-            line = Line(mesh=self.mesh)
-            line.set_end_pts([ptSt, ptEnd])
+            line = Curve(mesh=self.mesh)
+            line.start_point, line.end_point = ptSt, ptEnd
+            line.pt[:] = [ptSt, ptEnd]
             self.lines.append(line)
-
-    def set_pts(self, pt: list[Point]) -> None:
-        self.pt = pt
-
-    def set_end_pts(self, end_pt: list[Point]) -> None:
-        self._end_pts = end_pt
 
     def plot(self) -> None:
         """Plot the curve as a line by chaining all component points together."""
         x, y = list(zip(*(pt.position for pt in self.pt)))
         plt.plot(x, y, self.plot_sty)
-
-
-class Line(Curve):
-    def set_end_pts(self, end_pt: list[Point]) -> None:
-        super().set_end_pts(end_pt)
-        self.set_pts(end_pt)
