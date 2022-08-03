@@ -364,7 +364,7 @@ class _ShapeBase:
 
     def __init__(self, id: int | None = None, mesh: Mesh | None = None) -> None:
         self.id = id
-        self.mesh = mesh
+        self._mesh = mesh
 
     @abc.abstractmethod
     def plot(self) -> None:
@@ -382,9 +382,9 @@ class Point(_ShapeBase):
     @property
     def index(self) -> int:
         """The index of the point within the mesh point list."""
-        if self.mesh is None:
+        if self._mesh is None:
             raise ValueError("Point is not associated with a mesh")
-        return self.mesh.points.index(self)
+        return self._mesh.points.index(self)
 
     @property
     def is_used(self) -> bool:
@@ -459,11 +459,11 @@ class Point(_ShapeBase):
 
         """
         if isinstance(base_pt, int):
-            if self.mesh is None:
+            if self._mesh is None:
                 raise LookupError(
                     "Only points existing in the mesh with an ID can be rotated by ID."
                 )
-            base_pt = self.mesh.get_point(base_pt)
+            base_pt = self._mesh.get_point(base_pt)
         self.position = (
             trig.rotate_vec_2d(self.position - base_pt.position, angle) + base_pt.position
         )
@@ -497,9 +497,11 @@ class Curve(_ShapeBase):
     The curve is characterized by its curvature, which is zero by default (a straight line).
 
     Attributes:
+        id: A unique ID for the curve.
         start_point: The starting `Point` of the curve.
         end_point: The end `Point` of the curve.
         curvature: The curvature of the curve, i.e. the inverse of the radius. A value of zero is a straight line.
+        num_elements: The number of elements to split the curve into during mesh generation.
 
     """
 
@@ -602,11 +604,17 @@ class Curve(_ShapeBase):
             )
 
     def distribute_points(self) -> tuple[list[Point], list[Curve]]:
+        """Distribute points along the curve during mesh generation.
+
+        Returns:
+             A list of `Point`s and straight `Curve` objects connecting them.
+
+        """
         points = [self.start_point]
         if self.num_elements > 1:
             # Distribute N points along a parametric curve defined by f(s), s in [0,1]
             for s in np.linspace(0.0, 1.0, self.num_elements + 1)[1:-1]:
-                point = Point(mesh=self.mesh)
+                point = Point(mesh=self._mesh)
                 point.is_used = True
                 point.position = self.get_coords(s)
                 points.append(point)
@@ -614,7 +622,7 @@ class Curve(_ShapeBase):
 
         lines = []
         for ptSt, ptEnd in zip(points[:-1], points[1:]):
-            line = Curve(ptSt, ptEnd, mesh=self.mesh)
+            line = Curve(ptSt, ptEnd, mesh=self._mesh)
             lines.append(line)
         return points, lines
 
