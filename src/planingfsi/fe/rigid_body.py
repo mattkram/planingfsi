@@ -236,6 +236,12 @@ class RigidBody:
         ss.parent = self
         return ss
 
+    def get_substructure_by_name(self, name: str) -> substructure.Substructure:
+        for ss in self.substructures:
+            if ss.name == name:
+                return ss
+        raise LookupError(f"Cannot find substructure with name '{name}'")
+
     def store_nodes(self) -> None:
         """Store references to all nodes in each substructure."""
         for ss in self.substructures:

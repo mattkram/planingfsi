@@ -38,14 +38,6 @@ class Substructure(abc.ABC):
 
     is_free = False
 
-    @classmethod
-    def find_by_name(cls, name: str) -> "Substructure":
-        """Return a substructure whose name matches the argument."""
-        for o in cls.__all:
-            if o.name == name:
-                return o
-        raise NameError(f"Cannot find Substructure with name {name}")
-
     def __init__(
         self,
         *,
@@ -740,7 +732,9 @@ class TorsionalSpringSubstructure(FlexibleSubstructure, RigidSubstructure):
 
     def set_attachments(self) -> None:
         if self.attached_substructure_name is not None:
-            self.attached_substructure = Substructure.find_by_name(self.attached_substructure_name)
+            self.attached_substructure = self.parent.get_substructure_by_name(
+                self.attached_substructure_name
+            )
         else:
             self.attached_substructure = None
 
