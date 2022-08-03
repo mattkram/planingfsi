@@ -32,8 +32,6 @@ if TYPE_CHECKING:
 
 class Substructure(abc.ABC):
 
-    __all: list["Substructure"] = []
-
     _element_type: ClassVar[type[fe.Element]]
 
     is_free = False
@@ -54,9 +52,6 @@ class Substructure(abc.ABC):
         parent: RigidBody | None = None,
         **_: Any,
     ):
-        self.index = len(self.__all)
-        Substructure.__all.append(self)
-
         self.name = name
         self.interpolator: Interpolator | None = None
 
@@ -526,7 +521,7 @@ class Substructure(abc.ABC):
 
 class FlexibleSubstructure(Substructure):
 
-    __all: list["FlexibleSubstructure"] = []
+    __all: list["FlexibleSubstructure"] = []  # TODO: Remove
     res = 0.0
     is_free = True
     _element_type: ClassVar[type[fe.Element]] = fe.TrussElement
