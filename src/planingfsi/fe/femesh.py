@@ -505,8 +505,6 @@ class Curve(_ShapeBase):
 
     """
 
-    plot_sty = "b-"
-
     def __init__(self, id: int | None = None, mesh: Mesh | None = None):
         super().__init__(id=id, mesh=mesh)
         self.points: list[Point] = []
@@ -609,4 +607,4 @@ class Curve(_ShapeBase):
     def plot(self) -> None:
         """Plot the curve as a line by chaining all component points together."""
         x, y = list(zip(*(pt.position for pt in self.points)))
-        plt.plot(x, y, self.plot_sty)
+        plt.plot(x, y, "b-")
