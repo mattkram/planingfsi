@@ -348,7 +348,7 @@ class Subcomponent:
         point_indices = []
         for curve in self.curves:
             for line in curve.lines:
-                point_indices.append([pt.index for pt in line.pt])
+                point_indices.append([pt.index for pt in line.points])
 
         pt_l, pt_r = list(zip(*point_indices))
         write_as_list(
@@ -498,18 +498,21 @@ class Curve(_ShapeBase):
     The curve is characterized by its curvature, which is zero by default (a straight line).
 
     Attributes:
-        pt: A list of `Point` objects on the line.
+        points: A list of `Point` objects on the curve.
+        start_point: The starting `Point` of the curve.
+        end_point: The end `Point` of the curve.
         curvature: The curvature of the curve, i.e. the inverse of the radius. A value of zero is a straight line.
 
     """
 
+    plot_sty = "b-"
+
     def __init__(self, id: int | None = None, mesh: Mesh | None = None):
         super().__init__(id=id, mesh=mesh)
-        self.pt: list[Point] = []
+        self.points: list[Point] = []
         self.lines: list[Curve] = []
         self.start_point: Point | None = None
         self.end_point: Point | None = None
-        self.plot_sty = "b-"
 
         self.curvature = 0.0
 
@@ -584,7 +587,7 @@ class Curve(_ShapeBase):
             )
 
     def distribute_points(self, num_segments: int = 1) -> None:
-        self.pt.append(self.start_point)
+        self.points.append(self.start_point)
         if num_segments > 1:
             # Distribute N points along a parametric curve defined by f(s), s in [0,1]
             s = np.linspace(0.0, 1.0, num_segments + 1)[1:-1]
@@ -593,17 +596,17 @@ class Curve(_ShapeBase):
                 point.is_used = True
                 if self.mesh is not None:
                     self.mesh.points.append(point)
-                self.pt.append(point)
+                self.points.append(point)
                 point.position = xy
-        self.pt.append(self.end_point)
+        self.points.append(self.end_point)
 
-        for ptSt, ptEnd in zip(self.pt[:-1], self.pt[1:]):
+        for ptSt, ptEnd in zip(self.points[:-1], self.points[1:]):
             line = Curve(mesh=self.mesh)
             line.start_point, line.end_point = ptSt, ptEnd
-            line.pt[:] = [ptSt, ptEnd]
+            line.points[:] = [ptSt, ptEnd]
             self.lines.append(line)
 
     def plot(self) -> None:
         """Plot the curve as a line by chaining all component points together."""
-        x, y = list(zip(*(pt.position for pt in self.pt)))
+        x, y = list(zip(*(pt.position for pt in self.points)))
         plt.plot(x, y, self.plot_sty)
