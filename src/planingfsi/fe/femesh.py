@@ -120,9 +120,10 @@ class Mesh:
         elif method == "pct":
             # Place a point at a certain percentage along the line between two other points
             base_pt_id, end_pt_id, pct = position
-            curve = Curve()
-            curve.start_point = self.get_point(int(base_pt_id))
-            curve.end_point = self.get_point(int(end_pt_id))
+            curve = Curve(
+                self.get_point(int(base_pt_id)),
+                self.get_point(int(end_pt_id)),
+            )
             point = self.add_point_along_curve(id_, curve=curve, pct=float(pct))
         else:
             raise NameError(f"Incorrect position specification method for point, ID: {id_}")
@@ -323,9 +324,12 @@ class Subcomponent:
         radius = kwargs.get("radius")
         num_elements = kwargs.get("Nel", 1)
 
-        curve = Curve(id=id_, mesh=self.mesh)
-        curve.start_point = self.mesh.get_point(pt_id1)
-        curve.end_point = self.mesh.get_point(pt_id2)
+        curve = Curve(
+            self.mesh.get_point(pt_id1),
+            self.mesh.get_point(pt_id2),
+            id=id_,
+            mesh=self.mesh,
+        )
         self.curves.append(curve)
 
         if arc_length is not None:
@@ -507,14 +511,20 @@ class Curve(_ShapeBase):
 
     """
 
-    def __init__(self, id: int | None = None, mesh: Mesh | None = None):
+    def __init__(
+        self,
+        start_point: Point,
+        end_point: Point,
+        id: int | None = None,
+        mesh: Mesh | None = None,
+    ):
         super().__init__(id=id, mesh=mesh)
+        self.start_point = start_point
+        self.end_point = end_point
+        self.curvature = 0.0
+
         self.points: list[Point] = []
         self.lines: list[Curve] = []
-        self.start_point: Point | None = None
-        self.end_point: Point | None = None
-
-        self.curvature = 0.0
 
     @property
     def chord(self) -> float:
@@ -587,8 +597,7 @@ class Curve(_ShapeBase):
             )
 
     def distribute_points(self, num_segments: int = 1) -> tuple[list[Point], list[Curve]]:
-        points, lines = [], []
-        points.append(self.start_point)
+        points = [self.start_point]
         if num_segments > 1:
             # Distribute N points along a parametric curve defined by f(s), s in [0,1]
             s = np.linspace(0.0, 1.0, num_segments + 1)[1:-1]
@@ -599,9 +608,9 @@ class Curve(_ShapeBase):
                 point.position = xy
         points.append(self.end_point)
 
+        lines = []
         for ptSt, ptEnd in zip(points[:-1], points[1:]):
-            line = Curve(mesh=self.mesh)
-            line.start_point, line.end_point = ptSt, ptEnd
+            line = Curve(ptSt, ptEnd, mesh=self.mesh)
             line.points[:] = [ptSt, ptEnd]
             lines.append(line)
         return points, lines
