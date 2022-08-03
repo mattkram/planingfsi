@@ -605,12 +605,11 @@ class Curve(_ShapeBase):
         points = [self.start_point]
         if self.num_elements > 1:
             # Distribute N points along a parametric curve defined by f(s), s in [0,1]
-            s = np.linspace(0.0, 1.0, self.num_elements + 1)[1:-1]
-            for xy in map(self.get_coords, s):
+            for s in np.linspace(0.0, 1.0, self.num_elements + 1)[1:-1]:
                 point = Point(mesh=self.mesh)
                 point.is_used = True
+                point.position = self.get_coords(s)
                 points.append(point)
-                point.position = xy
         points.append(self.end_point)
 
         lines = []
