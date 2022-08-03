@@ -354,7 +354,7 @@ class Subcomponent:
 
         point_indices = []
         for line in self.line_segments:
-            point_indices.append([pt.index for pt in line.points])
+            point_indices.append([line.start_point.index, line.end_point.index])
 
         pt_l, pt_r = list(zip(*point_indices))
         write_as_list(
@@ -504,7 +504,6 @@ class Curve(_ShapeBase):
     The curve is characterized by its curvature, which is zero by default (a straight line).
 
     Attributes:
-        points: A list of `Point` objects on the curve.
         start_point: The starting `Point` of the curve.
         end_point: The end `Point` of the curve.
         curvature: The curvature of the curve, i.e. the inverse of the radius. A value of zero is a straight line.
@@ -522,9 +521,6 @@ class Curve(_ShapeBase):
         self.start_point = start_point
         self.end_point = end_point
         self.curvature = 0.0
-
-        self.points: list[Point] = []
-        self.lines: list[Curve] = []
 
     @property
     def chord(self) -> float:
@@ -611,7 +607,6 @@ class Curve(_ShapeBase):
         lines = []
         for ptSt, ptEnd in zip(points[:-1], points[1:]):
             line = Curve(ptSt, ptEnd, mesh=self.mesh)
-            line.points[:] = [ptSt, ptEnd]
             lines.append(line)
         return points, lines
 
