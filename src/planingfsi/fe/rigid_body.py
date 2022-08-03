@@ -198,7 +198,7 @@ class RigidBody:
                 self.draft_solver = None
 
         self.substructures: list["substructure.Substructure"] = []
-        self.nodes: list[fe.Node] = []
+        self._nodes: list[fe.Node] = []
 
     @property
     def config(self) -> Config:
@@ -242,12 +242,15 @@ class RigidBody:
                 return ss
         raise LookupError(f"Cannot find substructure with name '{name}'")
 
-    def store_nodes(self) -> None:
-        """Store references to all nodes in each substructure."""
-        for ss in self.substructures:
-            for nd in ss.node:
-                if not any([n.node_num == nd.node_num for n in self.nodes]):
-                    self.nodes.append(nd)
+    @property
+    def nodes(self) -> list[fe.Node]:
+        """Get a list of all unique `Node`s from all component substructures."""
+        if not self._nodes:
+            for ss in self.substructures:
+                for nd in ss.node:
+                    if not any(n.node_num == nd.node_num for n in self._nodes):
+                        self._nodes.append(nd)
+        return self._nodes
 
     def initialize_position(self) -> None:
         """Initialize the position of the rigid body."""
@@ -269,11 +272,8 @@ class RigidBody:
             if np.isnan(trim_delta):
                 trim_delta = 0.0
 
-        if not self.nodes:
-            self.store_nodes()
-
         for nd in self.nodes:
-            xo, yo = nd.get_coordinates()
+            xo, yo = nd.x, nd.y
             new_pos = trig.rotate_point(
                 np.array([xo, yo]), np.array([self.xCofR, self.yCofR]), trim_delta
             )
