@@ -372,6 +372,15 @@ class _ShapeBase:
 
 
 class Point(_ShapeBase):
+    """A general point in 2D space, used to represent control points and location of FE nodes.
+
+    Attributes:
+        position: A 2D array containing the (x, y) coordinates.
+        is_dof_fixed: A length-2 list corresponding to True/False of that DOF if fixed.
+        fixed_load: A 2D array containing the externally-applied forces in (x, y) directions.
+
+    """
+
     def __init__(self, id: int | None = None, mesh: Mesh | None = None) -> None:
         super().__init__(id=id, mesh=mesh)
         self.position = np.zeros(2)
