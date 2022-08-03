@@ -173,10 +173,9 @@ class Substructure(abc.ABC):
     def load_mesh(self, submesh: Path | Subcomponent = Path("mesh")) -> None:
         if isinstance(submesh, Subcomponent):
             nd_st, nd_end = [], []
-            for curve in submesh.curves:
-                for line in curve.lines:
-                    nd_st.append(line.pt[0].index)
-                    nd_end.append(line.pt[1].index)
+            for line in submesh.line_segments:
+                nd_st.append(line.start_point.index)
+                nd_end.append(line.end_point.index)
         else:
             nd_st_arr, nd_end_arr = np.loadtxt(submesh / f"elements_{self.name}.txt", unpack=True)
             nd_st, nd_end = list(nd_st_arr), list(nd_end_arr)

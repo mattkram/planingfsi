@@ -299,6 +299,7 @@ class Subcomponent:
         self.name = name
         self.mesh = mesh
         self.curves: list["Curve"] = []
+        self.line_segments: list[Curve] = []
 
     def add_curve(self, pt_id1: int, pt_id2: int, **kwargs: Any) -> "Curve":
         """Add a curve to the submesh.
@@ -332,7 +333,9 @@ class Subcomponent:
         elif radius is not None:
             curve.radius = radius
 
-        curve.distribute_points(num_elements)
+        points, line_segments = curve.distribute_points(num_elements)
+        self.mesh.points.extend(points)
+        self.line_segments.extend(line_segments)
 
         return curve
 
@@ -342,13 +345,12 @@ class Subcomponent:
         The submesh is stored as a list of Point IDs for each line segment in the submesh.
 
         """
-        if not self.curves:
+        if not self.line_segments:
             return  # pragma: no cover
 
         point_indices = []
-        for curve in self.curves:
-            for line in curve.lines:
-                point_indices.append([pt.index for pt in line.points])
+        for line in self.line_segments:
+            point_indices.append([pt.index for pt in line.points])
 
         pt_l, pt_r = list(zip(*point_indices))
         write_as_list(
@@ -584,27 +586,28 @@ class Curve(_ShapeBase):
                 + 2.0 * self.radius * np.sin(s * alf) * trig.ang2vec(gam + (s - 1.0) * alf)[:2]
             )
 
-    def distribute_points(self, num_segments: int = 1) -> None:
-        self.points.append(self.start_point)
+    def distribute_points(self, num_segments: int = 1) -> tuple[list[Point], list[Curve]]:
+        points, lines = [], []
+        points.append(self.start_point)
         if num_segments > 1:
             # Distribute N points along a parametric curve defined by f(s), s in [0,1]
             s = np.linspace(0.0, 1.0, num_segments + 1)[1:-1]
             for xy in map(self.get_coords, s):
                 point = Point(mesh=self.mesh)
                 point.is_used = True
-                if self.mesh is not None:
-                    self.mesh.points.append(point)
-                self.points.append(point)
+                points.append(point)
                 point.position = xy
-        self.points.append(self.end_point)
+        points.append(self.end_point)
 
-        for ptSt, ptEnd in zip(self.points[:-1], self.points[1:]):
+        for ptSt, ptEnd in zip(points[:-1], points[1:]):
             line = Curve(mesh=self.mesh)
             line.start_point, line.end_point = ptSt, ptEnd
             line.points[:] = [ptSt, ptEnd]
-            self.lines.append(line)
+            lines.append(line)
+        return points, lines
 
     def plot(self) -> None:
         """Plot the curve as a line by chaining all component points together."""
-        x, y = list(zip(*(pt.position for pt in self.points)))
-        plt.plot(x, y, "b-")
+        points, _ = self.distribute_points()
+        x, y = list(zip(*(pt.position for pt in points)))
+        plt.plot(x, y, "k-")
