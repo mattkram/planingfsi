@@ -319,25 +319,18 @@ class Subcomponent:
             The Curve object.
 
         """
-        id_ = kwargs.get("ID", -1)
-        arc_length = kwargs.get("arcLen")
-        radius = kwargs.get("radius")
-        num_elements = kwargs.get("Nel", 1)
-
         curve = Curve(
             self.mesh.get_point(pt_id1),
             self.mesh.get_point(pt_id2),
-            id=id_,
             mesh=self.mesh,
+            id=kwargs.get("ID", -1),
+            arc_length=kwargs.get("arcLen"),
+            radius=kwargs.get("radius"),
+            num_elements=kwargs.get("Nel", 1),
         )
         self.curves.append(curve)
 
-        if arc_length is not None:
-            curve.arc_length = arc_length
-        elif radius is not None:
-            curve.radius = radius
-
-        points, line_segments = curve.distribute_points(num_elements)
+        points, line_segments = curve.distribute_points()
         self.mesh.points.extend(points)
         self.line_segments.extend(line_segments)
 
@@ -514,13 +507,29 @@ class Curve(_ShapeBase):
         self,
         start_point: Point,
         end_point: Point,
+        *,
         id: int | None = None,
         mesh: Mesh | None = None,
+        curvature: float | None = None,
+        arc_length: float | None = None,
+        radius: float | None = None,
+        num_elements: int = 1,
     ):
         super().__init__(id=id, mesh=mesh)
         self.start_point = start_point
         self.end_point = end_point
+        self.num_elements = num_elements
+
+        if sum(item is not None for item in (curvature, arc_length, radius)) > 1:
+            raise ValueError("Can only set one of 'curvature', 'arc_length', or 'radius'")
+
         self.curvature = 0.0
+        if curvature is not None:
+            self.curvature = curvature
+        elif arc_length is not None:
+            self.arc_length = arc_length
+        elif radius is not None:
+            self.radius = radius
 
     @property
     def chord(self) -> float:
@@ -592,11 +601,11 @@ class Curve(_ShapeBase):
                 + 2.0 * self.radius * np.sin(s * alf) * trig.ang2vec(gam + (s - 1.0) * alf)[:2]
             )
 
-    def distribute_points(self, num_segments: int = 1) -> tuple[list[Point], list[Curve]]:
+    def distribute_points(self) -> tuple[list[Point], list[Curve]]:
         points = [self.start_point]
-        if num_segments > 1:
+        if self.num_elements > 1:
             # Distribute N points along a parametric curve defined by f(s), s in [0,1]
-            s = np.linspace(0.0, 1.0, num_segments + 1)[1:-1]
+            s = np.linspace(0.0, 1.0, self.num_elements + 1)[1:-1]
             for xy in map(self.get_coords, s):
                 point = Point(mesh=self.mesh)
                 point.is_used = True
