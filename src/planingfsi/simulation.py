@@ -247,7 +247,7 @@ class Simulation:
             self.fluid_solver.add_pressure_cushion(dict_)
         print(f"Pressure Cushions: {self.fluid_solver.pressure_cushions}")
 
-    def load_mesh(self, mesh: Path | Mesh = None) -> None:
+    def load_mesh(self, mesh: Path | Mesh | None = None) -> None:
         """Load the mesh from files, or directly. By default, will load from "mesh" directory."""
         self.structural_solver.load_mesh(mesh or self.mesh_dir)
 

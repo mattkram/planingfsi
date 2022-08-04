@@ -172,14 +172,14 @@ class Substructure(abc.ABC):
 
     def load_mesh(self, submesh: Path | Submesh = Path("mesh")) -> None:
         if isinstance(submesh, Submesh):
-            nd_st_list, nd_end_list = [], []
+            nd_st, nd_end = [], []
             for curve in submesh.curves:
                 for line in curve.lines:
-                    nd_st_list.append(line.pt[0].index)
-                    nd_end_list.append(line.pt[1].index)
-            nd_st, nd_end = np.array(nd_st_list), np.array(nd_end_list)
+                    nd_st.append(line.pt[0].index)
+                    nd_end.append(line.pt[1].index)
         else:
-            nd_st, nd_end = np.loadtxt(submesh / f"elements_{self.name}.txt", unpack=True)
+            nd_st_arr, nd_end_arr = np.loadtxt(submesh / f"elements_{self.name}.txt", unpack=True)
+            nd_st, nd_end = list(nd_st_arr), list(nd_end_arr)
 
         if isinstance(nd_st, float):
             nd_st = [int(nd_st)]
