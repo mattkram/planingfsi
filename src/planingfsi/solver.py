@@ -94,7 +94,7 @@ class RootFinder:
             elif dx[i] < 0:
                 dx_lim_pct[i] = numpy.max([dx[i], -self.dx_max_decrease[i]]) / dx[i]
 
-        dx *= numpy.min(dx_lim_pct)
+        dx *= dx_lim_pct
         assert dx is not None
         self.dx = dx
 
