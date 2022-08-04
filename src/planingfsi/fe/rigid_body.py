@@ -614,7 +614,7 @@ class RigidBody:
             f"  Moment Res: {self.res_m:5.4e}",
         ]
         for line in lines:
-            logger.debug(line)
+            logger.info(line)
 
     def write_motion(self) -> None:
         """Write the motion results to file."""
