@@ -180,24 +180,18 @@ class RigidBody:
 
         # Assign displacement function depending on specified method
         motion_method = motion_method or self.config.body.motion_method
-        self.get_disp = lambda: np.array((0.0, 0.0))
         if any(self.free_dof):
-            if motion_method == "Secant":
-                self.get_disp = self.get_disp_secant
-            elif motion_method == "Broyden":
-                self.get_disp = self.get_disp_broyden
-            elif motion_method == "BroydenNew":
-                self.get_disp = self.get_disp_broyden_new
-            elif motion_method == "Physical":
-                self.get_disp = self.get_disp_physical
-            elif motion_method == "Newmark-Beta":
-                self.get_disp = self.get_disp_newmark_beta
-            elif motion_method == "PhysicalNoMass":
-                self.get_disp = self.get_disp_physical_no_mass
-            elif motion_method == "Sep":
-                self.get_disp = self.get_disp_secant
-            else:
-                self.get_disp = self.get_disp_secant
+            self.get_disp = {
+                "Secant": self.get_disp_secant,
+                "Broyden": self.get_disp_broyden,
+                "BroydenNew": self.get_disp_broyden_new,
+                "Physical": self.get_disp_physical,
+                "PhysicalNoMass": self.get_disp_physical_no_mass,
+                "Newmark-Beta": self.get_disp_newmark_beta,
+                "Sep": self.get_disp_secant,
+            }.get(motion_method, self.get_disp_secant)
+        else:
+            self.get_disp = lambda: np.array((0.0, 0.0))
 
         self.substructures: list["substructure.Substructure"] = []
         self._nodes: list[fe.Node] = []
