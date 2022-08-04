@@ -87,6 +87,7 @@ class RigidBody:
         max_trim_acc: float | None = None,
         beta: float = 0.25,
         gamma: float = 0.5,
+        motion_method: str | None = None,
         parent: StructuralSolver | None = None,
         **_: Any,
     ):
@@ -178,24 +179,25 @@ class RigidBody:
         self.resFun: Callable[[np.ndarray], np.ndarray] | None = None
 
         # Assign displacement function depending on specified method
+        motion_method = motion_method or self.config.body.motion_method
         self.get_disp = lambda: np.array((0.0, 0.0))
         if any(self.free_dof):
-            if self.config.body.motion_method == "Secant":
+            if motion_method == "Secant":
                 self.get_disp = self.get_disp_secant
-            elif self.config.body.motion_method == "Broyden":
+            elif motion_method == "Broyden":
                 self.get_disp = self.get_disp_broyden
-            elif self.config.body.motion_method == "BroydenNew":
+            elif motion_method == "BroydenNew":
                 self.get_disp = self.get_disp_broyden_new
-            elif self.config.body.motion_method == "Physical":
+            elif motion_method == "Physical":
                 self.get_disp = self.get_disp_physical
-            elif self.config.body.motion_method == "Newmark-Beta":
+            elif motion_method == "Newmark-Beta":
                 self.get_disp = self.get_disp_newmark_beta
-            elif self.config.body.motion_method == "PhysicalNoMass":
+            elif motion_method == "PhysicalNoMass":
                 self.get_disp = self.get_disp_physical_no_mass
-            elif self.config.body.motion_method == "Sep":
+            elif motion_method == "Sep":
                 self.get_disp = self.get_disp_secant
-                self.trim_solver = None
-                self.draft_solver = None
+            else:
+                self.get_disp = self.get_disp_secant
 
         self.substructures: list["substructure.Substructure"] = []
         self._nodes: list[fe.Node] = []
