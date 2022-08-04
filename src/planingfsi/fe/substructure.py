@@ -725,8 +725,8 @@ class TorsionalSpringSubstructure(FlexibleSubstructure, RigidSubstructure):
         self.attached_substructure: Substructure | None = None
         self.residual = 1.0
 
-    def load_mesh(self) -> None:
-        Substructure.load_mesh(self)
+    def load_mesh(self, submesh: Path | Submesh = Path("mesh")) -> None:
+        super().load_mesh(submesh)
         self.set_fixed_dof()
         if self.base_pt_pct == 1.0:
             self.base_pt = self.node[-1].get_coordinates()
