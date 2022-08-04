@@ -34,6 +34,7 @@ click-log = "^0.4.0"
 codecov = "^2.1.11"
 pytest = "^7.1.0"
 pytest-cov = "^3.0.0"
+mypy = "^0.971"
 
 [tool.black]
 line-length = 100
