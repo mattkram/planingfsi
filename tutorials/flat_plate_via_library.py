@@ -30,8 +30,15 @@ def main() -> None:
     simulation.config.flow.froude_num = froude_num
     simulation.config.plotting.show = True
     simulation.config.plotting._pressure_scale_pct = 1e-8
+    simulation.config.solver.max_it = 5
 
     body = simulation.add_rigid_body()
+    body.yCofG = body.yCofR = 0.1  # Only here for the plot
+    body.weight = 700.0
+    body.free_in_draft = True
+    body.max_disp[0] = 0.1
+    body.get_disp = body.get_disp_secant
+
     substructure = body.add_substructure(RigidSubstructure(name="plate"))
     substructure.add_planing_surface(
         PlaningSurface(
