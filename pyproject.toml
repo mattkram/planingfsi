@@ -23,7 +23,7 @@ packages = [
 planingfsi = "planingfsi.cli:cli"
 
 [tool.poetry.dependencies]
-python = ">=3.8,<3.11"
+python = ">=3.8,<3.12"
 matplotlib = "^3.0"
 numpy = "^1.15"
 scipy = "^1.8.0"
