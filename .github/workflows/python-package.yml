@@ -53,6 +53,14 @@ jobs:
         poetry run codecov -t $CODECOV_TOKEN
       env:
         CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
+    - name: Build package
+      run: poetry build
+    - name: Upload wheel as artifact
+      uses: actions/upload-artifact@v3
+      with:
+        name: wheel-file
+        path: |
+          build/*.whl
 
   publish:
     if: startsWith(github.ref, 'refs/tags/v')
