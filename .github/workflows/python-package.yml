@@ -1,6 +1,11 @@
 name: Run Python Tests
 
-on: [push, pull_request]
+on:
+  push:
+    branches:
+    - dev
+    - main
+  pull_request:
 
 jobs:
 
