@@ -521,7 +521,6 @@ class Substructure(abc.ABC):
 
 class FlexibleSubstructure(Substructure):
 
-    __all: list["FlexibleSubstructure"] = []  # TODO: Remove
     res = 0.0
     is_free = True
     _element_type: ClassVar[type[fe.Element]] = fe.TrussElement
@@ -538,7 +537,6 @@ class FlexibleSubstructure(Substructure):
         **kwargs: Any,
     ):
         super().__init__(**kwargs)
-        self.__all.append(self)
         self.pretension = pretension
         self.EA = axial_stiffness
 

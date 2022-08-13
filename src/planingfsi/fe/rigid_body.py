@@ -290,8 +290,10 @@ class RigidBody:
         self.print_motion()
 
     def update_flexible_substructure_positions(self) -> None:
-        # TODO: This functionality should be moved to the rigid body
-        flexible_substructures = substructure.FlexibleSubstructure.all()
+        """Update the nodal positions of all component flexible substructures."""
+        flexible_substructures = [
+            ss for ss in self.substructures if isinstance(ss, substructure.FlexibleSubstructure)
+        ]
 
         num_dof = len(fe.Node.all()) * NUM_DIM
         Kg = np.zeros((num_dof, num_dof))
