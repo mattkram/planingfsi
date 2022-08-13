@@ -13,11 +13,11 @@ from planingfsi import writers
 from planingfsi.config import NUM_DIM
 from planingfsi.config import Config
 from planingfsi.dictionary import load_dict_from_file
+from planingfsi.fe import felib as fe
 from planingfsi.fe import substructure
 from planingfsi.solver import RootFinder
 
 if TYPE_CHECKING:
-    from planingfsi.fe import felib as fe
     from planingfsi.fe.structure import StructuralSolver
 
 
@@ -289,9 +289,56 @@ class RigidBody:
 
         self.print_motion()
 
+    def update_flexible_substructure_positions(self) -> None:
+        # TODO: This functionality should be moved to the rigid body
+        flexible_substructures = substructure.FlexibleSubstructure.all()
+
+        num_dof = len(fe.Node.all()) * NUM_DIM
+        Kg = np.zeros((num_dof, num_dof))
+        Fg = np.zeros((num_dof, 1))
+        Ug = np.zeros((num_dof, 1))
+
+        # Assemble global matrices for all substructures together
+        for ss in flexible_substructures:
+            ss.update_fluid_forces()
+            ss.assemble_global_stiffness_and_force()
+
+            # TODO: Consider removing this and fixing static types
+            assert ss.K is not None
+            assert ss.F is not None
+
+            Kg += ss.K
+            Fg += ss.F
+
+        for nd in fe.Node.all():
+            for i in range(2):
+                Fg[nd.dof[i]] += nd.fixed_load[i]
+
+        # Determine fixed degrees of freedom
+        dof = [False for _ in Fg]
+
+        for nd in fe.Node.all():
+            for dofi, fdofi in zip(nd.dof, nd.is_dof_fixed):
+                dof[dofi] = not fdofi
+
+        # Solve FEM linear matrix equation
+        if any(dof):
+            Ug[np.ix_(dof)] = np.linalg.solve(Kg[np.ix_(dof, dof)], Fg[np.ix_(dof)])
+
+        substructure.FlexibleSubstructure.res = np.max(np.abs(Ug))
+
+        Ug *= self.config.solver.relax_FEM
+        Ug *= np.min([self.config.solver.max_FEM_disp / np.max(Ug), 1.0])
+
+        for nd in fe.Node.all():
+            nd.move_coordinates(Ug[nd.dof[0], 0], Ug[nd.dof[1], 0])
+
+        for ss in flexible_substructures:
+            ss.update_geometry()
+
     def update_substructure_positions(self) -> None:
         """Update the positions of all substructures."""
-        substructure.FlexibleSubstructure.update_all(self)
+        self.update_flexible_substructure_positions()
         for ss in self.substructures:
             logger.info(f"Updating position for substructure: {ss.name}")
             if isinstance(ss, substructure.RigidSubstructure):
