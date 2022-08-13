@@ -530,7 +530,7 @@ class FlexibleSubstructure(Substructure):
     def update_all(cls, rigid_body: "RigidBody") -> None:
         # TODO: This functionality should be moved to the rigid body
 
-        num_dof = fe.Node.count() * NUM_DIM
+        num_dof = len(fe.Node.all()) * NUM_DIM
         Kg = np.zeros((num_dof, num_dof))
         Fg = np.zeros((num_dof, 1))
         Ug = np.zeros((num_dof, 1))
@@ -594,15 +594,12 @@ class FlexibleSubstructure(Substructure):
         assert self.U is not None
         return np.max(np.abs(self.U))
 
-    def initialize_matrices(self) -> None:
-        num_dof = fe.Node.count() * NUM_DIM
-        self.K = np.zeros((num_dof, num_dof))
-        self.F = np.zeros((num_dof, 1))
-        self.U = np.zeros((num_dof, 1))
-
     def assemble_global_stiffness_and_force(self) -> None:
         if self.K is None or self.F is None:
-            self.initialize_matrices()
+            num_dof = len(fe.Node.all()) * NUM_DIM
+            self.K = np.zeros((num_dof, num_dof))
+            self.F = np.zeros((num_dof, 1))
+            self.U = np.zeros((num_dof, 1))
         else:
             self.K *= 0
             self.F *= 0
