@@ -133,8 +133,14 @@ class FSIFigure:
         end_pts = np.array([self.config.plotting.x_fs_min, self.config.plotting.x_fs_max])
         self.lineFSi.set_data(end_pts, self.config.flow.waterline_height * np.ones_like(end_pts))
 
+    def plot_structure(self):
+        """Plot the structure."""
+        for body in self.solid.rigid_bodies:
+            for struct in body.substructures:
+                struct.plot()
+
     def update(self) -> None:
-        self.solid.plot()
+        self.plot_structure()
         self.plot_free_surface()
         self.TXT.set_text(
             "\n".join(

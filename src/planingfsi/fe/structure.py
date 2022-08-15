@@ -175,13 +175,6 @@ class StructuralSolver:
             for ss in bd.substructures:
                 ss.write_coordinates()
 
-    def plot(self) -> None:
-        """Plot the results."""
-        # TODO: Move to figure module
-        for body in self.rigid_bodies:
-            for struct in body.substructures:
-                struct.plot()
-
     def _load_mesh_from_object(self, mesh: Mesh) -> None:
         """Load a mesh from an existing object."""
         for pt in mesh.points:
