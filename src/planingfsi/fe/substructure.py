@@ -266,6 +266,7 @@ class Substructure(abc.ABC):
         )
         for xx, yy, nd in zip(x, y, self.node):
             nd.set_coordinates(xx, yy)
+        self.update_geometry()
 
     def update_fluid_forces(self) -> None:
         fluid_s: list[float] = []

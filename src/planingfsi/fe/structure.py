@@ -167,7 +167,6 @@ class StructuralSolver:
             bd.load_motion()
             for ss in bd.substructures:
                 ss.load_coordinates()
-                ss.update_geometry()
 
     def write_results(self) -> None:
         """Write the results to file."""
