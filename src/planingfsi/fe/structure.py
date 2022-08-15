@@ -155,7 +155,7 @@ class StructuralSolver:
                 bd.update_position()
                 bd.update_substructure_positions()
 
-    def get_residual(self) -> None:
+    def store_residual(self) -> None:
         """Calculate the residual."""
         self.residual = max((bd.residual for bd in self.rigid_bodies), default=0.0)
 
