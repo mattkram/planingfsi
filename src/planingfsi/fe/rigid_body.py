@@ -212,6 +212,14 @@ class RigidBody:
         return self.parent.simulation.ramp
 
     @property
+    def residual(self) -> float:
+        """The combined max residual of lift, moment, and structural node displacement."""
+        res_l = self.res_l if self.free_in_draft else 0.0
+        res_m = self.res_m if self.free_in_trim else 0.0
+        res_node_disp = self.flexible_substructure_residual
+        return max((res_l, res_m, res_node_disp))
+
+    @property
     def free_in_draft(self) -> bool:
         return self.free_dof[0]
 

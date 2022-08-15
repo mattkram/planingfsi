@@ -157,17 +157,7 @@ class StructuralSolver:
 
     def get_residual(self) -> None:
         """Calculate the residual."""
-        self.residual = 0.0
-        for bd in self.rigid_bodies:
-            if any(bd.free_dof):
-                self.residual = np.max(
-                    [
-                        np.abs(bd.res_l),
-                        np.abs(bd.res_m),
-                        self.residual,
-                    ]
-                )
-            self.residual = np.max([bd.flexible_substructure_residual, self.residual])
+        self.residual = max((bd.residual for bd in self.rigid_bodies), default=0.0)
 
     def _load_response(self) -> None:
         """Load the response from files."""
