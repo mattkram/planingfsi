@@ -193,6 +193,7 @@ class RigidBody:
         else:
             self.get_disp = lambda: np.array((0.0, 0.0))
 
+        self.flexible_substructure_residual = 0.0
         self.substructures: list["substructure.Substructure"] = []
         self._nodes: list[fe.Node] = []
 
@@ -327,7 +328,7 @@ class RigidBody:
         if any(dof):
             Ug[np.ix_(dof)] = np.linalg.solve(Kg[np.ix_(dof, dof)], Fg[np.ix_(dof)])
 
-        substructure.FlexibleSubstructure.res = np.max(np.abs(Ug))
+        self.flexible_substructure_residual = np.max(np.abs(Ug))
 
         Ug *= self.config.solver.relax_FEM
         Ug *= np.min([self.config.solver.max_FEM_disp / np.max(Ug), 1.0])
