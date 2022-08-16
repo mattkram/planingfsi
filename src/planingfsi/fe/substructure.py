@@ -525,10 +525,6 @@ class FlexibleSubstructure(Substructure):
     is_free = True
     _element_type: ClassVar[type[fe.Element]] = fe.TrussElement
 
-    @classmethod
-    def all(cls):
-        return cls.__all
-
     def __init__(
         self,
         *,
