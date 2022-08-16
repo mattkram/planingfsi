@@ -19,7 +19,7 @@ class Node:
 
     Attributes:
         coordinates: An array of (x, y) coordinates representing the nodal location.
-        is_dof_fixed: A length-two list corresponding to whether the node is fixed in (x, y), respectively.
+        is_dof_fixed: A length-two tuple corresponding to whether the node is fixed in (x, y), respectively.
         fixed_load: An array of (x, y) external forces to apply to the node.
 
     """
@@ -27,14 +27,15 @@ class Node:
     def __init__(
         self,
         coordinates: np.ndarray,
+        *,
         is_dof_fixed: Iterable[bool] | None = None,
         fixed_load: np.ndarray | None = None,
     ) -> None:
         self.coordinates = np.array(coordinates, dtype=np.float64)
         if is_dof_fixed is not None:
-            self.is_dof_fixed = [bool(dof) for dof in is_dof_fixed]
+            self.is_dof_fixed = tuple(bool(dof) for dof in is_dof_fixed)
         else:
-            self.is_dof_fixed = [False] * NUM_DIM
+            self.is_dof_fixed = tuple([False] * NUM_DIM)
         self.fixed_load = np.array(fixed_load) if fixed_load is not None else np.zeros(NUM_DIM)
 
     @property

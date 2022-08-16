@@ -593,8 +593,7 @@ class RigidSubstructure(Substructure):
     def set_fixed_dof(self) -> None:
         """Set all degrees of freedom of all nodes in the substructure."""
         for nd in self.node:
-            for j in range(NUM_DIM):
-                nd.is_dof_fixed[j] = True
+            nd.is_dof_fixed = tuple(True for _ in range(NUM_DIM))
 
 
 class TorsionalSpringSubstructure(FlexibleSubstructure, RigidSubstructure):
