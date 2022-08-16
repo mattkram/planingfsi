@@ -175,7 +175,7 @@ class StructuralSolver:
     def _load_mesh_from_object(self, mesh: Mesh) -> None:
         """Load a mesh from an existing object."""
         for pt in mesh.points:
-            nd = Node()
+            nd = Node(node_num=len(self.nodes))
             self.nodes.append(nd)
             nd.set_coordinates(pt.position[0], pt.position[1])
             nd.is_dof_fixed[:] = pt.is_dof_fixed
@@ -196,7 +196,7 @@ class StructuralSolver:
         fixed_dofs = np.loadtxt(mesh_dir / "fixedDOF.txt")
         loads = np.loadtxt(mesh_dir / "fixedLoad.txt")
         for c, fixed_dof, load in zip(coords, fixed_dofs, loads):
-            nd = Node()
+            nd = Node(node_num=len(self.nodes))
             self.nodes.append(nd)
             nd.set_coordinates(*c)
             nd.is_dof_fixed[:] = map(bool, fixed_dof)

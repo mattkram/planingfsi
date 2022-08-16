@@ -15,12 +15,8 @@ if TYPE_CHECKING:
 
 
 class Node:
-    __all: list["Node"] = []
-
-    def __init__(self) -> None:
-        self.node_num = len(Node.__all)
-        Node.__all.append(self)
-
+    def __init__(self, node_num: int) -> None:
+        self.node_num = node_num
         self.x = 0.0
         self.y = 0.0
         self.dof = [self.node_num * NUM_DIM + i for i in [0, 1]]
