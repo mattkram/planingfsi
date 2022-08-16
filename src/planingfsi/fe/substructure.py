@@ -541,8 +541,9 @@ class FlexibleSubstructure(Substructure):
         assert self.K is not None
         assert self.F is not None
         K, F = el.get_stiffness_and_force()
-        self.K[np.ix_(el.dof, el.dof)] += K
-        self.F[np.ix_(el.dof)] += F
+        el_dof = [dof for nd in el.nodes for dof in self.parent.parent.node_dofs[nd]]
+        self.K[np.ix_(el_dof, el_dof)] += K
+        self.F[np.ix_(el_dof)] += F
 
     #  def getPtDispFEM(self):
     # if self.K is None:

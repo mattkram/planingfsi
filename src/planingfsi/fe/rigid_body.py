@@ -253,7 +253,7 @@ class RigidBody:
         if not self._nodes:
             for ss in self.substructures:
                 for nd in ss.node:
-                    if not any(n.node_num == nd.node_num for n in self._nodes):
+                    if nd in self._nodes:
                         self._nodes.append(nd)
         return self._nodes
 
@@ -322,14 +322,16 @@ class RigidBody:
             Fg += ss.F
 
         for nd in self.parent.nodes:
+            node_dof = self.parent.node_dofs[nd]
             for i in range(2):
-                Fg[nd.dof[i]] += nd.fixed_load[i]
+                Fg[node_dof[i]] += nd.fixed_load[i]
 
         # Determine fixed degrees of freedom
         dof = [False for _ in Fg]
 
         for nd in self.parent.nodes:
-            for dofi, fdofi in zip(nd.dof, nd.is_dof_fixed):
+            node_dof = self.parent.node_dofs[nd]
+            for dofi, fdofi in zip(node_dof, nd.is_dof_fixed):
                 dof[dofi] = not fdofi
 
         # Solve FEM linear matrix equation
@@ -342,7 +344,8 @@ class RigidBody:
         Ug *= np.min([self.config.solver.max_FEM_disp / np.max(Ug), 1.0])
 
         for nd in self.parent.nodes:
-            nd.move(Ug[nd.dof[0], 0], Ug[nd.dof[1], 0])
+            node_dof = self.parent.node_dofs[nd]
+            nd.move(Ug[node_dof[0], 0], Ug[node_dof[1], 0])
 
         for ss in flexible_substructures:
             ss.update_geometry()

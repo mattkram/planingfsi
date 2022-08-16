@@ -7,6 +7,7 @@ from typing import Any
 import numpy as np
 
 from planingfsi import logger
+from planingfsi.config import NUM_DIM
 from planingfsi.config import Config
 from planingfsi.fe.felib import Node
 from planingfsi.fe.femesh import Mesh
@@ -28,6 +29,7 @@ class StructuralSolver:
         rigid_bodies: A list of all `RigidBody` instances in the simulation.
         residual: The current residual of the structural solver.
         nodes: A list of all nodes in the mesh.
+        node_dofs: A mapping of node to the indices for that node in the global matrices.
 
     """
 
@@ -36,6 +38,7 @@ class StructuralSolver:
         self.rigid_bodies: list[RigidBody] = []
         self.residual = 1.0  # TODO: Can this be a property instead?
         self.nodes: list[Node] = []
+        self.node_dofs: dict[Node, list[int]] = {}
 
     @property
     def config(self) -> Config:
@@ -175,10 +178,12 @@ class StructuralSolver:
     def _load_mesh_from_object(self, mesh: Mesh) -> None:
         """Load a mesh from an existing object."""
         for pt in mesh.points:
-            nd = Node(coordinates=pt.position, node_num=len(self.nodes))
+            nd = Node(coordinates=pt.position)
             nd.is_dof_fixed[:] = pt.is_dof_fixed
             nd.fixed_load[:] = pt.fixed_load
+            node_num = len(self.nodes)  # Needs to be before we append the node
             self.nodes.append(nd)
+            self.node_dofs[nd] = [node_num * NUM_DIM + i for i in [0, 1]]
 
         for struct in self.substructures:
             # Find submesh with same name as substructure
@@ -195,10 +200,12 @@ class StructuralSolver:
         fixed_dofs = np.loadtxt(mesh_dir / "fixedDOF.txt")
         loads = np.loadtxt(mesh_dir / "fixedLoad.txt")
         for c, fixed_dof, load in zip(coords, fixed_dofs, loads):
-            nd = Node(coordinates=c, node_num=len(self.nodes))
+            nd = Node(coordinates=c)
             nd.is_dof_fixed[:] = map(bool, fixed_dof)
             nd.fixed_load[:] = load
+            node_num = len(self.nodes)  # Needs to be before we append the node
             self.nodes.append(nd)
+            self.node_dofs[nd] = [node_num * NUM_DIM + i for i in [0, 1]]
 
         for struct in self.substructures:
             struct.load_mesh(mesh_dir)

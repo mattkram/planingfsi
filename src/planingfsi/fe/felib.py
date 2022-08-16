@@ -18,16 +18,13 @@ class Node:
 
     Attributes:
         coordinates: An array of (x, y) coordinates representing the nodal location.
-        dof: A list of degree-of-freedom indices within the global stiffness matrix.
         is_dof_fixed: A length-two list corresponding to whether the node is fixed in (x, y), respectively.
         fixed_load: An array of (x, y) external forces to apply to the node.
 
     """
 
-    def __init__(self, coordinates: np.ndarray, *, node_num: int | None = None) -> None:
+    def __init__(self, coordinates: np.ndarray) -> None:
         self.coordinates = np.array(coordinates, dtype=np.float64)
-        self.node_num = node_num
-        self.dof = [self.node_num * NUM_DIM + i for i in [0, 1]]
         self.is_dof_fixed = [True] * NUM_DIM
         self.fixed_load = np.zeros(NUM_DIM)
 
@@ -56,7 +53,6 @@ class Element(abc.ABC):
     """A generic element.
 
     Attributes:
-        dof: A list of the degrees of freedom in the global array for the start and end nodes (length 4).
         initial_length: The initial length of the element, i.e. distance between Nodes.
         qp: The external forces applied in the perpendicular direction.
         qs: The external forces applied in the shear direction.
@@ -67,7 +63,6 @@ class Element(abc.ABC):
 
     def __init__(self, parent: Substructure | None = None):
         self._nodes: list[Node] = []
-        self.dof: list[int] = []
         self.initial_length: float | None = None
         self.init_pos: list[np.ndarray] = []
         self.qp = np.zeros((2,))
@@ -94,7 +89,6 @@ class Element(abc.ABC):
     @nodes.setter
     def nodes(self, node_list: list[Node]) -> None:
         self.nodes[:] = node_list
-        self.dof[:] = [dof for nd in self.nodes for dof in nd.dof]
         self.initial_length = self.length
         self.init_pos[:] = [nd.coordinates for nd in self.nodes]
 
