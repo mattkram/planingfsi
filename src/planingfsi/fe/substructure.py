@@ -265,7 +265,7 @@ class Substructure(abc.ABC):
             unpack=True,
         )
         for xx, yy, nd in zip(x, y, self.node):
-            nd.set_coordinates(xx, yy)
+            nd.coordinates = (xx, yy)
         self.update_geometry()
 
     def update_fluid_forces(self) -> None:
@@ -663,9 +663,9 @@ class TorsionalSpringSubstructure(FlexibleSubstructure, RigidSubstructure):
         super().load_mesh(submesh)
         self.set_fixed_dof()
         if self.base_pt_pct == 1.0:
-            self.base_pt = self.node[-1].get_coordinates()
+            self.base_pt = self.node[-1].coordinates
         elif self.base_pt_pct == 0.0:
-            self.base_pt = self.node[0].get_coordinates()
+            self.base_pt = self.node[0].coordinates
         else:
             self.base_pt = self.get_coordinates(self.base_pt_pct * self.arc_length)
 
@@ -899,11 +899,11 @@ class TorsionalSpringSubstructure(FlexibleSubstructure, RigidSubstructure):
             attNd = []
 
         #    basePt = np.array([c for c in self.basePt])
-        basePt = np.array([c for c in self.node[-1].get_coordinates()])
+        basePt = np.array([c for c in self.node[-1].coordinates])
         for nd in self.node + attNd:
-            oldPt = np.array([c for c in nd.get_coordinates()])
+            oldPt = np.array([c for c in nd.coordinates])
             newPt = trig.rotate_point(oldPt, basePt, -dTheta)
-            nd.set_coordinates(newPt[0], newPt[1])
+            nd.coordinates = newPt
 
         self.theta += dTheta
         self.residual = dTheta

@@ -177,7 +177,7 @@ class StructuralSolver:
         for pt in mesh.points:
             nd = Node(node_num=len(self.nodes))
             self.nodes.append(nd)
-            nd.set_coordinates(pt.position[0], pt.position[1])
+            nd.coordinates = pt.position
             nd.is_dof_fixed[:] = pt.is_dof_fixed
             nd.fixed_load[:] = pt.fixed_load
 
@@ -198,7 +198,7 @@ class StructuralSolver:
         for c, fixed_dof, load in zip(coords, fixed_dofs, loads):
             nd = Node(node_num=len(self.nodes))
             self.nodes.append(nd)
-            nd.set_coordinates(*c)
+            nd.coordinates = c
             nd.is_dof_fixed[:] = map(bool, fixed_dof)
             nd.fixed_load[:] = load
 

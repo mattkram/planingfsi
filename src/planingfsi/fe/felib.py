@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import abc
+from collections.abc import Iterable
 from typing import TYPE_CHECKING
 from typing import Any
 
@@ -23,16 +24,18 @@ class Node:
         self.is_dof_fixed = [True] * NUM_DIM
         self.fixed_load = np.zeros(NUM_DIM)
 
-    def set_coordinates(self, x: float, y: float) -> None:
-        self.x = x
-        self.y = y
+    @property
+    def coordinates(self) -> np.ndarray:
+        """A 2-d array of nodal coordinates."""
+        return np.array([self.x, self.y])
+
+    @coordinates.setter
+    def coordinates(self, value: Iterable[float]) -> None:
+        self.x, self.y = value
 
     def move_coordinates(self, dx: float, dy: float) -> None:
         self.x += dx
         self.y += dy
-
-    def get_coordinates(self) -> np.ndarray:
-        return np.array([self.x, self.y])
 
 
 class Element(abc.ABC):
@@ -85,7 +88,7 @@ class Element(abc.ABC):
         self.node = node_list
         self.dof = [dof for nd in self.node for dof in nd.dof]
         self.update_geometry()
-        self.init_pos = [np.array(nd.get_coordinates()) for nd in self.node]
+        self.init_pos = [nd.coordinates for nd in self.node]
 
     def update_geometry(self) -> None:
         # TODO: We can replace many of these with properties
