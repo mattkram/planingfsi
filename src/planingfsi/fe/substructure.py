@@ -589,7 +589,8 @@ class FlexibleSubstructure(Substructure):
     def set_element_properties(self) -> None:
         super().set_element_properties()
         for el in self.el:
-            el.set_properties(axialForce=-self.pretension, EA=self.EA)
+            el.initial_axial_force = -self.pretension
+            el.EA = self.EA
 
     def set_fixed_dof(self) -> None:
         pass

@@ -65,7 +65,7 @@ class Element(abc.ABC):
         self.lineEl0 = None
 
         self.axial_force: float | None = None
-        self.initial_axial_force: float | None = None
+        self._initial_axial_force: float | None = None
         self.EA: float | None = None
 
         self.init_pos: list[np.ndarray] = []
@@ -104,16 +104,14 @@ class Element(abc.ABC):
     def gamma(self) -> float:
         return trig.atand2(self.nodes[1].y - self.nodes[0].y, self.nodes[1].x - self.nodes[0].x)
 
-    def set_properties(self, **kwargs: Any) -> None:
-        axial_force = kwargs.get("axialForce")
-        EA = kwargs.get("EA")
+    @property
+    def initial_axial_force(self) -> float:
+        return self._initial_axial_force
 
-        if axial_force is not None:
-            self.axial_force = axial_force
-            self.initial_axial_force = axial_force
-
-        if EA is not None:
-            self.EA = EA
+    @initial_axial_force.setter
+    def initial_axial_force(self, value: float):
+        self._initial_axial_force = value
+        self.axial_force = value
 
     def update_geometry(self) -> None:
         pass
