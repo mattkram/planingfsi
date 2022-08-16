@@ -64,9 +64,6 @@ class Element(abc.ABC):
         self.lineEl = None
         self.lineEl0 = None
 
-        self.initial_axial_force: float | None = None
-        self.EA: float | None = None
-
         self.init_pos: list[np.ndarray] = []
 
         self.parent = parent
