@@ -16,6 +16,8 @@ if TYPE_CHECKING:
 
 
 class Node:
+    """A finite-element node, used to represent the end coordinates of truss elements."""
+
     def __init__(self, node_num: int) -> None:
         self.node_num = node_num
         self.x = 0.0
@@ -98,6 +100,7 @@ class Element(abc.ABC):
 
     @property
     def length(self) -> float:
+        """The element length, or Cartesian distance between nodes."""
         return np.linalg.norm(self.nodes[1].coordinates - self.nodes[0].coordinates)
 
     def plot(self) -> None:
@@ -117,12 +120,22 @@ class Element(abc.ABC):
 
 
 class TrussElement(Element):
+    """A truss element, used for large-deformation membrane structures.
+
+    Attributes:
+        initial_axial_force: The axial force in the element at the beginning of the simulation.
+            Used to apply pre-tension. This value is ramped up to avoid numerical instability.
+        EA: The axial stiffness of the element.
+
+    """
+
     def __init__(self, **kwargs: Any) -> None:
         super().__init__(**kwargs)
         self.initial_axial_force = 0.0
         self.EA = 0.0
 
     def get_stiffness_and_force(self) -> tuple[np.ndarray, np.ndarray]:
+        """The elemental stiffness matrix and force vector, in the global coordinate system."""
         # Stiffness matrices in local coordinates
         stiffness_linear_local = (
             np.array([[1, 0, -1, 0], [0, 0, 0, 0], [-1, 0, 1, 0], [0, 0, 0, 0]])
@@ -166,4 +179,4 @@ class TrussElement(Element):
 
 
 class RigidElement(Element):
-    pass
+    """A rigid element, which is not subject to deformation and is generally used for drawing."""
