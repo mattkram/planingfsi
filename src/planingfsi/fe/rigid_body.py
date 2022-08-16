@@ -304,7 +304,7 @@ class RigidBody:
             ss for ss in self.substructures if isinstance(ss, substructure.FlexibleSubstructure)
         ]
 
-        num_dof = len(fe.Node.all()) * NUM_DIM
+        num_dof = len(self.parent.nodes) * NUM_DIM
         Kg = np.zeros((num_dof, num_dof))
         Fg = np.zeros((num_dof, 1))
         Ug = np.zeros((num_dof, 1))
@@ -321,14 +321,14 @@ class RigidBody:
             Kg += ss.K
             Fg += ss.F
 
-        for nd in fe.Node.all():
+        for nd in self.parent.nodes:
             for i in range(2):
                 Fg[nd.dof[i]] += nd.fixed_load[i]
 
         # Determine fixed degrees of freedom
         dof = [False for _ in Fg]
 
-        for nd in fe.Node.all():
+        for nd in self.parent.nodes:
             for dofi, fdofi in zip(nd.dof, nd.is_dof_fixed):
                 dof[dofi] = not fdofi
 
@@ -341,7 +341,7 @@ class RigidBody:
         Ug *= self.config.solver.relax_FEM
         Ug *= np.min([self.config.solver.max_FEM_disp / np.max(Ug), 1.0])
 
-        for nd in fe.Node.all():
+        for nd in self.parent.nodes:
             nd.move_coordinates(Ug[nd.dof[0], 0], Ug[nd.dof[1], 0])
 
         for ss in flexible_substructures:

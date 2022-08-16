@@ -17,10 +17,6 @@ if TYPE_CHECKING:
 class Node:
     __all: list["Node"] = []
 
-    @classmethod
-    def all(cls) -> list["Node"]:
-        return list(cls.__all)
-
     def __init__(self) -> None:
         self.node_num = len(Node.__all)
         Node.__all.append(self)

@@ -551,7 +551,7 @@ class FlexibleSubstructure(Substructure):
 
     def assemble_global_stiffness_and_force(self) -> None:
         if self.K is None or self.F is None:
-            num_dof = len(fe.Node.all()) * NUM_DIM
+            num_dof = len(self.solver.nodes) * NUM_DIM
             self.K = np.zeros((num_dof, num_dof))
             self.F = np.zeros((num_dof, 1))
             self.U = np.zeros((num_dof, 1))
