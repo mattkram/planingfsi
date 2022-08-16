@@ -175,11 +175,10 @@ class StructuralSolver:
     def _load_mesh_from_object(self, mesh: Mesh) -> None:
         """Load a mesh from an existing object."""
         for pt in mesh.points:
-            nd = Node(node_num=len(self.nodes))
-            self.nodes.append(nd)
-            nd.coordinates = pt.position
+            nd = Node(coordinates=pt.position, node_num=len(self.nodes))
             nd.is_dof_fixed[:] = pt.is_dof_fixed
             nd.fixed_load[:] = pt.fixed_load
+            self.nodes.append(nd)
 
         for struct in self.substructures:
             # Find submesh with same name as substructure
@@ -196,11 +195,10 @@ class StructuralSolver:
         fixed_dofs = np.loadtxt(mesh_dir / "fixedDOF.txt")
         loads = np.loadtxt(mesh_dir / "fixedLoad.txt")
         for c, fixed_dof, load in zip(coords, fixed_dofs, loads):
-            nd = Node(node_num=len(self.nodes))
-            self.nodes.append(nd)
-            nd.coordinates = c
+            nd = Node(coordinates=c, node_num=len(self.nodes))
             nd.is_dof_fixed[:] = map(bool, fixed_dof)
             nd.fixed_load[:] = load
+            self.nodes.append(nd)
 
         for struct in self.substructures:
             struct.load_mesh(mesh_dir)

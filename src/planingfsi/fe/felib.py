@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import abc
-from collections.abc import Iterable
 from typing import TYPE_CHECKING
 from typing import Any
 
@@ -15,24 +14,32 @@ if TYPE_CHECKING:
 
 
 class Node:
-    """A finite-element node, used to represent the end coordinates of truss elements."""
+    """A finite-element node, used to represent the end coordinates of truss elements.
 
-    def __init__(self, node_num: int) -> None:
+    Attributes:
+        coordinates: An array of (x, y) coordinates representing the nodal location.
+        dof: A list of degree-of-freedom indices within the global stiffness matrix.
+        is_dof_fixed: A length-two list corresponding to whether the node is fixed in (x, y), respectively.
+        fixed_load: An array of (x, y) external forces to apply to the node.
+
+    """
+
+    def __init__(self, coordinates: np.ndarray, *, node_num: int | None = None) -> None:
+        self.coordinates = np.array(coordinates, dtype=np.float64)
         self.node_num = node_num
-        self.x = 0.0
-        self.y = 0.0
         self.dof = [self.node_num * NUM_DIM + i for i in [0, 1]]
         self.is_dof_fixed = [True] * NUM_DIM
         self.fixed_load = np.zeros(NUM_DIM)
 
     @property
-    def coordinates(self) -> np.ndarray:
-        """A 2-d array of nodal coordinates."""
-        return np.array([self.x, self.y])
+    def x(self) -> float:
+        """The x-coordinate."""
+        return self.coordinates[0]
 
-    @coordinates.setter
-    def coordinates(self, value: Iterable[float]) -> None:
-        self.x, self.y = value
+    @property
+    def y(self) -> float:
+        """The y-coordinate."""
+        return self.coordinates[1]
 
     def move(self, dx: float, dy: float) -> None:
         """Move the node by a given displacement in x & y directions.
@@ -42,8 +49,7 @@ class Node:
             dy: The displacement in y-direction.
 
         """
-        self.x += dx
-        self.y += dy
+        self.coordinates += np.array([dx, dy])
 
 
 class Element(abc.ABC):
