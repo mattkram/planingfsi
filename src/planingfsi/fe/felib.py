@@ -46,9 +46,17 @@ class Node:
 
 
 class Element(abc.ABC):
-    def __init__(self, parent: Substructure | None = None) -> None:
-        self.node: list[Node] = []
-        self.dof = [0] * NUM_DIM
+    """A generic element.
+
+    Attributes:
+        dof: A list of the degrees of freedom in the global array for the start and end nodes (length 4).
+
+
+    """
+
+    def __init__(self, parent: Substructure | None = None):
+        self._nodes: list[Node] = []
+        self.dof: list[int] = []
         self.length = 0.0
         self.initial_length: float | None = None
         self.qp = np.zeros((2,))
@@ -75,6 +83,22 @@ class Element(abc.ABC):
             return 1.0
         return self.parent.ramp
 
+    @property
+    def nodes(self) -> list[Node]:
+        """A list containing references to the start and end nodes.
+
+        When setting, the degrees of freedom and initial positions are stored.
+
+        """
+        return self._nodes
+
+    @nodes.setter
+    def nodes(self, node_list: list[Node]) -> None:
+        self.nodes[:] = node_list
+        self.dof[:] = [dof for nd in self.nodes for dof in nd.dof]
+        self.update_geometry()
+        self.init_pos[:] = [nd.coordinates for nd in self.nodes]
+
     def set_properties(self, **kwargs: Any) -> None:
         length = kwargs.get("length")
         axial_force = kwargs.get("axialForce")
@@ -91,16 +115,10 @@ class Element(abc.ABC):
         if EA is not None:
             self.EA = EA
 
-    def set_nodes(self, node_list: list[Node]) -> None:
-        self.node = node_list
-        self.dof = [dof for nd in self.node for dof in nd.dof]
-        self.update_geometry()
-        self.init_pos = [nd.coordinates for nd in self.node]
-
     def update_geometry(self) -> None:
         # TODO: We can replace many of these with properties
-        x = [nd.x for nd in self.node]
-        y = [nd.y for nd in self.node]
+        x = [nd.x for nd in self.nodes]
+        y = [nd.y for nd in self.nodes]
 
         self.length = ((x[1] - x[0]) ** 2 + (y[1] - y[0]) ** 2) ** 0.5
         if self.initial_length is None:
@@ -110,7 +128,7 @@ class Element(abc.ABC):
     def plot(self) -> None:
         # TODO: Move to plotting module
         if self.lineEl is not None and self.plot_on:
-            self.lineEl.set_data([nd.x for nd in self.node], [nd.y for nd in self.node])
+            self.lineEl.set_data([nd.x for nd in self.nodes], [nd.y for nd in self.nodes])
 
         if self.lineEl0 is not None and self.plot_on:
             base_pt = [self.parent.parent.xCofR0, self.parent.parent.yCofR0]
