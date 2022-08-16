@@ -18,10 +18,6 @@ class Node:
     __all: list["Node"] = []
 
     @classmethod
-    def get_index(cls, ind: int) -> "Node":
-        return cls.__all[ind]
-
-    @classmethod
     def all(cls) -> list["Node"]:
         return list(cls.__all)
 
