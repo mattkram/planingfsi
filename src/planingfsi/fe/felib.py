@@ -93,7 +93,7 @@ class Element(abc.ABC):
     def nodes(self, node_list: list[Node]) -> None:
         self.nodes[:] = node_list
         self.dof[:] = [dof for nd in self.nodes for dof in nd.dof]
-        self.update_geometry()
+        self.initial_length = self.length
         self.init_pos[:] = [nd.coordinates for nd in self.nodes]
 
     @property
@@ -116,9 +116,7 @@ class Element(abc.ABC):
             self.EA = EA
 
     def update_geometry(self) -> None:
-        # TODO: We can replace many of these with properties
-        if self.initial_length is None:
-            self.initial_length = self.length
+        pass
 
     def plot(self) -> None:
         # TODO: Move to plotting module
