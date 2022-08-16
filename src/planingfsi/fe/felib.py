@@ -3,6 +3,7 @@ from __future__ import annotations
 import abc
 from typing import TYPE_CHECKING
 from typing import Any
+from typing import Iterable
 
 import numpy as np
 
@@ -23,10 +24,18 @@ class Node:
 
     """
 
-    def __init__(self, coordinates: np.ndarray) -> None:
+    def __init__(
+        self,
+        coordinates: np.ndarray,
+        is_dof_fixed: Iterable[bool] | None = None,
+        fixed_load: np.ndarray | None = None,
+    ) -> None:
         self.coordinates = np.array(coordinates, dtype=np.float64)
-        self.is_dof_fixed = [True] * NUM_DIM
-        self.fixed_load = np.zeros(NUM_DIM)
+        if is_dof_fixed is not None:
+            self.is_dof_fixed = [bool(dof) for dof in is_dof_fixed]
+        else:
+            self.is_dof_fixed = [False] * NUM_DIM
+        self.fixed_load = np.array(fixed_load) if fixed_load is not None else np.zeros(NUM_DIM)
 
     @property
     def x(self) -> float:
