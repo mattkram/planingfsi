@@ -8,7 +8,6 @@ from typing import Any
 import numpy as np
 
 from planingfsi import logger
-from planingfsi import trig
 from planingfsi.config import NUM_DIM
 
 if TYPE_CHECKING:
@@ -102,21 +101,6 @@ class Element(abc.ABC):
     def length(self) -> float:
         """The element length, or Cartesian distance between nodes."""
         return np.linalg.norm(self.nodes[1].coordinates - self.nodes[0].coordinates)
-
-    def plot(self) -> None:
-        # TODO: Move to plotting module
-        if self.lineEl is not None:
-            self.lineEl.set_data([nd.x for nd in self.nodes], [nd.y for nd in self.nodes])
-
-        if self.lineEl0 is not None:
-            base_pt = [self.parent.parent.xCofR0, self.parent.parent.yCofR0]
-            pos = [
-                trig.rotate_point(pos, base_pt, self.parent.parent.trim)
-                - np.array([0, self.parent.parent.draft])
-                for pos in self.init_pos
-            ]
-            x, y = list(zip(*[[posi[i] for i in range(2)] for posi in pos]))
-            self.lineEl0.set_data(x, y)
 
 
 class TrussElement(Element):
