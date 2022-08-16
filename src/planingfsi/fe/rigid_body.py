@@ -282,7 +282,7 @@ class RigidBody:
             new_pos = trig.rotate_point(
                 np.array([xo, yo]), np.array([self.xCofR, self.yCofR]), trim_delta
             )
-            nd.move_coordinates(new_pos[0] - xo, new_pos[1] - yo - draft_delta)
+            nd.move(new_pos[0] - xo, new_pos[1] - yo - draft_delta)
 
         for s in self.substructures:
             s.update_geometry()
@@ -342,7 +342,7 @@ class RigidBody:
         Ug *= np.min([self.config.solver.max_FEM_disp / np.max(Ug), 1.0])
 
         for nd in self.parent.nodes:
-            nd.move_coordinates(Ug[nd.dof[0], 0], Ug[nd.dof[1], 0])
+            nd.move(Ug[nd.dof[0], 0], Ug[nd.dof[1], 0])
 
         for ss in flexible_substructures:
             ss.update_geometry()

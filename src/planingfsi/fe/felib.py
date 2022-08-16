@@ -33,7 +33,14 @@ class Node:
     def coordinates(self, value: Iterable[float]) -> None:
         self.x, self.y = value
 
-    def move_coordinates(self, dx: float, dy: float) -> None:
+    def move(self, dx: float, dy: float) -> None:
+        """Move the node by a given displacement in x & y directions.
+
+        Args:
+            dx: The displacement in x-direction.
+            dy: The displacement in y-direction.
+
+        """
         self.x += dx
         self.y += dy
 
