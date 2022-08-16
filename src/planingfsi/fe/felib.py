@@ -153,10 +153,10 @@ class TrussElement(Element):
 
         transformation_matrix = np.array([[c, s, 0, 0], [-s, c, 0, 0], [0, 0, c, s], [0, 0, -s, c]])
 
-        stiffness_total_global = np.dot(
-            np.dot(transformation_matrix.T, stiffness_total_local), transformation_matrix
+        stiffness_total_global = (
+            transformation_matrix.T @ stiffness_total_local @ transformation_matrix
         )
-        force_total_global = np.dot(transformation_matrix.T, force_total_local)
+        force_total_global = transformation_matrix.T @ force_total_local
 
         return stiffness_total_global, force_total_global
 
