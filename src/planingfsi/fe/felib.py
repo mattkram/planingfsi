@@ -50,7 +50,11 @@ class Element(abc.ABC):
 
     Attributes:
         dof: A list of the degrees of freedom in the global array for the start and end nodes (length 4).
-
+        initial_length: The initial length of the element, i.e. distance between Nodes.
+        qp: The external forces applied in the perpendicular direction.
+        qs: The external forces applied in the shear direction.
+        init_pos: The initial nodal coordinates.
+        parent: A reference to the parent substructure.
 
     """
 
