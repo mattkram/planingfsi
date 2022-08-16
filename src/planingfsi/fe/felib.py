@@ -113,6 +113,13 @@ class TrussElement(Element):
         self.initial_axial_force = 0.0
         self.EA = 0.0
 
+    @property
+    def axial_force(self) -> float:
+        """The axial force in the element due to extension/compression."""
+        return (1.0 - self.ramp) * self.initial_axial_force + self.EA * (
+            self.length - self.initial_length
+        ) / self.initial_length
+
     def get_stiffness_and_force(self) -> tuple[np.ndarray, np.ndarray]:
         """The elemental stiffness matrix and force vector, in the global coordinate system."""
         # Stiffness matrices in local coordinates
@@ -148,13 +155,6 @@ class TrussElement(Element):
         force_total_global = transformation_matrix.T @ force_total_local
 
         return stiffness_total_global, force_total_global
-
-    @property
-    def axial_force(self) -> float:
-        """The axial force in the element due to extension/compression."""
-        return (1.0 - self.ramp) * self.initial_axial_force + self.EA * (
-            self.length - self.initial_length
-        ) / self.initial_length
 
 
 class RigidElement(Element):
