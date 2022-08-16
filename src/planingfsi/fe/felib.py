@@ -57,7 +57,6 @@ class Element(abc.ABC):
     def __init__(self, parent: Substructure | None = None):
         self._nodes: list[Node] = []
         self.dof: list[int] = []
-        self.length = 0.0
         self.initial_length: float | None = None
         self.qp = np.zeros((2,))
         self.qs = np.zeros((2,))
@@ -98,17 +97,16 @@ class Element(abc.ABC):
         self.init_pos[:] = [nd.coordinates for nd in self.nodes]
 
     @property
+    def length(self) -> float:
+        return np.linalg.norm(self.nodes[1].coordinates - self.nodes[0].coordinates)
+
+    @property
     def gamma(self) -> float:
         return trig.atand2(self.nodes[1].y - self.nodes[0].y, self.nodes[1].x - self.nodes[0].x)
 
     def set_properties(self, **kwargs: Any) -> None:
-        length = kwargs.get("length")
         axial_force = kwargs.get("axialForce")
         EA = kwargs.get("EA")
-
-        if length is not None:
-            self.length = length
-            self.initial_length = length
 
         if axial_force is not None:
             self.axial_force = axial_force
@@ -119,7 +117,6 @@ class Element(abc.ABC):
 
     def update_geometry(self) -> None:
         # TODO: We can replace many of these with properties
-        self.length = np.linalg.norm(self.nodes[1].coordinates - self.nodes[0].coordinates)
         if self.initial_length is None:
             self.initial_length = self.length
 

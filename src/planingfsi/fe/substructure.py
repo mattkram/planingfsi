@@ -154,8 +154,6 @@ class Substructure(abc.ABC):
 
     def set_element_properties(self) -> None:
         """Set the properties of each element."""
-        for el in self.el:
-            el.set_properties(length=self.arc_length / len(self.el))
 
     def load_mesh(self, submesh: Path | Subcomponent = Path("mesh")) -> None:
         if isinstance(submesh, Subcomponent):
