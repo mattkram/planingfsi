@@ -69,7 +69,6 @@ class Element(abc.ABC):
         self.initial_axial_force: float | None = None
         self.EA: float | None = None
 
-        self.gamma = 0.0
         self.init_pos: list[np.ndarray] = []
 
         self.parent = parent
@@ -98,6 +97,10 @@ class Element(abc.ABC):
         self.update_geometry()
         self.init_pos[:] = [nd.coordinates for nd in self.nodes]
 
+    @property
+    def gamma(self) -> float:
+        return trig.atand2(self.nodes[1].y - self.nodes[0].y, self.nodes[1].x - self.nodes[0].x)
+
     def set_properties(self, **kwargs: Any) -> None:
         length = kwargs.get("length")
         axial_force = kwargs.get("axialForce")
@@ -116,13 +119,9 @@ class Element(abc.ABC):
 
     def update_geometry(self) -> None:
         # TODO: We can replace many of these with properties
-        x = [nd.x for nd in self.nodes]
-        y = [nd.y for nd in self.nodes]
-
-        self.length = ((x[1] - x[0]) ** 2 + (y[1] - y[0]) ** 2) ** 0.5
+        self.length = np.linalg.norm(self.nodes[1].coordinates - self.nodes[0].coordinates)
         if self.initial_length is None:
             self.initial_length = self.length
-        self.gamma = trig.atand2(y[1] - y[0], x[1] - x[0])
 
     def plot(self) -> None:
         # TODO: Move to plotting module
@@ -181,7 +180,7 @@ class TrussElement(Element):
         return stiffness_total_global, force_total_global
 
     def update_geometry(self) -> None:
-        Element.update_geometry(self)
+        super().update_geometry()
         assert self.initial_axial_force is not None
         assert self.initial_length is not None
         assert self.EA is not None
