@@ -100,10 +100,6 @@ class Element(abc.ABC):
     def length(self) -> float:
         return np.linalg.norm(self.nodes[1].coordinates - self.nodes[0].coordinates)
 
-    @property
-    def gamma(self) -> float:
-        return trig.atand2(self.nodes[1].y - self.nodes[0].y, self.nodes[1].x - self.nodes[0].x)
-
     def plot(self) -> None:
         # TODO: Move to plotting module
         if self.lineEl is not None:
@@ -149,7 +145,8 @@ class TrussElement(Element):
         force_total_local = force_linear_local + force_nonlinear_local
 
         # Rotate stiffness and force matrices into global coordinates
-        c, s = trig.cosd(self.gamma), trig.sind(self.gamma)
+        gamma = np.arctan2(self.nodes[1].y - self.nodes[0].y, self.nodes[1].x - self.nodes[0].x)
+        c, s = np.cos(gamma), np.sin(gamma)
 
         transformation_matrix = np.array([[c, s, 0, 0], [-s, c, 0, 0], [0, 0, c, s], [0, 0, -s, c]])
 
@@ -162,6 +159,7 @@ class TrussElement(Element):
 
     @property
     def axial_force(self) -> float:
+        """The axial force in the element due to extension/compression."""
         return (1.0 - self.ramp) * self.initial_axial_force + self.EA * (
             self.length - self.initial_length
         ) / self.initial_length
