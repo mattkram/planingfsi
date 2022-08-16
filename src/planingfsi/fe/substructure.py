@@ -596,8 +596,6 @@ class FlexibleSubstructure(Substructure):
         pass
 
     def update_geometry(self) -> None:
-        for el in self.el:
-            el.update_geometry()
         super().set_interp_function()
 
 

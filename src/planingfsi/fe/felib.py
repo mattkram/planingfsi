@@ -64,8 +64,7 @@ class Element(abc.ABC):
         self.lineEl = None
         self.lineEl0 = None
 
-        self.axial_force: float | None = None
-        self._initial_axial_force: float | None = None
+        self.initial_axial_force: float | None = None
         self.EA: float | None = None
 
         self.init_pos: list[np.ndarray] = []
@@ -103,18 +102,6 @@ class Element(abc.ABC):
     @property
     def gamma(self) -> float:
         return trig.atand2(self.nodes[1].y - self.nodes[0].y, self.nodes[1].x - self.nodes[0].x)
-
-    @property
-    def initial_axial_force(self) -> float:
-        return self._initial_axial_force
-
-    @initial_axial_force.setter
-    def initial_axial_force(self, value: float):
-        self._initial_axial_force = value
-        self.axial_force = value
-
-    def update_geometry(self) -> None:
-        pass
 
     def plot(self) -> None:
         # TODO: Move to plotting module
@@ -172,12 +159,9 @@ class TrussElement(Element):
 
         return stiffness_total_global, force_total_global
 
-    def update_geometry(self) -> None:
-        super().update_geometry()
-        assert self.initial_axial_force is not None
-        assert self.initial_length is not None
-        assert self.EA is not None
-        self.axial_force = (1.0 - self.ramp) * self.initial_axial_force + self.EA * (
+    @property
+    def axial_force(self) -> float:
+        return (1.0 - self.ramp) * self.initial_axial_force + self.EA * (
             self.length - self.initial_length
         ) / self.initial_length
 
