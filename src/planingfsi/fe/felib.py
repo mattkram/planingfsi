@@ -42,12 +42,7 @@ class Node:
 
 
 class Element(abc.ABC):
-    __all: list["Element"] = []
-
     def __init__(self, parent: Substructure | None = None) -> None:
-        self.element_num = len(Element.__all)
-        Element.__all.append(self)
-
         self.node: list[Node] = []
         self.dof = [0] * NUM_DIM
         self.length = 0.0
