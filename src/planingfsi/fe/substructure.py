@@ -490,35 +490,6 @@ class Substructure(abc.ABC):
     def update_geometry(self) -> None:
         self.set_interp_function()
 
-    def plot_pressure_profiles(self) -> None:
-        # TODO: Move to plotting directory
-        if self.line_fluid_pressure is not None:
-            self.line_fluid_pressure.set_data(
-                self.get_pressure_plot_points(self.fluidS, self.fluidP)
-            )
-        if self.line_air_pressure is not None:
-            self.line_air_pressure.set_data(self.get_pressure_plot_points(self.airS, self.airP))
-
-    def plot(self) -> None:
-        # TODO: Move to plotting module
-        for el in self.el:
-            if el.lineEl is not None:
-                el.lineEl.set_data([nd.x for nd in el.nodes], [nd.y for nd in el.nodes])
-
-            if el.lineEl0 is not None:
-                base_pt = np.array([el.parent.parent.xCofR0, el.parent.parent.yCofR0])
-                pos = [
-                    trig.rotate_point(pos, base_pt, el.parent.parent.trim)
-                    - np.array([0, el.parent.parent.draft])
-                    for pos in el.init_pos
-                ]
-                x, y = list(zip(*[[posi[i] for i in range(2)] for posi in pos]))
-                el.lineEl0.set_data(x, y)
-
-        #    for nd in [self.node[0],self.node[-1]]:
-        #      nd.plot()
-        self.plot_pressure_profiles()
-
     def set_attachments(self) -> None:
         return None
 

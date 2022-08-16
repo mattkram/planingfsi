@@ -63,14 +63,9 @@ class Element(abc.ABC):
         self._nodes: list[Node] = []
         self.dof: list[int] = []
         self.initial_length: float | None = None
+        self.init_pos: list[np.ndarray] = []
         self.qp = np.zeros((2,))
         self.qs = np.zeros((2,))
-
-        self.lineEl = None
-        self.lineEl0 = None
-
-        self.init_pos: list[np.ndarray] = []
-
         self.parent = parent
 
     @property

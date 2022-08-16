@@ -16,6 +16,7 @@ from planingfsi.config import Config
 if TYPE_CHECKING:
     from planingfsi.fe.rigid_body import RigidBody
     from planingfsi.fe.structure import StructuralSolver
+    from planingfsi.fe.substructure import Substructure
     from planingfsi.potentialflow.solver import PotentialPlaningSolver
     from planingfsi.simulation import Simulation
 
@@ -36,12 +37,15 @@ class FSIFigure:
         (self.lineFS,) = plt.plot([], [], "b-")
         (self.lineFSi,) = plt.plot([], [], "b--")
 
+        # Line handles for element initial and current positions
+        self.element_handles_0 = {}
+        self.element_handles = {}
         for struct in self.solid.substructures:
             (struct.line_air_pressure,) = plt.plot([], [], "g-")
             (struct.line_fluid_pressure,) = plt.plot([], [], "r-")
             for el in struct.el:
-                (el.lineEl0,) = plt.plot([], [], "k--")
-                (el.lineEl,) = plt.plot([], [], "k-", linewidth=2)
+                (self.element_handles_0[el],) = plt.plot([], [], "k--")
+                (self.element_handles[el],) = plt.plot([], [], "k-", linewidth=2)
 
         self.lineCofR: list["CofRPlot"] = []
         for bodies in self.solid.rigid_bodies:
@@ -132,11 +136,39 @@ class FSIFigure:
         end_pts = np.array([self.config.plotting.x_fs_min, self.config.plotting.x_fs_max])
         self.lineFSi.set_data(end_pts, self.config.flow.waterline_height * np.ones_like(end_pts))
 
+    @staticmethod
+    def plot_pressure_profiles(ss: Substructure) -> None:
+        # TODO: Move to plotting directory
+        if ss.line_fluid_pressure is not None:
+            ss.line_fluid_pressure.set_data(ss.get_pressure_plot_points(ss.fluidS, ss.fluidP))
+        if ss.line_air_pressure is not None:
+            ss.line_air_pressure.set_data(ss.get_pressure_plot_points(ss.airS, ss.airP))
+
+    def plot_substructure(self, ss: Substructure) -> None:
+        # TODO: Move to plotting module
+        for el in ss.el:
+            if handle := self.element_handles.get(el):
+                handle.set_data([nd.x for nd in el.nodes], [nd.y for nd in el.nodes])
+
+            if handle := self.element_handles_0.get(el):
+                base_pt = np.array([el.parent.parent.xCofR0, el.parent.parent.yCofR0])
+                pos = [
+                    trig.rotate_point(pos, base_pt, el.parent.parent.trim)
+                    - np.array([0, el.parent.parent.draft])
+                    for pos in el.init_pos
+                ]
+                x, y = list(zip(*[[posi[i] for i in range(2)] for posi in pos]))
+                handle.set_data(x, y)
+
+        #    for nd in [self.node[0],self.node[-1]]:
+        #      nd.plot()
+        self.plot_pressure_profiles(ss)
+
     def plot_structure(self):
         """Plot the structure."""
         for body in self.solid.rigid_bodies:
             for struct in body.substructures:
-                struct.plot()
+                self.plot_substructure(struct)
 
     def update(self) -> None:
         self.plot_structure()
