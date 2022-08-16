@@ -64,7 +64,6 @@ class Element(abc.ABC):
 
         self.lineEl = None
         self.lineEl0 = None
-        self.plot_on = True
 
         self.axial_force: float | None = None
         self.initial_axial_force: float | None = None
@@ -127,10 +126,10 @@ class Element(abc.ABC):
 
     def plot(self) -> None:
         # TODO: Move to plotting module
-        if self.lineEl is not None and self.plot_on:
+        if self.lineEl is not None:
             self.lineEl.set_data([nd.x for nd in self.nodes], [nd.y for nd in self.nodes])
 
-        if self.lineEl0 is not None and self.plot_on:
+        if self.lineEl0 is not None:
             base_pt = [self.parent.parent.xCofR0, self.parent.parent.yCofR0]
             pos = [
                 trig.rotate_point(pos, base_pt, self.parent.parent.trim)
