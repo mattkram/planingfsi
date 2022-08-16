@@ -69,8 +69,6 @@ class Substructure(abc.ABC):
         self._solver = solver
         self.parent = parent
 
-        self.line_fluid_pressure = None
-        self.line_air_pressure = None
         self.fluidS: np.ndarray | None = None
         self.fluidP: np.ndarray | None = None
         self.airS: np.ndarray | None = None
@@ -463,7 +461,7 @@ class Substructure(abc.ABC):
         return trig.rotate_vec_2d(trig.angd2vec2d(trig.atand2(dy_ds, dx_ds)), -90)
 
     def get_pressure_plot_points(self, s0: np.ndarray, p0: np.ndarray) -> Iterable[Iterable]:
-
+        """Get coordinates required to plot pressure profile as lines."""
         sp = [(s, p) for s, p in zip(s0, p0) if not np.abs(p) < 1e-4]
 
         if len(sp) > 0:

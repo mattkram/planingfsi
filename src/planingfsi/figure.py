@@ -40,9 +40,13 @@ class FSIFigure:
         # Line handles for element initial and current positions
         self.element_handles_0 = {}
         self.element_handles = {}
+
+        # Line handles for the air and fluid pressure profiles
+        self.line_air_pressure = {}
+        self.line_fluid_pressure = {}
         for struct in self.solid.substructures:
-            (struct.line_air_pressure,) = plt.plot([], [], "g-")
-            (struct.line_fluid_pressure,) = plt.plot([], [], "r-")
+            (self.line_air_pressure[struct],) = plt.plot([], [], "g-")
+            (self.line_fluid_pressure[struct],) = plt.plot([], [], "r-")
             for el in struct.el:
                 (self.element_handles_0[el],) = plt.plot([], [], "k--")
                 (self.element_handles[el],) = plt.plot([], [], "k-", linewidth=2)
@@ -136,16 +140,15 @@ class FSIFigure:
         end_pts = np.array([self.config.plotting.x_fs_min, self.config.plotting.x_fs_max])
         self.lineFSi.set_data(end_pts, self.config.flow.waterline_height * np.ones_like(end_pts))
 
-    @staticmethod
-    def plot_pressure_profiles(ss: Substructure) -> None:
-        # TODO: Move to plotting directory
-        if ss.line_fluid_pressure is not None:
-            ss.line_fluid_pressure.set_data(ss.get_pressure_plot_points(ss.fluidS, ss.fluidP))
-        if ss.line_air_pressure is not None:
-            ss.line_air_pressure.set_data(ss.get_pressure_plot_points(ss.airS, ss.airP))
+    def plot_pressure_profiles(self, ss: Substructure) -> None:
+        """Plot the internal and external pressure profiles as lines."""
+        if handle := self.line_fluid_pressure.get(ss):
+            handle.set_data(ss.get_pressure_plot_points(ss.fluidS, ss.fluidP))
+        if handle := self.line_air_pressure.get(ss):
+            handle.set_data(ss.get_pressure_plot_points(ss.airS, ss.airP))
 
     def plot_substructure(self, ss: Substructure) -> None:
-        # TODO: Move to plotting module
+        """Plot the substructure elements and pressure profiles."""
         for el in ss.el:
             if handle := self.element_handles.get(el):
                 handle.set_data([nd.x for nd in el.nodes], [nd.y for nd in el.nodes])
