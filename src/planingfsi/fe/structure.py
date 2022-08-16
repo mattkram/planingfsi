@@ -27,6 +27,7 @@ class StructuralSolver:
         simulation: A reference to the parent `Simulation` object.
         rigid_bodies: A list of all `RigidBody` instances in the simulation.
         residual: The current residual of the structural solver.
+        nodes: A list of all nodes in the mesh.
 
     """
 
@@ -34,6 +35,7 @@ class StructuralSolver:
         self.simulation = simulation
         self.rigid_bodies: list[RigidBody] = []
         self.residual = 1.0  # TODO: Can this be a property instead?
+        self.nodes: list[Node] = []
 
     @property
     def config(self) -> Config:
@@ -66,11 +68,6 @@ class StructuralSolver:
     def substructures(self) -> list[Substructure]:
         """A combined list of all substructures from all rigid bodies."""
         return [ss for body in self.rigid_bodies for ss in body.substructures]
-
-    @property
-    def nodes(self) -> list[Node]:
-        """A combined list of all nodes from all substructures."""
-        return [nd for ss in self.substructures for nd in ss.node]
 
     def add_rigid_body(
         self, dict_or_instance: dict[str, Any] | RigidBody | None = None
@@ -179,6 +176,7 @@ class StructuralSolver:
         """Load a mesh from an existing object."""
         for pt in mesh.points:
             nd = Node()
+            self.nodes.append(nd)
             nd.set_coordinates(pt.position[0], pt.position[1])
             nd.is_dof_fixed[:] = pt.is_dof_fixed
             nd.fixed_load[:] = pt.fixed_load
@@ -199,6 +197,7 @@ class StructuralSolver:
         loads = np.loadtxt(mesh_dir / "fixedLoad.txt")
         for c, fixed_dof, load in zip(coords, fixed_dofs, loads):
             nd = Node()
+            self.nodes.append(nd)
             nd.set_coordinates(*c)
             nd.is_dof_fixed[:] = map(bool, fixed_dof)
             nd.fixed_load[:] = load
