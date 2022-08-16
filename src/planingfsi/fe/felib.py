@@ -22,7 +22,6 @@ class Node:
         self.dof = [self.node_num * NUM_DIM + i for i in [0, 1]]
         self.is_dof_fixed = [True] * NUM_DIM
         self.fixed_load = np.zeros(NUM_DIM)
-        self.line_xy = None
 
     def set_coordinates(self, x: float, y: float) -> None:
         self.x = x
@@ -34,11 +33,6 @@ class Node:
 
     def get_coordinates(self) -> np.ndarray:
         return np.array([self.x, self.y])
-
-    def plot(self, _: str = None) -> None:
-        # TODO: Move to plotting module
-        if self.line_xy is not None:
-            self.line_xy.set_data(self.x, self.y)
 
 
 class Element(abc.ABC):

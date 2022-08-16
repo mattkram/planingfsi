@@ -31,8 +31,7 @@ class FSIFigure:
             plt.ion()
         self.geometry_ax = fig.add_axes([0.05, 0.6, 0.9, 0.35])
 
-        for nd in self.solid.nodes:
-            (nd.line_xy,) = plt.plot([], [], "ro")
+        (self.line_nodes,) = plt.plot([], [], "ko")
 
         (self.lineFS,) = plt.plot([], [], "b-")
         (self.lineFSi,) = plt.plot([], [], "b--")
