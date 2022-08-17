@@ -175,10 +175,13 @@ class Substructure(abc.ABC):
         self.node = [self.solver.nodes[i] for i in ndInd]
 
         self.set_interp_function()
-        self.el = [self._element_type(parent=self) for _ in nd_st]
+        self.el = [
+            self._element_type(
+                nodes=[self.solver.nodes[nd_st_i], self.solver.nodes[nd_end_i]], parent=self
+            )
+            for nd_st_i, nd_end_i in zip(nd_st, nd_end)
+        ]
         self.set_element_properties()
-        for ndSti, ndEndi, el in zip(nd_st, nd_end, self.el):
-            el.nodes = [self.solver.nodes[ndSti], self.solver.nodes[ndEndi]]
 
     def set_interp_function(self) -> None:
         self.node_arc_length = np.zeros(len(self.node))

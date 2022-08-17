@@ -73,10 +73,12 @@ class Element(abc.ABC):
 
     """
 
-    def __init__(self, parent: Substructure | None = None):
-        self._nodes: list[Node] = []
+    _nodes: list[Node]
+
+    def __init__(self, nodes: list[Node], *, parent: Substructure | None = None):
         self.initial_length: float | None = None
         self.init_pos: list[np.ndarray] = []
+        self.nodes = nodes
         self.qp = np.zeros((2,))
         self.qs = np.zeros((2,))
         self.parent = parent
@@ -100,7 +102,7 @@ class Element(abc.ABC):
 
     @nodes.setter
     def nodes(self, node_list: list[Node]) -> None:
-        self.nodes[:] = node_list
+        self._nodes = node_list
         self.initial_length = self.length
         self.init_pos[:] = [nd.coordinates for nd in self.nodes]
 
