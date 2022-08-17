@@ -67,8 +67,7 @@ class Element(abc.ABC):
     Attributes:
         start_node: The start node.
         end_node: The end node.
-        initial_length: The initial length of the element, i.e. distance between Nodes.
-        initial_coordinates: The initial nodal coordinates.
+        initial_length: The initial length of the element, i.e. distance between start & end node.
         qp: The external forces applied in the perpendicular direction.
         qs: The external forces applied in the shear direction.
         parent: A reference to the parent substructure.
@@ -79,10 +78,10 @@ class Element(abc.ABC):
         self.start_node = start_node
         self.end_node = end_node
         self.initial_length = self.length
-        self.initial_coordinates = [nd.coordinates for nd in self.nodes]
         self.qp = np.zeros(2)
         self.qs = np.zeros(2)
         self.parent = parent
+        self._initial_coordinates = [nd.coordinates for nd in self.nodes]  # save for plotting
 
     @property
     def nodes(self) -> tuple[Node, Node]:

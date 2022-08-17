@@ -57,8 +57,8 @@ class TestElement:
     def test_element_init(self, element):
         assert element.length == pytest.approx(1.0)
         assert element.initial_length == pytest.approx(1.0)
-        assert_array_equal(element.initial_coordinates[0], np.array([0.0, 0.0]))
-        assert_array_equal(element.initial_coordinates[1], np.array([1.0, 0.0]))
+        assert_array_equal(element._initial_coordinates[0], np.array([0.0, 0.0]))
+        assert_array_equal(element._initial_coordinates[1], np.array([1.0, 0.0]))
 
     def test_move_node(self, element):
         """When we move a node, the length changes, but initial length doesn't."""

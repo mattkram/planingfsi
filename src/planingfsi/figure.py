@@ -158,7 +158,7 @@ class FSIFigure:
                 pos = [
                     trig.rotate_point(pos, base_pt, el.parent.parent.trim)
                     - np.array([0, el.parent.parent.draft])
-                    for pos in el.initial_coordinates
+                    for pos in el._initial_coordinates
                 ]
                 x, y = list(zip(*[[posi[i] for i in range(2)] for posi in pos]))
                 handle.set_data(x, y)
