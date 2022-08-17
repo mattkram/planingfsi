@@ -73,12 +73,10 @@ class Element(abc.ABC):
 
     """
 
-    _nodes: list[Node]
-
     def __init__(self, nodes: list[Node], *, parent: Substructure | None = None):
-        self.initial_length: float | None = None
-        self.init_pos: list[np.ndarray] = []
-        self.nodes = nodes
+        self.nodes = list(nodes)
+        self.initial_length = self.length
+        self.init_pos = [nd.coordinates for nd in self.nodes]
         self.qp = np.zeros((2,))
         self.qs = np.zeros((2,))
         self.parent = parent
@@ -90,21 +88,6 @@ class Element(abc.ABC):
             logger.warning("No parent assigned, ramp will be set to 1.0.")
             return 1.0
         return self.parent.ramp
-
-    @property
-    def nodes(self) -> list[Node]:
-        """A list containing references to the start and end nodes.
-
-        When setting, the degrees of freedom and initial positions are stored.
-
-        """
-        return self._nodes
-
-    @nodes.setter
-    def nodes(self, node_list: list[Node]) -> None:
-        self._nodes = node_list
-        self.initial_length = self.length
-        self.init_pos[:] = [nd.coordinates for nd in self.nodes]
 
     @property
     def length(self) -> float:
