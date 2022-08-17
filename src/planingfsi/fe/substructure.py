@@ -182,10 +182,10 @@ class Substructure(abc.ABC):
             )
             for nd_st_i, nd_end_i in zip(nd_st, nd_end)
         ]
-        self.set_interp_function()
+        self.update_geometry()
         self.set_element_properties()
 
-    def set_interp_function(self) -> None:
+    def update_geometry(self) -> None:
         self.node_arc_length = np.zeros(len(self.nodes))
         for i, nd0, nd1 in zip(list(range(len(self.nodes) - 1)), self.nodes[:-1], self.nodes[1:]):
             self.node_arc_length[i + 1] = (
@@ -490,9 +490,6 @@ class Substructure(abc.ABC):
         else:
             return [], []
 
-    def update_geometry(self) -> None:
-        self.set_interp_function()
-
     def set_attachments(self) -> None:
         return None
 
@@ -581,9 +578,6 @@ class FlexibleSubstructure(Substructure):
 
     def set_fixed_dof(self) -> None:
         pass
-
-    def update_geometry(self) -> None:
-        super().set_interp_function()
 
 
 class RigidSubstructure(Substructure):
