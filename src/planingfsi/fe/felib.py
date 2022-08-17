@@ -66,9 +66,9 @@ class Element(abc.ABC):
 
     Attributes:
         initial_length: The initial length of the element, i.e. distance between Nodes.
+        initial_coordinates: The initial nodal coordinates.
         qp: The external forces applied in the perpendicular direction.
         qs: The external forces applied in the shear direction.
-        initial_coordinates: The initial nodal coordinates.
         parent: A reference to the parent substructure.
 
     """
