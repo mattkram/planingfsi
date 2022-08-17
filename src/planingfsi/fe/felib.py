@@ -77,8 +77,8 @@ class Element(abc.ABC):
         self.nodes = list(nodes)
         self.initial_length = self.length
         self.init_pos = [nd.coordinates for nd in self.nodes]
-        self.qp = np.zeros((2,))
-        self.qs = np.zeros((2,))
+        self.qp = np.zeros(2)
+        self.qs = np.zeros(2)
         self.parent = parent
 
     @property
