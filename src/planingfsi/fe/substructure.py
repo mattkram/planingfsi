@@ -650,8 +650,6 @@ class TorsionalSpringSubstructure(FlexibleSubstructure, RigidSubstructure):
         else:
             self.base_pt = self.get_coordinates(self.base_pt_pct * self.arc_length)
 
-        self.set_element_properties()
-
         self.set_angle(self.initial_angle)
 
     def set_attachments(self) -> None:
