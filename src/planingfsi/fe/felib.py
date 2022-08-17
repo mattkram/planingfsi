@@ -105,10 +105,10 @@ class TrussElement(Element):
 
     """
 
-    def __init__(self, **kwargs: Any) -> None:
+    def __init__(self, *, initial_axial_force: float = 0.0, EA: float = 0.0, **kwargs: Any):
         super().__init__(**kwargs)
-        self.initial_axial_force = 0.0
-        self.EA = 0.0
+        self.initial_axial_force = initial_axial_force
+        self.EA = EA
 
     @property
     def axial_force(self) -> float:
