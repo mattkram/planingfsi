@@ -183,16 +183,15 @@ class Substructure(abc.ABC):
         self.update_geometry()
         self.set_element_properties()
 
-        # Set the interpolation method if there are not enough elements
-        if len(self.elements) == 1:
-            self.struct_interp_type = "linear"
-        elif not self.struct_interp_type == "linear":
-            self.struct_interp_type = "quadratic"
-
     def update_geometry(self) -> None:
         """Update geometry and interpolation functions in the process."""
         element_lengths = [el.length for el in self.elements]
         self.node_arc_length = np.cumsum([0.0] + element_lengths)
+
+        if len(self.node_arc_length) == 2:
+            self.struct_interp_type = "linear"
+        elif len(self.node_arc_length) == 3 and not self.struct_interp_type == "linear":
+            self.struct_interp_type = "quadratic"
 
         nodal_coordinates = np.array([nd.coordinates for nd in self.nodes])
         self.interp_func_x, self.interp_func_y = (
