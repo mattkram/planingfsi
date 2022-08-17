@@ -49,7 +49,7 @@ class TestNode:
 def element() -> TrussElement:
     start_node = Node([0, 0])
     end_node = Node([1, 0])
-    element = TrussElement(nodes=[start_node, end_node], EA=1000.0)
+    element = TrussElement(start_node, end_node, EA=1000.0)
     return element
 
 
@@ -62,7 +62,7 @@ class TestElement:
 
     def test_move_node(self, element):
         """When we move a node, the length changes, but initial length doesn't."""
-        element.nodes[1].move(dx=1.0, dy=0.0)
+        element.end_node.move(dx=1.0, dy=0.0)
         assert element.length == pytest.approx(2.0)
         assert element.initial_length == pytest.approx(1.0)
 
@@ -70,5 +70,5 @@ class TestElement:
         assert element.ramp == pytest.approx(1.0)
 
     def test_axial_force(self, element):
-        element.nodes[1].move(dx=0.5, dy=0.0)
+        element.end_node.move(dx=0.5, dy=0.0)
         assert element.axial_force == pytest.approx(500.0)

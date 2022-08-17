@@ -155,8 +155,8 @@ class Substructure(abc.ABC):
     @property
     def nodes(self) -> list[fe.Node]:
         """A list of all nodes in the substructure."""
-        nodes = [el.nodes[0] for el in self.elements]
-        return nodes + [self.elements[-1].nodes[1]]
+        nodes = [el.start_node for el in self.elements]
+        return nodes + [self.elements[-1].end_node]
 
     def load_mesh(self, submesh: Path | Subcomponent = Path("mesh")) -> None:
         if isinstance(submesh, Subcomponent):
@@ -177,9 +177,7 @@ class Substructure(abc.ABC):
 
         # Generate Element list
         self.elements = [
-            self._element_type(
-                nodes=[self.solver.nodes[nd_st_i], self.solver.nodes[nd_end_i]], parent=self
-            )
+            self._element_type(self.solver.nodes[nd_st_i], self.solver.nodes[nd_end_i], parent=self)
             for nd_st_i, nd_end_i in zip(nd_st, nd_end)
         ]
         self.update_geometry()

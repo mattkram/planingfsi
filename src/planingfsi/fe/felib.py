@@ -65,6 +65,8 @@ class Element(abc.ABC):
     """A generic element.
 
     Attributes:
+        start_node: The start node.
+        end_node: The end node.
         initial_length: The initial length of the element, i.e. distance between Nodes.
         initial_coordinates: The initial nodal coordinates.
         qp: The external forces applied in the perpendicular direction.
@@ -73,13 +75,19 @@ class Element(abc.ABC):
 
     """
 
-    def __init__(self, nodes: list[Node], *, parent: Substructure | None = None):
-        self.nodes = list(nodes)
+    def __init__(self, start_node: Node, end_node: Node, *, parent: Substructure | None = None):
+        self.start_node = start_node
+        self.end_node = end_node
         self.initial_length = self.length
         self.initial_coordinates = [nd.coordinates for nd in self.nodes]
         self.qp = np.zeros(2)
         self.qs = np.zeros(2)
         self.parent = parent
+
+    @property
+    def nodes(self) -> tuple[Node, Node]:
+        """A tuple containing both nodes in the Element."""
+        return self.start_node, self.end_node
 
     @property
     def ramp(self) -> float:
@@ -92,7 +100,7 @@ class Element(abc.ABC):
     @property
     def length(self) -> float:
         """The element length, or Cartesian distance between nodes."""
-        return np.linalg.norm(self.nodes[1].coordinates - self.nodes[0].coordinates)
+        return np.linalg.norm(self.end_node.coordinates - self.start_node.coordinates)
 
 
 class RigidElement(Element):
@@ -109,8 +117,8 @@ class TrussElement(Element):
 
     """
 
-    def __init__(self, *, initial_axial_force: float = 0.0, EA: float = 0.0, **kwargs: Any):
-        super().__init__(**kwargs)
+    def __init__(self, *args, initial_axial_force: float = 0.0, EA: float = 0.0, **kwargs: Any):
+        super().__init__(*args, **kwargs)
         self.initial_axial_force = initial_axial_force
         self.EA = EA
 
@@ -145,7 +153,7 @@ class TrussElement(Element):
         force_total_local = force_linear_local + force_nonlinear_local
 
         # Rotate stiffness and force matrices into global coordinates
-        gamma = np.arctan2(self.nodes[1].y - self.nodes[0].y, self.nodes[1].x - self.nodes[0].x)
+        gamma = np.arctan2(self.end_node.y - self.start_node.y, self.end_node.x - self.start_node.x)
         c, s = np.cos(gamma), np.sin(gamma)
 
         transformation_matrix = np.array([[c, s, 0, 0], [-s, c, 0, 0], [0, 0, c, s], [0, 0, -s, c]])
