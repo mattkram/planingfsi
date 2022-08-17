@@ -192,21 +192,17 @@ class Substructure(abc.ABC):
             self.struct_interp_type = "quadratic"
 
     def update_geometry(self) -> None:
-        self.node_arc_length = np.zeros(len(self.nodes))
-        for i, nd0, nd1 in zip(list(range(len(self.nodes) - 1)), self.nodes[:-1], self.nodes[1:]):
-            self.node_arc_length[i + 1] = (
-                self.node_arc_length[i] + ((nd1.x - nd0.x) ** 2 + (nd1.y - nd0.y) ** 2) ** 0.5
-            )
+        """Update geometry and interpolation functions in the process."""
+        element_lengths = [0.0] + [el.length for el in self.elements]
+        self.node_arc_length = np.cumsum(element_lengths)
 
-        x, y = [np.array(xx) for xx in zip(*[(nd.x, nd.y) for nd in self.nodes])]
+        nodal_coordinates = np.array([nd.coordinates for nd in self.nodes])
         self.interp_func_x, self.interp_func_y = (
-            interp1d(self.node_arc_length, x),
-            interp1d(self.node_arc_length, y, kind=self.struct_interp_type),
+            interp1d(self.node_arc_length, nodal_coordinates[:, 0]),
+            interp1d(self.node_arc_length, nodal_coordinates[:, 1], kind=self.struct_interp_type),
         )
 
         if self.struct_extrap:
-            assert self.interp_func_x is not None
-            assert self.interp_func_y is not None
             self.interp_func_x, self.interp_func_y = self._extrap_coordinates(
                 self.interp_func_x, self.interp_func_y
             )
