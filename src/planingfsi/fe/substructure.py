@@ -74,9 +74,8 @@ class Substructure(abc.ABC):
         self.airS: np.ndarray | None = None
         self.airP: np.ndarray | None = None
         self.U: np.ndarray | None = None
-        self.node: list[fe.Node] = []
         self.el: list[fe.Element] = []
-        self.node_arc_length = np.zeros(len(self.node))
+        self.node_arc_length: np.ndarray | None = None
 
         self.D = 0.0
         self.L = 0.0
@@ -153,6 +152,12 @@ class Substructure(abc.ABC):
     def set_element_properties(self) -> None:
         """Set the properties of each element."""
 
+    @property
+    def node(self) -> list[fe.Node]:
+        """A list of all nodes in the substructure."""
+        nodes = [el.nodes[0] for el in self.el]
+        return nodes + [self.el[-1].nodes[1]]
+
     def load_mesh(self, submesh: Path | Subcomponent = Path("mesh")) -> None:
         if isinstance(submesh, Subcomponent):
             nd_st, nd_end = [], []
@@ -169,18 +174,15 @@ class Substructure(abc.ABC):
         else:
             nd_st = [int(nd) for nd in nd_st]
             nd_end = [int(nd) for nd in nd_end]
-        ndInd = nd_st + [nd_end[-1]]
 
         # Generate Element list
-        self.node = [self.solver.nodes[i] for i in ndInd]
-
-        self.set_interp_function()
         self.el = [
             self._element_type(
                 nodes=[self.solver.nodes[nd_st_i], self.solver.nodes[nd_end_i]], parent=self
             )
             for nd_st_i, nd_end_i in zip(nd_st, nd_end)
         ]
+        self.set_interp_function()
         self.set_element_properties()
 
     def set_interp_function(self) -> None:
