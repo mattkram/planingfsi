@@ -68,7 +68,7 @@ class Element(abc.ABC):
         initial_length: The initial length of the element, i.e. distance between Nodes.
         qp: The external forces applied in the perpendicular direction.
         qs: The external forces applied in the shear direction.
-        init_pos: The initial nodal coordinates.
+        initial_coordinates: The initial nodal coordinates.
         parent: A reference to the parent substructure.
 
     """
@@ -76,7 +76,7 @@ class Element(abc.ABC):
     def __init__(self, nodes: list[Node], *, parent: Substructure | None = None):
         self.nodes = list(nodes)
         self.initial_length = self.length
-        self.init_pos = [nd.coordinates for nd in self.nodes]
+        self.initial_coordinates = [nd.coordinates for nd in self.nodes]
         self.qp = np.zeros(2)
         self.qs = np.zeros(2)
         self.parent = parent
