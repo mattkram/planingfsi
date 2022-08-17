@@ -95,6 +95,10 @@ class Element(abc.ABC):
         return np.linalg.norm(self.nodes[1].coordinates - self.nodes[0].coordinates)
 
 
+class RigidElement(Element):
+    """A rigid element, which is not subject to deformation and is generally used for drawing."""
+
+
 class TrussElement(Element):
     """A truss element, used for large-deformation membrane structures.
 
@@ -152,7 +156,3 @@ class TrussElement(Element):
         force_total_global = transformation_matrix.T @ force_total_local
 
         return stiffness_total_global, force_total_global
-
-
-class RigidElement(Element):
-    """A rigid element, which is not subject to deformation and is generally used for drawing."""
