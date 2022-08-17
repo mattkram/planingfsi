@@ -252,7 +252,7 @@ class RigidBody:
         """Get a list of all unique `Node`s from all component substructures."""
         if not self._nodes:
             for ss in self.substructures:
-                for nd in ss.node:
+                for nd in ss.nodes:
                     if nd in self._nodes:
                         self._nodes.append(nd)
         return self._nodes

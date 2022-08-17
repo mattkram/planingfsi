@@ -73,8 +73,8 @@ class FSIFigure:
                 )
             )
 
-        x = [nd.x for struct in self.solid.substructures for nd in struct.node]
-        y = [nd.y for struct in self.solid.substructures for nd in struct.node]
+        x = [nd.x for struct in self.solid.substructures for nd in struct.nodes]
+        y = [nd.y for struct in self.solid.substructures for nd in struct.nodes]
         xMin, xMax = min(x), max(x)
         yMin, yMax = min(y), max(y)
 

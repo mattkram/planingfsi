@@ -153,7 +153,7 @@ class Substructure(abc.ABC):
         """Set the properties of each element."""
 
     @property
-    def node(self) -> list[fe.Node]:
+    def nodes(self) -> list[fe.Node]:
         """A list of all nodes in the substructure."""
         nodes = [el.nodes[0] for el in self.el]
         return nodes + [self.el[-1].nodes[1]]
@@ -186,8 +186,8 @@ class Substructure(abc.ABC):
         self.set_element_properties()
 
     def set_interp_function(self) -> None:
-        self.node_arc_length = np.zeros(len(self.node))
-        for i, nd0, nd1 in zip(list(range(len(self.node) - 1)), self.node[:-1], self.node[1:]):
+        self.node_arc_length = np.zeros(len(self.nodes))
+        for i, nd0, nd1 in zip(list(range(len(self.nodes) - 1)), self.nodes[:-1], self.nodes[1:]):
             self.node_arc_length[i + 1] = (
                 self.node_arc_length[i] + ((nd1.x - nd0.x) ** 2 + (nd1.y - nd0.y) ** 2) ** 0.5
             )
@@ -197,7 +197,7 @@ class Substructure(abc.ABC):
         elif len(self.node_arc_length) == 3 and not self.struct_interp_type == "linear":
             self.struct_interp_type = "quadratic"
 
-        x, y = [np.array(xx) for xx in zip(*[(nd.x, nd.y) for nd in self.node])]
+        x, y = [np.array(xx) for xx in zip(*[(nd.x, nd.y) for nd in self.nodes])]
         self.interp_func_x, self.interp_func_y = (
             interp1d(self.node_arc_length, x),
             interp1d(self.node_arc_length, y, kind=self.struct_interp_type),
@@ -256,8 +256,8 @@ class Substructure(abc.ABC):
         """Write the coordinates to file"""
         writers.write_as_list(
             self.it_dir / f"coords_{self.name}.{self.config.io.data_format}",
-            ["x [m]", [nd.x for nd in self.node]],
-            ["y [m]", [nd.y for nd in self.node]],
+            ["x [m]", [nd.x for nd in self.nodes]],
+            ["y [m]", [nd.y for nd in self.nodes]],
         )
 
     def load_coordinates(self) -> None:
@@ -265,7 +265,7 @@ class Substructure(abc.ABC):
             str(self.it_dir / f"coords_{self.name}.{self.config.io.data_format}"),
             unpack=True,
         )
-        for xx, yy, nd in zip(x, y, self.node):
+        for xx, yy, nd in zip(x, y, self.nodes):
             nd.coordinates = (xx, yy)
         self.update_geometry()
 
@@ -597,7 +597,7 @@ class RigidSubstructure(Substructure):
 
     def set_fixed_dof(self) -> None:
         """Set all degrees of freedom of all nodes in the substructure."""
-        for nd in self.node:
+        for nd in self.nodes:
             nd.is_dof_fixed = tuple(True for _ in range(NUM_DIM))
 
 
@@ -646,9 +646,9 @@ class TorsionalSpringSubstructure(FlexibleSubstructure, RigidSubstructure):
         super().load_mesh(submesh)
         self.set_fixed_dof()
         if self.base_pt_pct == 1.0:
-            self.base_pt = self.node[-1].coordinates
+            self.base_pt = self.nodes[-1].coordinates
         elif self.base_pt_pct == 0.0:
-            self.base_pt = self.node[0].coordinates
+            self.base_pt = self.nodes[0].coordinates
         else:
             self.base_pt = self.get_coordinates(self.base_pt_pct * self.arc_length)
 
@@ -668,7 +668,7 @@ class TorsionalSpringSubstructure(FlexibleSubstructure, RigidSubstructure):
             self.attached_ind = -1
 
         if self.attached_node is None and self.attached_substructure is not None:
-            self.attached_node = self.attached_substructure.node[self.attached_ind]
+            self.attached_node = self.attached_substructure.nodes[self.attached_ind]
             self.attached_element = self.attached_substructure.el[self.attached_ind]
 
     def update_fluid_forces(self) -> None:
@@ -873,15 +873,15 @@ class TorsionalSpringSubstructure(FlexibleSubstructure, RigidSubstructure):
         dTheta = np.max([ang, self.minimum_angle]) - self.theta
 
         if self.attached_node is not None and not any(
-            [nd == self.attached_node for nd in self.node]
+            [nd == self.attached_node for nd in self.nodes]
         ):
             attNd = [self.attached_node]
         else:
             attNd = []
 
         #    basePt = np.array([c for c in self.basePt])
-        basePt = np.array([c for c in self.node[-1].coordinates])
-        for nd in self.node + attNd:
+        basePt = np.array([c for c in self.nodes[-1].coordinates])
+        for nd in self.nodes + attNd:
             oldPt = np.array([c for c in nd.coordinates])
             newPt = trig.rotate_point(oldPt, basePt, -dTheta)
             nd.coordinates = newPt
