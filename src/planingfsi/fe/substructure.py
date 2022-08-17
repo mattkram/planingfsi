@@ -74,7 +74,7 @@ class Substructure(abc.ABC):
         self.airS: np.ndarray | None = None
         self.airP: np.ndarray | None = None
         self.U: np.ndarray | None = None
-        self.el: list[fe.Element] = []
+        self.elements: list[fe.Element] = []
         self.node_arc_length: np.ndarray | None = None
 
         self.D = 0.0
@@ -155,8 +155,8 @@ class Substructure(abc.ABC):
     @property
     def nodes(self) -> list[fe.Node]:
         """A list of all nodes in the substructure."""
-        nodes = [el.nodes[0] for el in self.el]
-        return nodes + [self.el[-1].nodes[1]]
+        nodes = [el.nodes[0] for el in self.elements]
+        return nodes + [self.elements[-1].nodes[1]]
 
     def load_mesh(self, submesh: Path | Subcomponent = Path("mesh")) -> None:
         if isinstance(submesh, Subcomponent):
@@ -176,7 +176,7 @@ class Substructure(abc.ABC):
             nd_end = [int(nd) for nd in nd_end]
 
         # Generate Element list
-        self.el = [
+        self.elements = [
             self._element_type(
                 nodes=[self.solver.nodes[nd_st_i], self.solver.nodes[nd_end_i]], parent=self
             )
@@ -283,7 +283,7 @@ class Substructure(abc.ABC):
         if self.interpolator is not None:
             s_min, s_max = self.interpolator.get_min_max_s()
 
-        for i, el in enumerate(self.el):
+        for i, el in enumerate(self.elements):
             # Get pressure at end points and all fluid points along element
             node_s = [self.node_arc_length[i], self.node_arc_length[i + 1]]
             if self.interpolator is not None:
@@ -538,7 +538,7 @@ class FlexibleSubstructure(Substructure):
         else:
             self.K *= 0
             self.F *= 0
-        for el in self.el:
+        for el in self.elements:
             self.add_loads_from_element(el)
 
     def add_loads_from_element(self, el: "fe.Element") -> None:
@@ -575,7 +575,7 @@ class FlexibleSubstructure(Substructure):
 
     def set_element_properties(self) -> None:
         super().set_element_properties()
-        for el in self.el:
+        for el in self.elements:
             el.initial_axial_force = -self.pretension
             el.EA = self.EA
 
@@ -669,7 +669,7 @@ class TorsionalSpringSubstructure(FlexibleSubstructure, RigidSubstructure):
 
         if self.attached_node is None and self.attached_substructure is not None:
             self.attached_node = self.attached_substructure.nodes[self.attached_ind]
-            self.attached_element = self.attached_substructure.el[self.attached_ind]
+            self.attached_element = self.attached_substructure.elements[self.attached_ind]
 
     def update_fluid_forces(self) -> None:
         fluidS: list[float] = []
@@ -688,7 +688,7 @@ class TorsionalSpringSubstructure(FlexibleSubstructure, RigidSubstructure):
         if self.interpolator is not None:
             s_min, s_max = self.interpolator.get_min_max_s()
 
-        for i, el in enumerate(self.el):
+        for i, el in enumerate(self.elements):
             # Get pressure at end points and all fluid points along element
             node_s = [self.node_arc_length[i], self.node_arc_length[i + 1]]
             if self.interpolator is not None:

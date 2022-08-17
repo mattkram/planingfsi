@@ -47,7 +47,7 @@ class FSIFigure:
         for struct in self.solid.substructures:
             (self.line_air_pressure[struct],) = plt.plot([], [], "g-")
             (self.line_fluid_pressure[struct],) = plt.plot([], [], "r-")
-            for el in struct.el:
+            for el in struct.elements:
                 (self.element_handles_0[el],) = plt.plot([], [], "k--")
                 (self.element_handles[el],) = plt.plot([], [], "k-", linewidth=2)
 
@@ -149,7 +149,7 @@ class FSIFigure:
 
     def plot_substructure(self, ss: Substructure) -> None:
         """Plot the substructure elements and pressure profiles."""
-        for el in ss.el:
+        for el in ss.elements:
             if handle := self.element_handles.get(el):
                 handle.set_data([nd.x for nd in el.nodes], [nd.y for nd in el.nodes])
 
