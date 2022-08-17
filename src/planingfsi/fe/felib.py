@@ -36,7 +36,9 @@ class Node:
             self.is_dof_fixed = tuple(bool(dof) for dof in is_dof_fixed)
         else:
             self.is_dof_fixed = tuple([False] * NUM_DIM)
-        self.fixed_load = np.array(fixed_load) if fixed_load is not None else np.zeros(NUM_DIM)
+        self.fixed_load = (
+            np.array(fixed_load, dtype=np.float64) if fixed_load is not None else np.zeros(NUM_DIM)
+        )
 
     @property
     def x(self) -> float:

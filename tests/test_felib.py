@@ -29,3 +29,16 @@ class TestNode:
         node = Node(np.array([1.0, 2.0]))
         assert node.x == 1.0
         assert node.y == 2.0
+
+    def test_free_by_default(self):
+        node = Node(np.array([0, 0]))
+        assert node.is_dof_fixed == (False, False)
+
+    def test_fixed_load_is_float_array(self):
+        node = Node(np.array([0, 0]), fixed_load=[1, 2])
+        assert_array_equal(node.fixed_load, np.array([1.0, 2.0]))
+
+    def test_move_node(self):
+        node = Node(np.array([0, 0]))
+        node.move(4.0, 5.0)
+        assert_array_equal(node.coordinates, np.array([4.0, 5.0]))
