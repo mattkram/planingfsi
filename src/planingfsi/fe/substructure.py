@@ -191,8 +191,8 @@ class Substructure(abc.ABC):
 
     def update_geometry(self) -> None:
         """Update geometry and interpolation functions in the process."""
-        element_lengths = [0.0] + [el.length for el in self.elements]
-        self.node_arc_length = np.cumsum(element_lengths)
+        element_lengths = [el.length for el in self.elements]
+        self.node_arc_length = np.cumsum([0.0] + element_lengths)
 
         nodal_coordinates = np.array([nd.coordinates for nd in self.nodes])
         self.interp_func_x, self.interp_func_y = (
