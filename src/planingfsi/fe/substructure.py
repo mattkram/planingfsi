@@ -30,11 +30,15 @@ if TYPE_CHECKING:
     from planingfsi.potentialflow.pressurepatch import PressureCushion
 
 
+ElementType = ClassVar[type[fe.Element]]
+
+
 class Substructure(abc.ABC):
 
     _element_type: ClassVar[type[fe.Element]]
 
     is_free = False
+    _element_type: ElementType
 
     def __init__(
         self,
@@ -500,7 +504,7 @@ class Substructure(abc.ABC):
 class FlexibleSubstructure(Substructure):
 
     is_free = True
-    _element_type: ClassVar[type[fe.Element]] = fe.TrussElement
+    _element_type: ElementType = fe.TrussElement
 
     def __init__(
         self,
@@ -577,7 +581,7 @@ class FlexibleSubstructure(Substructure):
 
 
 class RigidSubstructure(Substructure):
-    _element_type: ClassVar[type[fe.Element]] = fe.RigidElement
+    _element_type: ElementType = fe.RigidElement
 
     def set_attachments(self) -> None:
         return None
@@ -594,7 +598,7 @@ class RigidSubstructure(Substructure):
 class TorsionalSpringSubstructure(FlexibleSubstructure, RigidSubstructure):
     base_pt: np.ndarray
     is_free = True
-    _element_type: ClassVar[type[fe.Element]] = fe.RigidElement
+    _element_type: ElementType = fe.RigidElement
 
     def __init__(
         self,
