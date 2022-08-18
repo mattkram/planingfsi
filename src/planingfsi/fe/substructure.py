@@ -57,7 +57,7 @@ class Substructure(abc.ABC):
         **_: Any,
     ):
         self.name = name
-        self.interpolator: Interpolator | None = None
+        self._interpolator: Interpolator | None = None
 
         self.external_pressure: float | None = None
         self.seal_pressure = seal_pressure
@@ -131,7 +131,7 @@ class Substructure(abc.ABC):
 
         """
         # Assign the same interpolator to both the substructure and planing_surface
-        planing_surface.interpolator = self.interpolator = Interpolator(
+        planing_surface.interpolator = self._interpolator = Interpolator(
             self, planing_surface, **kwargs
         )
         self.solver.simulation.fluid_solver.add_planing_surface(planing_surface)
@@ -280,14 +280,14 @@ class Substructure(abc.ABC):
         self.Da = 0.0
         self.La = 0.0
         self.Ma = 0.0
-        if self.interpolator is not None:
-            s_min, s_max = self.interpolator.get_min_max_s()
+        if self._interpolator is not None:
+            s_min, s_max = self._interpolator.get_min_max_s()
 
         for i, el in enumerate(self.elements):
             # Get pressure at end points and all fluid points along element
             node_s = [self.node_arc_length[i], self.node_arc_length[i + 1]]
-            if self.interpolator is not None:
-                s, pressure_fluid, tau = self.interpolator.get_loads_in_range(node_s[0], node_s[1])
+            if self._interpolator is not None:
+                s, pressure_fluid, tau = self._interpolator.get_loads_in_range(node_s[0], node_s[1])
                 # Limit pressure to be below stagnation pressure
                 if self.config.plotting.pressure_limiter:
                     pressure_fluid = np.min(
@@ -307,11 +307,11 @@ class Substructure(abc.ABC):
 
             ss = node_s[1]
             Pc = 0.0
-            if self.interpolator is not None:
+            if self._interpolator is not None:
                 if ss > s_max:
-                    Pc = self.interpolator.fluid.upstream_pressure
+                    Pc = self._interpolator.fluid.upstream_pressure
                 elif ss < s_min:
-                    Pc = self.interpolator.fluid.downstream_pressure
+                    Pc = self._interpolator.fluid.downstream_pressure
             elif self.cushion_pressure_type == "Total":
                 Pc = self.external_pressure or self.config.body.Pc
 
@@ -346,11 +346,11 @@ class Substructure(abc.ABC):
             pressure_cushion = np.zeros_like(s)
             Pc = 0.0
             for ii, ss in enumerate(s):
-                if self.interpolator is not None:
+                if self._interpolator is not None:
                     if ss > s_max:
-                        Pc = self.interpolator.fluid.upstream_pressure
+                        Pc = self._interpolator.fluid.upstream_pressure
                     elif ss < s_min:
-                        Pc = self.interpolator.fluid.downstream_pressure
+                        Pc = self._interpolator.fluid.downstream_pressure
                 elif self.cushion_pressure_type == "Total":
                     Pc = self.config.body.Pc
 
@@ -430,10 +430,10 @@ class Substructure(abc.ABC):
                 self.L += math_helpers.integrate(s, np.array(list(zip(*f))[1]))
                 self.M += math_helpers.integrate(s, np.array(m))
             else:
-                if self.interpolator is not None:
-                    self.D = self.interpolator.fluid.drag_total
-                    self.L = self.interpolator.fluid.lift_total
-                    self.M = self.interpolator.fluid.moment_total
+                if self._interpolator is not None:
+                    self.D = self._interpolator.fluid.drag_total
+                    self.L = self._interpolator.fluid.lift_total
+                    self.M = self._interpolator.fluid.moment_total
 
             integrand = pressure_cushion
 
@@ -679,14 +679,14 @@ class TorsionalSpringSubstructure(FlexibleSubstructure, RigidSubstructure):
         self.Da = 0.0
         self.La = 0.0
         self.Ma = 0.0
-        if self.interpolator is not None:
-            s_min, s_max = self.interpolator.get_min_max_s()
+        if self._interpolator is not None:
+            s_min, s_max = self._interpolator.get_min_max_s()
 
         for i, el in enumerate(self.elements):
             # Get pressure at end points and all fluid points along element
             node_s = [self.node_arc_length[i], self.node_arc_length[i + 1]]
-            if self.interpolator is not None:
-                s, pressure_fluid, tau = self.interpolator.get_loads_in_range(node_s[0], node_s[1])
+            if self._interpolator is not None:
+                s, pressure_fluid, tau = self._interpolator.get_loads_in_range(node_s[0], node_s[1])
 
                 # Limit pressure to be below stagnation pressure
                 if self.config.plotting.pressure_limiter:
@@ -707,11 +707,11 @@ class TorsionalSpringSubstructure(FlexibleSubstructure, RigidSubstructure):
 
             ss = node_s[1]
             Pc = 0.0
-            if self.interpolator is not None:
+            if self._interpolator is not None:
                 if ss > s_max:
-                    Pc = self.interpolator.fluid.upstream_pressure
+                    Pc = self._interpolator.fluid.upstream_pressure
                 elif ss < s_min:
-                    Pc = self.interpolator.fluid.downstream_pressure
+                    Pc = self._interpolator.fluid.downstream_pressure
             elif self.cushion_pressure_type == "Total":
                 Pc = self.external_pressure or self.config.body.Pc
 
@@ -735,11 +735,11 @@ class TorsionalSpringSubstructure(FlexibleSubstructure, RigidSubstructure):
             pressure_cushion = np.zeros_like(s)
             Pc = 0.0
             for ii, ss in enumerate(s):
-                if self.interpolator is not None:
+                if self._interpolator is not None:
                     if ss > s_max:
-                        Pc = self.interpolator.fluid.upstream_pressure
+                        Pc = self._interpolator.fluid.upstream_pressure
                     elif ss < s_min:
-                        Pc = self.interpolator.fluid.downstream_pressure
+                        Pc = self._interpolator.fluid.downstream_pressure
                 elif self.cushion_pressure_type == "Total":
                     Pc = self.config.body.Pc
 
@@ -781,10 +781,10 @@ class TorsionalSpringSubstructure(FlexibleSubstructure, RigidSubstructure):
                 self.L += math_helpers.integrate(s, np.array(list(zip(*f))[1]))
                 self.M += math_helpers.integrate(s, np.array(m))
             else:
-                if self.interpolator is not None:
-                    self.D = self.interpolator.fluid.drag_total
-                    self.L = self.interpolator.fluid.lift_total
-                    self.M = self.interpolator.fluid.moment_total
+                if self._interpolator is not None:
+                    self.D = self._interpolator.fluid.drag_total
+                    self.L = self._interpolator.fluid.lift_total
+                    self.M = self._interpolator.fluid.moment_total
 
             # Apply pressure loading for moment calculation
             #      integrand = pFl
@@ -911,7 +911,7 @@ class Interpolator:
         self.solid = solid
         self.fluid = fluid
 
-        self.solid.interpolator = self
+        self.solid._interpolator = self
         self.fluid.interpolator = self
 
         self.solid_position_function: Callable[[float], np.ndarray] = solid.get_coordinates
