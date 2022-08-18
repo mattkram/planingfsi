@@ -286,13 +286,14 @@ class Mesh:
 class Subcomponent:
     """A child component of the mesh used for splitting up different sets of curves.
 
-    The `Subcomponent` will store a set of curves, as well as a set of `Element` objects once the geometry
+    The `Subcomponent` will store a set of curves, as well as a set of line segments once the geometry
     is discretized.
 
     Attributes:
         name: The name of the `Subcomponent`, which must correspond to the name of the associated `Substructure`.
         mesh: A reference to the parent `Mesh` object, to which this `Subcomponent` belongs.
         curves: A list of control `Curve`s that define the `Subcomponent`.
+        line_segments: A list of line segments as a result of the curve being discretized.
 
     """
 
