@@ -9,6 +9,7 @@ from typing import TYPE_CHECKING
 from typing import Any
 from typing import ClassVar
 from typing import Literal
+from typing import Type
 
 import numpy as np
 from scipy.interpolate import interp1d
@@ -31,7 +32,7 @@ if TYPE_CHECKING:
     from planingfsi.potentialflow.pressurepatch import PressureCushion
 
 
-ElementType = ClassVar[type[fe.Element]]
+ElementType = ClassVar[Type[fe.Element]]
 
 
 @dataclass
