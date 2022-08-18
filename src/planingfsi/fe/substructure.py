@@ -3,6 +3,7 @@ from __future__ import annotations
 import abc
 from collections.abc import Callable
 from collections.abc import Iterable
+from dataclasses import dataclass
 from pathlib import Path
 from typing import TYPE_CHECKING
 from typing import Any
@@ -31,6 +32,21 @@ if TYPE_CHECKING:
 
 
 ElementType = ClassVar[type[fe.Element]]
+
+
+@dataclass
+class SubstructureLoads:
+    """The integrated global loads on the substructure."""
+
+    D: float = 0.0
+    L: float = 0.0
+    M: float = 0.0
+    Dt: float = 0.0
+    Lt: float = 0.0
+    Mt: float = 0.0
+    Da: float = 0.0
+    La: float = 0.0
+    Ma: float = 0.0
 
 
 class Substructure(abc.ABC):
@@ -63,7 +79,7 @@ class Substructure(abc.ABC):
         cushion_pressure_type: Literal["Total"] | None = None,
         struct_interp_type: Literal["linear"] | Literal["quadratic"] | Literal["cubic"] = "linear",
         struct_extrap: bool = True,
-        solver: "StructuralSolver" | None = None,
+        solver: StructuralSolver | None = None,
         parent: RigidBody | None = None,
         **_: Any,
     ):
@@ -92,14 +108,7 @@ class Substructure(abc.ABC):
         self.elements: list[fe.Element] = []
         self.node_arc_length: np.ndarray | None = None
 
-        self.D = 0.0
-        self.L = 0.0
-        self.M = 0.0
-        self.Dt = 0.0
-        self.Lt = 0.0
-        self.Da = 0.0
-        self.La = 0.0
-        self.Ma = 0.0
+        self.loads = SubstructureLoads()
 
         self.interp_func_x: interp1d | None = None
         self.interp_func_y: interp1d | None = None
@@ -285,12 +294,12 @@ class Substructure(abc.ABC):
         fluid_p: list[float] = []
         air_s: list[float] = []
         air_p: list[float] = []
-        self.D = 0.0
-        self.L = 0.0
-        self.M = 0.0
-        self.Da = 0.0
-        self.La = 0.0
-        self.Ma = 0.0
+        self.loads.D = 0.0
+        self.loads.L = 0.0
+        self.loads.M = 0.0
+        self.loads.Da = 0.0
+        self.loads.La = 0.0
+        self.loads.Ma = 0.0
         if self._interpolator is not None:
             s_min, s_max = self._interpolator.get_min_max_s()
 
@@ -437,14 +446,14 @@ class Substructure(abc.ABC):
 
                 m = [math_helpers.cross2(ri, fi) for ri, fi in zip(r, f)]
 
-                self.D -= math_helpers.integrate(s, np.array(list(zip(*f))[0]))
-                self.L += math_helpers.integrate(s, np.array(list(zip(*f))[1]))
-                self.M += math_helpers.integrate(s, np.array(m))
+                self.loads.D -= math_helpers.integrate(s, np.array(list(zip(*f))[0]))
+                self.loads.L += math_helpers.integrate(s, np.array(list(zip(*f))[1]))
+                self.loads.M += math_helpers.integrate(s, np.array(m))
             else:
                 if self._interpolator is not None:
-                    self.D = self._interpolator.fluid.drag_total
-                    self.L = self._interpolator.fluid.lift_total
-                    self.M = self._interpolator.fluid.moment_total
+                    self.loads.D = self._interpolator.fluid.drag_total
+                    self.loads.L = self._interpolator.fluid.lift_total
+                    self.loads.M = self._interpolator.fluid.moment_total
 
             integrand = pressure_cushion
 
@@ -461,9 +470,9 @@ class Substructure(abc.ABC):
 
             m = [math_helpers.cross2(ri, fi) for ri, fi in zip(r, f)]
 
-            self.Da -= math_helpers.integrate(s, np.array(list(zip(*f))[0]))
-            self.La += math_helpers.integrate(s, np.array(list(zip(*f))[1]))
-            self.Ma += math_helpers.integrate(s, np.array(m))
+            self.loads.Da -= math_helpers.integrate(s, np.array(list(zip(*f))[0]))
+            self.loads.La += math_helpers.integrate(s, np.array(list(zip(*f))[1]))
+            self.loads.Ma += math_helpers.integrate(s, np.array(m))
             self.fluidP = np.array(fluid_p)
             self.fluidS = np.array(fluid_s)
             self.airP = np.array(air_p)
@@ -635,7 +644,6 @@ class TorsionalSpringSubstructure(FlexibleSubstructure, RigidSubstructure):
         self.spring_constant = spring_constant
 
         self.theta = 0.0
-        self.Mt = 0.0  # TODO
         self.MOld: float | None = None
         self.relax = relaxation_angle or self.config.body.relax_rigid_body
         self.attach_pct = attach_pct
@@ -683,15 +691,15 @@ class TorsionalSpringSubstructure(FlexibleSubstructure, RigidSubstructure):
         fluidP: list[float] = []
         airS: list[float] = []
         airP: list[float] = []
-        self.D = 0.0
-        self.L = 0.0
-        self.M = 0.0
-        self.Dt = 0.0
-        self.Lt = 0.0
-        self.Mt = 0.0
-        self.Da = 0.0
-        self.La = 0.0
-        self.Ma = 0.0
+        self.loads.D = 0.0
+        self.loads.L = 0.0
+        self.loads.M = 0.0
+        self.loads.Dt = 0.0
+        self.loads.Lt = 0.0
+        self.loads.Mt = 0.0
+        self.loads.Da = 0.0
+        self.loads.La = 0.0
+        self.loads.Ma = 0.0
         if self._interpolator is not None:
             s_min, s_max = self._interpolator.get_min_max_s()
 
@@ -790,14 +798,14 @@ class TorsionalSpringSubstructure(FlexibleSubstructure, RigidSubstructure):
 
                 m = [math_helpers.cross2(ri, fi) for ri, fi in zip(r, f)]
 
-                self.D -= math_helpers.integrate(s, np.array(list(zip(*f))[0]))
-                self.L += math_helpers.integrate(s, np.array(list(zip(*f))[1]))
-                self.M += math_helpers.integrate(s, np.array(m))
+                self.loads.D -= math_helpers.integrate(s, np.array(list(zip(*f))[0]))
+                self.loads.L += math_helpers.integrate(s, np.array(list(zip(*f))[1]))
+                self.loads.M += math_helpers.integrate(s, np.array(m))
             else:
                 if self._interpolator is not None:
-                    self.D = self._interpolator.fluid.drag_total
-                    self.L = self._interpolator.fluid.lift_total
-                    self.M = self._interpolator.fluid.moment_total
+                    self.loads.D = self._interpolator.fluid.drag_total
+                    self.loads.L = self._interpolator.fluid.lift_total
+                    self.loads.M = self._interpolator.fluid.moment_total
 
             # Apply pressure loading for moment calculation
             #      integrand = pFl
@@ -814,9 +822,9 @@ class TorsionalSpringSubstructure(FlexibleSubstructure, RigidSubstructure):
             m = [math_helpers.cross2(ri, fi) for ri, fi in zip(r, f)]
             fx, fy = list(zip(*f))
 
-            self.Dt += math_helpers.integrate(s, np.array(fx))
-            self.Lt += math_helpers.integrate(s, np.array(fy))
-            self.Mt += math_helpers.integrate(s, np.array(m))
+            self.loads.Dt += math_helpers.integrate(s, np.array(fx))
+            self.loads.Lt += math_helpers.integrate(s, np.array(fy))
+            self.loads.Mt += math_helpers.integrate(s, np.array(m))
 
             integrand = pressure_cushion
 
@@ -833,17 +841,17 @@ class TorsionalSpringSubstructure(FlexibleSubstructure, RigidSubstructure):
 
             m = [math_helpers.cross2(ri, fi) for ri, fi in zip(r, f)]
 
-            self.Da -= math_helpers.integrate(s, np.array(list(zip(*f))[0]))
-            self.La += math_helpers.integrate(s, np.array(list(zip(*f))[1]))
-            self.Ma += math_helpers.integrate(s, np.array(m))
+            self.loads.Da -= math_helpers.integrate(s, np.array(list(zip(*f))[0]))
+            self.loads.La += math_helpers.integrate(s, np.array(list(zip(*f))[1]))
+            self.loads.Ma += math_helpers.integrate(s, np.array(m))
 
         # Apply tip load
         tipC = self.get_coordinates(self.tip_load_pct * self.arc_length)
         tipR = np.array([tipC[i] - self.base_pt[i] for i in [0, 1]])
         tipF = np.array([0.0, self.tip_load]) * self.ramp
         tipM = math_helpers.cross2(tipR, tipF)
-        self.Lt += tipF[1]
-        self.Mt += tipM
+        self.loads.Lt += tipF[1]
+        self.loads.Mt += tipM
         self.fluidP = np.array(fluidP)
         self.fluidS = np.array(fluidS)
         self.airP = np.array(airP)
@@ -856,17 +864,17 @@ class TorsionalSpringSubstructure(FlexibleSubstructure, RigidSubstructure):
     #    attR = np.array([attC[i] - self.basePt[i] for i in [0,1]])
     #    attF = el.axialForce * kp.ang2vec(el.gamma + 180)
     #    attM = kp.cross2(attR, attF) * config.ramp
-    #    attM = np.min([np.abs(attM), np.abs(self.Mt)]) * kp.sign(attM)
+    #    attM = np.min([np.abs(attM), np.abs(self.loads.Mt)]) * kp.sign(attM)
     # if np.abs(attM) > 2 * np.abs(tipM):
     #      attM = attM * np.abs(tipM) / np.abs(attM)
-    #    self.Mt += attM
+    #    self.loads.Mt += attM
 
     def update_angle(self) -> None:
 
-        if np.isnan(self.Mt):
+        if np.isnan(self.loads.Mt):
             theta = 0.0
         else:
-            theta = -self.Mt
+            theta = -self.loads.Mt
 
         if not self.spring_constant == 0.0:
             theta /= self.spring_constant
@@ -901,7 +909,7 @@ class TorsionalSpringSubstructure(FlexibleSubstructure, RigidSubstructure):
     def get_residual(self) -> float:
         return self.residual
 
-    #    return self.theta + self.Mt / self.spring_constant
+    #    return self.theta + self.loads.Mt / self.spring_constant
 
     def write_deformation(self) -> None:
         writers.write_as_dict(

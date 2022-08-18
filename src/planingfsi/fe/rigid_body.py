@@ -363,12 +363,12 @@ class RigidBody:
         self.reset_loads()
         for ss in self.substructures:
             ss.update_fluid_forces()
-            self.D += ss.D
-            self.L += ss.L
-            self.M += ss.M
-            self.Da += ss.Da
-            self.La += ss.La
-            self.Ma += ss.Ma
+            self.D += ss.loads.D
+            self.L += ss.loads.L
+            self.M += ss.loads.M
+            self.Da += ss.loads.Da
+            self.La += ss.loads.La
+            self.Ma += ss.loads.Ma
 
         self.res_l = self.get_res_lift()
         self.res_m = self.get_res_moment()
