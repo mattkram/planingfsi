@@ -256,27 +256,32 @@ class Substructure(abc.ABC):
 
     @property
     def arc_length(self) -> float:
+        """The total arc length of the substructure, i.e. the sum of all of the Element lengths."""
         return max(self.node_arc_length)
 
     @property
     def it_dir(self) -> Path:
+        """A path to the current numbered iteration directory, in which to save results."""
         return self.solver.simulation.it_dir
+
+    @property
+    def coordinates_file_path(self) -> Path:
+        """A path to the coordinates file for the current iteration."""
+        return self.it_dir / f"coords_{self.name}.{self.config.io.data_format}"
 
     def write_coordinates(self) -> None:
         """Write the coordinates to file"""
         writers.write_as_list(
-            self.it_dir / f"coords_{self.name}.{self.config.io.data_format}",
+            self.coordinates_file_path,
             ["x [m]", [nd.x for nd in self.nodes]],
             ["y [m]", [nd.y for nd in self.nodes]],
         )
 
     def load_coordinates(self) -> None:
-        x, y = np.loadtxt(
-            str(self.it_dir / f"coords_{self.name}.{self.config.io.data_format}"),
-            unpack=True,
-        )
-        for xx, yy, nd in zip(x, y, self.nodes):
-            nd.coordinates = (xx, yy)
+        """Set the coordinates of each node by loading from the saved file from the current iteration."""
+        coordinates = np.loadtxt(self.coordinates_file_path)
+        for coords, nd in zip(coordinates, self.nodes):
+            nd.coordinates = coords
         self.update_geometry()
 
     def update_fluid_forces(self) -> None:
