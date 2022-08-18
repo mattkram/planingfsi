@@ -83,11 +83,12 @@ class Substructure(abc.ABC):
         self._solver = solver
         self.parent = parent
 
+        # Arrays to store air and fluid pressure profiles for plotting
         self.fluidS: np.ndarray | None = None
         self.fluidP: np.ndarray | None = None
         self.airS: np.ndarray | None = None
         self.airP: np.ndarray | None = None
-        self.U: np.ndarray | None = None
+
         self.elements: list[fe.Element] = []
         self.node_arc_length: np.ndarray | None = None
 
