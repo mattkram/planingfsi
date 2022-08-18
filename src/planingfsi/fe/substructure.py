@@ -192,12 +192,8 @@ class Substructure(abc.ABC):
             nd_st_arr, nd_end_arr = np.loadtxt(submesh / f"elements_{self.name}.txt", unpack=True)
             nd_st, nd_end = list(nd_st_arr), list(nd_end_arr)
 
-        if isinstance(nd_st, float):
-            nd_st = [int(nd_st)]
-            nd_end = [int(nd_end)]
-        else:
-            nd_st = [int(nd) for nd in nd_st]
-            nd_end = [int(nd) for nd in nd_end]
+        nd_st = [int(nd) for nd in nd_st]
+        nd_end = [int(nd) for nd in nd_end]
 
         # Generate Element list
         self.elements = [
