@@ -34,8 +34,21 @@ ElementType = ClassVar[type[fe.Element]]
 
 
 class Substructure(abc.ABC):
+    """Base class for a Substructure, which is a component of a RigidBody.
 
-    _element_type: ClassVar[type[fe.Element]]
+    Attributes:
+        name: A name for the substructure.
+        seal_pressure: The internal pressure (steady).
+        seal_pressure_method: Determines whether to apply a constant or linear hydrostatic internal pressure.
+        seal_over_pressure_pct: A factor to apply to the seal_pressure to get the total seal pressure.
+        cushion_pressure: If set, this will be the constant external pressure (i.e. for a wetdeck).
+        cushion_pressure_type: If there is not interpolator and `cushion_pressure_type` is "Total", then
+            a constant external pressure will be applied to the substructure.
+        struct_interp_type: The method to use for interpolation of position.
+        struct_extrap: If True, extrapolate the position when the arclength extends past the end nodes.
+        parent: A reference to the parent `RigidBody` instance.
+
+    """
 
     is_free = False
     _element_type: ElementType
@@ -47,9 +60,7 @@ class Substructure(abc.ABC):
         seal_pressure: float = 0.0,
         seal_pressure_method: Literal["constant"] | Literal["hydrostatic"] = "constant",
         seal_over_pressure_pct: float = 1.0,
-        cushion_pressure_type: str | None = None,
-        tip_load: float = 0.0,
-        tip_constraint_height: float | None = None,
+        cushion_pressure_type: Literal["Total"] | None = None,
         struct_interp_type: Literal["linear"] | Literal["quadratic"] | Literal["cubic"] = "linear",
         struct_extrap: bool = True,
         solver: "StructuralSolver" | None = None,
@@ -59,14 +70,13 @@ class Substructure(abc.ABC):
         self.name = name
         self._interpolator: Interpolator | None = None
 
-        self.external_pressure: float | None = None
         self.seal_pressure = seal_pressure
         self.seal_pressure_method = seal_pressure_method
-
         self.seal_over_pressure_pct = seal_over_pressure_pct
+
+        self.cushion_pressure: float | None = None
         self.cushion_pressure_type = cushion_pressure_type
-        self.tip_load = tip_load
-        self.tip_constraint_height = tip_constraint_height
+
         self.struct_interp_type = struct_interp_type
         self.struct_extrap = struct_extrap
 
@@ -150,7 +160,7 @@ class Substructure(abc.ABC):
         """
         self.solver.simulation.fluid_solver.add_pressure_cushion(pressure_cushion)
         self.cushion_pressure_type = "Total"
-        self.external_pressure = pressure_cushion.cushion_pressure
+        self.cushion_pressure = pressure_cushion.cushion_pressure
         return pressure_cushion
 
     def set_element_properties(self) -> None:
@@ -313,7 +323,7 @@ class Substructure(abc.ABC):
                 elif ss < s_min:
                     Pc = self._interpolator.fluid.downstream_pressure
             elif self.cushion_pressure_type == "Total":
-                Pc = self.external_pressure or self.config.body.Pc
+                Pc = self.cushion_pressure or self.config.body.Pc
 
             # Store fluid and air pressure components for element (for
             # plotting)
@@ -604,6 +614,7 @@ class TorsionalSpringSubstructure(FlexibleSubstructure, RigidSubstructure):
         self,
         *,
         initial_angle: float = 0.0,
+        tip_load: float = 0.0,
         tip_load_pct: float = 0.0,
         base_pt_pct: float = 1.0,
         spring_constant: float = 1e3,
@@ -617,6 +628,7 @@ class TorsionalSpringSubstructure(FlexibleSubstructure, RigidSubstructure):
     ):
         super().__init__(**kwargs)
         self.initial_angle = initial_angle
+        self.tip_load = tip_load
         self.tip_load_pct = tip_load_pct
         self.base_pt_pct = base_pt_pct
         self.spring_constant = spring_constant
@@ -713,7 +725,7 @@ class TorsionalSpringSubstructure(FlexibleSubstructure, RigidSubstructure):
                 elif ss < s_min:
                     Pc = self._interpolator.fluid.downstream_pressure
             elif self.cushion_pressure_type == "Total":
-                Pc = self.external_pressure or self.config.body.Pc
+                Pc = self.cushion_pressure or self.config.body.Pc
 
             # Store fluid and air pressure components for element (for
             # plotting)
