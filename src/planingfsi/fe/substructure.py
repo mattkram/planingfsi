@@ -285,6 +285,7 @@ class Substructure(abc.ABC):
         self.update_geometry()
 
     def update_fluid_forces(self) -> None:
+        # TODO: Refactor this complex, critical method
         fluid_s: list[float] = []
         fluid_p: list[float] = []
         air_s: list[float] = []
