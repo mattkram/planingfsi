@@ -324,7 +324,7 @@ class Subcomponent:
             self.mesh.get_point(pt_id1),
             self.mesh.get_point(pt_id2),
             mesh=self.mesh,
-            id=kwargs.get("ID", -1),
+            id=kwargs.get("ID"),
             arc_length=kwargs.get("arcLen"),
             radius=kwargs.get("radius"),
             num_elements=kwargs.get("Nel", 1),
