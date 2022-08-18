@@ -19,7 +19,7 @@ from planingfsi import trig
 from planingfsi import writers
 from planingfsi.config import NUM_DIM
 from planingfsi.fe import felib as fe
-from planingfsi.fe.femesh import Submesh
+from planingfsi.fe.femesh import Subcomponent
 from planingfsi.solver import fzero
 
 if TYPE_CHECKING:
@@ -32,19 +32,9 @@ if TYPE_CHECKING:
 
 class Substructure(abc.ABC):
 
-    __all: list["Substructure"] = []
-
     _element_type: ClassVar[type[fe.Element]]
 
     is_free = False
-
-    @classmethod
-    def find_by_name(cls, name: str) -> "Substructure":
-        """Return a substructure whose name matches the argument."""
-        for o in cls.__all:
-            if o.name == name:
-                return o
-        raise NameError(f"Cannot find Substructure with name {name}")
 
     def __init__(
         self,
@@ -62,9 +52,6 @@ class Substructure(abc.ABC):
         parent: RigidBody | None = None,
         **_: Any,
     ):
-        self.index = len(self.__all)
-        Substructure.__all.append(self)
-
         self.name = name
         self.interpolator: Interpolator | None = None
 
@@ -82,16 +69,13 @@ class Substructure(abc.ABC):
         self._solver = solver
         self.parent = parent
 
-        self.line_fluid_pressure = None
-        self.line_air_pressure = None
         self.fluidS: np.ndarray | None = None
         self.fluidP: np.ndarray | None = None
         self.airS: np.ndarray | None = None
         self.airP: np.ndarray | None = None
         self.U: np.ndarray | None = None
-        self.node: list[fe.Node] = []
-        self.el: list[fe.Element] = []
-        self.node_arc_length = np.zeros(len(self.node))
+        self.elements: list[fe.Element] = []
+        self.node_arc_length: np.ndarray | None = None
 
         self.D = 0.0
         self.L = 0.0
@@ -167,16 +151,19 @@ class Substructure(abc.ABC):
 
     def set_element_properties(self) -> None:
         """Set the properties of each element."""
-        for el in self.el:
-            el.set_properties(length=self.arc_length / len(self.el))
 
-    def load_mesh(self, submesh: Path | Submesh = Path("mesh")) -> None:
-        if isinstance(submesh, Submesh):
+    @property
+    def nodes(self) -> list[fe.Node]:
+        """A list of all nodes in the substructure."""
+        nodes = [el.start_node for el in self.elements]
+        return nodes + [self.elements[-1].end_node]
+
+    def load_mesh(self, submesh: Path | Subcomponent = Path("mesh")) -> None:
+        if isinstance(submesh, Subcomponent):
             nd_st, nd_end = [], []
-            for curve in submesh.curves:
-                for line in curve.lines:
-                    nd_st.append(line.pt[0].index)
-                    nd_end.append(line.pt[1].index)
+            for line in submesh.line_segments:
+                nd_st.append(line.start_point.index)
+                nd_end.append(line.end_point.index)
         else:
             nd_st_arr, nd_end_arr = np.loadtxt(submesh / f"elements_{self.name}.txt", unpack=True)
             nd_st, nd_end = list(nd_st_arr), list(nd_end_arr)
@@ -187,38 +174,34 @@ class Substructure(abc.ABC):
         else:
             nd_st = [int(nd) for nd in nd_st]
             nd_end = [int(nd) for nd in nd_end]
-        ndInd = nd_st + [nd_end[-1]]
 
         # Generate Element list
-        self.node = [fe.Node.get_index(i) for i in ndInd]
-
-        self.set_interp_function()
-        self.el = [self._element_type(parent=self) for _ in nd_st]
+        self.elements = [
+            self._element_type(self.solver.nodes[nd_st_i], self.solver.nodes[nd_end_i], parent=self)
+            for nd_st_i, nd_end_i in zip(nd_st, nd_end)
+        ]
+        self.update_geometry()
         self.set_element_properties()
-        for ndSti, ndEndi, el in zip(nd_st, nd_end, self.el):
-            el.set_nodes([fe.Node.get_index(ndSti), fe.Node.get_index(ndEndi)])
 
-    def set_interp_function(self) -> None:
-        self.node_arc_length = np.zeros(len(self.node))
-        for i, nd0, nd1 in zip(list(range(len(self.node) - 1)), self.node[:-1], self.node[1:]):
-            self.node_arc_length[i + 1] = (
-                self.node_arc_length[i] + ((nd1.x - nd0.x) ** 2 + (nd1.y - nd0.y) ** 2) ** 0.5
-            )
-
-        if len(self.node_arc_length) == 2:
+        # Set the interpolation method if there are not enough elements (cubic requires at least 3 elements)
+        if len(self.elements) == 1:
             self.struct_interp_type = "linear"
-        elif len(self.node_arc_length) == 3 and not self.struct_interp_type == "linear":
+        elif len(self.elements) == 2 and not self.struct_interp_type == "linear":
             self.struct_interp_type = "quadratic"
+        # else keep what was specified in the constructor
 
-        x, y = [np.array(xx) for xx in zip(*[(nd.x, nd.y) for nd in self.node])]
+    def update_geometry(self) -> None:
+        """Update geometry and interpolation functions in the process."""
+        element_lengths = [el.length for el in self.elements]
+        self.node_arc_length = np.cumsum([0.0] + element_lengths)
+
+        nodal_coordinates = np.array([nd.coordinates for nd in self.nodes])
         self.interp_func_x, self.interp_func_y = (
-            interp1d(self.node_arc_length, x),
-            interp1d(self.node_arc_length, y, kind=self.struct_interp_type),
+            interp1d(self.node_arc_length, nodal_coordinates[:, 0]),
+            interp1d(self.node_arc_length, nodal_coordinates[:, 1], kind=self.struct_interp_type),
         )
 
         if self.struct_extrap:
-            assert self.interp_func_x is not None
-            assert self.interp_func_y is not None
             self.interp_func_x, self.interp_func_y = self._extrap_coordinates(
                 self.interp_func_x, self.interp_func_y
             )
@@ -269,8 +252,8 @@ class Substructure(abc.ABC):
         """Write the coordinates to file"""
         writers.write_as_list(
             self.it_dir / f"coords_{self.name}.{self.config.io.data_format}",
-            ["x [m]", [nd.x for nd in self.node]],
-            ["y [m]", [nd.y for nd in self.node]],
+            ["x [m]", [nd.x for nd in self.nodes]],
+            ["y [m]", [nd.y for nd in self.nodes]],
         )
 
     def load_coordinates(self) -> None:
@@ -278,8 +261,9 @@ class Substructure(abc.ABC):
             str(self.it_dir / f"coords_{self.name}.{self.config.io.data_format}"),
             unpack=True,
         )
-        for xx, yy, nd in zip(x, y, self.node):
-            nd.set_coordinates(xx, yy)
+        for xx, yy, nd in zip(x, y, self.nodes):
+            nd.coordinates = (xx, yy)
+        self.update_geometry()
 
     def update_fluid_forces(self) -> None:
         fluid_s: list[float] = []
@@ -295,7 +279,7 @@ class Substructure(abc.ABC):
         if self.interpolator is not None:
             s_min, s_max = self.interpolator.get_min_max_s()
 
-        for i, el in enumerate(self.el):
+        for i, el in enumerate(self.elements):
             # Get pressure at end points and all fluid points along element
             node_s = [self.node_arc_length[i], self.node_arc_length[i + 1]]
             if self.interpolator is not None:
@@ -477,17 +461,8 @@ class Substructure(abc.ABC):
 
         return trig.rotate_vec_2d(trig.angd2vec2d(trig.atand2(dy_ds, dx_ds)), -90)
 
-    def plot_pressure_profiles(self) -> None:
-        # TODO: Move to plotting directory
-        if self.line_fluid_pressure is not None:
-            self.line_fluid_pressure.set_data(
-                self.get_pressure_plot_points(self.fluidS, self.fluidP)
-            )
-        if self.line_air_pressure is not None:
-            self.line_air_pressure.set_data(self.get_pressure_plot_points(self.airS, self.airP))
-
     def get_pressure_plot_points(self, s0: np.ndarray, p0: np.ndarray) -> Iterable[Iterable]:
-
+        """Get coordinates required to plot pressure profile as lines."""
         sp = [(s, p) for s, p in zip(s0, p0) if not np.abs(p) < 1e-4]
 
         if len(sp) > 0:
@@ -511,17 +486,6 @@ class Substructure(abc.ABC):
         else:
             return [], []
 
-    def update_geometry(self) -> None:
-        self.set_interp_function()
-
-    def plot(self) -> None:
-        # TODO: Move to plotting module
-        for el in self.el:
-            el.plot()
-        #    for nd in [self.node[0],self.node[-1]]:
-        #      nd.plot()
-        self.plot_pressure_profiles()
-
     def set_attachments(self) -> None:
         return None
 
@@ -535,57 +499,8 @@ class Substructure(abc.ABC):
 
 class FlexibleSubstructure(Substructure):
 
-    __all: list["FlexibleSubstructure"] = []
-    res = 0.0
     is_free = True
     _element_type: ClassVar[type[fe.Element]] = fe.TrussElement
-
-    @classmethod
-    def update_all(cls, rigid_body: "RigidBody") -> None:
-        # TODO: This functionality should be moved to the rigid body
-
-        num_dof = fe.Node.count() * NUM_DIM
-        Kg = np.zeros((num_dof, num_dof))
-        Fg = np.zeros((num_dof, 1))
-        Ug = np.zeros((num_dof, 1))
-
-        # Assemble global matrices for all substructures together
-        for ss in cls.__all:
-            ss.update_fluid_forces()
-            ss.assemble_global_stiffness_and_force()
-
-            # TODO: Consider removing this and fixing static types
-            assert ss.K is not None
-            assert ss.F is not None
-
-            Kg += ss.K
-            Fg += ss.F
-
-        for nd in fe.Node.all():
-            for i in range(2):
-                Fg[nd.dof[i]] += nd.fixed_load[i]
-
-        # Determine fixed degrees of freedom
-        dof = [False for _ in Fg]
-
-        for nd in fe.Node.all():
-            for dofi, fdofi in zip(nd.dof, nd.is_dof_fixed):
-                dof[dofi] = not fdofi
-
-        # Solve FEM linear matrix equation
-        if any(dof):
-            Ug[np.ix_(dof)] = np.linalg.solve(Kg[np.ix_(dof, dof)], Fg[np.ix_(dof)])
-
-        cls.res = np.max(np.abs(Ug))
-
-        Ug *= rigid_body.config.solver.relax_FEM
-        Ug *= np.min([rigid_body.config.solver.max_FEM_disp / np.max(Ug), 1.0])
-
-        for nd in fe.Node.all():
-            nd.move_coordinates(Ug[nd.dof[0], 0], Ug[nd.dof[1], 0])
-
-        for ss in cls.__all:
-            ss.update_geometry()
 
     def __init__(
         self,
@@ -595,7 +510,6 @@ class FlexibleSubstructure(Substructure):
         **kwargs: Any,
     ):
         super().__init__(**kwargs)
-        self.__all.append(self)
         self.pretension = pretension
         self.EA = axial_stiffness
 
@@ -608,19 +522,16 @@ class FlexibleSubstructure(Substructure):
         assert self.U is not None
         return np.max(np.abs(self.U))
 
-    def initialize_matrices(self) -> None:
-        num_dof = fe.Node.count() * NUM_DIM
-        self.K = np.zeros((num_dof, num_dof))
-        self.F = np.zeros((num_dof, 1))
-        self.U = np.zeros((num_dof, 1))
-
     def assemble_global_stiffness_and_force(self) -> None:
         if self.K is None or self.F is None:
-            self.initialize_matrices()
+            num_dof = len(self.solver.nodes) * NUM_DIM
+            self.K = np.zeros((num_dof, num_dof))
+            self.F = np.zeros((num_dof, 1))
+            self.U = np.zeros((num_dof, 1))
         else:
             self.K *= 0
             self.F *= 0
-        for el in self.el:
+        for el in self.elements:
             self.add_loads_from_element(el)
 
     def add_loads_from_element(self, el: "fe.Element") -> None:
@@ -628,8 +539,9 @@ class FlexibleSubstructure(Substructure):
         assert self.K is not None
         assert self.F is not None
         K, F = el.get_stiffness_and_force()
-        self.K[np.ix_(el.dof, el.dof)] += K
-        self.F[np.ix_(el.dof)] += F
+        el_dof = [dof for nd in el.nodes for dof in self.parent.parent.node_dofs[nd]]
+        self.K[np.ix_(el_dof, el_dof)] += K
+        self.F[np.ix_(el_dof)] += F
 
     #  def getPtDispFEM(self):
     # if self.K is None:
@@ -656,16 +568,12 @@ class FlexibleSubstructure(Substructure):
 
     def set_element_properties(self) -> None:
         super().set_element_properties()
-        for el in self.el:
-            el.set_properties(axialForce=-self.pretension, EA=self.EA)
+        for el in self.elements:
+            el.initial_axial_force = -self.pretension
+            el.EA = self.EA
 
     def set_fixed_dof(self) -> None:
         pass
-
-    def update_geometry(self) -> None:
-        for el in self.el:
-            el.update_geometry()
-        super().set_interp_function()
 
 
 class RigidSubstructure(Substructure):
@@ -679,9 +587,8 @@ class RigidSubstructure(Substructure):
 
     def set_fixed_dof(self) -> None:
         """Set all degrees of freedom of all nodes in the substructure."""
-        for nd in self.node:
-            for j in range(NUM_DIM):
-                nd.is_dof_fixed[j] = True
+        for nd in self.nodes:
+            nd.is_dof_fixed = tuple(True for _ in range(NUM_DIM))
 
 
 class TorsionalSpringSubstructure(FlexibleSubstructure, RigidSubstructure):
@@ -725,23 +632,23 @@ class TorsionalSpringSubstructure(FlexibleSubstructure, RigidSubstructure):
         self.attached_substructure: Substructure | None = None
         self.residual = 1.0
 
-    def load_mesh(self, submesh: Path | Submesh = Path("mesh")) -> None:
+    def load_mesh(self, submesh: Path | Subcomponent = Path("mesh")) -> None:
         super().load_mesh(submesh)
         self.set_fixed_dof()
         if self.base_pt_pct == 1.0:
-            self.base_pt = self.node[-1].get_coordinates()
+            self.base_pt = self.nodes[-1].coordinates
         elif self.base_pt_pct == 0.0:
-            self.base_pt = self.node[0].get_coordinates()
+            self.base_pt = self.nodes[0].coordinates
         else:
             self.base_pt = self.get_coordinates(self.base_pt_pct * self.arc_length)
-
-        self.set_element_properties()
 
         self.set_angle(self.initial_angle)
 
     def set_attachments(self) -> None:
         if self.attached_substructure_name is not None:
-            self.attached_substructure = Substructure.find_by_name(self.attached_substructure_name)
+            self.attached_substructure = self.parent.get_substructure_by_name(
+                self.attached_substructure_name
+            )
         else:
             self.attached_substructure = None
 
@@ -751,8 +658,8 @@ class TorsionalSpringSubstructure(FlexibleSubstructure, RigidSubstructure):
             self.attached_ind = -1
 
         if self.attached_node is None and self.attached_substructure is not None:
-            self.attached_node = self.attached_substructure.node[self.attached_ind]
-            self.attached_element = self.attached_substructure.el[self.attached_ind]
+            self.attached_node = self.attached_substructure.nodes[self.attached_ind]
+            self.attached_element = self.attached_substructure.elements[self.attached_ind]
 
     def update_fluid_forces(self) -> None:
         fluidS: list[float] = []
@@ -771,7 +678,7 @@ class TorsionalSpringSubstructure(FlexibleSubstructure, RigidSubstructure):
         if self.interpolator is not None:
             s_min, s_max = self.interpolator.get_min_max_s()
 
-        for i, el in enumerate(self.el):
+        for i, el in enumerate(self.elements):
             # Get pressure at end points and all fluid points along element
             node_s = [self.node_arc_length[i], self.node_arc_length[i + 1]]
             if self.interpolator is not None:
@@ -956,18 +863,18 @@ class TorsionalSpringSubstructure(FlexibleSubstructure, RigidSubstructure):
         dTheta = np.max([ang, self.minimum_angle]) - self.theta
 
         if self.attached_node is not None and not any(
-            [nd == self.attached_node for nd in self.node]
+            [nd == self.attached_node for nd in self.nodes]
         ):
             attNd = [self.attached_node]
         else:
             attNd = []
 
         #    basePt = np.array([c for c in self.basePt])
-        basePt = np.array([c for c in self.node[-1].get_coordinates()])
-        for nd in self.node + attNd:
-            oldPt = np.array([c for c in nd.get_coordinates()])
+        basePt = np.array([c for c in self.nodes[-1].coordinates])
+        for nd in self.nodes + attNd:
+            oldPt = np.array([c for c in nd.coordinates])
             newPt = trig.rotate_point(oldPt, basePt, -dTheta)
-            nd.set_coordinates(newPt[0], newPt[1])
+            nd.coordinates = newPt
 
         self.theta += dTheta
         self.residual = dTheta

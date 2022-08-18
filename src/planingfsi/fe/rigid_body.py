@@ -13,11 +13,11 @@ from planingfsi import writers
 from planingfsi.config import NUM_DIM
 from planingfsi.config import Config
 from planingfsi.dictionary import load_dict_from_file
+from planingfsi.fe import felib as fe
 from planingfsi.fe import substructure
 from planingfsi.solver import RootFinder
 
 if TYPE_CHECKING:
-    from planingfsi.fe import felib as fe
     from planingfsi.fe.structure import StructuralSolver
 
 
@@ -87,6 +87,7 @@ class RigidBody:
         max_trim_acc: float | None = None,
         beta: float = 0.25,
         gamma: float = 0.5,
+        motion_method: str | None = None,
         parent: StructuralSolver | None = None,
         **_: Any,
     ):
@@ -178,27 +179,23 @@ class RigidBody:
         self.resFun: Callable[[np.ndarray], np.ndarray] | None = None
 
         # Assign displacement function depending on specified method
-        self.get_disp = lambda: np.array((0.0, 0.0))
+        motion_method = motion_method or self.config.body.motion_method
         if any(self.free_dof):
-            if self.config.body.motion_method == "Secant":
-                self.get_disp = self.get_disp_secant
-            elif self.config.body.motion_method == "Broyden":
-                self.get_disp = self.get_disp_broyden
-            elif self.config.body.motion_method == "BroydenNew":
-                self.get_disp = self.get_disp_broyden_new
-            elif self.config.body.motion_method == "Physical":
-                self.get_disp = self.get_disp_physical
-            elif self.config.body.motion_method == "Newmark-Beta":
-                self.get_disp = self.get_disp_newmark_beta
-            elif self.config.body.motion_method == "PhysicalNoMass":
-                self.get_disp = self.get_disp_physical_no_mass
-            elif self.config.body.motion_method == "Sep":
-                self.get_disp = self.get_disp_secant
-                self.trim_solver = None
-                self.draft_solver = None
+            self.get_disp = {
+                "Secant": self.get_disp_secant,
+                "Broyden": self.get_disp_broyden,
+                "BroydenNew": self.get_disp_broyden_new,
+                "Physical": self.get_disp_physical,
+                "PhysicalNoMass": self.get_disp_physical_no_mass,
+                "Newmark-Beta": self.get_disp_newmark_beta,
+                "Sep": self.get_disp_secant,
+            }.get(motion_method, self.get_disp_secant)
+        else:
+            self.get_disp = lambda: np.array((0.0, 0.0))
 
+        self.flexible_substructure_residual = 0.0
         self.substructures: list["substructure.Substructure"] = []
-        self.nodes: list[fe.Node] = []
+        self._nodes: list[fe.Node] = []
 
     @property
     def config(self) -> Config:
@@ -213,6 +210,14 @@ class RigidBody:
         if self.parent is None:
             raise AttributeError("parent must be set before simulation can be accessed.")
         return self.parent.simulation.ramp
+
+    @property
+    def residual(self) -> float:
+        """The combined max residual of lift, moment, and structural node displacement."""
+        res_l = self.res_l if self.free_in_draft else 0.0
+        res_m = self.res_m if self.free_in_trim else 0.0
+        res_node_disp = self.flexible_substructure_residual
+        return max((res_l, res_m, res_node_disp))
 
     @property
     def free_in_draft(self) -> bool:
@@ -236,12 +241,21 @@ class RigidBody:
         ss.parent = self
         return ss
 
-    def store_nodes(self) -> None:
-        """Store references to all nodes in each substructure."""
+    def get_substructure_by_name(self, name: str) -> substructure.Substructure:
         for ss in self.substructures:
-            for nd in ss.node:
-                if not any([n.node_num == nd.node_num for n in self.nodes]):
-                    self.nodes.append(nd)
+            if ss.name == name:
+                return ss
+        raise LookupError(f"Cannot find substructure with name '{name}'")
+
+    @property
+    def nodes(self) -> list[fe.Node]:
+        """Get a list of all unique `Node`s from all component substructures."""
+        if not self._nodes:
+            for ss in self.substructures:
+                for nd in ss.nodes:
+                    if nd in self._nodes:
+                        self._nodes.append(nd)
+        return self._nodes
 
     def initialize_position(self) -> None:
         """Initialize the position of the rigid body."""
@@ -263,15 +277,12 @@ class RigidBody:
             if np.isnan(trim_delta):
                 trim_delta = 0.0
 
-        if not self.nodes:
-            self.store_nodes()
-
         for nd in self.nodes:
-            xo, yo = nd.get_coordinates()
+            xo, yo = nd.x, nd.y
             new_pos = trig.rotate_point(
                 np.array([xo, yo]), np.array([self.xCofR, self.yCofR]), trim_delta
             )
-            nd.move_coordinates(new_pos[0] - xo, new_pos[1] - yo - draft_delta)
+            nd.move(new_pos[0] - xo, new_pos[1] - yo - draft_delta)
 
         for s in self.substructures:
             s.update_geometry()
@@ -287,9 +298,61 @@ class RigidBody:
 
         self.print_motion()
 
+    def update_flexible_substructure_positions(self) -> None:
+        """Update the nodal positions of all component flexible substructures."""
+        flexible_substructures = [
+            ss for ss in self.substructures if isinstance(ss, substructure.FlexibleSubstructure)
+        ]
+
+        num_dof = len(self.parent.nodes) * NUM_DIM
+        Kg = np.zeros((num_dof, num_dof))
+        Fg = np.zeros((num_dof, 1))
+        Ug = np.zeros((num_dof, 1))
+
+        # Assemble global matrices for all substructures together
+        for ss in flexible_substructures:
+            ss.update_fluid_forces()
+            ss.assemble_global_stiffness_and_force()
+
+            # TODO: Consider removing this and fixing static types
+            assert ss.K is not None
+            assert ss.F is not None
+
+            Kg += ss.K
+            Fg += ss.F
+
+        for nd in self.parent.nodes:
+            node_dof = self.parent.node_dofs[nd]
+            for i in range(2):
+                Fg[node_dof[i]] += nd.fixed_load[i]
+
+        # Determine fixed degrees of freedom
+        dof = [False for _ in Fg]
+
+        for nd in self.parent.nodes:
+            node_dof = self.parent.node_dofs[nd]
+            for dofi, fdofi in zip(node_dof, nd.is_dof_fixed):
+                dof[dofi] = not fdofi
+
+        # Solve FEM linear matrix equation
+        if any(dof):
+            Ug[np.ix_(dof)] = np.linalg.solve(Kg[np.ix_(dof, dof)], Fg[np.ix_(dof)])
+
+        self.flexible_substructure_residual = np.max(np.abs(Ug))
+
+        Ug *= self.config.solver.relax_FEM
+        Ug *= np.min([self.config.solver.max_FEM_disp / np.max(Ug), 1.0])
+
+        for nd in self.parent.nodes:
+            node_dof = self.parent.node_dofs[nd]
+            nd.move(Ug[node_dof[0], 0], Ug[node_dof[1], 0])
+
+        for ss in flexible_substructures:
+            ss.update_geometry()
+
     def update_substructure_positions(self) -> None:
         """Update the positions of all substructures."""
-        substructure.FlexibleSubstructure.update_all(self)
+        self.update_flexible_substructure_positions()
         for ss in self.substructures:
             logger.info(f"Updating position for substructure: {ss.name}")
             if isinstance(ss, substructure.RigidSubstructure):
@@ -608,7 +671,7 @@ class RigidBody:
             f"  Moment Res: {self.res_m:5.4e}",
         ]
         for line in lines:
-            logger.debug(line)
+            logger.info(line)
 
     def write_motion(self) -> None:
         """Write the motion results to file."""

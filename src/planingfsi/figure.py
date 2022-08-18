@@ -16,6 +16,7 @@ from planingfsi.config import Config
 if TYPE_CHECKING:
     from planingfsi.fe.rigid_body import RigidBody
     from planingfsi.fe.structure import StructuralSolver
+    from planingfsi.fe.substructure import Substructure
     from planingfsi.potentialflow.solver import PotentialPlaningSolver
     from planingfsi.simulation import Simulation
 
@@ -31,18 +32,24 @@ class FSIFigure:
             plt.ion()
         self.geometry_ax = fig.add_axes([0.05, 0.6, 0.9, 0.35])
 
-        for nd in self.solid.nodes:
-            (nd.line_xy,) = plt.plot([], [], "ro")
+        (self.line_nodes,) = plt.plot([], [], "ko")
 
         (self.lineFS,) = plt.plot([], [], "b-")
         (self.lineFSi,) = plt.plot([], [], "b--")
 
+        # Line handles for element initial and current positions
+        self.element_handles_0 = {}
+        self.element_handles = {}
+
+        # Line handles for the air and fluid pressure profiles
+        self.line_air_pressure = {}
+        self.line_fluid_pressure = {}
         for struct in self.solid.substructures:
-            (struct.line_air_pressure,) = plt.plot([], [], "g-")
-            (struct.line_fluid_pressure,) = plt.plot([], [], "r-")
-            for el in struct.el:
-                (el.lineEl0,) = plt.plot([], [], "k--")
-                (el.lineEl,) = plt.plot([], [], "k-", linewidth=2)
+            (self.line_air_pressure[struct],) = plt.plot([], [], "g-")
+            (self.line_fluid_pressure[struct],) = plt.plot([], [], "r-")
+            for el in struct.elements:
+                (self.element_handles_0[el],) = plt.plot([], [], "k--")
+                (self.element_handles[el],) = plt.plot([], [], "k-", linewidth=2)
 
         self.lineCofR: list["CofRPlot"] = []
         for bodies in self.solid.rigid_bodies:
@@ -66,8 +73,8 @@ class FSIFigure:
                 )
             )
 
-        x = [nd.x for struct in self.solid.substructures for nd in struct.node]
-        y = [nd.y for struct in self.solid.substructures for nd in struct.node]
+        x = [nd.x for struct in self.solid.substructures for nd in struct.nodes]
+        y = [nd.y for struct in self.solid.substructures for nd in struct.nodes]
         xMin, xMax = min(x), max(x)
         yMin, yMax = min(y), max(y)
 
@@ -133,8 +140,41 @@ class FSIFigure:
         end_pts = np.array([self.config.plotting.x_fs_min, self.config.plotting.x_fs_max])
         self.lineFSi.set_data(end_pts, self.config.flow.waterline_height * np.ones_like(end_pts))
 
+    def plot_pressure_profiles(self, ss: Substructure) -> None:
+        """Plot the internal and external pressure profiles as lines."""
+        if handle := self.line_fluid_pressure.get(ss):
+            handle.set_data(ss.get_pressure_plot_points(ss.fluidS, ss.fluidP))
+        if handle := self.line_air_pressure.get(ss):
+            handle.set_data(ss.get_pressure_plot_points(ss.airS, ss.airP))
+
+    def plot_substructure(self, ss: Substructure) -> None:
+        """Plot the substructure elements and pressure profiles."""
+        for el in ss.elements:
+            if handle := self.element_handles.get(el):
+                handle.set_data([nd.x for nd in el.nodes], [nd.y for nd in el.nodes])
+
+            if handle := self.element_handles_0.get(el):
+                base_pt = np.array([el.parent.parent.xCofR0, el.parent.parent.yCofR0])
+                pos = [
+                    trig.rotate_point(pos, base_pt, el.parent.parent.trim)
+                    - np.array([0, el.parent.parent.draft])
+                    for pos in el._initial_coordinates
+                ]
+                x, y = list(zip(*[[posi[i] for i in range(2)] for posi in pos]))
+                handle.set_data(x, y)
+
+        #    for nd in [self.node[0],self.node[-1]]:
+        #      nd.plot()
+        self.plot_pressure_profiles(ss)
+
+    def plot_structure(self):
+        """Plot the structure."""
+        for body in self.solid.rigid_bodies:
+            for struct in body.substructures:
+                self.plot_substructure(struct)
+
     def update(self) -> None:
-        self.solid.plot()
+        self.plot_structure()
         self.plot_free_surface()
         self.TXT.set_text(
             "\n".join(

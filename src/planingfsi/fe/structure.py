@@ -7,6 +7,7 @@ from typing import Any
 import numpy as np
 
 from planingfsi import logger
+from planingfsi.config import NUM_DIM
 from planingfsi.config import Config
 from planingfsi.fe.felib import Node
 from planingfsi.fe.femesh import Mesh
@@ -27,6 +28,8 @@ class StructuralSolver:
         simulation: A reference to the parent `Simulation` object.
         rigid_bodies: A list of all `RigidBody` instances in the simulation.
         residual: The current residual of the structural solver.
+        nodes: A list of all nodes in the mesh.
+        node_dofs: A mapping of node to the indices for that node in the global matrices.
 
     """
 
@@ -34,6 +37,8 @@ class StructuralSolver:
         self.simulation = simulation
         self.rigid_bodies: list[RigidBody] = []
         self.residual = 1.0  # TODO: Can this be a property instead?
+        self.nodes: list[Node] = []
+        self.node_dofs: dict[Node, list[int]] = {}
 
     @property
     def config(self) -> Config:
@@ -66,11 +71,6 @@ class StructuralSolver:
     def substructures(self) -> list[Substructure]:
         """A combined list of all substructures from all rigid bodies."""
         return [ss for body in self.rigid_bodies for ss in body.substructures]
-
-    @property
-    def nodes(self) -> list[Node]:
-        """A combined list of all nodes from all substructures."""
-        return [nd for ss in self.substructures for nd in ss.node]
 
     def add_rigid_body(
         self, dict_or_instance: dict[str, Any] | RigidBody | None = None
@@ -155,14 +155,9 @@ class StructuralSolver:
                 bd.update_position()
                 bd.update_substructure_positions()
 
-    def get_residual(self) -> None:
+    def store_residual(self) -> None:
         """Calculate the residual."""
-        self.residual = 0.0
-        for bd in self.rigid_bodies:
-            if any(bd.free_dof):
-                self.residual = np.max([np.abs(bd.res_l), self.residual])
-                self.residual = np.max([np.abs(bd.res_m), self.residual])
-            self.residual = np.max([FlexibleSubstructure.res, self.residual])
+        self.residual = max((bd.residual for bd in self.rigid_bodies), default=0.0)
 
     def _load_response(self) -> None:
         """Load the response from files."""
@@ -172,7 +167,6 @@ class StructuralSolver:
             bd.load_motion()
             for ss in bd.substructures:
                 ss.load_coordinates()
-                ss.update_geometry()
 
     def write_results(self) -> None:
         """Write the results to file."""
@@ -181,21 +175,15 @@ class StructuralSolver:
             for ss in bd.substructures:
                 ss.write_coordinates()
 
-    def plot(self) -> None:
-        """Plot the results."""
-        # TODO: Move to figure module
-        for body in self.rigid_bodies:
-            for struct in body.substructures:
-                struct.plot()
-
     def _load_mesh_from_object(self, mesh: Mesh) -> None:
         """Load a mesh from an existing object."""
         for pt in mesh.points:
-            nd = Node()
-            nd.set_coordinates(pt.position[0], pt.position[1])
-            nd.is_dof_fixed[:] = pt.is_dof_fixed
-            nd.fixed_load[:] = pt.fixed_load
+            nd = Node(
+                coordinates=pt.position, is_dof_fixed=pt.is_dof_fixed, fixed_load=pt.fixed_load
+            )
+            node_num = len(self.nodes)  # Needs to be before we append the node
             self.nodes.append(nd)
+            self.node_dofs[nd] = [node_num * NUM_DIM + i for i in [0, 1]]
 
         for struct in self.substructures:
             # Find submesh with same name as substructure
@@ -212,11 +200,11 @@ class StructuralSolver:
         fixed_dofs = np.loadtxt(mesh_dir / "fixedDOF.txt")
         loads = np.loadtxt(mesh_dir / "fixedLoad.txt")
         for c, fixed_dof, load in zip(coords, fixed_dofs, loads):
-            nd = Node()
-            nd.set_coordinates(*c)
-            nd.is_dof_fixed[:] = map(bool, fixed_dof)
-            nd.fixed_load[:] = load
+            nd = Node(coordinates=c, is_dof_fixed=fixed_dof, fixed_load=load)
+            node_num = len(self.nodes)  # Needs to be before we append the node
             self.nodes.append(nd)
+            self.node_dofs[nd] = [node_num * NUM_DIM + i for i in [0, 1]]
+
         for struct in self.substructures:
             struct.load_mesh(mesh_dir)
             if isinstance(struct, (RigidSubstructure, TorsionalSpringSubstructure)):

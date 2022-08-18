@@ -9,7 +9,7 @@ from _pytest.monkeypatch import MonkeyPatch
 
 from planingfsi.fe.femesh import Mesh
 from planingfsi.fe.femesh import Point
-from planingfsi.fe.femesh import Submesh
+from planingfsi.fe.femesh import Subcomponent
 
 
 @pytest.fixture()
@@ -161,11 +161,11 @@ def test_get_length(mesh: Mesh) -> None:
 
 
 @pytest.fixture()
-def submesh(mesh: Mesh) -> Submesh:
+def submesh(mesh: Mesh) -> Subcomponent:
     return mesh.add_submesh("submesh_name")
 
 
-def test_add_submesh(mesh: Mesh, submesh: Submesh) -> None:
+def test_add_submesh(mesh: Mesh, submesh: Subcomponent) -> None:
     assert submesh.name == "submesh_name"
     assert submesh.mesh == mesh
 
@@ -192,7 +192,7 @@ def test_add_submesh(mesh: Mesh, submesh: Submesh) -> None:
     ],
 )
 def test_add_curve(
-    submesh: Submesh, kwargs: dict[str, Any], attr_name: str, expected_value: float
+    submesh: Subcomponent, kwargs: dict[str, Any], attr_name: str, expected_value: float
 ) -> None:
     curve = submesh.add_curve(0, 10, **kwargs)
     value = getattr(curve, attr_name)
@@ -296,7 +296,9 @@ def test_get_position() -> None:
     assert point.y_pos == pytest.approx(20.0)
 
 
-def test_plot_mesh(monkeypatch: MonkeyPatch, tmp_path: Path, mesh: Mesh, submesh: Submesh) -> None:
+def test_plot_mesh(
+    monkeypatch: MonkeyPatch, tmp_path: Path, mesh: Mesh, submesh: Subcomponent
+) -> None:
     """Smoke test for plotting the mesh."""
     monkeypatch.chdir(tmp_path)
     submesh.add_curve(0, 10, Nel=3)
