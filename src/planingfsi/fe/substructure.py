@@ -248,12 +248,6 @@ class Substructure(abc.ABC):
         assert self.interp_func_y is not None
         return np.array([self.interp_func_x(si), self.interp_func_y(si)])
 
-    def get_x_coordinates(self, s: float) -> float:
-        return self.get_coordinates(s)[0]
-
-    def get_y_coordinates(self, s: float) -> float:
-        return self.get_coordinates(s)[1]
-
     @property
     def arc_length(self) -> float:
         """The total arc length of the substructure, i.e. the sum of all of the Element lengths."""
