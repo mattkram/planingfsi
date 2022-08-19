@@ -499,9 +499,6 @@ class FlexibleSubstructure(Substructure):
 class RigidSubstructure(Substructure):
     _element_type: ElementType = fe.RigidElement
 
-    def update_angle(self) -> None:
-        return None
-
     def load_mesh(self, submesh: Path | Subcomponent = Path("mesh")) -> None:
         super().load_mesh(submesh)
         self.fix_all_degrees_of_freedom()

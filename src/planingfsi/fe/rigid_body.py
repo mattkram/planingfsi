@@ -355,7 +355,7 @@ class RigidBody:
         self.update_flexible_substructure_positions()
         for ss in self.substructures:
             logger.info(f"Updating position for substructure: {ss.name}")
-            if isinstance(ss, substructure.RigidSubstructure):
+            if isinstance(ss, substructure.TorsionalSpringSubstructure):
                 ss.update_angle()
 
     def update_fluid_forces(self) -> None:
