@@ -110,8 +110,7 @@ class Substructure(abc.ABC):
 
         self.loads = SubstructureLoads()
 
-        self.interp_func_x: interp1d | None = None
-        self.interp_func_y: interp1d | None = None
+        self._interp_coords_at_arclength: interp1d | None = None
 
     @property
     def solver(self) -> StructuralSolver:
@@ -208,25 +207,15 @@ class Substructure(abc.ABC):
 
         nodal_coordinates = np.array([nd.coordinates for nd in self.nodes])
         fill_value = "extrapolate" if self.struct_extrap else np.nan
-        self.interp_func_x, self.interp_func_y = (
-            interp1d(
-                self.node_arc_length,
-                nodal_coordinates[:, 0],
-                kind=self.struct_interp_type,
-                fill_value=fill_value,
-            ),
-            interp1d(
-                self.node_arc_length,
-                nodal_coordinates[:, 1],
-                kind=self.struct_interp_type,
-                fill_value=fill_value,
-            ),
+        self._interp_coords_at_arclength = interp1d(
+            self.node_arc_length,
+            nodal_coordinates.T,
+            kind=self.struct_interp_type,
+            fill_value=fill_value,
         )
 
     def get_coordinates(self, si: float) -> np.ndarray:
-        assert self.interp_func_x is not None
-        assert self.interp_func_y is not None
-        return np.array([self.interp_func_x(si), self.interp_func_y(si)])
+        return self._interp_coords_at_arclength(si)
 
     @property
     def arc_length(self) -> float:
@@ -317,13 +306,12 @@ class Substructure(abc.ABC):
             fluid_p += [pp for pp in pressure_fluid[1:]]
             air_s += [ss for ss in node_s[1:]]
             if self.seal_pressure_method.lower() == "hydrostatic":
-                assert self.interp_func_y is not None
                 air_p += [
                     Pc
                     - self.seal_pressure
                     + self.config.flow.density
                     * self.config.flow.gravity
-                    * (self.interp_func_y(si) - self.config.flow.waterline_height)
+                    * (self.get_coordinates(si)[1] - self.config.flow.waterline_height)
                     for si in node_s[1:]
                 ]
             else:
@@ -348,13 +336,12 @@ class Substructure(abc.ABC):
 
             # Calculate internal pressure
             if self.seal_pressure_method.lower() == "hydrostatic":
-                assert self.interp_func_y is not None
                 pressure_internal = (
                     self.seal_pressure
                     - self.config.flow.density
                     * self.config.flow.gravity
                     * (
-                        np.array([self.interp_func_y(si) for si in s])
+                        np.array([self.get_coordinates(si)[1] for si in s])
                         - self.config.flow.waterline_height
                     )
                 )
