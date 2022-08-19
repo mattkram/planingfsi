@@ -497,6 +497,12 @@ class FlexibleSubstructure(Substructure):
 
 
 class RigidSubstructure(Substructure):
+    """A substructure that is rigidly attached to the rigid body.
+
+    This means that the substructure moves with the rigid body but does not deform.
+
+    """
+
     _element_type: ElementType = fe.RigidElement
 
     def load_mesh(self, submesh: Path | Subcomponent = Path("mesh")) -> None:
