@@ -905,10 +905,20 @@ class Interpolator:
         self._immersed_arclength: float | None = None
 
     def get_body_height(self, x: float) -> float:
-        s = np.max([self.get_s_fixed_x(x, 0.5), 0.0])
+        """Return the elevation (height) of the substructure surface at a given x-coordinate.
+
+        Args:
+            x: The x-coordinate.
+
+        Returns:
+            The elevation of the surface.
+
+        """
+        s = np.max([self.get_s_fixed_x(x), 0.0])
         return self.get_coordinates(s)[1]
 
     def get_coordinates(self, s: float) -> np.ndarray:
+        """The surface coordinates at a given arclength."""
         return self.solid.get_coordinates(s)
 
     def get_min_max_s(self) -> list[float]:
@@ -916,13 +926,25 @@ class Interpolator:
         return [self.get_s_fixed_x(x) for x in [pts[0], pts[-1]]]
 
     def get_s_fixed_x(self, x: float, so_pct: float = 0.5) -> float:
-        return fzero(lambda s: self.get_coordinates(s)[0] - x, so_pct * self.solid.arc_length)
+        """Return the arclength of the substructure surface at a given x-coordinate.
 
-    def get_s_fixed_y(self, y: float, so_pct: float) -> float:
-        return fzero(lambda s: self.get_coordinates(s)[1] - y, so_pct * self.solid.arc_length)
+        Args:
+            x: The x-coordinate.
+            so_pct: The starting arclength guess, as a fraction of the total arclength.
+
+        Returns:
+            The arclength of the surface.
+
+        """
+        return fzero(lambda s: self.get_coordinates(s)[0] - x, so_pct * self.solid.arc_length)
 
     @property
     def immersed_length(self) -> float:
+        """The total immersed length of the substructure.
+
+        This is the length of the surface below the undisturbed waterline.
+
+        """
         if self._immersed_arclength is None:
             self._immersed_arclength = self._immersion_arclength_start_pct * self.solid.arc_length
 
@@ -949,7 +971,17 @@ class Interpolator:
         return self.get_coordinates(self._separation_arclength)
 
     def get_loads_in_range(self, s0: float, s1: float) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
+        """Get the fluid pressure and shear stress at any pressure elements within the provided arclength range.
+
+        Args:
+            s0: The lower-bound arclength.
+            s1: The upper-bound arclength.
+
+        Returns:
+            A tuple of arrays containing the arclength, pressure, and shear stress at each pressure element point.
+
+        """
         xs = [self.solid.get_coordinates(s)[0] for s in [s0, s1]]
         x, p, tau = self.fluid.get_loads_in_range(xs[0], xs[1])
-        s = np.array([self.get_s_fixed_x(xx, 0.5) for xx in x])
+        s = np.array([self.get_s_fixed_x(xx) for xx in x])
         return s, p, tau
