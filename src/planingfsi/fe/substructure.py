@@ -493,29 +493,6 @@ class FlexibleSubstructure(Substructure):
         self.K[np.ix_(el_dof, el_dof)] += K
         self.F[np.ix_(el_dof)] += F
 
-    #  def getPtDispFEM(self):
-    # if self.K is None:
-    # self.initializeMatrices()
-    #    self.U *= 0.0
-    # self.update_fluid_forces()
-    # self.assembleGlobalStiffnessAndForce()
-    #
-    #    dof = [False for dof in self.F]
-    #    for nd in self.node:
-    #      for dofi, fdofi in zip(nd.dof, nd.fixedDOF):
-    #        dof[dofi] = not fdofi
-    # if any(dof):
-    #      self.U[np.ix_(dof)] = np.linalg.solve(self.K[np.ix_(dof,dof)], self.F[np.ix_(dof)])
-    #
-    #    # Relax displacement and limit step if necessary
-    #    self.U *= config.relaxFEM
-    #    self.U *= np.min([config.maxFEMDisp / np.max(self.U), 1.0])
-    #
-    #    for nd in self.node:
-    #      nd.moveCoordinates(self.U[nd.dof[0],0], self.U[nd.dof[1],0])
-    #
-    #    self.update_geometry()
-
     def load_mesh(self, submesh: Path | Subcomponent = Path("mesh")) -> None:
         """Load the mesh, and assign structural properties to the elements."""
         super().load_mesh(submesh)
