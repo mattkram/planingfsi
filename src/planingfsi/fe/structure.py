@@ -189,7 +189,6 @@ class StructuralSolver:
             # Find submesh with same name as substructure
             submesh = [submesh for submesh in mesh.submesh if submesh.name == struct.name][0]
             struct.load_mesh(submesh)
-            struct.set_attachments()
 
     def _load_mesh_from_dir(self, mesh_dir: Path) -> None:
         """Load the mesh from a directory of files."""
@@ -205,7 +204,6 @@ class StructuralSolver:
 
         for struct in self.substructures:
             struct.load_mesh(mesh_dir)
-            struct.set_attachments()
 
     def load_mesh(self, mesh: Path | Mesh = Path("mesh")) -> None:
         """Load the mesh from a directory of files or an existing mesh object."""

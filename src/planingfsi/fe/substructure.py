@@ -468,9 +468,6 @@ class Substructure(abc.ABC):
         else:
             return [], []
 
-    def set_attachments(self) -> None:
-        return None
-
     def fix_all_degrees_of_freedom(self) -> None:
         """Set all degrees of freedom of all nodes in the substructure."""
         for nd in self.nodes:
@@ -557,9 +554,6 @@ class FlexibleSubstructure(Substructure):
 class RigidSubstructure(Substructure):
     _element_type: ElementType = fe.RigidElement
 
-    def set_attachments(self) -> None:
-        return None
-
     def update_angle(self) -> None:
         return None
 
@@ -621,8 +615,9 @@ class TorsionalSpringSubstructure(FlexibleSubstructure, RigidSubstructure):
             self.base_pt = self.get_coordinates(self.base_pt_pct * self.arc_length)
 
         self.set_angle(self.initial_angle)
+        self._set_attachments()
 
-    def set_attachments(self) -> None:
+    def _set_attachments(self) -> None:
         if self.attached_substructure_name is not None:
             self.attached_substructure = self.parent.get_substructure_by_name(
                 self.attached_substructure_name
