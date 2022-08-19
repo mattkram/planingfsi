@@ -541,6 +541,8 @@ class TorsionalSpringSubstructure(FlexibleSubstructure):
         self.tip_load = tip_load
         self.tip_load_pct = tip_load_pct
         self.base_pt_pct = base_pt_pct
+        if spring_constant <= 0.0:
+            raise ValueError("Spring constant must be positive.")
         self.spring_constant = spring_constant
 
         self._theta = initial_angle
@@ -789,19 +791,17 @@ class TorsionalSpringSubstructure(FlexibleSubstructure):
     #    self.loads.Mt += attM
 
     def update_angle(self) -> None:
-
+        """Update the angle of the substructure."""
         if np.isnan(self.loads.Mt):
             theta = 0.0
         else:
-            theta = -self.loads.Mt
+            theta = -self.loads.Mt / self.spring_constant
 
-        if not self.spring_constant == 0.0:
-            theta /= self.spring_constant
+        # Ramp and limit the angle change
+        angle_change = (theta - self._theta) * self.relax
+        angle_change = min(abs(angle_change), self.max_angle_step) * np.sign(angle_change)
 
-        dTheta = (theta - self._theta) * self.relax
-        dTheta = np.min([np.abs(dTheta), self.max_angle_step]) * np.sign(dTheta)
-
-        self.angle = self._theta + dTheta
+        self.angle = self._theta + angle_change
 
     def write_deformation(self) -> None:
         """Write the deformation angle to a file."""
