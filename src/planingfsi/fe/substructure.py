@@ -804,6 +804,7 @@ class TorsionalSpringSubstructure(FlexibleSubstructure):
         self.angle = self._theta + dTheta
 
     def write_deformation(self) -> None:
+        """Write the deformation angle to a file."""
         writers.write_as_dict(
             self.it_dir / f"deformation_{self.name}.{self.config.io.data_format}",
             ["angle", self._theta],
