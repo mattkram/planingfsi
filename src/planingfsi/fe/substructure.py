@@ -509,9 +509,10 @@ class Substructure(abc.ABC):
     def set_angle(self, _: float) -> None:
         return None
 
-    @abc.abstractmethod
-    def set_fixed_dof(self) -> None:
-        raise NotImplementedError
+    def fix_all_degrees_of_freedom(self) -> None:
+        """Set all degrees of freedom of all nodes in the substructure."""
+        for nd in self.nodes:
+            nd.is_dof_fixed = tuple(True for _ in range(NUM_DIM))
 
 
 class FlexibleSubstructure(Substructure):
@@ -590,9 +591,6 @@ class FlexibleSubstructure(Substructure):
             el.initial_axial_force = -self.pretension
             el.EA = self.EA
 
-    def set_fixed_dof(self) -> None:
-        pass
-
 
 class RigidSubstructure(Substructure):
     _element_type: ElementType = fe.RigidElement
@@ -603,10 +601,9 @@ class RigidSubstructure(Substructure):
     def update_angle(self) -> None:
         return None
 
-    def set_fixed_dof(self) -> None:
-        """Set all degrees of freedom of all nodes in the substructure."""
-        for nd in self.nodes:
-            nd.is_dof_fixed = tuple(True for _ in range(NUM_DIM))
+    def load_mesh(self, submesh: Path | Subcomponent = Path("mesh")) -> None:
+        super().load_mesh(submesh)
+        self.fix_all_degrees_of_freedom()
 
 
 class TorsionalSpringSubstructure(FlexibleSubstructure, RigidSubstructure):
@@ -653,7 +650,7 @@ class TorsionalSpringSubstructure(FlexibleSubstructure, RigidSubstructure):
 
     def load_mesh(self, submesh: Path | Subcomponent = Path("mesh")) -> None:
         super().load_mesh(submesh)
-        self.set_fixed_dof()
+        self.fix_all_degrees_of_freedom()
         if self.base_pt_pct == 1.0:
             self.base_pt = self.nodes[-1].coordinates
         elif self.base_pt_pct == 0.0:

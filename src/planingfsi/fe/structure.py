@@ -189,8 +189,6 @@ class StructuralSolver:
             # Find submesh with same name as substructure
             submesh = [submesh for submesh in mesh.submesh if submesh.name == struct.name][0]
             struct.load_mesh(submesh)
-            if isinstance(struct, (RigidSubstructure, TorsionalSpringSubstructure)):
-                struct.set_fixed_dof()
             struct.set_attachments()
 
     def _load_mesh_from_dir(self, mesh_dir: Path) -> None:
@@ -207,8 +205,6 @@ class StructuralSolver:
 
         for struct in self.substructures:
             struct.load_mesh(mesh_dir)
-            if isinstance(struct, (RigidSubstructure, TorsionalSpringSubstructure)):
-                struct.set_fixed_dof()
             struct.set_attachments()
 
     def load_mesh(self, mesh: Path | Mesh = Path("mesh")) -> None:
