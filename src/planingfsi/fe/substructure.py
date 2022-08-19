@@ -221,12 +221,11 @@ class Substructure(abc.ABC):
         self.node_arc_length = np.cumsum([0.0] + element_lengths)
 
         nodal_coordinates = np.array([nd.coordinates for nd in self.nodes])
-        fill_value = "extrapolate" if self.struct_extrap else np.nan
         self._interp_coords_at_arclength = interp1d(
             self.node_arc_length,
             nodal_coordinates.T,
             kind=self.struct_interp_type,
-            fill_value=fill_value,
+            fill_value="extrapolate" if self.struct_extrap else np.nan,
         )
 
     def get_coordinates(self, si: float) -> np.ndarray:
