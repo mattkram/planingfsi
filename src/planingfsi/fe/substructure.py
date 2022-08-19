@@ -511,6 +511,12 @@ class RigidSubstructure(Substructure):
 
 
 class TorsionalSpringSubstructure(FlexibleSubstructure):
+    """A substructure that is locally rigid but is attached to the rigid body with a torsional spring.
+
+    Thus, the nodes can move, but rotate about a base point with a linear spring stiffness.
+
+    """
+
     base_pt: np.ndarray
     is_free = True
     _element_type: ElementType = fe.RigidElement
