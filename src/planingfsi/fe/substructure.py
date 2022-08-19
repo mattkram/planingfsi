@@ -921,9 +921,15 @@ class Interpolator:
         """The surface coordinates at a given arclength."""
         return self.solid.get_coordinates(s)
 
-    def get_min_max_s(self) -> list[float]:
+    def get_min_max_s(self) -> tuple[float, float]:
+        """Return the min and max arclength that the fluid elements cover.
+
+        Returns:
+            A tuple of (min, max) arclength.
+
+        """
         pts = self.fluid.get_element_coords()
-        return [self.get_s_fixed_x(x) for x in [pts[0], pts[-1]]]
+        return self.get_s_fixed_x(pts[0]), self.get_s_fixed_x(pts[-1])
 
     def get_s_fixed_x(self, x: float, so_pct: float = 0.5) -> float:
         """Return the arclength of the substructure surface at a given x-coordinate.
