@@ -884,6 +884,8 @@ class TorsionalSpringSubstructure(FlexibleSubstructure, RigidSubstructure):
 
 
 class Interpolator:
+    """An object that handles two-way communication between the structural and fluid solvers."""
+
     def __init__(
         self,
         solid: Substructure,
