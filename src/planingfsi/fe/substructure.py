@@ -510,7 +510,7 @@ class RigidSubstructure(Substructure):
         self.fix_all_degrees_of_freedom()
 
 
-class TorsionalSpringSubstructure(FlexibleSubstructure, RigidSubstructure):
+class TorsionalSpringSubstructure(FlexibleSubstructure):
     base_pt: np.ndarray
     is_free = True
     _element_type: ElementType = fe.RigidElement
