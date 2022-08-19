@@ -897,9 +897,6 @@ class Interpolator:
         self.solid = solid
         self.fluid = fluid
 
-        self.solid._interpolator = self
-        self.fluid.interpolator = self
-
         self._separation_arclength: float | None = None
         self._immersed_arclength: float | None = None
 
