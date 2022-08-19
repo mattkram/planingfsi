@@ -563,26 +563,18 @@ class TorsionalSpringSubstructure(FlexibleSubstructure):
 
     @angle.setter
     def angle(self, value: float) -> None:
-        dTheta = np.max([value, self.minimum_angle]) - self._theta
+        nodes = self.nodes.copy()
+        if self.attached_node is not None and self.attached_node not in self.nodes:
+            nodes.append(self.attached_node)
 
-        if self.attached_node is not None and not any(
-            [nd == self.attached_node for nd in self.nodes]
-        ):
-            attNd = [self.attached_node]
-        else:
-            attNd = []
+        angle_change = np.max([value, self.minimum_angle]) - self._theta
+        for nd in nodes:
+            nd.coordinates = trig.rotate_point(nd.coordinates, self.base_pt, -angle_change)
 
-        #    basePt = np.array([c for c in self.basePt])
-        basePt = np.array([c for c in self.nodes[-1].coordinates])
-        for nd in self.nodes + attNd:
-            oldPt = np.array([c for c in nd.coordinates])
-            newPt = trig.rotate_point(oldPt, basePt, -dTheta)
-            nd.coordinates = newPt
-
-        self._theta += dTheta
-        self.residual = dTheta
+        self._theta += angle_change
+        self.residual = angle_change
         self.update_geometry()
-        print(("  Deformation for substructure {0}: {1}".format(self.name, self._theta)))
+        logger.info(f"  Deformation for substructure {self.name}: {self._theta}")
 
     def load_mesh(self, submesh: Path | Subcomponent = Path("mesh")) -> None:
         super().load_mesh(submesh)
