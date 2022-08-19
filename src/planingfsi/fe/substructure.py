@@ -595,8 +595,6 @@ class TorsionalSpringSubstructure(FlexibleSubstructure):
             self.attached_substructure = self.parent.get_substructure_by_name(
                 self.attached_substructure_name
             )
-        else:
-            self.attached_substructure = None
 
         if self.attached_substructure_end == "start":
             self.attached_ind = 0
