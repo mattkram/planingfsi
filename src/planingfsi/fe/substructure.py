@@ -467,11 +467,6 @@ class FlexibleSubstructure(Substructure):
         self.F: np.ndarray | None = None
         self.U: np.ndarray | None = None
 
-    def get_residual(self) -> float:
-        # TODO: Consider removing this and fixing static types
-        assert self.U is not None
-        return np.max(np.abs(self.U))
-
     def assemble_global_stiffness_and_force(self) -> None:
         if self.K is None or self.F is None:
             num_dof = len(self.solver.nodes) * NUM_DIM
