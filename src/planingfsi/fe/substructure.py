@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import abc
-from collections.abc import Iterable
 from dataclasses import dataclass
 from pathlib import Path
 from typing import TYPE_CHECKING
@@ -441,31 +440,6 @@ class Substructure(abc.ABC):
         dy_ds = math_helpers.deriv(lambda si: self.get_coordinates(si)[1], s)
 
         return trig.rotate_vec_2d(trig.angd2vec2d(trig.atand2(dy_ds, dx_ds)), -90)
-
-    def get_pressure_plot_points(self, s0: np.ndarray, p0: np.ndarray) -> Iterable[Iterable]:
-        """Get coordinates required to plot pressure profile as lines."""
-        sp = [(s, p) for s, p in zip(s0, p0) if not np.abs(p) < 1e-4]
-
-        if len(sp) > 0:
-            s0, p0 = list(zip(*sp))
-            nVec = list(map(self.get_normal_vector, s0))
-            coords0 = [np.array(self.get_coordinates(s)) for s in s0]
-            coords1 = [
-                c + self.config.plotting.pressure_scale * p * n
-                for c, p, n in zip(coords0, p0, nVec)
-            ]
-
-            return list(
-                zip(
-                    *[
-                        xyi
-                        for c0, c1 in zip(coords0, coords1)
-                        for xyi in [c0, c1, np.ones(2) * np.nan]
-                    ]
-                )
-            )
-        else:
-            return [], []
 
     def fix_all_degrees_of_freedom(self) -> None:
         """Set all degrees of freedom of all nodes in the substructure."""

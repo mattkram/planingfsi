@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import os
 from collections.abc import Callable
+from collections.abc import Iterable
 from pathlib import Path
 from typing import TYPE_CHECKING
 from typing import Any
@@ -140,12 +141,31 @@ class FSIFigure:
         end_pts = np.array([self.config.plotting.x_fs_min, self.config.plotting.x_fs_max])
         self.lineFSi.set_data(end_pts, self.config.flow.waterline_height * np.ones_like(end_pts))
 
+    @staticmethod
+    def _get_pressure_plot_points(ss, s0: np.ndarray, p0: np.ndarray) -> Iterable[Iterable]:
+        """Get coordinates required to plot pressure profile as lines."""
+        sp = [(s, p) for s, p in zip(s0, p0) if not np.abs(p) < 1e-4]
+
+        if not sp:
+            return [], []
+
+        s0, p0 = list(zip(*sp))
+        nVec = list(map(ss.get_normal_vector, s0))
+        coords0 = [ss.get_coordinates(s) for s in s0]
+        coords1 = [
+            c + ss.config.plotting.pressure_scale * p * n for c, p, n in zip(coords0, p0, nVec)
+        ]
+
+        return list(
+            zip(*[xyi for c0, c1 in zip(coords0, coords1) for xyi in [c0, c1, np.ones(2) * np.nan]])
+        )
+
     def plot_pressure_profiles(self, ss: Substructure) -> None:
         """Plot the internal and external pressure profiles as lines."""
         if handle := self.line_fluid_pressure.get(ss):
-            handle.set_data(ss.get_pressure_plot_points(ss.fluidS, ss.fluidP))
+            handle.set_data(self._get_pressure_plot_points(ss, ss.fluidS, ss.fluidP))
         if handle := self.line_air_pressure.get(ss):
-            handle.set_data(ss.get_pressure_plot_points(ss.airS, ss.airP))
+            handle.set_data(self._get_pressure_plot_points(ss, ss.airS, ss.airP))
 
     def plot_substructure(self, ss: Substructure) -> None:
         """Plot the substructure elements and pressure profiles."""
