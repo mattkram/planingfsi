@@ -138,6 +138,27 @@ class Substructure(abc.ABC):
             return 1.0
         return self.solver.simulation.ramp
 
+    @property
+    def nodes(self) -> list[fe.Node]:
+        """A list of all nodes in the substructure."""
+        nodes = [el.start_node for el in self.elements]
+        return nodes + [self.elements[-1].end_node]
+
+    @property
+    def arc_length(self) -> float:
+        """The total arc length of the substructure, i.e. the sum of all of the Element lengths."""
+        return max(self.node_arc_length)
+
+    @property
+    def it_dir(self) -> Path:
+        """A path to the current numbered iteration directory, in which to save results."""
+        return self.solver.simulation.it_dir
+
+    @property
+    def coordinates_file_path(self) -> Path:
+        """A path to the coordinates file for the current iteration."""
+        return self.it_dir / f"coords_{self.name}.{self.config.io.data_format}"
+
     def add_planing_surface(self, planing_surface: PlaningSurface, **kwargs: Any) -> PlaningSurface:
         """Add a planing surface to the substructure, and configure the interpolator.
 
@@ -171,12 +192,6 @@ class Substructure(abc.ABC):
         self.cushion_pressure_type = "Total"
         self.cushion_pressure = pressure_cushion.cushion_pressure
         return pressure_cushion
-
-    @property
-    def nodes(self) -> list[fe.Node]:
-        """A list of all nodes in the substructure."""
-        nodes = [el.start_node for el in self.elements]
-        return nodes + [self.elements[-1].end_node]
 
     def load_mesh(self, submesh: Path | Subcomponent = Path("mesh")) -> None:
         """Load the mesh from an object or file, and create all component Elements."""
@@ -215,22 +230,8 @@ class Substructure(abc.ABC):
         )
 
     def get_coordinates(self, si: float) -> np.ndarray:
+        """Return the coordinates of the surface at a specific arclength."""
         return self._interp_coords_at_arclength(si)
-
-    @property
-    def arc_length(self) -> float:
-        """The total arc length of the substructure, i.e. the sum of all of the Element lengths."""
-        return max(self.node_arc_length)
-
-    @property
-    def it_dir(self) -> Path:
-        """A path to the current numbered iteration directory, in which to save results."""
-        return self.solver.simulation.it_dir
-
-    @property
-    def coordinates_file_path(self) -> Path:
-        """A path to the coordinates file for the current iteration."""
-        return self.it_dir / f"coords_{self.name}.{self.config.io.data_format}"
 
     def write_coordinates(self) -> None:
         """Write the coordinates to file"""
