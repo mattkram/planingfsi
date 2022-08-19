@@ -897,12 +897,12 @@ class Interpolator:
         self.solid = solid
         self.fluid = fluid
 
-        self._separation_arclength: float | None = None
-        self._immersed_arclength: float | None = None
-
         self._waterline_height = waterline_height
         self._separation_arclength_start_pct = separation_arclength_start_pct
         self._immersion_arclength_start_pct = immersion_arclength_start_pct
+
+        self._separation_arclength: float | None = None
+        self._immersed_arclength: float | None = None
 
     def get_body_height(self, x: float) -> float:
         s = np.max([self.get_s_fixed_x(x, 0.5), 0.0])
