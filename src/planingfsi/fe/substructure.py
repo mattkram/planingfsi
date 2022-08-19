@@ -538,13 +538,12 @@ class TorsionalSpringSubstructure(FlexibleSubstructure):
         **kwargs: Any,
     ):
         super().__init__(**kwargs)
-        self.initial_angle = initial_angle
         self.tip_load = tip_load
         self.tip_load_pct = tip_load_pct
         self.base_pt_pct = base_pt_pct
         self.spring_constant = spring_constant
 
-        self.theta = 0.0
+        self._theta = initial_angle
         self.relax = relaxation_angle or self.config.body.relax_rigid_body
         self.attach_pct = attach_pct
         self.attached_node: fe.Node | None = None
@@ -557,6 +556,34 @@ class TorsionalSpringSubstructure(FlexibleSubstructure):
         self.attached_substructure: Substructure | None = None
         self.residual = 1.0
 
+    @property
+    def angle(self) -> float:
+        """The current rotation angle of the substructure."""
+        return self._theta
+
+    @angle.setter
+    def angle(self, value: float) -> None:
+        dTheta = np.max([value, self.minimum_angle]) - self._theta
+
+        if self.attached_node is not None and not any(
+            [nd == self.attached_node for nd in self.nodes]
+        ):
+            attNd = [self.attached_node]
+        else:
+            attNd = []
+
+        #    basePt = np.array([c for c in self.basePt])
+        basePt = np.array([c for c in self.nodes[-1].coordinates])
+        for nd in self.nodes + attNd:
+            oldPt = np.array([c for c in nd.coordinates])
+            newPt = trig.rotate_point(oldPt, basePt, -dTheta)
+            nd.coordinates = newPt
+
+        self._theta += dTheta
+        self.residual = dTheta
+        self.update_geometry()
+        print(("  Deformation for substructure {0}: {1}".format(self.name, self._theta)))
+
     def load_mesh(self, submesh: Path | Subcomponent = Path("mesh")) -> None:
         super().load_mesh(submesh)
         self.fix_all_degrees_of_freedom()
@@ -567,7 +594,6 @@ class TorsionalSpringSubstructure(FlexibleSubstructure):
         else:
             self.base_pt = self.get_coordinates(self.base_pt_pct * self.arc_length)
 
-        self.set_angle(self.initial_angle)
         self._set_attachments()
 
     def _set_attachments(self) -> None:
@@ -780,32 +806,10 @@ class TorsionalSpringSubstructure(FlexibleSubstructure):
         if not self.spring_constant == 0.0:
             theta /= self.spring_constant
 
-        dTheta = (theta - self.theta) * self.relax
+        dTheta = (theta - self._theta) * self.relax
         dTheta = np.min([np.abs(dTheta), self.max_angle_step]) * np.sign(dTheta)
 
-        self.set_angle(self.theta + dTheta)
-
-    def set_angle(self, ang: float) -> None:
-        dTheta = np.max([ang, self.minimum_angle]) - self.theta
-
-        if self.attached_node is not None and not any(
-            [nd == self.attached_node for nd in self.nodes]
-        ):
-            attNd = [self.attached_node]
-        else:
-            attNd = []
-
-        #    basePt = np.array([c for c in self.basePt])
-        basePt = np.array([c for c in self.nodes[-1].coordinates])
-        for nd in self.nodes + attNd:
-            oldPt = np.array([c for c in nd.coordinates])
-            newPt = trig.rotate_point(oldPt, basePt, -dTheta)
-            nd.coordinates = newPt
-
-        self.theta += dTheta
-        self.residual = dTheta
-        self.update_geometry()
-        print(("  Deformation for substructure {0}: {1}".format(self.name, self.theta)))
+        self.angle = self._theta + dTheta
 
     def get_residual(self) -> float:
         return self.residual
@@ -815,7 +819,7 @@ class TorsionalSpringSubstructure(FlexibleSubstructure):
     def write_deformation(self) -> None:
         writers.write_as_dict(
             self.it_dir / f"deformation_{self.name}.{self.config.io.data_format}",
-            ["angle", self.theta],
+            ["angle", self._theta],
         )
 
 
