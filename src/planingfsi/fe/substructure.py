@@ -208,38 +208,16 @@ class Substructure(abc.ABC):
         self.node_arc_length = np.cumsum([0.0] + element_lengths)
 
         nodal_coordinates = np.array([nd.coordinates for nd in self.nodes])
+        fill_value = "extrapolate" if self.struct_extrap else np.nan
         self.interp_func_x, self.interp_func_y = (
-            interp1d(self.node_arc_length, nodal_coordinates[:, 0]),
-            interp1d(self.node_arc_length, nodal_coordinates[:, 1], kind=self.struct_interp_type),
+            interp1d(self.node_arc_length, nodal_coordinates[:, 0], fill_value=fill_value),
+            interp1d(
+                self.node_arc_length,
+                nodal_coordinates[:, 1],
+                kind=self.struct_interp_type,
+                fill_value=fill_value,
+            ),
         )
-
-        if self.struct_extrap:
-            self.interp_func_x, self.interp_func_y = self._extrap_coordinates(
-                self.interp_func_x, self.interp_func_y
-            )
-
-    @staticmethod
-    def _extrap_coordinates(fxi: Callable, fyi: Callable) -> tuple[Callable, Callable]:
-        """Return a new callable that provides extrapolation."""
-
-        def extrap1d(interpolator: interp1d) -> Callable:
-            xs = interpolator.x
-            ys = interpolator.y
-
-            def pointwise(xi: float) -> float:
-                if xi < xs[0]:
-                    return ys[0] + (xi - xs[0]) * (ys[1] - ys[0]) / (xs[1] - xs[0])
-                elif xi > xs[-1]:
-                    return ys[-1] + (xi - xs[-1]) * (ys[-1] - ys[-2]) / (xs[-1] - xs[-2])
-                else:
-                    return interpolator(xi)
-
-            def ufunclike(xs: float) -> np.ndarray:
-                return np.array(list(map(pointwise, np.array([xs]))))[0]
-
-            return ufunclike
-
-        return extrap1d(fxi), extrap1d(fyi)
 
     def get_coordinates(self, si: float) -> np.ndarray:
         assert self.interp_func_x is not None
