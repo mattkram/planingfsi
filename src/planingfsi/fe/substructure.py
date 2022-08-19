@@ -189,7 +189,6 @@ class Substructure(abc.ABC):
         else:
             nd_idx = np.loadtxt(submesh / f"elements_{self.name}.txt", dtype=int)
 
-        # Generate Element list
         self.elements = [
             self._element_type(self.solver.nodes[nd_st_i], self.solver.nodes[nd_end_i], parent=self)
             for nd_st_i, nd_end_i in nd_idx
@@ -197,11 +196,11 @@ class Substructure(abc.ABC):
         self.update_geometry()
 
         # Set the interpolation method if there are not enough elements (cubic requires at least 3 elements)
+        # else keep what was specified in the constructor
         if len(self.elements) == 1:
             self.struct_interp_type = "linear"
         elif len(self.elements) == 2 and not self.struct_interp_type == "linear":
             self.struct_interp_type = "quadratic"
-        # else keep what was specified in the constructor
 
     def update_geometry(self) -> None:
         """Update geometry and interpolation functions in the process."""
