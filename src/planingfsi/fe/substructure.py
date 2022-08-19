@@ -174,9 +174,6 @@ class Substructure(abc.ABC):
         self.cushion_pressure = pressure_cushion.cushion_pressure
         return pressure_cushion
 
-    def set_element_properties(self) -> None:
-        """Set the properties of each element."""
-
     @property
     def nodes(self) -> list[fe.Node]:
         """A list of all nodes in the substructure."""
@@ -202,7 +199,6 @@ class Substructure(abc.ABC):
             for nd_st_i, nd_end_i in zip(nd_st, nd_end)
         ]
         self.update_geometry()
-        self.set_element_properties()
 
         # Set the interpolation method if there are not enough elements (cubic requires at least 3 elements)
         if len(self.elements) == 1:
@@ -587,8 +583,9 @@ class FlexibleSubstructure(Substructure):
     #
     #    self.update_geometry()
 
-    def set_element_properties(self) -> None:
-        super().set_element_properties()
+    def load_mesh(self, submesh: Path | Subcomponent = Path("mesh")) -> None:
+        """Load the mesh, and assign structural properties to the elements."""
+        super().load_mesh(submesh)
         for el in self.elements:
             el.initial_axial_force = -self.pretension
             el.EA = self.EA
