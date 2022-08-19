@@ -210,7 +210,12 @@ class Substructure(abc.ABC):
         nodal_coordinates = np.array([nd.coordinates for nd in self.nodes])
         fill_value = "extrapolate" if self.struct_extrap else np.nan
         self.interp_func_x, self.interp_func_y = (
-            interp1d(self.node_arc_length, nodal_coordinates[:, 0], fill_value=fill_value),
+            interp1d(
+                self.node_arc_length,
+                nodal_coordinates[:, 0],
+                kind=self.struct_interp_type,
+                fill_value=fill_value,
+            ),
             interp1d(
                 self.node_arc_length,
                 nodal_coordinates[:, 1],
