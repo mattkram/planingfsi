@@ -545,7 +545,6 @@ class TorsionalSpringSubstructure(FlexibleSubstructure):
         self.spring_constant = spring_constant
 
         self.theta = 0.0
-        self.MOld: float | None = None
         self.relax = relaxation_angle or self.config.body.relax_rigid_body
         self.attach_pct = attach_pct
         self.attached_node: fe.Node | None = None
