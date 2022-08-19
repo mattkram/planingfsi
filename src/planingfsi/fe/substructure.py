@@ -506,9 +506,6 @@ class Substructure(abc.ABC):
     def set_attachments(self) -> None:
         return None
 
-    def set_angle(self, _: float) -> None:
-        return None
-
     def fix_all_degrees_of_freedom(self) -> None:
         """Set all degrees of freedom of all nodes in the substructure."""
         for nd in self.nodes:
