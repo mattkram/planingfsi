@@ -803,11 +803,6 @@ class TorsionalSpringSubstructure(FlexibleSubstructure):
 
         self.angle = self._theta + dTheta
 
-    def get_residual(self) -> float:
-        return self.residual
-
-    #    return self.theta + self.loads.Mt / self.spring_constant
-
     def write_deformation(self) -> None:
         writers.write_as_dict(
             self.it_dir / f"deformation_{self.name}.{self.config.io.data_format}",
