@@ -181,22 +181,18 @@ class Substructure(abc.ABC):
         return nodes + [self.elements[-1].end_node]
 
     def load_mesh(self, submesh: Path | Subcomponent = Path("mesh")) -> None:
+        """Load the mesh from an object or file, and create all component Elements."""
         if isinstance(submesh, Subcomponent):
-            nd_st, nd_end = [], []
-            for line in submesh.line_segments:
-                nd_st.append(line.start_point.index)
-                nd_end.append(line.end_point.index)
+            nd_idx = [
+                (line.start_point.index, line.end_point.index) for line in submesh.line_segments
+            ]
         else:
-            nd_st_arr, nd_end_arr = np.loadtxt(submesh / f"elements_{self.name}.txt", unpack=True)
-            nd_st, nd_end = list(nd_st_arr), list(nd_end_arr)
-
-        nd_st = [int(nd) for nd in nd_st]
-        nd_end = [int(nd) for nd in nd_end]
+            nd_idx = np.loadtxt(submesh / f"elements_{self.name}.txt", dtype=int)
 
         # Generate Element list
         self.elements = [
             self._element_type(self.solver.nodes[nd_st_i], self.solver.nodes[nd_end_i], parent=self)
-            for nd_st_i, nd_end_i in zip(nd_st, nd_end)
+            for nd_st_i, nd_end_i in nd_idx
         ]
         self.update_geometry()
 
