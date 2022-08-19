@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import abc
-from collections.abc import Callable
 from collections.abc import Iterable
 from dataclasses import dataclass
 from pathlib import Path
@@ -901,12 +900,6 @@ class Interpolator:
         self.solid._interpolator = self
         self.fluid.interpolator = self
 
-        self.solid_position_function: Callable[[float], np.ndarray] = solid.get_coordinates
-        self.fluid_pressure_function: Callable[
-            [float, float], tuple[np.ndarray, np.ndarray, np.ndarray]
-        ] = fluid.get_loads_in_range
-        self.get_body_height = self.get_surface_height_fixed_x
-
         self._separation_arclength: float | None = None
         self._immersed_arclength: float | None = None
 
@@ -914,13 +907,12 @@ class Interpolator:
         self._separation_arclength_start_pct = separation_arclength_start_pct
         self._immersion_arclength_start_pct = immersion_arclength_start_pct
 
-    def get_surface_height_fixed_x(self, x: float) -> float:
+    def get_body_height(self, x: float) -> float:
         s = np.max([self.get_s_fixed_x(x, 0.5), 0.0])
         return self.get_coordinates(s)[1]
 
     def get_coordinates(self, s: float) -> np.ndarray:
-        assert self.solid_position_function is not None
-        return self.solid_position_function(s)
+        return self.solid.get_coordinates(s)
 
     def get_min_max_s(self) -> list[float]:
         pts = self.fluid.get_element_coords()
@@ -960,9 +952,7 @@ class Interpolator:
         return self.get_coordinates(self._separation_arclength)
 
     def get_loads_in_range(self, s0: float, s1: float) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
-        assert self.solid_position_function is not None
-        assert self.fluid_pressure_function is not None
-        xs = [self.solid_position_function(s)[0] for s in [s0, s1]]
-        x, p, tau = self.fluid_pressure_function(xs[0], xs[1])
+        xs = [self.solid.get_coordinates(s)[0] for s in [s0, s1]]
+        x, p, tau = self.fluid.get_loads_in_range(xs[0], xs[1])
         s = np.array([self.get_s_fixed_x(xx, 0.5) for xx in x])
         return s, p, tau

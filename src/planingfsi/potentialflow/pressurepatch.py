@@ -125,7 +125,7 @@ class PressurePatch(abc.ABC):
         for i, el in enumerate(self.pressure_elements):
             el.x_coord = x[i]
             if not el.is_source and self.interpolator is not None:
-                el.z_coord = self.interpolator.get_surface_height_fixed_x(x[i])
+                el.z_coord = self.interpolator.get_body_height(x[i])
 
             if isinstance(el, pe.CompleteTriangularPressureElement):
                 # TODO: Remove ignore
