@@ -956,6 +956,15 @@ class Interpolator:
         return self.get_coordinates(self._immersed_arclength)[0]
 
     def get_separation_point(self) -> np.ndarray:
+        """Return the coordinates of the assumed separation point.
+
+        The separation is assumed to occur at the point of lowest elevation along the surface.
+
+        Returns:
+            A 2-d array containing the (x,y) coordinates of the separation point.
+
+        """
+
         def get_y_coords(s: float) -> float:
             return self.get_coordinates(s)[1]
 
