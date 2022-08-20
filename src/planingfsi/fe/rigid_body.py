@@ -218,9 +218,12 @@ class RigidBody:
         res_m = self.res_m if self.free_in_trim else 0.0
         res_node_disp = self.flexible_substructure_residual
         res_torsion = max(
-            ss.residual
-            for ss in self.substructures
-            if isinstance(ss, substructure.TorsionalSpringSubstructure)
+            [
+                ss.residual
+                for ss in self.substructures
+                if isinstance(ss, substructure.TorsionalSpringSubstructure)
+            ],
+            default=0.0,
         )
         return max((res_l, res_m, res_node_disp, res_torsion))
 
