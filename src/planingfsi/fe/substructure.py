@@ -255,6 +255,9 @@ class Substructure(abc.ABC):
         self.loads.D = 0.0
         self.loads.L = 0.0
         self.loads.M = 0.0
+        self.loads.Dt = 0.0
+        self.loads.Lt = 0.0
+        self.loads.Mt = 0.0
         self.loads.Da = 0.0
         self.loads.La = 0.0
         self.loads.Ma = 0.0
@@ -613,10 +616,10 @@ class TorsionalSpringSubstructure(FlexibleSubstructure):
             self.attached_element = self.attached_substructure.elements[self.attached_ind]
 
     def update_fluid_forces(self) -> None:
-        fluidS: list[float] = []
-        fluidP: list[float] = []
-        airS: list[float] = []
-        airP: list[float] = []
+        fluid_s: list[float] = []
+        fluid_p: list[float] = []
+        air_s: list[float] = []
+        air_p: list[float] = []
         self.loads.D = 0.0
         self.loads.L = 0.0
         self.loads.M = 0.0
@@ -665,15 +668,15 @@ class TorsionalSpringSubstructure(FlexibleSubstructure):
             # Store fluid and air pressure components for element (for
             # plotting)
             if i == 0:
-                fluidS += [s[0]]
-                fluidP += [pressure_fluid[0]]
-                airS += [node_s[0]]
-                airP += [Pc - self.seal_pressure]
+                fluid_s += [s[0]]
+                fluid_p += [pressure_fluid[0]]
+                air_s += [node_s[0]]
+                air_p += [Pc - self.seal_pressure]
 
-            fluidS += [ss for ss in s[1:]]
-            fluidP += [pp for pp in pressure_fluid[1:]]
-            airS += [ss for ss in node_s[1:]]
-            airP += [Pc - self.seal_pressure for _ in node_s[1:]]
+            fluid_s += [ss for ss in s[1:]]
+            fluid_p += [pp for pp in pressure_fluid[1:]]
+            air_s += [ss for ss in node_s[1:]]
+            air_p += [Pc - self.seal_pressure for _ in node_s[1:]]
 
             # Apply ramp to hydrodynamic pressure
             pressure_fluid *= self.ramp**2
@@ -778,10 +781,10 @@ class TorsionalSpringSubstructure(FlexibleSubstructure):
         tipM = math_helpers.cross2(tipR, tipF)
         self.loads.Lt += tipF[1]
         self.loads.Mt += tipM
-        self.fluidP = np.array(fluidP)
-        self.fluidS = np.array(fluidS)
-        self.airP = np.array(airP)
-        self.airS = np.array(airS)
+        self.fluidP = np.array(fluid_p)
+        self.fluidS = np.array(fluid_s)
+        self.airP = np.array(air_p)
+        self.airS = np.array(air_s)
 
         # Apply moment from attached substructure
 
