@@ -356,28 +356,29 @@ class Substructure(abc.ABC):
             pressure_external = pressure_fluid + pressure_cushion
             pressure_total = pressure_external - pressure_internal
 
-            # Integrate pressure profile, calculate center of pressure and
-            # distribute force to nodes
-            integral = math_helpers.integrate(s, pressure_total)
-            if integral == 0.0:
-                qp = np.zeros(2)
-            else:
-                pct = (
-                    math_helpers.integrate(s, s * pressure_total) / integral - s[0]
-                ) / math_helpers.cumdiff(s)
-                qp = integral * np.array([1 - pct, pct])
+            if not isinstance(self, TorsionalSpringSubstructure):
+                # Integrate pressure profile, calculate center of pressure and
+                # distribute force to nodes
+                integral = math_helpers.integrate(s, pressure_total)
+                if integral == 0.0:
+                    qp = np.zeros(2)
+                else:
+                    pct = (
+                        math_helpers.integrate(s, s * pressure_total) / integral - s[0]
+                    ) / math_helpers.cumdiff(s)
+                    qp = integral * np.array([1 - pct, pct])
 
-            integral = math_helpers.integrate(s, tau)
-            if integral == 0.0:
-                qs = np.zeros(2)
-            else:
-                pct = (math_helpers.integrate(s, s * tau) / integral - s[0]) / math_helpers.cumdiff(
-                    s
-                )
-                qs = -integral * np.array([1 - pct, pct])
+                integral = math_helpers.integrate(s, tau)
+                if integral == 0.0:
+                    qs = np.zeros(2)
+                else:
+                    pct = (
+                        math_helpers.integrate(s, s * tau) / integral - s[0]
+                    ) / math_helpers.cumdiff(s)
+                    qs = -integral * np.array([1 - pct, pct])
 
-            el.qp = qp
-            el.qs = qs
+                el.qp = qp
+                el.qs = qs
 
             # Calculate external force and moment for rigid body calculation
             if (
@@ -396,7 +397,18 @@ class Substructure(abc.ABC):
                 n = [self.get_normal_vector(s_i) for s_i in s]
                 t = [trig.rotate_vec_2d(n_i, -90) for n_i in n]
 
-                f = [-pi * ni + taui * ti for pi, taui, ni, ti in zip(integrand, tau, n, t)]
+                if isinstance(self, TorsionalSpringSubstructure):
+                    fC = [
+                        -pi * ni + taui * ti
+                        for pi, taui, ni, ti in zip(pressure_external, tau, n, t)
+                    ]
+                    fFl = [
+                        -pi * ni + taui * ti for pi, taui, ni, ti in zip(pressure_fluid, tau, n, t)
+                    ]
+                    f = fC + fFl
+                    print(("Cushion Lift-to-Weight: {0}".format(fC[1] / self.config.body.weight)))
+                else:
+                    f = [-pi * ni + taui * ti for pi, taui, ni, ti in zip(integrand, tau, n, t)]
 
                 assert self.parent is not None
                 r = [
@@ -414,6 +426,26 @@ class Substructure(abc.ABC):
                     self.loads.D = self._interpolator.fluid.drag_total
                     self.loads.L = self._interpolator.fluid.lift_total
                     self.loads.M = self._interpolator.fluid.moment_total
+
+            if isinstance(self, TorsionalSpringSubstructure):
+                # Apply pressure loading for moment calculation
+                #      integrand = pFl
+                integrand = pressure_total
+                n = list(map(self.get_normal_vector, s))
+                t = [trig.rotate_vec_2d(ni, -90) for ni in n]
+
+                f = [-pi * ni + taui * ti for pi, taui, ni, ti in zip(integrand, tau, n, t)]
+                r = [
+                    np.array([pt[0] - self.base_pt[0], pt[1] - self.base_pt[1]])
+                    for pt in map(self.get_coordinates, s)
+                ]
+
+                m = [math_helpers.cross2(ri, fi) for ri, fi in zip(r, f)]
+                fx, fy = list(zip(*f))
+
+                self.loads.Dt += math_helpers.integrate(s, np.array(fx))
+                self.loads.Lt += math_helpers.integrate(s, np.array(fy))
+                self.loads.Mt += math_helpers.integrate(s, np.array(m))
 
             integrand = pressure_cushion
 
@@ -433,6 +465,15 @@ class Substructure(abc.ABC):
             self.loads.Da -= math_helpers.integrate(s, np.array(list(zip(*f))[0]))
             self.loads.La += math_helpers.integrate(s, np.array(list(zip(*f))[1]))
             self.loads.Ma += math_helpers.integrate(s, np.array(m))
+
+        if isinstance(self, TorsionalSpringSubstructure):
+            # Apply tip load
+            tipC = self.get_coordinates(self.tip_load_pct * self.arc_length)
+            tipR = np.array([tipC[i] - self.base_pt[i] for i in [0, 1]])
+            tipF = np.array([0.0, self.tip_load]) * self.ramp
+            tipM = math_helpers.cross2(tipR, tipF)
+            self.loads.Lt += tipF[1]
+            self.loads.Mt += tipM
 
         self.fluidP = np.array(fluid_p)
         self.fluidS = np.array(fluid_s)
@@ -617,213 +658,242 @@ class TorsionalSpringSubstructure(FlexibleSubstructure):
             self.attached_node = self.attached_substructure.nodes[self.attached_ind]
             self.attached_element = self.attached_substructure.elements[self.attached_ind]
 
-    def update_fluid_forces(self) -> None:
-        fluid_s: list[float] = []
-        fluid_p: list[float] = []
-        air_s: list[float] = []
-        air_p: list[float] = []
-        self.loads.D = 0.0
-        self.loads.L = 0.0
-        self.loads.M = 0.0
-        self.loads.Dt = 0.0
-        self.loads.Lt = 0.0
-        self.loads.Mt = 0.0
-        self.loads.Da = 0.0
-        self.loads.La = 0.0
-        self.loads.Ma = 0.0
-        if self._interpolator is not None:
-            s_min, s_max = self._interpolator.get_min_max_s()
-
-        for i, el in enumerate(self.elements):
-            # Get pressure at end points and all fluid points along element
-            node_s = [self.node_arc_length[i], self.node_arc_length[i + 1]]
-            if self._interpolator is not None:
-                s, pressure_fluid, tau = self._interpolator.get_loads_in_range(node_s[0], node_s[1])
-
-                # Limit pressure to be below stagnation pressure
-                if self.config.plotting.pressure_limiter:
-                    pressure_fluid = np.min(
-                        np.hstack(
-                            (
-                                pressure_fluid,
-                                np.ones_like(pressure_fluid) * self.config.flow.stagnation_pressure,
-                            )
-                        ),
-                        axis=0,
-                    )
-
-            else:
-                s = np.array(node_s)
-                pressure_fluid = np.zeros_like(s)
-                tau = np.zeros_like(s)
-
-            ss = node_s[1]
-            Pc = 0.0
-            if self._interpolator is not None:
-                if ss > s_max:
-                    Pc = self._interpolator.fluid.upstream_pressure
-                elif ss < s_min:
-                    Pc = self._interpolator.fluid.downstream_pressure
-            elif self.cushion_pressure_type == "Total":
-                Pc = self.cushion_pressure or self.config.body.Pc
-
-            # Store fluid and air pressure components for element (for
-            # plotting)
-            if i == 0:
-                fluid_s += [s[0]]
-                fluid_p += [pressure_fluid[0]]
-                air_s += [node_s[0]]
-                air_p += [Pc - self.seal_pressure]
-
-            fluid_s += [ss for ss in s[1:]]
-            fluid_p += [pp for pp in pressure_fluid[1:]]
-            air_s += [ss for ss in node_s[1:]]
-            if self.seal_pressure_method.lower() == "hydrostatic":
-                air_p += [
-                    Pc
-                    - self.seal_pressure
-                    + self.config.flow.density
-                    * self.config.flow.gravity
-                    * (self.get_coordinates(si)[1] - self.config.flow.waterline_height)
-                    for si in node_s[1:]
-                ]
-            else:
-                air_p += [Pc - self.seal_pressure for _ in node_s[1:]]
-
-            # Apply ramp to hydrodynamic pressure
-            pressure_fluid *= self.ramp**2
-
-            # Add external cushion pressure to external fluid pressure
-            pressure_cushion = np.zeros_like(s)
-            Pc = 0.0
-            for ii, ss in enumerate(s):
-                if self._interpolator is not None:
-                    if ss > s_max:
-                        Pc = self._interpolator.fluid.upstream_pressure
-                    elif ss < s_min:
-                        Pc = self._interpolator.fluid.downstream_pressure
-                elif self.cushion_pressure_type == "Total":
-                    Pc = self.config.body.Pc
-
-                pressure_cushion[ii] = Pc
-
-            # Calculate internal pressure
-            if self.seal_pressure_method.lower() == "hydrostatic":
-                pressure_internal = (
-                    self.seal_pressure
-                    - self.config.flow.density
-                    * self.config.flow.gravity
-                    * (
-                        np.array([self.get_coordinates(si)[1] for si in s])
-                        - self.config.flow.waterline_height
-                    )
-                )
-            else:
-                pressure_internal = (
-                    self.seal_pressure * np.ones_like(s) * self.seal_over_pressure_pct
-                )
-
-            pressure_external = pressure_fluid + pressure_cushion
-            pressure_total = pressure_external - pressure_internal
-
-            # Calculate external force and moment for rigid body calculation
-            if (
-                self.config.body.cushion_force_method.lower() == "integrated"
-                or self.config.body.cushion_force_method.lower() == "assumed"
-            ):
-                if self.config.body.cushion_force_method.lower() == "integrated":
-                    integrand = pressure_external
-                elif self.config.body.cushion_force_method.lower() == "assumed":
-                    integrand = pressure_fluid
-
-                n = list(map(self.get_normal_vector, s))
-                t = [trig.rotate_vec_2d(ni, -90) for ni in n]
-
-                fC = [
-                    -pi * ni + taui * ti for pi, taui, ni, ti in zip(pressure_external, tau, n, t)
-                ]
-                fFl = [-pi * ni + taui * ti for pi, taui, ni, ti in zip(pressure_fluid, tau, n, t)]
-                f = fC + fFl
-                print(("Cushion Lift-to-Weight: {0}".format(fC[1] / self.config.body.weight)))
-
-                r = [
-                    np.array([pt[0] - self.config.body.xCofR, pt[1] - self.config.body.yCofR])
-                    for pt in map(self.get_coordinates, s)
-                ]
-
-                m = [math_helpers.cross2(ri, fi) for ri, fi in zip(r, f)]
-
-                self.loads.D -= math_helpers.integrate(s, np.array(list(zip(*f))[0]))
-                self.loads.L += math_helpers.integrate(s, np.array(list(zip(*f))[1]))
-                self.loads.M += math_helpers.integrate(s, np.array(m))
-            else:
-                if self._interpolator is not None:
-                    self.loads.D = self._interpolator.fluid.drag_total
-                    self.loads.L = self._interpolator.fluid.lift_total
-                    self.loads.M = self._interpolator.fluid.moment_total
-
-            # Apply pressure loading for moment calculation
-            #      integrand = pFl
-            integrand = pressure_total
-            n = list(map(self.get_normal_vector, s))
-            t = [trig.rotate_vec_2d(ni, -90) for ni in n]
-
-            f = [-pi * ni + taui * ti for pi, taui, ni, ti in zip(integrand, tau, n, t)]
-            r = [
-                np.array([pt[0] - self.base_pt[0], pt[1] - self.base_pt[1]])
-                for pt in map(self.get_coordinates, s)
-            ]
-
-            m = [math_helpers.cross2(ri, fi) for ri, fi in zip(r, f)]
-            fx, fy = list(zip(*f))
-
-            self.loads.Dt += math_helpers.integrate(s, np.array(fx))
-            self.loads.Lt += math_helpers.integrate(s, np.array(fy))
-            self.loads.Mt += math_helpers.integrate(s, np.array(m))
-
-            integrand = pressure_cushion
-
-            n = list(map(self.get_normal_vector, s))
-            t = [trig.rotate_vec_2d(ni, -90) for ni in n]
-
-            f = [-pi * ni + taui * ti for pi, taui, ni, ti in zip(integrand, tau, n, t)]
-
-            assert self.parent is not None
-            r = [
-                np.array([pt[0] - self.parent.xCofR, pt[1] - self.parent.yCofR])
-                for pt in map(self.get_coordinates, s)
-            ]
-
-            m = [math_helpers.cross2(ri, fi) for ri, fi in zip(r, f)]
-
-            self.loads.Da -= math_helpers.integrate(s, np.array(list(zip(*f))[0]))
-            self.loads.La += math_helpers.integrate(s, np.array(list(zip(*f))[1]))
-            self.loads.Ma += math_helpers.integrate(s, np.array(m))
-
-        # Apply tip load
-        tipC = self.get_coordinates(self.tip_load_pct * self.arc_length)
-        tipR = np.array([tipC[i] - self.base_pt[i] for i in [0, 1]])
-        tipF = np.array([0.0, self.tip_load]) * self.ramp
-        tipM = math_helpers.cross2(tipR, tipF)
-        self.loads.Lt += tipF[1]
-        self.loads.Mt += tipM
-
-        self.fluidP = np.array(fluid_p)
-        self.fluidS = np.array(fluid_s)
-        self.airP = np.array(air_p)
-        self.airS = np.array(air_s)
-
-        # Apply moment from attached substructure
-
-    #    el = self.attachedEl
-    #    attC = self.attachedNode.get_coordinates()
-    #    attR = np.array([attC[i] - self.basePt[i] for i in [0,1]])
-    #    attF = el.axialForce * kp.ang2vec(el.gamma + 180)
-    #    attM = kp.cross2(attR, attF) * config.ramp
-    #    attM = np.min([np.abs(attM), np.abs(self.loads.Mt)]) * kp.sign(attM)
-    # if np.abs(attM) > 2 * np.abs(tipM):
-    #      attM = attM * np.abs(tipM) / np.abs(attM)
-    #    self.loads.Mt += attM
+    # def update_fluid_forces(self) -> None:
+    #     fluid_s: list[float] = []
+    #     fluid_p: list[float] = []
+    #     air_s: list[float] = []
+    #     air_p: list[float] = []
+    #     self.loads.D = 0.0
+    #     self.loads.L = 0.0
+    #     self.loads.M = 0.0
+    #     self.loads.Dt = 0.0
+    #     self.loads.Lt = 0.0
+    #     self.loads.Mt = 0.0
+    #     self.loads.Da = 0.0
+    #     self.loads.La = 0.0
+    #     self.loads.Ma = 0.0
+    #     if self._interpolator is not None:
+    #         s_min, s_max = self._interpolator.get_min_max_s()
+    #
+    #     for i, el in enumerate(self.elements):
+    #         # Get pressure at end points and all fluid points along element
+    #         node_s = [self.node_arc_length[i], self.node_arc_length[i + 1]]
+    #         if self._interpolator is not None:
+    #             s, pressure_fluid, tau = self._interpolator.get_loads_in_range(node_s[0], node_s[1])
+    #
+    #             # Limit pressure to be below stagnation pressure
+    #             if self.config.plotting.pressure_limiter:
+    #                 pressure_fluid = np.min(
+    #                     np.hstack(
+    #                         (
+    #                             pressure_fluid,
+    #                             np.ones_like(pressure_fluid) * self.config.flow.stagnation_pressure,
+    #                         )
+    #                     ),
+    #                     axis=0,
+    #                 )
+    #
+    #         else:
+    #             s = np.array(node_s)
+    #             pressure_fluid = np.zeros_like(s)
+    #             tau = np.zeros_like(s)
+    #
+    #         ss = node_s[1]
+    #         Pc = 0.0
+    #         if self._interpolator is not None:
+    #             if ss > s_max:
+    #                 Pc = self._interpolator.fluid.upstream_pressure
+    #             elif ss < s_min:
+    #                 Pc = self._interpolator.fluid.downstream_pressure
+    #         elif self.cushion_pressure_type == "Total":
+    #             Pc = self.cushion_pressure or self.config.body.Pc
+    #
+    #         # Store fluid and air pressure components for element (for
+    #         # plotting)
+    #         if i == 0:
+    #             fluid_s += [s[0]]
+    #             fluid_p += [pressure_fluid[0]]
+    #             air_s += [node_s[0]]
+    #             air_p += [Pc - self.seal_pressure]
+    #
+    #         fluid_s += [ss for ss in s[1:]]
+    #         fluid_p += [pp for pp in pressure_fluid[1:]]
+    #         air_s += [ss for ss in node_s[1:]]
+    #         if self.seal_pressure_method.lower() == "hydrostatic":
+    #             air_p += [
+    #                 Pc
+    #                 - self.seal_pressure
+    #                 + self.config.flow.density
+    #                 * self.config.flow.gravity
+    #                 * (self.get_coordinates(si)[1] - self.config.flow.waterline_height)
+    #                 for si in node_s[1:]
+    #             ]
+    #         else:
+    #             air_p += [Pc - self.seal_pressure for _ in node_s[1:]]
+    #
+    #         # Apply ramp to hydrodynamic pressure
+    #         pressure_fluid *= self.ramp**2
+    #
+    #         # Add external cushion pressure to external fluid pressure
+    #         pressure_cushion = np.zeros_like(s)
+    #         Pc = 0.0
+    #         for ii, ss in enumerate(s):
+    #             if self._interpolator is not None:
+    #                 if ss > s_max:
+    #                     Pc = self._interpolator.fluid.upstream_pressure
+    #                 elif ss < s_min:
+    #                     Pc = self._interpolator.fluid.downstream_pressure
+    #             elif self.cushion_pressure_type == "Total":
+    #                 Pc = self.config.body.Pc
+    #
+    #             pressure_cushion[ii] = Pc
+    #
+    #         # Calculate internal pressure
+    #         if self.seal_pressure_method.lower() == "hydrostatic":
+    #             pressure_internal = (
+    #                 self.seal_pressure
+    #                 - self.config.flow.density
+    #                 * self.config.flow.gravity
+    #                 * (
+    #                     np.array([self.get_coordinates(si)[1] for si in s])
+    #                     - self.config.flow.waterline_height
+    #                 )
+    #             )
+    #         else:
+    #             pressure_internal = (
+    #                 self.seal_pressure * np.ones_like(s) * self.seal_over_pressure_pct
+    #             )
+    #
+    #         pressure_external = pressure_fluid + pressure_cushion
+    #         pressure_total = pressure_external - pressure_internal
+    #
+    #         if not isinstance(self, TorsionalSpringSubstructure):
+    #             # Integrate pressure profile, calculate center of pressure and
+    #             # distribute force to nodes
+    #             integral = math_helpers.integrate(s, pressure_total)
+    #             if integral == 0.0:
+    #                 qp = np.zeros(2)
+    #             else:
+    #                 pct = (
+    #                               math_helpers.integrate(s, s * pressure_total) / integral - s[0]
+    #                       ) / math_helpers.cumdiff(s)
+    #                 qp = integral * np.array([1 - pct, pct])
+    #
+    #             integral = math_helpers.integrate(s, tau)
+    #             if integral == 0.0:
+    #                 qs = np.zeros(2)
+    #             else:
+    #                 pct = (math_helpers.integrate(s, s * tau) / integral - s[0]) / math_helpers.cumdiff(
+    #                     s
+    #                 )
+    #                 qs = -integral * np.array([1 - pct, pct])
+    #
+    #             el.qp = qp
+    #             el.qs = qs
+    #
+    #         # Calculate external force and moment for rigid body calculation
+    #         if (
+    #             self.config.body.cushion_force_method.lower() == "integrated"
+    #             or self.config.body.cushion_force_method.lower() == "assumed"
+    #         ):
+    #             if self.config.body.cushion_force_method.lower() == "integrated":
+    #                 integrand = pressure_external
+    #             elif self.config.body.cushion_force_method.lower() == "assumed":
+    #                 integrand = pressure_fluid
+    #             else:
+    #                 raise ValueError(
+    #                     'Cushion force method must be either "integrated" or "assumed"'
+    #                 )
+    #
+    #             n = [self.get_normal_vector(s_i) for s_i in s]
+    #             t = [trig.rotate_vec_2d(n_i, -90) for n_i in n]
+    #
+    #             # TODO: This part is different
+    #             fC = [
+    #                 -pi * ni + taui * ti for pi, taui, ni, ti in zip(pressure_external, tau, n, t)
+    #             ]
+    #             fFl = [-pi * ni + taui * ti for pi, taui, ni, ti in zip(pressure_fluid, tau, n, t)]
+    #             f = fC + fFl
+    #             print(("Cushion Lift-to-Weight: {0}".format(fC[1] / self.config.body.weight)))
+    #
+    #             r = [
+    #                 np.array([pt[0] - self.parent.xCofR, pt[1] - self.parent.yCofR])
+    #                 for pt in map(self.get_coordinates, s)
+    #             ]
+    #
+    #             m = [math_helpers.cross2(ri, fi) for ri, fi in zip(r, f)]
+    #
+    #             self.loads.D -= math_helpers.integrate(s, np.array(list(zip(*f))[0]))
+    #             self.loads.L += math_helpers.integrate(s, np.array(list(zip(*f))[1]))
+    #             self.loads.M += math_helpers.integrate(s, np.array(m))
+    #         else:
+    #             if self._interpolator is not None:
+    #                 self.loads.D = self._interpolator.fluid.drag_total
+    #                 self.loads.L = self._interpolator.fluid.lift_total
+    #                 self.loads.M = self._interpolator.fluid.moment_total
+    #
+    #         # Apply pressure loading for moment calculation
+    #         #      integrand = pFl
+    #         integrand = pressure_total
+    #         n = list(map(self.get_normal_vector, s))
+    #         t = [trig.rotate_vec_2d(ni, -90) for ni in n]
+    #
+    #         f = [-pi * ni + taui * ti for pi, taui, ni, ti in zip(integrand, tau, n, t)]
+    #         r = [
+    #             np.array([pt[0] - self.base_pt[0], pt[1] - self.base_pt[1]])
+    #             for pt in map(self.get_coordinates, s)
+    #         ]
+    #
+    #         m = [math_helpers.cross2(ri, fi) for ri, fi in zip(r, f)]
+    #         fx, fy = list(zip(*f))
+    #
+    #         self.loads.Dt += math_helpers.integrate(s, np.array(fx))
+    #         self.loads.Lt += math_helpers.integrate(s, np.array(fy))
+    #         self.loads.Mt += math_helpers.integrate(s, np.array(m))
+    #
+    #         integrand = pressure_cushion
+    #
+    #         n = list(map(self.get_normal_vector, s))
+    #         t = [trig.rotate_vec_2d(ni, -90) for ni in n]
+    #
+    #         f = [-pi * ni + taui * ti for pi, taui, ni, ti in zip(integrand, tau, n, t)]
+    #
+    #         assert self.parent is not None
+    #         r = [
+    #             np.array([pt[0] - self.parent.xCofR, pt[1] - self.parent.yCofR])
+    #             for pt in map(self.get_coordinates, s)
+    #         ]
+    #
+    #         m = [math_helpers.cross2(ri, fi) for ri, fi in zip(r, f)]
+    #
+    #         self.loads.Da -= math_helpers.integrate(s, np.array(list(zip(*f))[0]))
+    #         self.loads.La += math_helpers.integrate(s, np.array(list(zip(*f))[1]))
+    #         self.loads.Ma += math_helpers.integrate(s, np.array(m))
+    #
+    #     # Apply tip load
+    #     tipC = self.get_coordinates(self.tip_load_pct * self.arc_length)
+    #     tipR = np.array([tipC[i] - self.base_pt[i] for i in [0, 1]])
+    #     tipF = np.array([0.0, self.tip_load]) * self.ramp
+    #     tipM = math_helpers.cross2(tipR, tipF)
+    #     self.loads.Lt += tipF[1]
+    #     self.loads.Mt += tipM
+    #
+    #     self.fluidP = np.array(fluid_p)
+    #     self.fluidS = np.array(fluid_s)
+    #     self.airP = np.array(air_p)
+    #     self.airS = np.array(air_s)
+    #
+    #     # Apply moment from attached substructure
+    #
+    # #    el = self.attachedEl
+    # #    attC = self.attachedNode.get_coordinates()
+    # #    attR = np.array([attC[i] - self.basePt[i] for i in [0,1]])
+    # #    attF = el.axialForce * kp.ang2vec(el.gamma + 180)
+    # #    attM = kp.cross2(attR, attF) * config.ramp
+    # #    attM = np.min([np.abs(attM), np.abs(self.loads.Mt)]) * kp.sign(attM)
+    # # if np.abs(attM) > 2 * np.abs(tipM):
+    # #      attM = attM * np.abs(tipM) / np.abs(attM)
+    # #    self.loads.Mt += attM
 
     def update_angle(self) -> None:
         """Update the angle of the substructure."""
