@@ -2,6 +2,7 @@ substructureName  : 'plate'
 substructureType  : 'torsionalspring'
 hasPlaningSurface : True
 springConstant    : 500.0
+tipLoad           : 100.0
 
 # Fluid Parameters
 Nfl    :  40
