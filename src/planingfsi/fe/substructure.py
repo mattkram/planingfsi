@@ -432,10 +432,11 @@ class Substructure(abc.ABC):
             self.loads.Da -= math_helpers.integrate(s, np.array(list(zip(*f))[0]))
             self.loads.La += math_helpers.integrate(s, np.array(list(zip(*f))[1]))
             self.loads.Ma += math_helpers.integrate(s, np.array(m))
-            self.fluidP = np.array(fluid_p)
-            self.fluidS = np.array(fluid_s)
-            self.airP = np.array(air_p)
-            self.airS = np.array(air_s)
+
+        self.fluidP = np.array(fluid_p)
+        self.fluidS = np.array(fluid_s)
+        self.airP = np.array(air_p)
+        self.airS = np.array(air_s)
 
     def get_normal_vector(self, s: float) -> np.ndarray:
         """Calculate the normal vector at a specific arc length."""
