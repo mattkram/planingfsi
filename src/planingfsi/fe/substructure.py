@@ -707,7 +707,21 @@ class TorsionalSpringSubstructure(FlexibleSubstructure):
 
                 pressure_cushion[ii] = Pc
 
-            pressure_internal = self.seal_pressure * np.ones_like(s)
+            # Calculate internal pressure
+            if self.seal_pressure_method.lower() == "hydrostatic":
+                pressure_internal = (
+                    self.seal_pressure
+                    - self.config.flow.density
+                    * self.config.flow.gravity
+                    * (
+                        np.array([self.get_coordinates(si)[1] for si in s])
+                        - self.config.flow.waterline_height
+                    )
+                )
+            else:
+                pressure_internal = (
+                    self.seal_pressure * np.ones_like(s) * self.seal_over_pressure_pct
+                )
 
             pressure_external = pressure_fluid + pressure_cushion
             pressure_total = pressure_external - pressure_internal
