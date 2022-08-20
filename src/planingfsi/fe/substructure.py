@@ -466,15 +466,6 @@ class Substructure(abc.ABC):
             self.loads.La += math_helpers.integrate(s, np.array(list(zip(*f))[1]))
             self.loads.Ma += math_helpers.integrate(s, np.array(m))
 
-        if isinstance(self, TorsionalSpringSubstructure):
-            # Apply any externally tip load
-            tip_coords = self.get_coordinates(self.tip_load_pct * self.arc_length)
-            tip_rel_coords = np.array([tip_coords[i] - self.base_pt[i] for i in [0, 1]])
-            tip_force = np.array([0.0, self.tip_load]) * self.ramp
-            tip_moment = math_helpers.cross2(tip_rel_coords, tip_force)
-            self.loads.Lt += tip_force[1]
-            self.loads.Mt += tip_moment
-
         self.fluidP = np.array(fluid_p)
         self.fluidS = np.array(fluid_s)
         self.airP = np.array(air_p)
@@ -669,7 +660,19 @@ class TorsionalSpringSubstructure(FlexibleSubstructure):
             self.attached_node = self.attached_substructure.nodes[self.attached_ind]
             self.attached_element = self.attached_substructure.elements[self.attached_ind]
 
-    # def update_fluid_forces(self) -> None:
+    def _apply_tip_load(self) -> None:
+        """Apply any externally tip load."""
+        tip_coords = self.get_coordinates(self.tip_load_pct * self.arc_length)
+        tip_rel_coords = np.array([tip_coords[i] - self.base_pt[i] for i in [0, 1]])
+        tip_force = np.array([0.0, self.tip_load]) * self.ramp
+        tip_moment = math_helpers.cross2(tip_rel_coords, tip_force)
+        self.loads.Lt += tip_force[1]
+        self.loads.Mt += tip_moment
+
+    def update_fluid_forces(self) -> None:
+        super().update_fluid_forces()
+        self._apply_tip_load()
+
     #     fluid_s: list[float] = []
     #     fluid_p: list[float] = []
     #     air_s: list[float] = []
