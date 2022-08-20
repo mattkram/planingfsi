@@ -546,7 +546,7 @@ class TorsionalSpringSubstructure(FlexibleSubstructure):
         self.spring_constant = spring_constant
 
         self._theta = initial_angle
-        self.relax = relaxation_angle or self.config.body.relax_rigid_body
+        self._relax = relaxation_angle
         self.attach_pct = attach_pct
         self.attached_node: fe.Node | None = None
         self.attached_element: fe.Element | None = None
@@ -557,6 +557,13 @@ class TorsionalSpringSubstructure(FlexibleSubstructure):
         self.attached_ind = 0
         self.attached_substructure: Substructure | None = None
         self.residual = 1.0
+
+    @property
+    def relax(self) -> float:
+        """Relaxation parameter."""
+        if self._relax is None:
+            return self.config.body.relax_rigid_body
+        return self._relax
 
     @property
     def angle(self) -> float:
