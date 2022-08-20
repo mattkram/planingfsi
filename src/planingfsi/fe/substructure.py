@@ -480,7 +480,7 @@ class FlexibleSubstructure(Substructure):
             self.add_loads_from_element(el)
 
     def add_loads_from_element(self, el: "fe.Element") -> None:
-        assert isinstance(el, fe.TrussElement)
+        assert isinstance(el, fe.TrussElement), f"Element is of type {type(el)}"
         assert self.K is not None
         assert self.F is not None
         K, F = el.get_stiffness_and_force()
