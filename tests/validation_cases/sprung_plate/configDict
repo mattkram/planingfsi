@@ -29,6 +29,7 @@ xFSMax :  10.0
 growthRate : 1.1
 pScaleType : 'stagnation'
 pScalePct  : 0.00000001
+pressure_limiter : True
 forceBasePct  : 0.05
 forceScalePct : 0.05
 
