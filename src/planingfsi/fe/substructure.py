@@ -782,6 +782,7 @@ class TorsionalSpringSubstructure(FlexibleSubstructure):
         tipM = math_helpers.cross2(tipR, tipF)
         self.loads.Lt += tipF[1]
         self.loads.Mt += tipM
+
         self.fluidP = np.array(fluid_p)
         self.fluidS = np.array(fluid_s)
         self.airP = np.array(air_p)
