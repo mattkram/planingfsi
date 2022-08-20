@@ -581,7 +581,7 @@ class TorsionalSpringSubstructure(FlexibleSubstructure):
             nd.coordinates = trig.rotate_point(nd.coordinates, self.base_pt, -angle_change)
 
         self._theta += angle_change
-        self.residual = angle_change
+        self.residual = abs(angle_change)
         self.update_geometry()
         logger.info(f"  Deformation for substructure {self.name}: {self._theta}")
 

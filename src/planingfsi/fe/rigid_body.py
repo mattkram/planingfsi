@@ -217,7 +217,12 @@ class RigidBody:
         res_l = self.res_l if self.free_in_draft else 0.0
         res_m = self.res_m if self.free_in_trim else 0.0
         res_node_disp = self.flexible_substructure_residual
-        return max((res_l, res_m, res_node_disp))
+        res_torsion = max(
+            ss.residual
+            for ss in self.substructures
+            if isinstance(ss, substructure.TorsionalSpringSubstructure)
+        )
+        return max((res_l, res_m, res_node_disp, res_torsion))
 
     @property
     def free_in_draft(self) -> bool:
