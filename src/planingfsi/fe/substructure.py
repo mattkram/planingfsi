@@ -268,20 +268,13 @@ class Substructure(abc.ABC):
             # Get pressure at end points and all fluid points along element
             node_s = [self.node_arc_length[i], self.node_arc_length[i + 1]]
             if self._interpolator is not None:
-                s, pressure_fluid, tau = self._interpolator.get_loads_in_range(node_s[0], node_s[1])
-
-                # Limit pressure to be below stagnation pressure
-                if self.config.plotting.pressure_limiter:
-                    pressure_fluid = np.min(
-                        np.vstack(
-                            (
-                                pressure_fluid,
-                                np.ones_like(pressure_fluid) * self.config.flow.stagnation_pressure,
-                            )
-                        ),
-                        axis=0,
-                    )
-
+                s, pressure_fluid, tau = self._interpolator.get_loads_in_range(
+                    node_s[0],
+                    node_s[1],
+                    pressure_limit=self.config.flow.stagnation_pressure
+                    if self.config.plotting.pressure_limiter
+                    else None,
+                )
             else:
                 s = np.array(node_s)
                 pressure_fluid = np.zeros_like(s)
@@ -1034,18 +1027,24 @@ class Interpolator:
         self._separation_arclength = float(np.max([self._separation_arclength, 0.0]))
         return self.get_coordinates(self._separation_arclength)
 
-    def get_loads_in_range(self, s0: float, s1: float) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
+    def get_loads_in_range(
+        self, s0: float, s1: float, /, *, pressure_limit: float | None = None
+    ) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
         """Get the fluid pressure and shear stress at any pressure elements within the provided arclength range.
 
         Args:
             s0: The lower-bound arclength.
             s1: The upper-bound arclength.
+            pressure_limit: Optionally limit the pressure to be below a specified value (e.g. stagnation pressure).
 
         Returns:
             A tuple of arrays containing the arclength, pressure, and shear stress at each pressure element point.
 
         """
-        xs = [self.solid.get_coordinates(s)[0] for s in [s0, s1]]
-        x, p, tau = self.fluid.get_loads_in_range(xs[0], xs[1])
+        x, p, tau = self.fluid.get_loads_in_range(
+            self.solid.get_coordinates(s0)[0],
+            self.solid.get_coordinates(s1)[0],
+            pressure_limit=pressure_limit,
+        )
         s = np.array([self.get_s_fixed_x(xx) for xx in x])
         return s, p, tau
