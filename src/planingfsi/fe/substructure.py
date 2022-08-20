@@ -467,13 +467,13 @@ class Substructure(abc.ABC):
             self.loads.Ma += math_helpers.integrate(s, np.array(m))
 
         if isinstance(self, TorsionalSpringSubstructure):
-            # Apply tip load
-            tipC = self.get_coordinates(self.tip_load_pct * self.arc_length)
-            tipR = np.array([tipC[i] - self.base_pt[i] for i in [0, 1]])
-            tipF = np.array([0.0, self.tip_load]) * self.ramp
-            tipM = math_helpers.cross2(tipR, tipF)
-            self.loads.Lt += tipF[1]
-            self.loads.Mt += tipM
+            # Apply any externally tip load
+            tip_coords = self.get_coordinates(self.tip_load_pct * self.arc_length)
+            tip_rel_coords = np.array([tip_coords[i] - self.base_pt[i] for i in [0, 1]])
+            tip_force = np.array([0.0, self.tip_load]) * self.ramp
+            tip_moment = math_helpers.cross2(tip_rel_coords, tip_force)
+            self.loads.Lt += tip_force[1]
+            self.loads.Mt += tip_moment
 
         self.fluidP = np.array(fluid_p)
         self.fluidS = np.array(fluid_s)
@@ -561,6 +561,17 @@ class TorsionalSpringSubstructure(FlexibleSubstructure):
 
     Thus, the nodes can move, but rotate about a base point with a linear spring stiffness.
 
+    Attributes:
+        initial_angle: The initial offset angle of the structure, where 0 is the equilibrium angle
+            with no load applied.
+        tip_load: The vertical load to apply at a specified fractional arclength.
+        tip_load_pct: The fraction along arclength at which to apply a fixed tip load.
+        base_pt_pct: The fraction along arclength around which the substructure rotates.
+        spring_constant: The linear spring constant [(N.m)/deg].
+        relaxation_angle: A relaxation factor to apply to the angle change.
+        minimum_angle: The minimum allowable angle for the substructure.
+        max_angle_step: The maximum absolute change in angle during a single iteration.
+
     """
 
     base_pt: np.ndarray
@@ -576,9 +587,9 @@ class TorsionalSpringSubstructure(FlexibleSubstructure):
         base_pt_pct: float = 1.0,
         spring_constant: float = 1e3,
         relaxation_angle: float | None = None,
-        attach_pct: float = 0.0,
         minimum_angle: float = -float("Inf"),
         max_angle_step: float = float("Inf"),
+        attach_pct: float = 0.0,
         attached_substructure_name: str | None = None,
         attached_substructure_end: Literal["start"] | Literal["end"] = "end",
         **kwargs: Any,
