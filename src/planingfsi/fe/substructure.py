@@ -273,7 +273,7 @@ class Substructure(abc.ABC):
                 # Limit pressure to be below stagnation pressure
                 if self.config.plotting.pressure_limiter:
                     pressure_fluid = np.min(
-                        np.hstack(
+                        np.vstack(
                             (
                                 pressure_fluid,
                                 np.ones_like(pressure_fluid) * self.config.flow.stagnation_pressure,
