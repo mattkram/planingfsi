@@ -269,6 +269,7 @@ class Substructure(abc.ABC):
             node_s = [self.node_arc_length[i], self.node_arc_length[i + 1]]
             if self._interpolator is not None:
                 s, pressure_fluid, tau = self._interpolator.get_loads_in_range(node_s[0], node_s[1])
+
                 # Limit pressure to be below stagnation pressure
                 if self.config.plotting.pressure_limiter:
                     pressure_fluid = np.min(
@@ -677,7 +678,17 @@ class TorsionalSpringSubstructure(FlexibleSubstructure):
             fluid_s += [ss for ss in s[1:]]
             fluid_p += [pp for pp in pressure_fluid[1:]]
             air_s += [ss for ss in node_s[1:]]
-            air_p += [Pc - self.seal_pressure for _ in node_s[1:]]
+            if self.seal_pressure_method.lower() == "hydrostatic":
+                air_p += [
+                    Pc
+                    - self.seal_pressure
+                    + self.config.flow.density
+                    * self.config.flow.gravity
+                    * (self.get_coordinates(si)[1] - self.config.flow.waterline_height)
+                    for si in node_s[1:]
+                ]
+            else:
+                air_p += [Pc - self.seal_pressure for _ in node_s[1:]]
 
             # Apply ramp to hydrodynamic pressure
             pressure_fluid *= self.ramp**2
