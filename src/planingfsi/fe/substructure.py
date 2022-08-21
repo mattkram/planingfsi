@@ -493,7 +493,7 @@ class RigidSubstructure(Substructure):
         self.fix_all_degrees_of_freedom()
 
 
-class TorsionalSpringSubstructure(FlexibleSubstructure):
+class TorsionalSpringSubstructure(Substructure):
     """A substructure that is locally rigid but is attached to the rigid body with a torsional spring.
 
     Thus, the nodes can move, but rotate about a base point with a linear spring stiffness.
