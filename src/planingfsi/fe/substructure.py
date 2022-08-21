@@ -284,17 +284,31 @@ class Substructure(abc.ABC):
             s_start, s_end = self.node_arc_length[i], self.node_arc_length[i + 1]
             s, pressure_fluid, tau = self._get_loads_in_range(s_start, s_end)
 
+            # TODO: Remove after refactor complete
+            assert abs(s_start - s[0]) < 1e-12
+            assert abs(s_end - s[-1]) < 1e-12
+
             # Apply ramp to hydrodynamic pressure
             pressure_fluid *= self.ramp**2
 
+            # Add external cushion pressure to external fluid pressure
             Pc = 0.0
+            # This is the full-resolution calculation with all structural nodes and fluid elements
+            pressure_cushion = np.zeros_like(s)
             if self._interpolator is not None:
                 if s_end > s_max:
                     Pc = self._interpolator.fluid.upstream_pressure
                 elif s_end < s_min:
                     Pc = self._interpolator.fluid.downstream_pressure
+
+                for ii, ss in enumerate(s):
+                    if ss > s_max:
+                        pressure_cushion[ii] = self._interpolator.fluid.upstream_pressure
+                    elif ss < s_min:
+                        pressure_cushion[ii] = self._interpolator.fluid.downstream_pressure
             elif self.cushion_pressure_type == "Total":
                 Pc = self.cushion_pressure or self.config.body.Pc
+                pressure_cushion[:] = self.cushion_pressure or self.config.body.Pc
 
             # Store fluid and air pressure components for element (for plotting)
             if i == 0:
@@ -317,18 +331,6 @@ class Substructure(abc.ABC):
 
             air_s.append(s_end)
             air_p.append(net_air_pressure)
-
-            # Add external cushion pressure to external fluid pressure
-            # This is the full-resolution calculation with all structural nodes and fluid elements
-            pressure_cushion = np.zeros_like(s)
-            for ii, ss in enumerate(s):
-                if self._interpolator is not None:
-                    if ss > s_max:
-                        pressure_cushion[ii] = self._interpolator.fluid.upstream_pressure
-                    elif ss < s_min:
-                        pressure_cushion[ii] = self._interpolator.fluid.downstream_pressure
-                elif self.cushion_pressure_type == "Total":
-                    pressure_cushion[ii] = self.cushion_pressure or self.config.body.Pc
 
             # Calculate internal pressure
             pressure_internal = self.seal_pressure * self.seal_over_pressure_pct * np.ones_like(s)
@@ -1043,4 +1045,5 @@ class Interpolator:
             pressure_limit=pressure_limit,
         )
         s = np.array([self.get_s_fixed_x(xx) for xx in x])
+        s[0], s[-1] = s0, s1  # Force ends to be exactly the same
         return s, p, tau
