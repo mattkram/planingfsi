@@ -284,6 +284,9 @@ class Substructure(abc.ABC):
             s_start, s_end = self.node_arc_length[i], self.node_arc_length[i + 1]
             s, pressure_fluid, tau = self._get_loads_in_range(s_start, s_end)
 
+            # Apply ramp to hydrodynamic pressure
+            pressure_fluid *= self.ramp**2
+
             Pc = 0.0
             if self._interpolator is not None:
                 if s_end > s_max:
@@ -303,6 +306,7 @@ class Substructure(abc.ABC):
             fluid_s.extend(ss for ss in s[1:])
             fluid_p.extend(pp for pp in pressure_fluid[1:])
 
+            # TODO: Double-check the sign here, I think this may be reversed and corrected during plotting
             net_air_pressure = Pc - self.seal_pressure
             if self.seal_pressure_method.lower() == "hydrostatic":
                 net_air_pressure += (
@@ -314,37 +318,28 @@ class Substructure(abc.ABC):
             air_s.append(s_end)
             air_p.append(net_air_pressure)
 
-            # Apply ramp to hydrodynamic pressure
-            pressure_fluid *= self.ramp**2
-
             # Add external cushion pressure to external fluid pressure
+            # This is the full-resolution calculation with all structural nodes and fluid elements
             pressure_cushion = np.zeros_like(s)
-            Pc = 0.0
             for ii, ss in enumerate(s):
                 if self._interpolator is not None:
                     if ss > s_max:
-                        Pc = self._interpolator.fluid.upstream_pressure
+                        pressure_cushion[ii] = self._interpolator.fluid.upstream_pressure
                     elif ss < s_min:
-                        Pc = self._interpolator.fluid.downstream_pressure
+                        pressure_cushion[ii] = self._interpolator.fluid.downstream_pressure
                 elif self.cushion_pressure_type == "Total":
-                    Pc = self.config.body.Pc
-
-                pressure_cushion[ii] = Pc
+                    pressure_cushion[ii] = self.cushion_pressure or self.config.body.Pc
 
             # Calculate internal pressure
+            pressure_internal = self.seal_pressure * self.seal_over_pressure_pct * np.ones_like(s)
             if self.seal_pressure_method.lower() == "hydrostatic":
-                pressure_internal = (
-                    self.seal_pressure
-                    - self.config.flow.density
+                pressure_internal -= (
+                    self.config.flow.density
                     * self.config.flow.gravity
                     * (
                         np.array([self.get_coordinates(si)[1] for si in s])
                         - self.config.flow.waterline_height
                     )
-                )
-            else:
-                pressure_internal = (
-                    self.seal_pressure * np.ones_like(s) * self.seal_over_pressure_pct
                 )
 
             pressure_external = pressure_fluid + pressure_cushion
