@@ -356,24 +356,11 @@ class Substructure(abc.ABC):
                 self.loads.Lt += f_y
                 self.loads.Mt += moment
 
-            integrand = pressure_cushion
-
-            n = list(map(self.get_normal_vector, s))
-            t = [trig.rotate_vec_2d(ni, -90) for ni in n]
-
-            f = [-pi * ni + taui * ti for pi, taui, ni, ti in zip(integrand, tau, n, t)]
-
-            assert self.parent is not None
-            r = [
-                np.array([pt[0] - self.parent.xCofR, pt[1] - self.parent.yCofR])
-                for pt in map(self.get_coordinates, s)
-            ]
-
-            m = [math_helpers.cross2(ri, fi) for ri, fi in zip(r, f)]
-
-            self.loads.Da -= math_helpers.integrate(s, np.array(list(zip(*f))[0]))
-            self.loads.La += math_helpers.integrate(s, np.array(list(zip(*f))[1]))
-            self.loads.Ma += math_helpers.integrate(s, np.array(m))
+            # Integrate global cushion pressure force and moment
+            f_x, f_y, moment = self._get_integrated_global_loads(s, pressure_cushion)
+            self.loads.Da -= f_x
+            self.loads.La += f_y
+            self.loads.Ma += moment
 
         self.fluidP = np.array(fluid_p)
         self.fluidS = np.array(fluid_s)
@@ -393,7 +380,7 @@ class Substructure(abc.ABC):
         self,
         s: np.ndarray,
         p: np.ndarray,
-        tau: np.ndarray,
+        tau: np.ndarray | None = None,
         *,
         moment_about: np.ndarray | None = None,
     ) -> tuple[float, float, float]:
@@ -411,6 +398,9 @@ class Substructure(abc.ABC):
             A tuple containing x-force, y-force, and z-moment.
 
         """
+        if tau is None:
+            tau = np.zeros_like(p)
+
         n = np.array([self.get_normal_vector(s_i) for s_i in s])
         t = np.array([trig.rotate_vec_2d(n_i, -90) for n_i in n])
         f = -p[:, np.newaxis] * n + tau[:, np.newaxis] * t
