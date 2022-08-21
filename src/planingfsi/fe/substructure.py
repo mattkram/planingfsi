@@ -280,7 +280,13 @@ class Substructure(abc.ABC):
             return s, np.zeros_like(s), np.zeros_like(s)
 
     def update_fluid_forces(self) -> None:
-        # TODO: Refactor this complex, critical method
+        """Update the fluid forces on all structural elements.
+
+        The pressure is interpolated, both hydrostatic and air, and applied in various
+        manners depending on the type of substructure.
+
+        """
+
         s_hydro: list[float] = []
         p_hydro: list[float] = []
         s_air: list[float] = []
@@ -391,7 +397,7 @@ class Substructure(abc.ABC):
     ) -> tuple[float, float, float]:
         """Integrate a pressure and shear stress along an arclength to get global loads.
 
-        The moment is calculated about the center of rotation.
+        The moment is calculated about the center of rotation unless an alternative point is provided.
 
         Args:
             s: The arclength array.
