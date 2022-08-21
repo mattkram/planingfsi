@@ -334,51 +334,18 @@ class Substructure(abc.ABC):
                 el.qs = self._distribute_integrated_load_to_nodes(s, -tau)
 
             # Calculate external force and moment for rigid body calculation
-            if (
-                self.config.body.cushion_force_method.lower() == "integrated"
-                or self.config.body.cushion_force_method.lower() == "assumed"
-            ):
-                if self.config.body.cushion_force_method.lower() == "integrated":
-                    integrand = pressure_external
-                elif self.config.body.cushion_force_method.lower() == "assumed":
-                    integrand = pressure_fluid
-                else:
-                    raise ValueError(
-                        'Cushion force method must be either "integrated" or "assumed"'
-                    )
-
-                n = [self.get_normal_vector(s_i) for s_i in s]
-                t = [trig.rotate_vec_2d(n_i, -90) for n_i in n]
-
-                if isinstance(self, TorsionalSpringSubstructure):
-                    fC = [
-                        -pi * ni + taui * ti
-                        for pi, taui, ni, ti in zip(pressure_external, tau, n, t)
-                    ]
-                    fFl = [
-                        -pi * ni + taui * ti for pi, taui, ni, ti in zip(pressure_fluid, tau, n, t)
-                    ]
-                    f = fC + fFl
-                    print(("Cushion Lift-to-Weight: {0}".format(fC[1] / self.config.body.weight)))
-                else:
-                    f = [-pi * ni + taui * ti for pi, taui, ni, ti in zip(integrand, tau, n, t)]
-
-                assert self.parent is not None
-                r = [
-                    np.array([pt[0] - self.parent.xCofR, pt[1] - self.parent.yCofR])
-                    for pt in map(self.get_coordinates, s)
-                ]
-
-                m = [math_helpers.cross2(ri, fi) for ri, fi in zip(r, f)]
-
-                self.loads.D -= math_helpers.integrate(s, np.array(list(zip(*f))[0]))
-                self.loads.L += math_helpers.integrate(s, np.array(list(zip(*f))[1]))
-                self.loads.M += math_helpers.integrate(s, np.array(m))
-            else:
-                if self._interpolator is not None:
-                    self.loads.D = self._interpolator.fluid.drag_total
-                    self.loads.L = self._interpolator.fluid.lift_total
-                    self.loads.M = self._interpolator.fluid.moment_total
+            method_pressure_map = {"integrated": pressure_external, "assumed": pressure_fluid}
+            if method_pressure_map.get(self.config.body.cushion_force_method.lower()):
+                f_x, f_y, moment = self._get_integrated_global_fluid_loads(
+                    s, pressure_external, pressure_fluid, tau
+                )
+                self.loads.D -= f_x
+                self.loads.L += f_y
+                self.loads.M += moment
+            elif self._interpolator is not None:
+                self.loads.D = self._interpolator.fluid.drag_total
+                self.loads.L = self._interpolator.fluid.lift_total
+                self.loads.M = self._interpolator.fluid.moment_total
 
             if isinstance(self, TorsionalSpringSubstructure):
                 # Apply pressure loading for moment calculation
@@ -432,6 +399,37 @@ class Substructure(abc.ABC):
             return np.zeros(2)
         pct = (math_helpers.integrate(s, s * load) / integral - s[0]) / math_helpers.cumdiff(s)
         return integral * np.array([1 - pct, pct])
+
+    def _get_integrated_global_fluid_loads(self, s, pressure_external, pressure_fluid, tau):
+        if self.config.body.cushion_force_method.lower() == "integrated":
+            integrand = pressure_external
+        elif self.config.body.cushion_force_method.lower() == "assumed":
+            integrand = pressure_fluid
+        else:
+            raise ValueError('Cushion force method must be either "integrated" or "assumed"')
+
+        n = [self.get_normal_vector(s_i) for s_i in s]
+        t = [trig.rotate_vec_2d(n_i, -90) for n_i in n]
+
+        if isinstance(self, TorsionalSpringSubstructure):
+            fC = [-pi * ni + taui * ti for pi, taui, ni, ti in zip(pressure_external, tau, n, t)]
+            fFl = [-pi * ni + taui * ti for pi, taui, ni, ti in zip(pressure_fluid, tau, n, t)]
+            f = fC + fFl
+            print(("Cushion Lift-to-Weight: {0}".format(fC[1] / self.config.body.weight)))
+        else:
+            f = [-pi * ni + taui * ti for pi, taui, ni, ti in zip(integrand, tau, n, t)]
+
+        assert self.parent is not None
+        r = [
+            np.array([pt[0] - self.parent.xCofR, pt[1] - self.parent.yCofR])
+            for pt in map(self.get_coordinates, s)
+        ]
+
+        m = [math_helpers.cross2(ri, fi) for ri, fi in zip(r, f)]
+        drag = math_helpers.integrate(s, np.array(list(zip(*f))[0]))
+        lift = math_helpers.integrate(s, np.array(list(zip(*f))[1]))
+        moment = math_helpers.integrate(s, np.array(m))
+        return drag, lift, moment
 
     def get_normal_vector(self, s: float) -> np.ndarray:
         """Calculate the normal vector at a specific arc length."""
