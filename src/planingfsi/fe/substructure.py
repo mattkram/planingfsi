@@ -301,11 +301,8 @@ class Substructure(abc.ABC):
                 elif s_end < s_min:
                     Pc = self._interpolator.fluid.downstream_pressure
 
-                for ii, ss in enumerate(s):
-                    if ss > s_max:
-                        pressure_cushion[ii] = self._interpolator.fluid.upstream_pressure
-                    elif ss < s_min:
-                        pressure_cushion[ii] = self._interpolator.fluid.downstream_pressure
+                pressure_cushion[s > s_max] = self._interpolator.fluid.upstream_pressure
+                pressure_cushion[s < s_min] = self._interpolator.fluid.downstream_pressure
             elif self.cushion_pressure_type == "Total":
                 Pc = self.cushion_pressure or self.config.body.Pc
                 pressure_cushion[:] = self.cushion_pressure or self.config.body.Pc
