@@ -113,10 +113,10 @@ class Substructure(abc.ABC):
         self.parent = parent
 
         # Arrays to store air and fluid pressure profiles for plotting
-        self.fluidS: np.ndarray | None = None
-        self.fluidP: np.ndarray | None = None
-        self.airS: np.ndarray | None = None
-        self.airP: np.ndarray | None = None
+        self.s_hydro: np.ndarray | None = None
+        self.p_hydro: np.ndarray | None = None
+        self.s_air: np.ndarray | None = None
+        self.p_air: np.ndarray | None = None
 
         self.elements: list[fe.Element] = []
         self.node_arc_length: np.ndarray | None = None
@@ -277,10 +277,10 @@ class Substructure(abc.ABC):
 
     def update_fluid_forces(self) -> None:
         # TODO: Refactor this complex, critical method
-        fluid_s: list[float] = []
-        fluid_p: list[float] = []
-        air_s: list[float] = []
-        air_p: list[float] = []
+        s_hydro: list[float] = []
+        p_hydro: list[float] = []
+        s_air: list[float] = []
+        p_air: list[float] = []
         self.loads = SubstructureLoads()
         if self._interpolator is not None:
             s_min, s_max = self._interpolator.get_min_max_s()
@@ -321,15 +321,15 @@ class Substructure(abc.ABC):
 
             # Store fluid and air pressure components for element (for plotting)
             if i == 0:
-                fluid_s.append(s[0])
-                fluid_p.append(pressure_fluid[0])
-                air_s.append(s[0])
-                air_p.append(pressure_air_net[0])
+                s_hydro.append(s[0])
+                p_hydro.append(pressure_fluid[0])
+                s_air.append(s[0])
+                p_air.append(pressure_air_net[0])
 
-            fluid_s.extend(ss for ss in s[1:])
-            fluid_p.extend(pp for pp in pressure_fluid[1:])
-            air_s.append(s[-1])
-            air_p.append(pressure_air_net[-1])
+            s_hydro.extend(ss for ss in s[1:])
+            p_hydro.extend(pp for pp in pressure_fluid[1:])
+            s_air.append(s[-1])
+            p_air.append(pressure_air_net[-1])
 
             if not isinstance(self, TorsionalSpringSubstructure):
                 el.qp = self._distribute_integrated_load_to_nodes(s, pressure_total)
@@ -362,10 +362,10 @@ class Substructure(abc.ABC):
             self.loads.La += f_y
             self.loads.Ma += moment
 
-        self.fluidP = np.array(fluid_p)
-        self.fluidS = np.array(fluid_s)
-        self.airP = np.array(air_p)
-        self.airS = np.array(air_s)
+        self.p_hydro = np.array(p_hydro)
+        self.s_hydro = np.array(s_hydro)
+        self.p_air = np.array(p_air)
+        self.s_air = np.array(s_air)
 
     @staticmethod
     def _distribute_integrated_load_to_nodes(s: np.ndarray, load: np.ndarray) -> np.ndarray:

@@ -163,9 +163,9 @@ class FSIFigure:
     def plot_pressure_profiles(self, ss: Substructure) -> None:
         """Plot the internal and external pressure profiles as lines."""
         if handle := self.line_fluid_pressure.get(ss):
-            handle.set_data(self._get_pressure_plot_points(ss, ss.fluidS, ss.fluidP))
+            handle.set_data(self._get_pressure_plot_points(ss, ss.s_hydro, ss.p_hydro))
         if handle := self.line_air_pressure.get(ss):
-            handle.set_data(self._get_pressure_plot_points(ss, ss.airS, -ss.airP))
+            handle.set_data(self._get_pressure_plot_points(ss, ss.s_air, -ss.p_air))
 
     def plot_substructure(self, ss: Substructure) -> None:
         """Plot the substructure elements and pressure profiles."""
