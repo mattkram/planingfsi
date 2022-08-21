@@ -276,10 +276,6 @@ class Substructure(abc.ABC):
             s_start, s_end = self.node_arc_length[i], self.node_arc_length[i + 1]
             s, pressure_fluid, tau = self._get_loads_in_range(s_start, s_end)
 
-            # TODO: Remove after refactor complete
-            assert abs(s_start - s[0]) < 1e-12
-            assert abs(s_end - s[-1]) < 1e-12
-
             # Apply ramp to hydrodynamic pressure
             pressure_fluid *= self.ramp**2
 
