@@ -456,9 +456,19 @@ class RigidSubstructure(Substructure):
 
 
 class FlexibleMembraneSubstructure(Substructure):
+    """A flexible membrane structure, composed of truss finite elements.
+
+    The structure supports axial loading only (i.e. no bending), and supports large deformations.
+
+    Attributes:
+        pretension: An optional pretension used to initialize the elements.
+        EA: The axial stiffness of the component `Element`s.
+
+    """
 
     is_free = True
     _element_type: ElementType = fe.TrussElement
+    elements: list[fe.TrussElement]
 
     def __init__(
         self,
@@ -471,30 +481,15 @@ class FlexibleMembraneSubstructure(Substructure):
         self.pretension = pretension
         self.EA = axial_stiffness
 
-        self.K: np.ndarray | None = None
-        self.F: np.ndarray | None = None
-        self.U: np.ndarray | None = None
-
-    def assemble_global_stiffness_and_force(self) -> None:
-        if self.K is None or self.F is None:
-            num_dof = len(self.solver.nodes) * NUM_DIM
-            self.K = np.zeros((num_dof, num_dof))
-            self.F = np.zeros((num_dof, 1))
-            self.U = np.zeros((num_dof, 1))
-        else:
-            self.K *= 0
-            self.F *= 0
+    def assemble_global_stiffness_and_force(
+        self, K_global: np.ndarray, F_global: np.ndarray
+    ) -> None:
+        """Assemble element stiffness and force into the global matrices, which are passed by reference and modified."""
         for el in self.elements:
-            self.add_loads_from_element(el)
-
-    def add_loads_from_element(self, el: "fe.Element") -> None:
-        assert isinstance(el, fe.TrussElement), f"Element is of type {type(el)}"
-        assert self.K is not None
-        assert self.F is not None
-        K, F = el.get_stiffness_and_force()
-        el_dof = [dof for nd in el.nodes for dof in self.rigid_body.parent.node_dofs[nd]]
-        self.K[np.ix_(el_dof, el_dof)] += K
-        self.F[np.ix_(el_dof)] += F
+            K_el, F_el = el.get_stiffness_and_force()
+            el_dof = [dof for nd in el.nodes for dof in self.rigid_body.parent.node_dofs[nd]]
+            K_global[np.ix_(el_dof, el_dof)] += K_el
+            F_global[np.ix_(el_dof)] += F_el
 
     def load_mesh(self, submesh: Path | Subcomponent = Path("mesh")) -> None:
         """Load the mesh, and assign structural properties to the elements."""

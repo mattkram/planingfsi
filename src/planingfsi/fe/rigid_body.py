@@ -322,14 +322,7 @@ class RigidBody:
         # Assemble global matrices for all substructures together
         for ss in flexible_substructures:
             ss.update_fluid_forces()
-            ss.assemble_global_stiffness_and_force()
-
-            # TODO: Consider removing this and fixing static types
-            assert ss.K is not None
-            assert ss.F is not None
-
-            Kg += ss.K
-            Fg += ss.F
+            ss.assemble_global_stiffness_and_force(Kg, Fg)
 
         for nd in self.parent.nodes:
             node_dof = self.parent.node_dofs[nd]
