@@ -330,28 +330,8 @@ class Substructure(abc.ABC):
             air_p.append(pressure_air_net[-1])
 
             if not isinstance(self, TorsionalSpringSubstructure):
-                # Integrate pressure profile, calculate center of pressure and
-                # distribute force to nodes
-                integral = math_helpers.integrate(s, pressure_total)
-                if integral == 0.0:
-                    qp = np.zeros(2)
-                else:
-                    pct = (
-                        math_helpers.integrate(s, s * pressure_total) / integral - s[0]
-                    ) / math_helpers.cumdiff(s)
-                    qp = integral * np.array([1 - pct, pct])
-
-                integral = math_helpers.integrate(s, tau)
-                if integral == 0.0:
-                    qs = np.zeros(2)
-                else:
-                    pct = (
-                        math_helpers.integrate(s, s * tau) / integral - s[0]
-                    ) / math_helpers.cumdiff(s)
-                    qs = -integral * np.array([1 - pct, pct])
-
-                el.qp = qp
-                el.qs = qs
+                el.qp = self._distribute_integrated_load_to_nodes(s, pressure_total)
+                el.qs = self._distribute_integrated_load_to_nodes(s, -tau)
 
             # Calculate external force and moment for rigid body calculation
             if (
@@ -443,6 +423,15 @@ class Substructure(abc.ABC):
         self.fluidS = np.array(fluid_s)
         self.airP = np.array(air_p)
         self.airS = np.array(air_s)
+
+    @staticmethod
+    def _distribute_integrated_load_to_nodes(s: np.ndarray, load: np.ndarray) -> np.ndarray:
+        """Integrate a load along an element, returning the equivalent load at each endpoint."""
+        integral = math_helpers.integrate(s, load)
+        if integral == 0.0:
+            return np.zeros(2)
+        pct = (math_helpers.integrate(s, s * load) / integral - s[0]) / math_helpers.cumdiff(s)
+        return integral * np.array([1 - pct, pct])
 
     def get_normal_vector(self, s: float) -> np.ndarray:
         """Calculate the normal vector at a specific arc length."""
