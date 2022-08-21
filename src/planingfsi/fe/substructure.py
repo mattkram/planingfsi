@@ -301,16 +301,8 @@ class Substructure(abc.ABC):
                 pressure_cushion[:] = self.cushion_pressure or self.config.body.Pc
 
             # Calculate internal pressure
-            net_air_pressure = (
-                self.seal_pressure * self.seal_over_pressure_pct - pressure_cushion[-1]
-            )
             pressure_internal = self.seal_pressure * self.seal_over_pressure_pct * np.ones_like(s)
             if self.seal_pressure_method.lower() == "hydrostatic":
-                net_air_pressure += (
-                    self.config.flow.density
-                    * self.config.flow.gravity
-                    * (self.config.flow.waterline_height - self.get_coordinates(s_end)[1])
-                )
                 pressure_internal += (
                     self.config.flow.density
                     * self.config.flow.gravity
@@ -321,16 +313,17 @@ class Substructure(abc.ABC):
                 )
 
             # Store fluid and air pressure components for element (for plotting)
+            pressure_air_net = pressure_internal - pressure_cushion
             if i == 0:
                 fluid_s.append(s[0])
                 fluid_p.append(pressure_fluid[0])
                 air_s.append(s[0])
-                air_p.append(net_air_pressure)
+                air_p.append(pressure_air_net[0])
 
             fluid_s.extend(ss for ss in s[1:])
             fluid_p.extend(pp for pp in pressure_fluid[1:])
             air_s.append(s[-1])
-            air_p.append(net_air_pressure)
+            air_p.append(pressure_air_net[-1])
 
             pressure_external = pressure_fluid + pressure_cushion
             pressure_total = pressure_external - pressure_internal
