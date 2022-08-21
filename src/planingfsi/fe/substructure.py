@@ -97,7 +97,6 @@ class Substructure(abc.ABC):
         **_: Any,
     ):
         self.name = name
-        self._interpolator: Interpolator | None = None
 
         self.seal_pressure = seal_pressure
         self.seal_pressure_method = seal_pressure_method
@@ -123,6 +122,7 @@ class Substructure(abc.ABC):
 
         self.loads = SubstructureLoads()
 
+        self._interpolator: Interpolator | None = None
         self._interp_coords_at_arclength: interp1d | None = None
 
     @property
