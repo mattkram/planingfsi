@@ -312,8 +312,12 @@ class Substructure(abc.ABC):
                     )
                 )
 
-            # Store fluid and air pressure components for element (for plotting)
+            # Derive various combinations of pressure
             pressure_air_net = pressure_internal - pressure_cushion
+            pressure_external = pressure_fluid + pressure_cushion
+            pressure_total = pressure_external - pressure_internal
+
+            # Store fluid and air pressure components for element (for plotting)
             if i == 0:
                 fluid_s.append(s[0])
                 fluid_p.append(pressure_fluid[0])
@@ -324,9 +328,6 @@ class Substructure(abc.ABC):
             fluid_p.extend(pp for pp in pressure_fluid[1:])
             air_s.append(s[-1])
             air_p.append(pressure_air_net[-1])
-
-            pressure_external = pressure_fluid + pressure_cushion
-            pressure_total = pressure_external - pressure_internal
 
             if not isinstance(self, TorsionalSpringSubstructure):
                 # Integrate pressure profile, calculate center of pressure and
