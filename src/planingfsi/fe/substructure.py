@@ -335,7 +335,9 @@ class Substructure(abc.ABC):
 
             # Calculate external force and moment for rigid body calculation
             method_pressure_map = {"integrated": pressure_external, "assumed": pressure_fluid}
-            if p := method_pressure_map.get(self.config.body.cushion_force_method.lower()):
+            if (
+                p := method_pressure_map.get(self.config.body.cushion_force_method.lower())
+            ) is not None:
                 f_x, f_y, moment = self._get_integrated_global_loads(s, p, tau)
                 self.loads.D -= f_x
                 self.loads.L += f_y
@@ -414,18 +416,18 @@ class Substructure(abc.ABC):
             A tuple containing x-force, y-force, and z-moment.
 
         """
-        n = [self.get_normal_vector(s_i) for s_i in s]
-        t = [trig.rotate_vec_2d(n_i, -90) for n_i in n]
-        f = [-p_i * n_i + tau_i * t_i for p_i, tau_i, n_i, t_i in zip(p, tau, n, t)]
+        n = np.array([self.get_normal_vector(s_i) for s_i in s])
+        t = np.array([trig.rotate_vec_2d(n_i, -90) for n_i in n])
+        f = -p[:, np.newaxis] * n + tau[:, np.newaxis] * t
 
         assert self.parent is not None
         c_of_r = np.array([self.parent.xCofR, self.parent.yCofR])
         r = [self.get_coordinates(s_i) - c_of_r for s_i in s]
+        m = np.array([math_helpers.cross2(r_i, f_i) for r_i, f_i in zip(r, f)])
 
-        m = [math_helpers.cross2(r_i, f_i) for r_i, f_i in zip(r, f)]
-        drag = math_helpers.integrate(s, np.array(list(zip(*f))[0]))
-        lift = math_helpers.integrate(s, np.array(list(zip(*f))[1]))
-        moment = math_helpers.integrate(s, np.array(m))
+        drag = math_helpers.integrate(s, f[:, 0])
+        lift = math_helpers.integrate(s, f[:, 1])
+        moment = math_helpers.integrate(s, m)
         return drag, lift, moment
 
     def get_normal_vector(self, s: float) -> np.ndarray:
