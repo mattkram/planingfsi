@@ -292,33 +292,16 @@ class Substructure(abc.ABC):
             pressure_fluid *= self.ramp**2
 
             # Add external cushion pressure to external fluid pressure
-            Pc = 0.0
             # This is the full-resolution calculation with all structural nodes and fluid elements
             pressure_cushion = np.zeros_like(s)
             if self._interpolator is not None:
-                if s_end > s_max:
-                    Pc = self._interpolator.fluid.upstream_pressure
-                elif s_end < s_min:
-                    Pc = self._interpolator.fluid.downstream_pressure
-
                 pressure_cushion[s > s_max] = self._interpolator.fluid.upstream_pressure
                 pressure_cushion[s < s_min] = self._interpolator.fluid.downstream_pressure
             elif self.cushion_pressure_type == "Total":
-                Pc = self.cushion_pressure or self.config.body.Pc
                 pressure_cushion[:] = self.cushion_pressure or self.config.body.Pc
 
-            # Store fluid and air pressure components for element (for plotting)
-            if i == 0:
-                fluid_s.append(s[0])
-                fluid_p.append(pressure_fluid[0])
-                air_s.append(s_start)
-                air_p.append(Pc - self.seal_pressure)
-
-            fluid_s.extend(ss for ss in s[1:])
-            fluid_p.extend(pp for pp in pressure_fluid[1:])
-
             # TODO: Double-check the sign here, I think this may be reversed and corrected during plotting
-            net_air_pressure = Pc - self.seal_pressure
+            net_air_pressure = pressure_cushion[-1] - self.seal_pressure
             if self.seal_pressure_method.lower() == "hydrostatic":
                 net_air_pressure += (
                     self.config.flow.density
@@ -326,7 +309,16 @@ class Substructure(abc.ABC):
                     * (self.get_coordinates(s_end)[1] - self.config.flow.waterline_height)
                 )
 
-            air_s.append(s_end)
+            # Store fluid and air pressure components for element (for plotting)
+            if i == 0:
+                fluid_s.append(s[0])
+                fluid_p.append(pressure_fluid[0])
+                air_s.append(s[0])
+                air_p.append(net_air_pressure)
+
+            fluid_s.extend(ss for ss in s[1:])
+            fluid_p.extend(pp for pp in pressure_fluid[1:])
+            air_s.append(s[-1])
             air_p.append(net_air_pressure)
 
             # Calculate internal pressure
