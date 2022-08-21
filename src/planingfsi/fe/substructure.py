@@ -267,15 +267,7 @@ class Substructure(abc.ABC):
         fluid_p: list[float] = []
         air_s: list[float] = []
         air_p: list[float] = []
-        self.loads.D = 0.0
-        self.loads.L = 0.0
-        self.loads.M = 0.0
-        self.loads.Dt = 0.0
-        self.loads.Lt = 0.0
-        self.loads.Mt = 0.0
-        self.loads.Da = 0.0
-        self.loads.La = 0.0
-        self.loads.Ma = 0.0
+        self.loads = SubstructureLoads()
         if self._interpolator is not None:
             s_min, s_max = self._interpolator.get_min_max_s()
 
