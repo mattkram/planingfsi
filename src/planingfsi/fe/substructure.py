@@ -419,12 +419,10 @@ class Substructure(abc.ABC):
         f = [-p_i * n_i + tau_i * t_i for p_i, tau_i, n_i, t_i in zip(p, tau, n, t)]
 
         assert self.parent is not None
-        r = [
-            np.array([pt[0] - self.parent.xCofR, pt[1] - self.parent.yCofR])
-            for pt in map(self.get_coordinates, s)
-        ]
+        c_of_r = np.array([self.parent.xCofR, self.parent.yCofR])
+        r = [self.get_coordinates(s_i) - c_of_r for s_i in s]
 
-        m = [math_helpers.cross2(ri, fi) for ri, fi in zip(r, f)]
+        m = [math_helpers.cross2(r_i, f_i) for r_i, f_i in zip(r, f)]
         drag = math_helpers.integrate(s, np.array(list(zip(*f))[0]))
         lift = math_helpers.integrate(s, np.array(list(zip(*f))[1]))
         moment = math_helpers.integrate(s, np.array(m))
