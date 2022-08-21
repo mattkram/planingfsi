@@ -597,6 +597,7 @@ class PlaningSurface(PressurePatch):
             self.lift_total = self.lift_pressure + self.lift_friction
             self.moment_total = math_helpers.integrate(
                 self.x_coords,
+                # TODO: This shouldn't reference body config
                 self.pressure * trig.cosd(tangent_angle) * (self.x_coords - self.config.body.xCofR),
             )
             if self.is_sprung:
@@ -660,6 +661,7 @@ class PlaningSurface(PressurePatch):
         spring_displacement = z_s - self.parent.get_free_surface_height(x_s)
         spring_force = -self.spring_constant * spring_displacement
         self.lift_total += spring_force
+        # TODO: This shouldn't reference body config
         self.moment_total += spring_force * (x_s - self.config.body.xCofR)
 
     def _calculate_shear_stress(self) -> None:

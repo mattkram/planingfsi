@@ -113,13 +113,13 @@ class RigidBody:
         )
 
         # TODO: The override logic should probably happen in the input file parsing, and not here
-        self.xCofG = x_cg or self.config.body.xCofG
-        self.yCofG = y_cg or self.config.body.yCofG
-        self.xCofR = x_cr or self.config.body.xCofR
-        self.yCofR = y_cr or self.config.body.yCofR
+        self.x_cg = x_cg or self.config.body.xCofG
+        self.y_cg = y_cg or self.config.body.yCofG
+        self.x_cr = x_cr or self.config.body.xCofR
+        self.y_cr = y_cr or self.config.body.yCofR
 
-        self.xCofR0 = self.xCofR
-        self.yCofR0 = self.yCofR
+        self.x_cr_init = self.x_cr
+        self.y_cr_init = self.y_cr
 
         self.initial_draft = initial_draft or self.config.body.initial_draft
         self.initial_trim = initial_trim or self.config.body.initial_trim
@@ -288,18 +288,18 @@ class RigidBody:
         for nd in self.nodes:
             xo, yo = nd.x, nd.y
             new_pos = trig.rotate_point(
-                np.array([xo, yo]), np.array([self.xCofR, self.yCofR]), trim_delta
+                np.array([xo, yo]), np.array([self.x_cr, self.y_cr]), trim_delta
             )
             nd.move(new_pos[0] - xo, new_pos[1] - yo - draft_delta)
 
         for s in self.substructures:
             s.update_geometry()
 
-        self.xCofG, self.yCofG = trig.rotate_point(
-            np.array([self.xCofG, self.yCofG]), np.array([self.xCofR, self.yCofR]), trim_delta
+        self.x_cg, self.y_cg = trig.rotate_point(
+            np.array([self.x_cg, self.y_cg]), np.array([self.x_cr, self.y_cr]), trim_delta
         )
-        self.yCofG -= draft_delta
-        self.yCofR -= draft_delta
+        self.y_cg -= draft_delta
+        self.y_cr -= draft_delta
 
         self.draft += draft_delta
         self.trim += trim_delta
@@ -398,7 +398,7 @@ class RigidBody:
 
         self.v += self.time_step * self.a
 
-        self.a = np.array([self.weight - self.L, self.M - self.weight * (self.xCofG - self.xCofR)])
+        self.a = np.array([self.weight - self.L, self.M - self.weight * (self.x_cg - self.x_cr)])
         #    self.a -= self.Cdamp * (self.v + self.v**3) * config.ramp
         self.a -= self.c_damp * self.v * self.ramp
         self.a /= np.array([self.m, self.Iz])
@@ -420,7 +420,7 @@ class RigidBody:
 
     def get_disp_newmark_beta(self) -> np.ndarray:
         """Get the rigid body displacement using the Newmark-Beta method."""
-        self.a = np.array([self.weight - self.L, self.M - self.weight * (self.xCofG - self.xCofR)])
+        self.a = np.array([self.weight - self.L, self.M - self.weight * (self.x_cg - self.x_cr)])
         #    self.a -= self.Cdamp * self.v * config.ramp
         self.a /= np.array([self.m, self.Iz])
         self.a = np.min(
@@ -577,7 +577,7 @@ class RigidBody:
 
         if self.solver is None:
             self.resFun = lambda x: np.array(
-                [self.L - self.weight, self.M - self.weight * (self.xCofG - self.xCofR)]
+                [self.L - self.weight, self.M - self.weight * (self.x_cg - self.x_cr)]
             )
             #      self.resFun = lambda x: np.array([self.get_res_moment(), self.get_res_lift()])
             self.x = np.array([self.draft, self.trim])
@@ -647,10 +647,10 @@ class RigidBody:
         if np.isnan(self.M):
             res = 1.0
         else:
-            if self.xCofG == self.xCofR and self.M == 0.0:
+            if self.x_cg == self.x_cr and self.M == 0.0:
                 res = 1.0
             else:
-                res = (self.M - self.weight * (self.xCofG - self.xCofR)) / (
+                res = (self.M - self.weight * (self.x_cg - self.x_cr)) / (
                     self.config.flow.stagnation_pressure * self.config.body.reference_length**2
                     + 1e-6
                 )
@@ -660,8 +660,8 @@ class RigidBody:
         """Print the moment for debugging."""
         lines = [
             f"Rigid Body Motion: {self.name}",
-            f"  CofR: ({self.xCofR}, {self.yCofR})",
-            f"  CofG: ({self.xCofG}, {self.yCofG})",
+            f"  CofR: ({self.x_cr}, {self.y_cr})",
+            f"  CofG: ({self.x_cg}, {self.y_cg})",
             f"  Draft:      {self.draft:5.4e}",
             f"  Trim Angle: {self.trim:5.4e}",
             f"  Lift Force: {self.L:5.4e}",
@@ -682,10 +682,10 @@ class RigidBody:
             raise AttributeError("parent must be set before simulation can be accessed.")
         writers.write_as_dict(
             self.parent.simulation.it_dir / f"motion_{self.name}.{self.config.io.data_format}",
-            ["xCofR", self.xCofR],
-            ["yCofR", self.yCofR],
-            ["xCofG", self.xCofG],
-            ["yCofG", self.yCofG],
+            ["xCofR", self.x_cr],
+            ["yCofR", self.y_cr],
+            ["xCofG", self.x_cg],
+            ["yCofG", self.y_cg],
             ["draft", self.draft],
             ["trim", self.trim],
             ["liftRes", self.res_l],
@@ -707,10 +707,10 @@ class RigidBody:
         dict_ = load_dict_from_file(
             self.parent.simulation.it_dir / f"motion_{self.name}.{self.config.io.data_format}"
         )
-        self.xCofR = dict_.get("xCofR", np.nan)
-        self.yCofR = dict_.get("yCofR", np.nan)
-        self.xCofG = dict_.get("xCofG", np.nan)
-        self.yCofG = dict_.get("yCofG", np.nan)
+        self.x_cr = dict_.get("xCofR", np.nan)
+        self.y_cr = dict_.get("yCofR", np.nan)
+        self.x_cg = dict_.get("xCofG", np.nan)
+        self.y_cg = dict_.get("yCofG", np.nan)
         self.draft = dict_.get("draft", np.nan)
         self.trim = dict_.get("trim", np.nan)
         self.res_l = dict_.get("liftRes", np.nan)

@@ -418,7 +418,7 @@ class Substructure(abc.ABC):
 
         assert self.rigid_body is not None
         if moment_about is None:
-            moment_about = np.array([self.rigid_body.xCofR, self.rigid_body.yCofR])
+            moment_about = np.array([self.rigid_body.x_cr, self.rigid_body.y_cr])
 
         r = [self.get_coordinates(s_i) - moment_about for s_i in s]
         m = np.array([math_helpers.cross2(r_i, f_i) for r_i, f_i in zip(r, f)])
@@ -623,7 +623,7 @@ class TorsionalSpringSubstructure(Substructure):
         # Add to the global forces
         self.loads.Ltip += tip_force[1]
         self.loads.Mtip += math_helpers.cross2(
-            tip_coords - np.array([self.rigid_body.xCofR, self.rigid_body.xCofR]), tip_force
+            tip_coords - np.array([self.rigid_body.x_cr, self.rigid_body.x_cr]), tip_force
         )
 
     def update_fluid_forces(self) -> None:
