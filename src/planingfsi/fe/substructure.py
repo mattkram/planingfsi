@@ -301,12 +301,22 @@ class Substructure(abc.ABC):
                 pressure_cushion[:] = self.cushion_pressure or self.config.body.Pc
 
             # TODO: Double-check the sign here, I think this may be reversed and corrected during plotting
+            # Calculate internal pressure
             net_air_pressure = pressure_cushion[-1] - self.seal_pressure
+            pressure_internal = self.seal_pressure * self.seal_over_pressure_pct * np.ones_like(s)
             if self.seal_pressure_method.lower() == "hydrostatic":
                 net_air_pressure += (
                     self.config.flow.density
                     * self.config.flow.gravity
                     * (self.get_coordinates(s_end)[1] - self.config.flow.waterline_height)
+                )
+                pressure_internal -= (
+                    self.config.flow.density
+                    * self.config.flow.gravity
+                    * (
+                        np.array([self.get_coordinates(si)[1] for si in s])
+                        - self.config.flow.waterline_height
+                    )
                 )
 
             # Store fluid and air pressure components for element (for plotting)
@@ -320,18 +330,6 @@ class Substructure(abc.ABC):
             fluid_p.extend(pp for pp in pressure_fluid[1:])
             air_s.append(s[-1])
             air_p.append(net_air_pressure)
-
-            # Calculate internal pressure
-            pressure_internal = self.seal_pressure * self.seal_over_pressure_pct * np.ones_like(s)
-            if self.seal_pressure_method.lower() == "hydrostatic":
-                pressure_internal -= (
-                    self.config.flow.density
-                    * self.config.flow.gravity
-                    * (
-                        np.array([self.get_coordinates(si)[1] for si in s])
-                        - self.config.flow.waterline_height
-                    )
-                )
 
             pressure_external = pressure_fluid + pressure_cushion
             pressure_total = pressure_external - pressure_internal
