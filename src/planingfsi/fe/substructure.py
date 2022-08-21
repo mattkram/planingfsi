@@ -300,22 +300,23 @@ class Substructure(abc.ABC):
             elif self.cushion_pressure_type == "Total":
                 pressure_cushion[:] = self.cushion_pressure or self.config.body.Pc
 
-            # TODO: Double-check the sign here, I think this may be reversed and corrected during plotting
             # Calculate internal pressure
-            net_air_pressure = pressure_cushion[-1] - self.seal_pressure
+            net_air_pressure = (
+                self.seal_pressure * self.seal_over_pressure_pct - pressure_cushion[-1]
+            )
             pressure_internal = self.seal_pressure * self.seal_over_pressure_pct * np.ones_like(s)
             if self.seal_pressure_method.lower() == "hydrostatic":
                 net_air_pressure += (
                     self.config.flow.density
                     * self.config.flow.gravity
-                    * (self.get_coordinates(s_end)[1] - self.config.flow.waterline_height)
+                    * (self.config.flow.waterline_height - self.get_coordinates(s_end)[1])
                 )
-                pressure_internal -= (
+                pressure_internal += (
                     self.config.flow.density
                     * self.config.flow.gravity
                     * (
-                        np.array([self.get_coordinates(si)[1] for si in s])
-                        - self.config.flow.waterline_height
+                        self.config.flow.waterline_height
+                        - np.array([self.get_coordinates(si)[1] for si in s])
                     )
                 )
 

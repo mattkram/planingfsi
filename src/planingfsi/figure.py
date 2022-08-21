@@ -165,7 +165,7 @@ class FSIFigure:
         if handle := self.line_fluid_pressure.get(ss):
             handle.set_data(self._get_pressure_plot_points(ss, ss.fluidS, ss.fluidP))
         if handle := self.line_air_pressure.get(ss):
-            handle.set_data(self._get_pressure_plot_points(ss, ss.airS, ss.airP))
+            handle.set_data(self._get_pressure_plot_points(ss, ss.airS, -ss.airP))
 
     def plot_substructure(self, ss: Substructure) -> None:
         """Plot the substructure elements and pressure profiles."""
