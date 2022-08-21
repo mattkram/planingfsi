@@ -330,12 +330,12 @@ class Substructure(abc.ABC):
                 s_air.append(s[0])
                 p_air.append(pressure_air_net[0])
 
-            s_hydro.extend(ss for ss in s[1:])
-            p_hydro.extend(pp for pp in pressure_hydro[1:])
+            s_hydro.extend(s[1:])
+            p_hydro.extend(pressure_hydro[1:])
             s_air.append(s[-1])
             p_air.append(pressure_air_net[-1])
 
-            if not isinstance(self, TorsionalSpringSubstructure):
+            if isinstance(self, FlexibleSubstructure):
                 el.qp = self._distribute_integrated_load_to_nodes(s, pressure_total)
                 el.qs = self._distribute_integrated_load_to_nodes(s, -tau)
 
