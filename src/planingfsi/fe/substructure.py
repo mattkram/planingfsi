@@ -246,6 +246,21 @@ class Substructure(abc.ABC):
             nd.coordinates = coords
         self.update_geometry()
 
+    def _get_loads_in_range(self, s_start, s_end, /):
+        if self._interpolator is not None:
+            return self._interpolator.get_loads_in_range(
+                s_start,
+                s_end,
+                pressure_limit=(
+                    self.config.flow.stagnation_pressure
+                    if self.config.plotting.pressure_limiter
+                    else None
+                ),
+            )
+        else:
+            s = np.array([s_start, s_end])
+            return s, np.zeros_like(s), np.zeros_like(s)
+
     def update_fluid_forces(self) -> None:
         # TODO: Refactor this complex, critical method
         fluid_s: list[float] = []
@@ -265,53 +280,39 @@ class Substructure(abc.ABC):
             s_min, s_max = self._interpolator.get_min_max_s()
 
         for i, el in enumerate(self.elements):
-            # Get pressure at end points and all fluid points along element
-            node_s = [self.node_arc_length[i], self.node_arc_length[i + 1]]
-            if self._interpolator is not None:
-                s, pressure_fluid, tau = self._interpolator.get_loads_in_range(
-                    node_s[0],
-                    node_s[1],
-                    pressure_limit=self.config.flow.stagnation_pressure
-                    if self.config.plotting.pressure_limiter
-                    else None,
-                )
-            else:
-                s = np.array(node_s)
-                pressure_fluid = np.zeros_like(s)
-                tau = np.zeros_like(s)
+            # Get pressure & shear stress at end points and all fluid points along element
+            s_start, s_end = self.node_arc_length[i], self.node_arc_length[i + 1]
+            s, pressure_fluid, tau = self._get_loads_in_range(s_start, s_end)
 
-            ss = node_s[1]
             Pc = 0.0
             if self._interpolator is not None:
-                if ss > s_max:
+                if s_end > s_max:
                     Pc = self._interpolator.fluid.upstream_pressure
-                elif ss < s_min:
+                elif s_end < s_min:
                     Pc = self._interpolator.fluid.downstream_pressure
             elif self.cushion_pressure_type == "Total":
                 Pc = self.cushion_pressure or self.config.body.Pc
 
-            # Store fluid and air pressure components for element (for
-            # plotting)
+            # Store fluid and air pressure components for element (for plotting)
             if i == 0:
-                fluid_s += [s[0]]
-                fluid_p += [pressure_fluid[0]]
-                air_s += [node_s[0]]
-                air_p += [Pc - self.seal_pressure]
+                fluid_s.append(s[0])
+                fluid_p.append(pressure_fluid[0])
+                air_s.append(s_start)
+                air_p.append(Pc - self.seal_pressure)
 
-            fluid_s += [ss for ss in s[1:]]
-            fluid_p += [pp for pp in pressure_fluid[1:]]
-            air_s += [ss for ss in node_s[1:]]
+            fluid_s.extend(ss for ss in s[1:])
+            fluid_p.extend(pp for pp in pressure_fluid[1:])
+
+            net_air_pressure = Pc - self.seal_pressure
             if self.seal_pressure_method.lower() == "hydrostatic":
-                air_p += [
-                    Pc
-                    - self.seal_pressure
-                    + self.config.flow.density
+                net_air_pressure += (
+                    self.config.flow.density
                     * self.config.flow.gravity
-                    * (self.get_coordinates(si)[1] - self.config.flow.waterline_height)
-                    for si in node_s[1:]
-                ]
-            else:
-                air_p += [Pc - self.seal_pressure for _ in node_s[1:]]
+                    * (self.get_coordinates(s_end)[1] - self.config.flow.waterline_height)
+                )
+
+            air_s.append(s_end)
+            air_p.append(net_air_pressure)
 
             # Apply ramp to hydrodynamic pressure
             pressure_fluid *= self.ramp**2
