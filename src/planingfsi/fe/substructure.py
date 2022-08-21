@@ -410,14 +410,7 @@ class Substructure(abc.ABC):
 
         n = [self.get_normal_vector(s_i) for s_i in s]
         t = [trig.rotate_vec_2d(n_i, -90) for n_i in n]
-
-        if isinstance(self, TorsionalSpringSubstructure):
-            fC = [-pi * ni + taui * ti for pi, taui, ni, ti in zip(pressure_external, tau, n, t)]
-            fFl = [-pi * ni + taui * ti for pi, taui, ni, ti in zip(pressure_fluid, tau, n, t)]
-            f = fC + fFl
-            print(("Cushion Lift-to-Weight: {0}".format(fC[1] / self.config.body.weight)))
-        else:
-            f = [-pi * ni + taui * ti for pi, taui, ni, ti in zip(integrand, tau, n, t)]
+        f = [-pi * ni + taui * ti for pi, taui, ni, ti in zip(integrand, tau, n, t)]
 
         assert self.parent is not None
         r = [
