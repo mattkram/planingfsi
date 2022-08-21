@@ -164,7 +164,7 @@ class Substructure(abc.ABC):
     @property
     def arc_length(self) -> float:
         """The total arc length of the substructure, i.e. the sum of all of the Element lengths."""
-        return max(self.node_arc_length)
+        return self.node_arc_length[-1]
 
     @property
     def it_dir(self) -> Path:
