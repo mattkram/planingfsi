@@ -335,10 +335,8 @@ class Substructure(abc.ABC):
 
             # Calculate external force and moment for rigid body calculation
             method_pressure_map = {"integrated": pressure_external, "assumed": pressure_fluid}
-            if method_pressure_map.get(self.config.body.cushion_force_method.lower()):
-                f_x, f_y, moment = self._get_integrated_global_fluid_loads(
-                    s, pressure_external, pressure_fluid, tau
-                )
+            if p := method_pressure_map.get(self.config.body.cushion_force_method.lower()):
+                f_x, f_y, moment = self._get_integrated_global_loads(s, p, tau)
                 self.loads.D -= f_x
                 self.loads.L += f_y
                 self.loads.M += moment
@@ -400,17 +398,25 @@ class Substructure(abc.ABC):
         pct = (math_helpers.integrate(s, s * load) / integral - s[0]) / math_helpers.cumdiff(s)
         return integral * np.array([1 - pct, pct])
 
-    def _get_integrated_global_fluid_loads(self, s, pressure_external, pressure_fluid, tau):
-        if self.config.body.cushion_force_method.lower() == "integrated":
-            integrand = pressure_external
-        elif self.config.body.cushion_force_method.lower() == "assumed":
-            integrand = pressure_fluid
-        else:
-            raise ValueError('Cushion force method must be either "integrated" or "assumed"')
+    def _get_integrated_global_loads(
+        self, s: np.ndarray, p: np.ndarray, tau: np.ndarray
+    ) -> tuple[float, float, float]:
+        """Integrate a pressure and shear stress along an arclength to get global loads.
 
+        The moment is calculated about the center of rotation.
+
+        Args:
+            s: The arclength array.
+            p: The pressure array.
+            tau: The shear stress array.
+
+        Returns:
+            A tuple containing x-force, y-force, and z-moment.
+
+        """
         n = [self.get_normal_vector(s_i) for s_i in s]
         t = [trig.rotate_vec_2d(n_i, -90) for n_i in n]
-        f = [-pi * ni + taui * ti for pi, taui, ni, ti in zip(integrand, tau, n, t)]
+        f = [-p_i * n_i + tau_i * t_i for p_i, tau_i, n_i, t_i in zip(p, tau, n, t)]
 
         assert self.parent is not None
         r = [
