@@ -75,7 +75,7 @@ class Substructure(abc.ABC):
             a constant external pressure will be applied to the substructure.
         struct_interp_type: The method to use for interpolation of position.
         struct_extrap: If True, extrapolate the position when the arclength extends past the end nodes.
-        parent: A reference to the parent `RigidBody` instance.
+        rigid_body: A reference to the parent `RigidBody` instance.
 
     """
 
@@ -109,7 +109,7 @@ class Substructure(abc.ABC):
         self.struct_extrap = struct_extrap
 
         self._solver = solver
-        self.parent = parent
+        self.rigid_body = parent
 
         # Arrays to store air and fluid pressure profiles for plotting
         self.s_hydro: np.ndarray | None = None
@@ -128,8 +128,12 @@ class Substructure(abc.ABC):
     @property
     def solver(self) -> StructuralSolver:
         """A reference to the structural solver. Can be explicitly set, or else traverses the parents."""
-        if self._solver is None and self.parent is not None and self.parent.parent is not None:
-            return self.parent.parent
+        if (
+            self._solver is None
+            and self.rigid_body is not None
+            and self.rigid_body.parent is not None
+        ):
+            return self.rigid_body.parent
         if self._solver is None:
             raise AttributeError("solver must be set before use.")
         return self._solver
@@ -146,7 +150,7 @@ class Substructure(abc.ABC):
     @property
     def ramp(self) -> float:
         """The ramping coefficient from the high-level simulation object."""
-        if self.parent is None:
+        if self.rigid_body is None:
             logger.warning("No parent assigned, ramp will be set to 1.0.")
             return 1.0
         return self.solver.simulation.ramp
@@ -405,9 +409,9 @@ class Substructure(abc.ABC):
         t = np.array([trig.rotate_vec_2d(n_i, -90) for n_i in n])
         f = -p[:, np.newaxis] * n + tau[:, np.newaxis] * t
 
-        assert self.parent is not None
+        assert self.rigid_body is not None
         if moment_about is None:
-            moment_about = np.array([self.parent.xCofR, self.parent.yCofR])
+            moment_about = np.array([self.rigid_body.xCofR, self.rigid_body.yCofR])
 
         r = [self.get_coordinates(s_i) - moment_about for s_i in s]
         m = np.array([math_helpers.cross2(r_i, f_i) for r_i, f_i in zip(r, f)])
@@ -481,7 +485,7 @@ class FlexibleSubstructure(Substructure):
         assert self.K is not None
         assert self.F is not None
         K, F = el.get_stiffness_and_force()
-        el_dof = [dof for nd in el.nodes for dof in self.parent.parent.node_dofs[nd]]
+        el_dof = [dof for nd in el.nodes for dof in self.rigid_body.parent.node_dofs[nd]]
         self.K[np.ix_(el_dof, el_dof)] += K
         self.F[np.ix_(el_dof)] += F
 
@@ -594,7 +598,7 @@ class TorsionalSpringSubstructure(Substructure):
 
     def _set_attachments(self) -> None:
         if self.attached_substructure_name is not None:
-            self.attached_substructure = self.parent.get_substructure_by_name(
+            self.attached_substructure = self.rigid_body.get_substructure_by_name(
                 self.attached_substructure_name
             )
 
@@ -617,7 +621,7 @@ class TorsionalSpringSubstructure(Substructure):
         # Add to the global forces
         self.loads.Ltip += tip_force[1]
         self.loads.Mtip += math_helpers.cross2(
-            tip_coords - np.array([self.parent.xCofR, self.parent.xCofR]), tip_force
+            tip_coords - np.array([self.rigid_body.xCofR, self.rigid_body.xCofR]), tip_force
         )
 
     def update_fluid_forces(self) -> None:

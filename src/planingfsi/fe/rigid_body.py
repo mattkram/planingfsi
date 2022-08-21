@@ -246,7 +246,7 @@ class RigidBody:
     def add_substructure(self, ss: "substructure.Substructure") -> substructure.Substructure:
         """Add a substructure to the rigid body."""
         self.substructures.append(ss)
-        ss.parent = self
+        ss.rigid_body = self
         return ss
 
     def get_substructure_by_name(self, name: str) -> substructure.Substructure:

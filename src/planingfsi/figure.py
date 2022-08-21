@@ -174,10 +174,10 @@ class FSIFigure:
                 handle.set_data([nd.x for nd in el.nodes], [nd.y for nd in el.nodes])
 
             if handle := self.element_handles_0.get(el):
-                base_pt = np.array([el.parent.parent.xCofR0, el.parent.parent.yCofR0])
+                base_pt = np.array([el.parent.rigid_body.xCofR0, el.parent.rigid_body.yCofR0])
                 pos = [
-                    trig.rotate_point(pos, base_pt, el.parent.parent.trim)
-                    - np.array([0, el.parent.parent.draft])
+                    trig.rotate_point(pos, base_pt, el.parent.rigid_body.trim)
+                    - np.array([0, el.parent.rigid_body.draft])
                     for pos in el._initial_coordinates
                 ]
                 x, y = list(zip(*[[posi[i] for i in range(2)] for posi in pos]))
