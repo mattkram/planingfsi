@@ -430,6 +430,20 @@ class Substructure(abc.ABC):
             nd.is_dof_fixed = tuple(True for _ in range(NUM_DIM))
 
 
+class RigidSubstructure(Substructure):
+    """A substructure that is rigidly attached to the rigid body.
+
+    This means that the substructure moves with the rigid body but does not deform.
+
+    """
+
+    _element_type: ElementType = fe.RigidElement
+
+    def load_mesh(self, submesh: Path | Subcomponent = Path("mesh")) -> None:
+        super().load_mesh(submesh)
+        self.fix_all_degrees_of_freedom()
+
+
 class FlexibleSubstructure(Substructure):
 
     is_free = True
@@ -477,20 +491,6 @@ class FlexibleSubstructure(Substructure):
         for el in self.elements:
             el.initial_axial_force = -self.pretension
             el.EA = self.EA
-
-
-class RigidSubstructure(Substructure):
-    """A substructure that is rigidly attached to the rigid body.
-
-    This means that the substructure moves with the rigid body but does not deform.
-
-    """
-
-    _element_type: ElementType = fe.RigidElement
-
-    def load_mesh(self, submesh: Path | Subcomponent = Path("mesh")) -> None:
-        super().load_mesh(submesh)
-        self.fix_all_degrees_of_freedom()
 
 
 class TorsionalSpringSubstructure(Substructure):
