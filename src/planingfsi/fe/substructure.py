@@ -301,7 +301,7 @@ class Substructure(abc.ABC):
                 pressure_cushion[:] = self.cushion_pressure or self.config.body.Pc
 
             # Calculate internal pressure
-            pressure_internal = self.seal_pressure * self.seal_over_pressure_pct * np.ones_like(s)
+            pressure_internal = np.full_like(s, self.seal_pressure * self.seal_over_pressure_pct)
             if self.seal_pressure_method.lower() == "hydrostatic":
                 pressure_internal += (
                     self.config.flow.density
