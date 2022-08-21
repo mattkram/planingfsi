@@ -35,17 +35,31 @@ ElementType = ClassVar[Type[fe.Element]]
 
 @dataclass
 class SubstructureLoads:
-    """The integrated global loads on the substructure."""
+    """The integrated global loads on the substructure.
+
+    Attributes:
+        D: The hydrodynamic drag.
+        L: The hydrodynamic lift.
+        M: The hydrodynamic moment (about the body center of rotation).
+        Da: The air drag.
+        La: The air lift.
+        Ma: The air moment (about the body center of rotation).
+        Dtip: The drag externally applied to the torsional substructure tip.
+        Ltip: The lift externally applied to the torsional substructure tip.
+        Mtip: The moment externally applied to the torsional substructure tip
+            (about the body center of rotation).
+
+    """
 
     D: float = 0.0
     L: float = 0.0
     M: float = 0.0
-    Dt: float = 0.0
-    Lt: float = 0.0
-    Mt: float = 0.0
     Da: float = 0.0
     La: float = 0.0
     Ma: float = 0.0
+    Dtip: float = 0.0
+    Ltip: float = 0.0
+    Mtip: float = 0.0
 
 
 class Substructure(abc.ABC):
@@ -337,12 +351,10 @@ class Substructure(abc.ABC):
 
             # Integrate the total pressure for torsional spring calculations
             if isinstance(self, TorsionalSpringSubstructure):
-                f_x, f_y, moment = self._get_integrated_global_loads(
+                _, _, moment = self._get_integrated_global_loads(
                     s, pressure_total, tau, moment_about=self.base_pt
                 )
-                self.loads.Dt -= f_x
-                self.loads.Lt += f_y
-                self.loads.Mt += moment
+                self._applied_moment += moment
 
             # Integrate global cushion pressure force and moment
             f_x, f_y, moment = self._get_integrated_global_loads(s, pressure_cushion)
@@ -539,6 +551,7 @@ class TorsionalSpringSubstructure(FlexibleSubstructure):
         self.attached_ind = 0
         self.attached_substructure: Substructure | None = None
         self.residual = 1.0
+        self._applied_moment = 0.0
 
     @property
     def relax(self) -> float:
@@ -597,22 +610,27 @@ class TorsionalSpringSubstructure(FlexibleSubstructure):
     def _apply_tip_load(self) -> None:
         """Apply any externally tip load."""
         tip_coords = self.get_coordinates(self.tip_load_pct * self.arc_length)
-        tip_rel_coords = np.array([tip_coords[i] - self.base_pt[i] for i in [0, 1]])
+        tip_rel_coords = tip_coords - self.base_pt
         tip_force = np.array([0.0, self.tip_load]) * self.ramp
         tip_moment = math_helpers.cross2(tip_rel_coords, tip_force)
-        self.loads.Lt += tip_force[1]
-        self.loads.Mt += tip_moment
+        self._applied_moment += tip_moment
+        # Add to the global forces
+        self.loads.Ltip += tip_force[1]
+        self.loads.Mtip += math_helpers.cross2(
+            tip_coords - np.array([self.parent.xCofR, self.parent.xCofR]), tip_force
+        )
 
     def update_fluid_forces(self) -> None:
+        self._applied_moment = 0.0
         super().update_fluid_forces()
         self._apply_tip_load()
 
     def update_angle(self) -> None:
         """Update the angle of the substructure."""
-        if np.isnan(self.loads.Mt):
+        if np.isnan(self._applied_moment):
             theta = 0.0
         else:
-            theta = -self.loads.Mt / self.spring_constant
+            theta = -self._applied_moment / self.spring_constant
 
         # Ramp and limit the angle change
         angle_change = (theta - self._theta) * self.relax
