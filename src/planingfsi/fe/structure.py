@@ -12,7 +12,7 @@ from planingfsi.config import Config
 from planingfsi.fe.felib import Node
 from planingfsi.fe.femesh import Mesh
 from planingfsi.fe.rigid_body import RigidBody
-from planingfsi.fe.substructure import FlexibleSubstructure
+from planingfsi.fe.substructure import FlexibleMembraneSubstructure
 from planingfsi.fe.substructure import RigidSubstructure
 from planingfsi.fe.substructure import Substructure
 from planingfsi.fe.substructure import TorsionalSpringSubstructure
@@ -109,7 +109,7 @@ class StructuralSolver:
             ss_type = dict_.get("substructureType", "rigid")
             ss_class: type[Substructure]
             if ss_type.lower() == "flexible" or ss_type.lower() == "truss":
-                ss_class = FlexibleSubstructure
+                ss_class = FlexibleMembraneSubstructure
             elif ss_type.lower() == "torsionalspring":
                 ss_class = TorsionalSpringSubstructure
             else:

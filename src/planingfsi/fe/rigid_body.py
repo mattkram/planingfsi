@@ -309,7 +309,7 @@ class RigidBody:
     def update_flexible_substructure_positions(self) -> None:
         """Update the nodal positions of all component flexible substructures."""
         flexible_substructures = [
-            ss for ss in self.substructures if type(ss) == substructure.FlexibleSubstructure
+            ss for ss in self.substructures if type(ss) == substructure.FlexibleMembraneSubstructure
         ]
 
         num_dof = len(self.parent.nodes) * NUM_DIM

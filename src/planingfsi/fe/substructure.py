@@ -341,7 +341,7 @@ class Substructure(abc.ABC):
             s_air.append(s[-1])
             p_air.append(pressure_air_net[-1])
 
-            if isinstance(self, FlexibleSubstructure):
+            if isinstance(self, FlexibleMembraneSubstructure):
                 el.qp = self._distribute_integrated_load_to_nodes(s, pressure_total)
                 el.qs = self._distribute_integrated_load_to_nodes(s, -tau)
 
@@ -455,7 +455,7 @@ class RigidSubstructure(Substructure):
         self.fix_all_degrees_of_freedom()
 
 
-class FlexibleSubstructure(Substructure):
+class FlexibleMembraneSubstructure(Substructure):
 
     is_free = True
     _element_type: ElementType = fe.TrussElement

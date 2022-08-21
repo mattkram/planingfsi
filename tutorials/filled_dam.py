@@ -1,6 +1,6 @@
 import numpy as np
 
-from planingfsi import FlexibleSubstructure
+from planingfsi import FlexibleMembraneSubstructure
 from planingfsi import Mesh
 from planingfsi import Simulation
 
@@ -33,7 +33,7 @@ def main() -> None:
 
     body = simulation.add_rigid_body()
     body.add_substructure(
-        FlexibleSubstructure(
+        FlexibleMembraneSubstructure(
             name="dam",
             seal_pressure_method="hydrostatic",
         )
