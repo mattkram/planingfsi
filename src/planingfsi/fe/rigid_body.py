@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from collections.abc import Callable
+from pathlib import Path
 from typing import TYPE_CHECKING
 from typing import Any
 
@@ -242,6 +243,11 @@ class RigidBody:
     @free_in_trim.setter
     def free_in_trim(self, value: bool) -> None:
         self.free_dof[1] = value
+
+    @property
+    def motion_file_path(self) -> Path:
+        """A path to the file containing the rigid body motinon at a given iteration."""
+        return self.parent.simulation.it_dir / f"motion_{self.name}.{self.config.io.data_format}"
 
     def add_substructure(self, ss: "substructure.Substructure") -> substructure.Substructure:
         """Add a substructure to the rigid body."""
@@ -681,7 +687,7 @@ class RigidBody:
         if self.parent is None:
             raise AttributeError("parent must be set before simulation can be accessed.")
         writers.write_as_dict(
-            self.parent.simulation.it_dir / f"motion_{self.name}.{self.config.io.data_format}",
+            self.motion_file_path,
             ["xCofR", self.x_cr],
             ["yCofR", self.y_cr],
             ["xCofG", self.x_cg],
@@ -702,11 +708,10 @@ class RigidBody:
                 ss.write_deformation()
 
     def load_motion(self) -> None:
+        """Load the body motion from a file for the current iteration."""
         if self.parent is None:
             raise AttributeError("parent must be set before simulation can be accessed.")
-        dict_ = load_dict_from_file(
-            self.parent.simulation.it_dir / f"motion_{self.name}.{self.config.io.data_format}"
-        )
+        dict_ = load_dict_from_file(self.motion_file_path)
         self.x_cr = dict_.get("xCofR", np.nan)
         self.y_cr = dict_.get("yCofR", np.nan)
         self.x_cg = dict_.get("xCofG", np.nan)
