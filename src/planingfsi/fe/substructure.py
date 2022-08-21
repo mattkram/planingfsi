@@ -340,18 +340,19 @@ class Substructure(abc.ABC):
                 el.qs = self._distribute_integrated_load_to_nodes(s, -tau)
 
             # Calculate external force and moment for rigid body calculation
-            method_pressure_map = {"integrated": pressure_external, "assumed": pressure_hydro}
-            if (
-                p := method_pressure_map.get(self.config.body.cushion_force_method.lower())
-            ) is not None:
-                f_x, f_y, moment = self._get_integrated_global_loads(s, p, tau)
-                self.loads.D -= f_x
-                self.loads.L += f_y
-                self.loads.M += moment
-            elif self._interpolator is not None:
+            if self._interpolator is not None:
                 self.loads.D = self._interpolator.fluid.drag_total
                 self.loads.L = self._interpolator.fluid.lift_total
                 self.loads.M = self._interpolator.fluid.moment_total
+            else:
+                method_pressure_map = {"integrated": pressure_external, "assumed": pressure_hydro}
+                if (
+                    p := method_pressure_map.get(self.config.body.cushion_force_method.lower())
+                ) is not None:
+                    f_x, f_y, moment = self._get_integrated_global_loads(s, p, tau)
+                    self.loads.D -= f_x
+                    self.loads.L += f_y
+                    self.loads.M += moment
 
             # Integrate the total pressure for torsional spring calculations
             if isinstance(self, TorsionalSpringSubstructure):
