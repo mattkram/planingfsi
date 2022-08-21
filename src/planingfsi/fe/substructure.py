@@ -292,10 +292,10 @@ class Substructure(abc.ABC):
         for i, el in enumerate(self.elements):
             # Get pressure & shear stress at end points and all fluid points along element
             s_start, s_end = self.node_arc_length[i], self.node_arc_length[i + 1]
-            s, pressure_fluid, tau = self._get_loads_in_range(s_start, s_end)
+            s, pressure_hydro, tau = self._get_loads_in_range(s_start, s_end)
 
             # Apply ramp to hydrodynamic pressure
-            pressure_fluid *= self.ramp**2
+            pressure_hydro *= self.ramp**2
 
             # Add external cushion pressure to external fluid pressure
             # This is the full-resolution calculation with all structural nodes and fluid elements
@@ -320,18 +320,18 @@ class Substructure(abc.ABC):
 
             # Derive various combinations of pressure
             pressure_air_net = pressure_internal - pressure_cushion
-            pressure_external = pressure_fluid + pressure_cushion
+            pressure_external = pressure_hydro + pressure_cushion
             pressure_total = pressure_external - pressure_internal
 
             # Store fluid and air pressure components for element (for plotting)
             if i == 0:
                 s_hydro.append(s[0])
-                p_hydro.append(pressure_fluid[0])
+                p_hydro.append(pressure_hydro[0])
                 s_air.append(s[0])
                 p_air.append(pressure_air_net[0])
 
             s_hydro.extend(ss for ss in s[1:])
-            p_hydro.extend(pp for pp in pressure_fluid[1:])
+            p_hydro.extend(pp for pp in pressure_hydro[1:])
             s_air.append(s[-1])
             p_air.append(pressure_air_net[-1])
 
@@ -340,7 +340,7 @@ class Substructure(abc.ABC):
                 el.qs = self._distribute_integrated_load_to_nodes(s, -tau)
 
             # Calculate external force and moment for rigid body calculation
-            method_pressure_map = {"integrated": pressure_external, "assumed": pressure_fluid}
+            method_pressure_map = {"integrated": pressure_external, "assumed": pressure_hydro}
             if (
                 p := method_pressure_map.get(self.config.body.cushion_force_method.lower())
             ) is not None:
