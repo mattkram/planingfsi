@@ -250,7 +250,7 @@ class Substructure(abc.ABC):
         return self._interp_coords_at_arclength(si)
 
     def write_coordinates(self) -> None:
-        """Write the coordinates to file"""
+        """Write the coordinates of all component nodes to file."""
         writers.write_as_list(
             self.coordinates_file_path,
             ["x [m]", [nd.x for nd in self.nodes]],
