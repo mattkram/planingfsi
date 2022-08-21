@@ -16,7 +16,7 @@ logger = logging.getLogger("planingfsi")
 logger.setLevel(logging.INFO)
 
 from planingfsi.fe.femesh import Mesh
-from planingfsi.fe.substructure import FlexibleSubstructure
+from planingfsi.fe.substructure import FlexibleMembraneSubstructure
 from planingfsi.fe.substructure import RigidSubstructure
 from planingfsi.fe.substructure import TorsionalSpringSubstructure
 from planingfsi.potentialflow.pressurepatch import PlaningSurface
@@ -26,7 +26,7 @@ from planingfsi.simulation import Simulation
 __all__ = [
     "logger",
     "Mesh",
-    "FlexibleSubstructure",
+    "FlexibleMembraneSubstructure",
     "RigidSubstructure",
     "TorsionalSpringSubstructure",
     "PlaningSurface",

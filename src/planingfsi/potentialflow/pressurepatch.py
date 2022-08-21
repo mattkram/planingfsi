@@ -125,7 +125,7 @@ class PressurePatch(abc.ABC):
         for i, el in enumerate(self.pressure_elements):
             el.x_coord = x[i]
             if not el.is_source and self.interpolator is not None:
-                el.z_coord = self.interpolator.get_surface_height_fixed_x(x[i])
+                el.z_coord = self.interpolator.get_body_height(x[i])
 
             if isinstance(el, pe.CompleteTriangularPressureElement):
                 # TODO: Remove ignore
@@ -613,9 +613,16 @@ class PlaningSurface(PressurePatch):
 
         self.drag_wave = self._calculate_wave_drag()
 
-    def get_loads_in_range(self, x0: float, x1: float) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
+    def get_loads_in_range(
+        self, x0: float, x1: float, /, *, pressure_limit: float | None = None
+    ) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
         """Return pressure and shear stress values at points between two
         arguments.
+
+        Args:
+            x0: The starting x-coordinate.
+            x1: The ending x-coordinate.
+            pressure_limit: Optionally limit the pressure to be below a specified value (e.g. stagnation pressure).
         """
         if self.length > 0.0:
             ind = np.nonzero((self.x_coords > x0) * (self.x_coords < x1))[0]
@@ -631,6 +638,18 @@ class PlaningSurface(PressurePatch):
             x = np.array([x0, x1])
             p = np.zeros_like(x)
             tau = np.zeros_like(x)
+
+        if pressure_limit is not None:
+            # Limit pressure to be below stagnation pressure
+            p = np.min(
+                np.vstack(
+                    (
+                        p,
+                        np.ones_like(p) * pressure_limit,
+                    )
+                ),
+                axis=0,
+            )
         return x, p, tau
 
     def _apply_spring(self) -> None:

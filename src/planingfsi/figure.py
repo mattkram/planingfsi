@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import os
 from collections.abc import Callable
+from collections.abc import Iterable
 from pathlib import Path
 from typing import TYPE_CHECKING
 from typing import Any
@@ -140,12 +141,31 @@ class FSIFigure:
         end_pts = np.array([self.config.plotting.x_fs_min, self.config.plotting.x_fs_max])
         self.lineFSi.set_data(end_pts, self.config.flow.waterline_height * np.ones_like(end_pts))
 
+    @staticmethod
+    def _get_pressure_plot_points(ss, s0: np.ndarray, p0: np.ndarray) -> Iterable[Iterable]:
+        """Get coordinates required to plot pressure profile as lines."""
+        sp = [(s, p) for s, p in zip(s0, p0) if not np.abs(p) < 1e-4]
+
+        if not sp:
+            return [], []
+
+        s0, p0 = list(zip(*sp))
+        nVec = list(map(ss.get_normal_vector, s0))
+        coords0 = [ss.get_coordinates(s) for s in s0]
+        coords1 = [
+            c + ss.config.plotting.pressure_scale * p * n for c, p, n in zip(coords0, p0, nVec)
+        ]
+
+        return list(
+            zip(*[xyi for c0, c1 in zip(coords0, coords1) for xyi in [c0, c1, np.ones(2) * np.nan]])
+        )
+
     def plot_pressure_profiles(self, ss: Substructure) -> None:
         """Plot the internal and external pressure profiles as lines."""
         if handle := self.line_fluid_pressure.get(ss):
-            handle.set_data(ss.get_pressure_plot_points(ss.fluidS, ss.fluidP))
+            handle.set_data(self._get_pressure_plot_points(ss, ss.s_hydro, ss.p_hydro))
         if handle := self.line_air_pressure.get(ss):
-            handle.set_data(ss.get_pressure_plot_points(ss.airS, ss.airP))
+            handle.set_data(self._get_pressure_plot_points(ss, ss.s_air, -ss.p_air))
 
     def plot_substructure(self, ss: Substructure) -> None:
         """Plot the substructure elements and pressure profiles."""
@@ -154,10 +174,10 @@ class FSIFigure:
                 handle.set_data([nd.x for nd in el.nodes], [nd.y for nd in el.nodes])
 
             if handle := self.element_handles_0.get(el):
-                base_pt = np.array([el.parent.parent.xCofR0, el.parent.parent.yCofR0])
+                base_pt = np.array([el.parent.rigid_body.xCofR0, el.parent.rigid_body.yCofR0])
                 pos = [
-                    trig.rotate_point(pos, base_pt, el.parent.parent.trim)
-                    - np.array([0, el.parent.parent.draft])
+                    trig.rotate_point(pos, base_pt, el.parent.rigid_body.trim)
+                    - np.array([0, el.parent.rigid_body.draft])
                     for pos in el._initial_coordinates
                 ]
                 x, y = list(zip(*[[posi[i] for i in range(2)] for posi in pos]))

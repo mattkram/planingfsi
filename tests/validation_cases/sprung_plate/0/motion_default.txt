@@ -6,9 +6,9 @@ draft          : 0.00000000e+00
 trim           : 0.00000000e+00
 liftRes        : 0.00000000e+00
 momentRes      : 0.00000000e+00
-Lift           : 8.63189983e+02
-Drag           : 9.21878025e+02
-Moment         : 6.03039106e+02
+Lift           : 6.10775078e+02
+Drag           : 9.03801179e+01
+Moment         : 9.30365502e+00
 LiftAir        : 0.00000000e+00
 DragAir        : 0.00000000e+00
 MomentAir      : 0.00000000e+00

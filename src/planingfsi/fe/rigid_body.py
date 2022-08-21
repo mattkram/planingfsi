@@ -217,7 +217,15 @@ class RigidBody:
         res_l = self.res_l if self.free_in_draft else 0.0
         res_m = self.res_m if self.free_in_trim else 0.0
         res_node_disp = self.flexible_substructure_residual
-        return max((res_l, res_m, res_node_disp))
+        res_torsion = max(
+            [
+                ss.residual
+                for ss in self.substructures
+                if isinstance(ss, substructure.TorsionalSpringSubstructure)
+            ],
+            default=0.0,
+        )
+        return max((res_l, res_m, res_node_disp, res_torsion))
 
     @property
     def free_in_draft(self) -> bool:
@@ -238,7 +246,7 @@ class RigidBody:
     def add_substructure(self, ss: "substructure.Substructure") -> substructure.Substructure:
         """Add a substructure to the rigid body."""
         self.substructures.append(ss)
-        ss.parent = self
+        ss.rigid_body = self
         return ss
 
     def get_substructure_by_name(self, name: str) -> substructure.Substructure:
@@ -301,7 +309,9 @@ class RigidBody:
     def update_flexible_substructure_positions(self) -> None:
         """Update the nodal positions of all component flexible substructures."""
         flexible_substructures = [
-            ss for ss in self.substructures if isinstance(ss, substructure.FlexibleSubstructure)
+            ss
+            for ss in self.substructures
+            if isinstance(ss, substructure.FlexibleMembraneSubstructure)
         ]
 
         num_dof = len(self.parent.nodes) * NUM_DIM
@@ -312,14 +322,7 @@ class RigidBody:
         # Assemble global matrices for all substructures together
         for ss in flexible_substructures:
             ss.update_fluid_forces()
-            ss.assemble_global_stiffness_and_force()
-
-            # TODO: Consider removing this and fixing static types
-            assert ss.K is not None
-            assert ss.F is not None
-
-            Kg += ss.K
-            Fg += ss.F
+            ss.assemble_global_stiffness_and_force(Kg, Fg)
 
         for nd in self.parent.nodes:
             node_dof = self.parent.node_dofs[nd]
@@ -355,7 +358,7 @@ class RigidBody:
         self.update_flexible_substructure_positions()
         for ss in self.substructures:
             logger.info(f"Updating position for substructure: {ss.name}")
-            if isinstance(ss, substructure.RigidSubstructure):
+            if isinstance(ss, substructure.TorsionalSpringSubstructure):
                 ss.update_angle()
 
     def update_fluid_forces(self) -> None:
@@ -363,12 +366,12 @@ class RigidBody:
         self.reset_loads()
         for ss in self.substructures:
             ss.update_fluid_forces()
-            self.D += ss.D
-            self.L += ss.L
-            self.M += ss.M
-            self.Da += ss.Da
-            self.La += ss.La
-            self.Ma += ss.Ma
+            self.D += ss.loads.D
+            self.L += ss.loads.L
+            self.M += ss.loads.M
+            self.Da += ss.loads.Da
+            self.La += ss.loads.La
+            self.Ma += ss.loads.Ma
 
         self.res_l = self.get_res_lift()
         self.res_m = self.get_res_moment()

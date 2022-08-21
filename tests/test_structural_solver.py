@@ -44,7 +44,7 @@ def test_solver_with_rigid_body_has_free_structure(
     "class_, expected",
     [
         (ss.RigidSubstructure, False),
-        (ss.FlexibleSubstructure, True),
+        (ss.FlexibleMembraneSubstructure, True),
         (ss.TorsionalSpringSubstructure, True),
     ],
 )
