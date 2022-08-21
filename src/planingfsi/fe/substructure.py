@@ -347,25 +347,14 @@ class Substructure(abc.ABC):
                 self.loads.L = self._interpolator.fluid.lift_total
                 self.loads.M = self._interpolator.fluid.moment_total
 
+            # Integrate the total pressure for torsional spring calculations
             if isinstance(self, TorsionalSpringSubstructure):
-                # Apply pressure loading for moment calculation
-                #      integrand = pFl
-                integrand = pressure_total
-                n = list(map(self.get_normal_vector, s))
-                t = [trig.rotate_vec_2d(ni, -90) for ni in n]
-
-                f = [-pi * ni + taui * ti for pi, taui, ni, ti in zip(integrand, tau, n, t)]
-                r = [
-                    np.array([pt[0] - self.base_pt[0], pt[1] - self.base_pt[1]])
-                    for pt in map(self.get_coordinates, s)
-                ]
-
-                m = [math_helpers.cross2(ri, fi) for ri, fi in zip(r, f)]
-                fx, fy = list(zip(*f))
-
-                self.loads.Dt += math_helpers.integrate(s, np.array(fx))
-                self.loads.Lt += math_helpers.integrate(s, np.array(fy))
-                self.loads.Mt += math_helpers.integrate(s, np.array(m))
+                f_x, f_y, moment = self._get_integrated_global_loads(
+                    s, pressure_total, tau, moment_about=self.base_pt
+                )
+                self.loads.Dt -= f_x
+                self.loads.Lt += f_y
+                self.loads.Mt += moment
 
             integrand = pressure_cushion
 
@@ -401,7 +390,12 @@ class Substructure(abc.ABC):
         return integral * np.array([1 - pct, pct])
 
     def _get_integrated_global_loads(
-        self, s: np.ndarray, p: np.ndarray, tau: np.ndarray
+        self,
+        s: np.ndarray,
+        p: np.ndarray,
+        tau: np.ndarray,
+        *,
+        moment_about: np.ndarray | None = None,
     ) -> tuple[float, float, float]:
         """Integrate a pressure and shear stress along an arclength to get global loads.
 
@@ -411,6 +405,7 @@ class Substructure(abc.ABC):
             s: The arclength array.
             p: The pressure array.
             tau: The shear stress array.
+            moment_about: The point about which to calculate the moment.
 
         Returns:
             A tuple containing x-force, y-force, and z-moment.
@@ -421,8 +416,10 @@ class Substructure(abc.ABC):
         f = -p[:, np.newaxis] * n + tau[:, np.newaxis] * t
 
         assert self.parent is not None
-        c_of_r = np.array([self.parent.xCofR, self.parent.yCofR])
-        r = [self.get_coordinates(s_i) - c_of_r for s_i in s]
+        if moment_about is None:
+            moment_about = np.array([self.parent.xCofR, self.parent.yCofR])
+
+        r = [self.get_coordinates(s_i) - moment_about for s_i in s]
         m = np.array([math_helpers.cross2(r_i, f_i) for r_i, f_i in zip(r, f)])
 
         drag = math_helpers.integrate(s, f[:, 0])
