@@ -407,6 +407,8 @@ class RigidBody:
 
 
 class RigidBodyMotionSolver:
+    """A customized Broyden-method solver to allow manual stepping required for rigid body motion solve."""
+
     def __init__(self, parent: RigidBody):
         self.parent = parent
 
