@@ -434,7 +434,7 @@ class RigidBodyMotionSolver:
 
         disp = np.zeros((NUM_DIM,))
         if self._J_it < NUM_DIM:
-            disp[self._J_it] = float(self.parent.config.body.motion_jacobian_first_step)
+            disp[self._J_it] = self.parent.config.body.motion_jacobian_first_step
 
         self.disp_old = disp
         if self._J_it >= NUM_DIM:
