@@ -61,6 +61,22 @@ class GlobalLoads:
     Ltip: float = 0.0
     Mtip: float = 0.0
 
+    def __add__(self, other: GlobalLoads) -> GlobalLoads:
+        if not isinstance(other, GlobalLoads):
+            raise TypeError("Must add GlobalLoads to GlobalLoads")
+
+        return GlobalLoads(
+            D=self.D + other.D,
+            L=self.L + other.L,
+            M=self.M + other.M,
+            Da=self.Da + other.Da,
+            La=self.La + other.La,
+            Ma=self.Ma + other.Ma,
+            Dtip=self.Dtip + other.Dtip,
+            Ltip=self.Ltip + other.Ltip,
+            Mtip=self.Mtip + other.Mtip,
+        )
+
 
 class Substructure(abc.ABC):
     """Base class for a Substructure, which is a component of a RigidBody.

@@ -270,30 +270,20 @@ class RigidBody:
 
     def update_fluid_forces(self) -> None:
         """Update the fluid forces by summing the force from each substructure."""
-        self.reset_loads()
-        for ss in self.substructures:
-            ss.update_fluid_forces()
-            self.loads.D += ss.loads.D
-            self.loads.L += ss.loads.L
-            self.loads.M += ss.loads.M
-            self.loads.Da += ss.loads.Da
-            self.loads.La += ss.loads.La
-            self.loads.Ma += ss.loads.Ma
-
-        self._res_l = self.get_res_lift()
-        self._res_m = self.get_res_moment()
-
-    def reset_loads(self) -> None:
-        """Reset the loads to zero."""
-        self.loads.D *= 0.0
-        self.loads.L *= 0.0
-        self.loads.M *= 0.0
+        self.loads = GlobalLoads()
         if self.config.body.cushion_force_method.lower() == "assumed":
             self.loads.L += (
                 self.config.body.Pc
                 * self.config.body.reference_length
                 * trig.cosd(self.config.body.initial_trim)
             )
+
+        for ss in self.substructures:
+            ss.update_fluid_forces()
+            self.loads += ss.loads
+
+        self._res_l = self.get_res_lift()
+        self._res_m = self.get_res_moment()
 
     def get_disp(self) -> np.ndarray:
         """Get the rigid body displacement using Broyden's method."""
