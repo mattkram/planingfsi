@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from collections.abc import Callable
+from functools import cached_property
 from pathlib import Path
 from typing import TYPE_CHECKING
 from typing import Any
@@ -198,18 +199,18 @@ class RigidBody:
         self.substructures: list["substructure.Substructure"] = []
         self._nodes: list[fe.Node] = []
 
-    @property
+    @cached_property
     def config(self) -> Config:
         """A reference to the simulation configuration."""
         if self.parent is None:
-            raise AttributeError("parent must be set before config can be accessed.")
+            return Config()
         return self.parent.config
 
     @property
     def ramp(self) -> float:
         """The ramping coefficient from the high-level simulation object."""
         if self.parent is None:
-            raise AttributeError("parent must be set before simulation can be accessed.")
+            return 1.0
         return self.parent.simulation.ramp
 
     @property
@@ -578,8 +579,8 @@ class RigidBody:
     def get_disp_broyden(self) -> np.ndarray:
         """Get the rigid body displacement using Broyden's method."""
         # TODO: These are here for mypy, fix the types instead
-        assert self.resFun is not None
-        assert self.x is not None
+        # assert self.resFun is not None
+        # assert self.x is not None
 
         if self.solver is None:
             self.resFun = lambda x: np.array(
