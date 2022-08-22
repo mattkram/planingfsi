@@ -15,11 +15,13 @@ from planingfsi.config import NUM_DIM
 from planingfsi.config import Config
 from planingfsi.dictionary import load_dict_from_file
 from planingfsi.fe import felib as fe
-from planingfsi.fe import substructure
+from planingfsi.fe.substructure import FlexibleMembraneSubstructure
+from planingfsi.fe.substructure import TorsionalSpringSubstructure
 from planingfsi.solver import RootFinder
 
 if TYPE_CHECKING:
     from planingfsi.fe.structure import StructuralSolver
+    from planingfsi.fe.substructure import Substructure
 
 
 class RigidBody:
@@ -103,9 +105,8 @@ class RigidBody:
 
         self._motion_solver = RigidBodyMotionSolver(self)
 
-        # Assign displacement function depending on specified method
         self._flexible_substructure_residual = 0.0
-        self.substructures: list["substructure.Substructure"] = []
+        self.substructures: list[Substructure] = []
         self._nodes: list[fe.Node] = []
 
     @cached_property
@@ -132,7 +133,7 @@ class RigidBody:
             [
                 ss.residual
                 for ss in self.substructures
-                if isinstance(ss, substructure.TorsionalSpringSubstructure)
+                if isinstance(ss, TorsionalSpringSubstructure)
             ],
             default=0.0,
         )
@@ -173,13 +174,13 @@ class RigidBody:
                         self._nodes.append(nd)
         return self._nodes
 
-    def add_substructure(self, ss: "substructure.Substructure") -> substructure.Substructure:
+    def add_substructure(self, ss: Substructure) -> Substructure:
         """Add a substructure to the rigid body."""
         self.substructures.append(ss)
         ss.rigid_body = self
         return ss
 
-    def get_substructure_by_name(self, name: str) -> substructure.Substructure:
+    def get_substructure_by_name(self, name: str) -> Substructure:
         for ss in self.substructures:
             if ss.name == name:
                 return ss
@@ -223,9 +224,7 @@ class RigidBody:
     def update_flexible_substructure_positions(self) -> None:
         """Update the nodal positions of all component flexible substructures."""
         flexible_substructures = [
-            ss
-            for ss in self.substructures
-            if isinstance(ss, substructure.FlexibleMembraneSubstructure)
+            ss for ss in self.substructures if isinstance(ss, FlexibleMembraneSubstructure)
         ]
 
         num_dof = len(self.parent.nodes) * NUM_DIM
@@ -272,7 +271,7 @@ class RigidBody:
         self.update_flexible_substructure_positions()
         for ss in self.substructures:
             logger.info(f"Updating position for substructure: {ss.name}")
-            if isinstance(ss, substructure.TorsionalSpringSubstructure):
+            if isinstance(ss, TorsionalSpringSubstructure):
                 ss.update_angle()
 
     def update_fluid_forces(self) -> None:
@@ -372,7 +371,7 @@ class RigidBody:
             ["MomentAir", self.Ma],
         )
         for ss in self.substructures:
-            if isinstance(ss, substructure.TorsionalSpringSubstructure):
+            if isinstance(ss, TorsionalSpringSubstructure):
                 ss.write_deformation()
 
     def load_motion(self) -> None:
