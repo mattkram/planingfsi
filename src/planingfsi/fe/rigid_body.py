@@ -209,11 +209,7 @@ class RigidBody:
 
     def initialize_position(self) -> None:
         """Initialize the position of the rigid body."""
-        self.set_position(self.initial_draft, self.initial_trim)
-
-    def set_position(self, draft: float, trim: float) -> None:
-        """Set the position of the rigid body."""
-        self.update_position(draft - self.draft, trim - self.trim)
+        self.update_position(self.initial_draft - self.draft, self.initial_trim - self.trim)
 
     def update_position(self, draft_delta: float = None, trim_delta: float = None) -> None:
         """Update the position of the rigid body by passing the change in draft and trim."""
