@@ -81,7 +81,7 @@ def test_solver_lift_residual(
     solver_with_body: tuple[StructuralSolver, RigidBody], lift: float, expected: float
 ) -> None:
     solver, body = solver_with_body
-    body.L = lift
+    body.loads.L = lift
     assert solver.lift_residual == pytest.approx(expected)
 
 

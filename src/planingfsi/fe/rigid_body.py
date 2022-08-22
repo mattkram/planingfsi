@@ -16,6 +16,7 @@ from planingfsi.config import Config
 from planingfsi.dictionary import load_dict_from_file
 from planingfsi.fe import felib as fe
 from planingfsi.fe.substructure import FlexibleMembraneSubstructure
+from planingfsi.fe.substructure import GlobalLoads
 from planingfsi.fe.substructure import TorsionalSpringSubstructure
 from planingfsi.solver import RootFinder
 
@@ -91,12 +92,7 @@ class RigidBody:
         self._max_disp = np.array([max_draft_step, max_trim_step])
         self._relax = np.array([relax_draft, relax_trim])
 
-        self.D = 0.0
-        self.L = 0.0
-        self.M = 0.0
-        self.Da = 0.0
-        self.La = 0.0
-        self.Ma = 0.0
+        self.loads = GlobalLoads()
 
         self._res_l = 1.0
         self._res_m = 1.0
@@ -277,23 +273,23 @@ class RigidBody:
         self.reset_loads()
         for ss in self.substructures:
             ss.update_fluid_forces()
-            self.D += ss.loads.D
-            self.L += ss.loads.L
-            self.M += ss.loads.M
-            self.Da += ss.loads.Da
-            self.La += ss.loads.La
-            self.Ma += ss.loads.Ma
+            self.loads.D += ss.loads.D
+            self.loads.L += ss.loads.L
+            self.loads.M += ss.loads.M
+            self.loads.Da += ss.loads.Da
+            self.loads.La += ss.loads.La
+            self.loads.Ma += ss.loads.Ma
 
         self._res_l = self.get_res_lift()
         self._res_m = self.get_res_moment()
 
     def reset_loads(self) -> None:
         """Reset the loads to zero."""
-        self.D *= 0.0
-        self.L *= 0.0
-        self.M *= 0.0
+        self.loads.D *= 0.0
+        self.loads.L *= 0.0
+        self.loads.M *= 0.0
         if self.config.body.cushion_force_method.lower() == "assumed":
-            self.L += (
+            self.loads.L += (
                 self.config.body.Pc
                 * self.config.body.reference_length
                 * trig.cosd(self.config.body.initial_trim)
@@ -305,23 +301,23 @@ class RigidBody:
 
     def get_res_lift(self) -> float:
         """Get the residual of the vertical force balance."""
-        if np.isnan(self.L):
+        if np.isnan(self.loads.L):
             res = 1.0
         else:
-            res = (self.L - self.weight) / (
+            res = (self.loads.L - self.weight) / (
                 self.config.flow.stagnation_pressure * self.config.body.reference_length + 1e-6
             )
         return np.abs(res * self.free_in_draft)
 
     def get_res_moment(self) -> float:
         """Get the residual of the trim moment balance."""
-        if np.isnan(self.M):
+        if np.isnan(self.loads.M):
             res = 1.0
         else:
-            if self.x_cg == self.x_cr and self.M == 0.0:
+            if self.x_cg == self.x_cr and self.loads.M == 0.0:
                 res = 1.0
             else:
-                res = (self.M - self.weight * (self.x_cg - self.x_cr)) / (
+                res = (self.loads.M - self.weight * (self.x_cg - self.x_cr)) / (
                     self.config.flow.stagnation_pressure * self.config.body.reference_length**2
                     + 1e-6
                 )
@@ -335,12 +331,12 @@ class RigidBody:
             f"  CofG: ({self.x_cg}, {self.y_cg})",
             f"  Draft:      {self.draft:5.4e}",
             f"  Trim Angle: {self.trim:5.4e}",
-            f"  Lift Force: {self.L:5.4e}",
-            f"  Drag Force: {self.D:5.4e}",
-            f"  Moment:     {self.M:5.4e}",
-            f"  Lift Force Air: {self.La:5.4e}",
-            f"  Drag Force Air: {self.Da:5.4e}",
-            f"  Moment Air:     {self.Ma:5.4e}",
+            f"  Lift Force: {self.loads.L:5.4e}",
+            f"  Drag Force: {self.loads.D:5.4e}",
+            f"  Moment:     {self.loads.M:5.4e}",
+            f"  Lift Force Air: {self.loads.La:5.4e}",
+            f"  Drag Force Air: {self.loads.Da:5.4e}",
+            f"  Moment Air:     {self.loads.Ma:5.4e}",
             f"  Lift Res:   {self._res_l:5.4e}",
             f"  Moment Res: {self._res_m:5.4e}",
         ]
@@ -361,12 +357,12 @@ class RigidBody:
             ["trim", self.trim],
             ["liftRes", self._res_l],
             ["momentRes", self._res_m],
-            ["Lift", self.L],
-            ["Drag", self.D],
-            ["Moment", self.M],
-            ["LiftAir", self.La],
-            ["DragAir", self.Da],
-            ["MomentAir", self.Ma],
+            ["Lift", self.loads.L],
+            ["Drag", self.loads.D],
+            ["Moment", self.loads.M],
+            ["LiftAir", self.loads.La],
+            ["DragAir", self.loads.Da],
+            ["MomentAir", self.loads.Ma],
         )
         for ss in self.substructures:
             if isinstance(ss, TorsionalSpringSubstructure):
@@ -385,12 +381,12 @@ class RigidBody:
         self.trim = dict_.get("trim", np.nan)
         self._res_l = dict_.get("liftRes", np.nan)
         self._res_m = dict_.get("momentRes", np.nan)
-        self.L = dict_.get("Lift", np.nan)
-        self.D = dict_.get("Drag", np.nan)
-        self.M = dict_.get("Moment", np.nan)
-        self.La = dict_.get("LiftAir", np.nan)
-        self.Da = dict_.get("DragAir", np.nan)
-        self.Ma = dict_.get("MomentAir", np.nan)
+        self.loads.L = dict_.get("Lift", np.nan)
+        self.loads.D = dict_.get("Drag", np.nan)
+        self.loads.M = dict_.get("Moment", np.nan)
+        self.loads.La = dict_.get("LiftAir", np.nan)
+        self.loads.Da = dict_.get("DragAir", np.nan)
+        self.loads.Ma = dict_.get("MomentAir", np.nan)
 
 
 class RigidBodyMotionSolver:

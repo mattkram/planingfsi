@@ -34,7 +34,7 @@ ElementType = ClassVar[Type[fe.Element]]
 
 
 @dataclass
-class SubstructureLoads:
+class GlobalLoads:
     """The integrated global loads on the substructure.
 
     Attributes:
@@ -120,7 +120,7 @@ class Substructure(abc.ABC):
         self.elements: list[fe.Element] = []
         self.node_arc_length: np.ndarray | None = None
 
-        self.loads = SubstructureLoads()
+        self.loads = GlobalLoads()
 
         self._interpolator: Interpolator | None = None
         self._interp_coords_at_arclength: interp1d | None = None
@@ -291,7 +291,7 @@ class Substructure(abc.ABC):
         p_hydro: list[float] = []
         s_air: list[float] = []
         p_air: list[float] = []
-        self.loads = SubstructureLoads()
+        self.loads = GlobalLoads()
         if self._interpolator is not None:
             s_min, s_max = self._interpolator.get_min_max_s()
 

@@ -417,13 +417,13 @@ class ForceSubplot(TimeHistory):
             return 0.0  # config.it
 
         def liftFunc() -> float:
-            return body.L / body.weight
+            return body.loads.L / body.weight
 
         def dragFunc() -> float:
-            return body.D / body.weight
+            return body.loads.D / body.weight
 
         def momFunc() -> float:
-            return body.M / (body.weight * self.parent.config.body.reference_length)
+            return body.loads.M / (body.weight * self.parent.config.body.reference_length)
 
         self.add_series(
             PlotSeries(

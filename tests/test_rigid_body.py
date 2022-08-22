@@ -20,8 +20,8 @@ def rigid_body(monkeypatch):
     rigid_body.config.flow.flow_speed = 1.0
 
     def f(self):
-        self.L = 100.0 * self.draft
-        self.M = 100.0 * self.trim
+        self.loads.L = 100.0 * self.draft
+        self.loads.M = 100.0 * self.trim
         self._res_l = self.get_res_lift()
         self._res_m = self.get_res_moment()
 
