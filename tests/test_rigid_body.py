@@ -22,8 +22,8 @@ def rigid_body(monkeypatch):
     def f(self):
         self.L = 100.0 * self.draft
         self.M = 100.0 * self.trim
-        self.res_l = self.get_res_lift()
-        self.res_m = self.get_res_moment()
+        self._res_l = self.get_res_lift()
+        self._res_m = self.get_res_moment()
 
     monkeypatch.setattr(RigidBody, "update_fluid_forces", f)
 

@@ -104,13 +104,13 @@ class RigidBody:
         self.La = 0.0
         self.Ma = 0.0
 
-        self.res_l = 1.0
-        self.res_m = 1.0
+        self._res_l = 1.0
+        self._res_m = 1.0
 
-        self.motion_solver = RigidBodyMotionSolver(self)
+        self._motion_solver = RigidBodyMotionSolver(self)
 
         # Assign displacement function depending on specified method
-        self.flexible_substructure_residual = 0.0
+        self._flexible_substructure_residual = 0.0
         self.substructures: list["substructure.Substructure"] = []
         self._nodes: list[fe.Node] = []
 
@@ -131,9 +131,9 @@ class RigidBody:
     @property
     def residual(self) -> float:
         """The combined max residual of lift, moment, and structural node displacement."""
-        res_l = self.res_l if self.free_in_draft else 0.0
-        res_m = self.res_m if self.free_in_trim else 0.0
-        res_node_disp = self.flexible_substructure_residual
+        res_l = self._res_l if self.free_in_draft else 0.0
+        res_m = self._res_m if self.free_in_trim else 0.0
+        res_node_disp = self._flexible_substructure_residual
         res_torsion = max(
             [
                 ss.residual
@@ -261,7 +261,7 @@ class RigidBody:
         if any(dof):
             Ug[np.ix_(dof)] = np.linalg.solve(Kg[np.ix_(dof, dof)], Fg[np.ix_(dof)])
 
-        self.flexible_substructure_residual = np.max(np.abs(Ug))
+        self._flexible_substructure_residual = np.max(np.abs(Ug))
 
         Ug *= self.config.solver.relax_FEM
         Ug *= np.min([self.config.solver.max_FEM_disp / np.max(Ug), 1.0])
@@ -293,8 +293,8 @@ class RigidBody:
             self.La += ss.loads.La
             self.Ma += ss.loads.Ma
 
-        self.res_l = self.get_res_lift()
-        self.res_m = self.get_res_moment()
+        self._res_l = self.get_res_lift()
+        self._res_m = self.get_res_moment()
 
     def reset_loads(self) -> None:
         """Reset the loads to zero."""
@@ -310,7 +310,7 @@ class RigidBody:
 
     def get_disp(self) -> np.ndarray:
         """Get the rigid body displacement using Broyden's method."""
-        return self.motion_solver.get_disp()
+        return self._motion_solver.get_disp()
 
     def get_res_lift(self) -> float:
         """Get the residual of the vertical force balance."""
@@ -350,8 +350,8 @@ class RigidBody:
             f"  Lift Force Air: {self.La:5.4e}",
             f"  Drag Force Air: {self.Da:5.4e}",
             f"  Moment Air:     {self.Ma:5.4e}",
-            f"  Lift Res:   {self.res_l:5.4e}",
-            f"  Moment Res: {self.res_m:5.4e}",
+            f"  Lift Res:   {self._res_l:5.4e}",
+            f"  Moment Res: {self._res_m:5.4e}",
         ]
         for line in lines:
             logger.info(line)
@@ -368,8 +368,8 @@ class RigidBody:
             ["yCofG", self.y_cg],
             ["draft", self.draft],
             ["trim", self.trim],
-            ["liftRes", self.res_l],
-            ["momentRes", self.res_m],
+            ["liftRes", self._res_l],
+            ["momentRes", self._res_m],
             ["Lift", self.L],
             ["Drag", self.D],
             ["Moment", self.M],
@@ -392,8 +392,8 @@ class RigidBody:
         self.y_cg = dict_.get("yCofG", np.nan)
         self.draft = dict_.get("draft", np.nan)
         self.trim = dict_.get("trim", np.nan)
-        self.res_l = dict_.get("liftRes", np.nan)
-        self.res_m = dict_.get("momentRes", np.nan)
+        self._res_l = dict_.get("liftRes", np.nan)
+        self._res_m = dict_.get("momentRes", np.nan)
         self.L = dict_.get("Lift", np.nan)
         self.D = dict_.get("Drag", np.nan)
         self.M = dict_.get("Moment", np.nan)
