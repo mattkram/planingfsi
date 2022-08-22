@@ -492,9 +492,7 @@ class RigidBodyMotionSolver:
 
         dof = self.parent.free_dof
         dx = np.zeros_like(x)
-        dx[np.ix_(dof)] = np.linalg.solve(
-            -self.J[np.ix_(dof, dof)], f.reshape(NUM_DIM, 1)[np.ix_(dof)]
-        ).flatten()  # TODO: Check that the flatten() is required
+        dx[np.ix_(dof)] = np.linalg.solve(-self.J[np.ix_(dof, dof)], f[np.ix_(dof)]).flatten()
 
         disp = self._limit_disp(dx[:] * self.parent.relax)
 
