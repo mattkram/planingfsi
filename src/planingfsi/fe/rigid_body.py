@@ -185,6 +185,16 @@ class RigidBody:
         """A path to the file containing the rigid body motinon at a given iteration."""
         return self.parent.simulation.it_dir / f"motion_{self.name}.{self.config.io.data_format}"
 
+    @property
+    def nodes(self) -> list[fe.Node]:
+        """Get a list of all unique `Node`s from all component substructures."""
+        if not self._nodes:
+            for ss in self.substructures:
+                for nd in ss.nodes:
+                    if nd in self._nodes:
+                        self._nodes.append(nd)
+        return self._nodes
+
     def add_substructure(self, ss: "substructure.Substructure") -> substructure.Substructure:
         """Add a substructure to the rigid body."""
         self.substructures.append(ss)
@@ -196,16 +206,6 @@ class RigidBody:
             if ss.name == name:
                 return ss
         raise LookupError(f"Cannot find substructure with name '{name}'")
-
-    @property
-    def nodes(self) -> list[fe.Node]:
-        """Get a list of all unique `Node`s from all component substructures."""
-        if not self._nodes:
-            for ss in self.substructures:
-                for nd in ss.nodes:
-                    if nd in self._nodes:
-                        self._nodes.append(nd)
-        return self._nodes
 
     def initialize_position(self) -> None:
         """Initialize the position of the rigid body."""
