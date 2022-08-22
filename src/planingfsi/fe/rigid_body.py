@@ -418,19 +418,18 @@ class RigidBodyMotionSolver:
         self.J_tmp: np.ndarray | None = None
         self.Jfo: np.ndarray | None = None
         self.Jit = 0
-        self.x: np.ndarray | None = None
         self._step = 0
 
-    def _reset_jacobian(self) -> np.ndarray:
+    def _reset_jacobian(self, x: np.ndarray) -> np.ndarray:
         """Reset the solver Jacobian and modify displacement."""
+        f = self._get_residual(x)
         if self.J_tmp is None:
             self.Jit = 0
             self.J_tmp = np.zeros((NUM_DIM, NUM_DIM))
             self._step = 0
-            self.Jfo = self._get_residual(self.x)
+            self.Jfo = f
             self.res_old = self.Jfo * 1.0
         else:
-            f = self._get_residual(self.x)
             self.J_tmp[:, self.Jit] = (f - self.Jfo) / self.disp_old[self.Jit]
             self.Jit += 1
 
@@ -471,20 +470,20 @@ class RigidBodyMotionSolver:
 
     def get_disp(self) -> np.ndarray:
         """Get the rigid body displacement using Broyden's method."""
+        x = np.array([self.parent.draft, self.parent.trim])
         if self.solver is None:
-            self.x = np.array([self.parent.draft, self.parent.trim])
-            self.solver = RootFinder(self._get_residual, self.x, method="Broyden")
+            self.solver = RootFinder(self._get_residual, x, method="Broyden")
 
         if self.J is None:
-            return self._reset_jacobian()
+            return self._reset_jacobian(x)
 
         if self._step >= self._jacobian_reset_interval:
             logger.debug("Resetting Jacobian for Motion")
-            self._reset_jacobian()
+            self._reset_jacobian(x)
 
-        f = self._get_residual(self.x)
+        f = self._get_residual(x)
         if self.disp_old is not None:
-            self.x += self.disp_old
+            x += self.disp_old
 
             dx = np.reshape(self.disp_old, (NUM_DIM, 1))
             df = np.reshape(f - self.res_old, (NUM_DIM, 1))
@@ -492,7 +491,7 @@ class RigidBodyMotionSolver:
             self.J += (df - self.J @ dx) @ dx.T / np.linalg.norm(dx) ** 2
 
         dof = self.parent.free_dof
-        dx = np.zeros_like(self.x)
+        dx = np.zeros_like(x)
         dx[np.ix_(dof)] = np.linalg.solve(
             -self.J[np.ix_(dof, dof)], f.reshape(NUM_DIM, 1)[np.ix_(dof)]
         ).flatten()  # TODO: Check that the flatten() is required
