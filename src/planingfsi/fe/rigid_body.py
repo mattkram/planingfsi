@@ -55,18 +55,18 @@ class RigidBody:
         name: str = "default",
         weight: float | None = None,
         load_pct: float = 1.0,
-        x_cg: float | None = None,
-        y_cg: float | None = None,
+        x_cg: float = 0.0,
+        y_cg: float = 0.0,
         x_cr: float | None = None,
         y_cr: float | None = None,
-        initial_draft: float | None = None,
-        initial_trim: float | None = None,
-        relax_draft: float | None = None,
-        relax_trim: float | None = None,
-        max_draft_step: float | None = None,
-        max_trim_step: float | None = None,
-        free_in_draft: bool | None = None,
-        free_in_trim: bool | None = None,
+        initial_draft: float = 0.0,
+        initial_trim: float = 0.0,
+        relax_draft: float = 1.0,
+        relax_trim: float = 1.0,
+        max_draft_step: float = 1e-3,
+        max_trim_step: float = 1e-3,
+        free_in_draft: bool = False,
+        free_in_trim: bool = False,
         parent: StructuralSolver | None = None,
         **_: Any,
     ):
@@ -80,19 +80,18 @@ class RigidBody:
 
         self.weight *= self.config.body.seal_load_pct
 
-        # TODO: The override logic should probably happen in the input file parsing, and not here
-        self.x_cg = x_cg or self.config.body.xCofG
-        self.y_cg = y_cg or self.config.body.yCofG
-        self.x_cr = x_cr or self.config.body.xCofR
-        self.y_cr = y_cr or self.config.body.yCofR
+        self.x_cg = x_cg
+        self.y_cg = y_cg
+        self.x_cr = x_cr if x_cr is not None else x_cg
+        self.y_cr = y_cr if y_cr is not None else y_cg
 
         self.x_cr_init = self.x_cr
         self.y_cr_init = self.y_cr
 
         self.draft = 0.0
         self.trim = 0.0
-        self.initial_draft = initial_draft or self.config.body.initial_draft
-        self.initial_trim = initial_trim or self.config.body.initial_trim
+        self.initial_draft = initial_draft
+        self.initial_trim = initial_trim
 
         self._free_dof = np.array([free_in_draft, free_in_trim])
         self._max_disp = np.array([max_draft_step, max_trim_step])

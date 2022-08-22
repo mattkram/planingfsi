@@ -166,6 +166,25 @@ class Simulation:
                     "yCofR": "y_cr",
                 },
             )
+
+            # Fallback on self.config.body if these keys are missing from rigid body dict file
+            fallback_keys = {
+                "x_cg",
+                "y_cg",
+                "x_cr",
+                "y_cr",
+                "initial_draft",
+                "initial_trim",
+                "free_in_draft",
+                "free_in_trim",
+                "max_draft_step",
+                "max_trim_step",
+                "relax_draft",
+                "relax_trim",
+            }
+            for key in fallback_keys:
+                dict_.setdefault(key, getattr(self.config.body, key))
+
             self.add_rigid_body(dict_)
 
         if not self.structural_solver.rigid_bodies:
