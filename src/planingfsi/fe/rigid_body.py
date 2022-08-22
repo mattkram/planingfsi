@@ -485,8 +485,8 @@ class RigidBodyMotionSolver:
         if self.disp_old is not None:
             x += self.disp_old
 
-            dx = np.reshape(self.disp_old, (NUM_DIM, 1))
-            df = np.reshape(f - self.res_old, (NUM_DIM, 1))
+            dx = self.disp_old[:, np.newaxis]
+            df = (f - self.res_old)[:, np.newaxis]
 
             self.J += (df - self.J @ dx) @ dx.T / np.linalg.norm(dx) ** 2
 
