@@ -34,7 +34,7 @@ ElementType = ClassVar[Type[fe.Element]]
 
 
 @dataclass
-class SubstructureLoads:
+class GlobalLoads:
     """The integrated global loads on the substructure.
 
     Attributes:
@@ -60,6 +60,22 @@ class SubstructureLoads:
     Dtip: float = 0.0
     Ltip: float = 0.0
     Mtip: float = 0.0
+
+    def __add__(self, other: GlobalLoads) -> GlobalLoads:
+        if not isinstance(other, GlobalLoads):
+            raise TypeError("Must add GlobalLoads to GlobalLoads")
+
+        return GlobalLoads(
+            D=self.D + other.D,
+            L=self.L + other.L,
+            M=self.M + other.M,
+            Da=self.Da + other.Da,
+            La=self.La + other.La,
+            Ma=self.Ma + other.Ma,
+            Dtip=self.Dtip + other.Dtip,
+            Ltip=self.Ltip + other.Ltip,
+            Mtip=self.Mtip + other.Mtip,
+        )
 
 
 class Substructure(abc.ABC):
@@ -120,7 +136,7 @@ class Substructure(abc.ABC):
         self.elements: list[fe.Element] = []
         self.node_arc_length: np.ndarray | None = None
 
-        self.loads = SubstructureLoads()
+        self.loads = GlobalLoads()
 
         self._interpolator: Interpolator | None = None
         self._interp_coords_at_arclength: interp1d | None = None
@@ -291,7 +307,7 @@ class Substructure(abc.ABC):
         p_hydro: list[float] = []
         s_air: list[float] = []
         p_air: list[float] = []
-        self.loads = SubstructureLoads()
+        self.loads = GlobalLoads()
         if self._interpolator is not None:
             s_min, s_max = self._interpolator.get_min_max_s()
 
@@ -418,7 +434,7 @@ class Substructure(abc.ABC):
 
         assert self.rigid_body is not None
         if moment_about is None:
-            moment_about = np.array([self.rigid_body.xCofR, self.rigid_body.yCofR])
+            moment_about = np.array([self.rigid_body.x_cr, self.rigid_body.y_cr])
 
         r = [self.get_coordinates(s_i) - moment_about for s_i in s]
         m = np.array([math_helpers.cross2(r_i, f_i) for r_i, f_i in zip(r, f)])
@@ -623,7 +639,7 @@ class TorsionalSpringSubstructure(Substructure):
         # Add to the global forces
         self.loads.Ltip += tip_force[1]
         self.loads.Mtip += math_helpers.cross2(
-            tip_coords - np.array([self.rigid_body.xCofR, self.rigid_body.xCofR]), tip_force
+            tip_coords - np.array([self.rigid_body.x_cr, self.rigid_body.x_cr]), tip_force
         )
 
     def update_fluid_forces(self) -> None:

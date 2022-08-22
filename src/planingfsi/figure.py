@@ -174,7 +174,7 @@ class FSIFigure:
                 handle.set_data([nd.x for nd in el.nodes], [nd.y for nd in el.nodes])
 
             if handle := self.element_handles_0.get(el):
-                base_pt = np.array([el.parent.rigid_body.xCofR0, el.parent.rigid_body.yCofR0])
+                base_pt = np.array([el.parent.rigid_body.x_cr_init, el.parent.rigid_body.y_cr_init])
                 pos = [
                     trig.rotate_point(pos, base_pt, el.parent.rigid_body.trim)
                     - np.array([0, el.parent.rigid_body.draft])
@@ -417,13 +417,13 @@ class ForceSubplot(TimeHistory):
             return 0.0  # config.it
 
         def liftFunc() -> float:
-            return body.L / body.weight
+            return body.loads.L / body.weight
 
         def dragFunc() -> float:
-            return body.D / body.weight
+            return body.loads.D / body.weight
 
         def momFunc() -> float:
-            return body.M / (body.weight * self.parent.config.body.reference_length)
+            return body.loads.M / (body.weight * self.parent.config.body.reference_length)
 
         self.add_series(
             PlotSeries(
@@ -528,12 +528,12 @@ class CofRPlot:
         self.update()
 
     def update(self) -> None:
-        c = np.array([self.body.xCofR, self.body.yCofR])
+        c = np.array([self.body.x_cr, self.body.y_cr])
         hvec = trig.rotate_vec_2d(np.array([0.5 * self._grid_len, 0.0]), self.body.trim)
         vvec = trig.rotate_vec_2d(np.array([0.0, 0.5 * self._grid_len]), self.body.trim)
         pts = np.array([c - hvec, c + hvec, c, c - vvec, c + vvec])
         self.line.set_data(pts.T)
-        self.lineCofG.set_data(self.body.xCofG, self.body.yCofG)
+        self.lineCofG.set_data(self.body.x_cg, self.body.y_cg)
 
 
 def plot_pressure(solver: "PotentialPlaningSolver", fig_format: str = "png") -> None:

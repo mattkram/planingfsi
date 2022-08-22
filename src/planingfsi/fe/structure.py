@@ -49,7 +49,7 @@ class StructuralSolver:
     def has_free_structure(self) -> bool:
         """True if any rigid body or substructure are free to move."""
         for rigid_body in self.rigid_bodies:
-            if any(rigid_body.free_dof):
+            if rigid_body.has_free_dof:
                 return True
 
             for ss in rigid_body.substructures:

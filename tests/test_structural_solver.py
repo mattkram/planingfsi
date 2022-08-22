@@ -69,7 +69,7 @@ def solver_with_body(solver: StructuralSolver) -> tuple[StructuralSolver, RigidB
     solver.config.body.reference_length = 1.0
     solver.config.body.weight = 2.0
 
-    body = solver.add_rigid_body()
+    body = solver.add_rigid_body(dict(weight=solver.config.body.weight))
     body.free_in_draft = True
     body.free_in_trim = True
 
@@ -81,7 +81,7 @@ def test_solver_lift_residual(
     solver_with_body: tuple[StructuralSolver, RigidBody], lift: float, expected: float
 ) -> None:
     solver, body = solver_with_body
-    body.L = lift
+    body.loads.L = lift
     assert solver.lift_residual == pytest.approx(expected)
 
 
