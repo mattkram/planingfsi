@@ -430,6 +430,7 @@ class RigidBodyMotionSolver:
             self._J_it = 0
             self._step = 0
             self._J_fo = f
+            self.res_old = self._J_fo.copy()
         else:
             self._J_tmp[:, self._J_it] = (f - self._J_fo) / self.disp_old[self._J_it]
             self._J_it += 1
