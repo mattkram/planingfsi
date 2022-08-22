@@ -462,7 +462,7 @@ class RigidBodyMotionSolver:
         limited_disp = np.min(np.abs(np.vstack((disp, self.parent.max_disp))), axis=0)
 
         ind = disp != 0 & self.parent.free_dof
-        limit_fraction = np.min(limited_disp[ind] / np.abs(disp[ind]))
+        limit_fraction = min(limited_disp[ind] / np.abs(disp[ind]), default=0.0)
 
         return disp * limit_fraction * self.parent.free_dof
 
