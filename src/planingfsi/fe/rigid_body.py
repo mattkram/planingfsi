@@ -432,12 +432,10 @@ class RigidBodyMotionSolver:
             self._J_tmp[:, self._J_it] = (f - self._J_fo) / self.disp_old[self._J_it]
             self._J_it += 1
 
-        disp = np.zeros((NUM_DIM,))
+        self.disp_old = disp = np.zeros((NUM_DIM,))
         if self._J_it < NUM_DIM:
-            disp[self._J_it] = self.parent.config.body.motion_jacobian_first_step
-
-        self.disp_old = disp
-        if self._J_it >= NUM_DIM:
+            self.disp_old[self._J_it] = self.parent.config.body.motion_jacobian_first_step
+        else:
             self.J = self._J_tmp.copy()
             self._J_tmp = None
             self.disp_old = None
@@ -468,10 +466,7 @@ class RigidBodyMotionSolver:
         if self.solver is None:
             self.solver = RootFinder(self._get_residual, x, method="Broyden")
 
-        if self.J is None:
-            return self._reset_jacobian(x)
-
-        if self._step >= self._jacobian_reset_interval:
+        if self.J is None or self._step >= self._jacobian_reset_interval:
             logger.debug("Resetting Jacobian for Motion")
             self._reset_jacobian(x)
 
