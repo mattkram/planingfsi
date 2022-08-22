@@ -34,8 +34,6 @@ class RigidBody:
     Args:
         name: A name for the RigidBody instance
         weight: If provided, the weight to use for the rigid body (scaled by `config.body.seal_load_pct`).
-        load_pct: If `weight` is not provided, this value is multiplied by the global `config.body.weight`,
-            which is then also scaled by `config.body.seal_load_pct`.
         x_cg: The x-coordinate of the center of gravity.
         y_cg: The y-coordinate of the center of gravity.
         x_cr: The x-coordinate of the center of rotation. Defaults to the CG.
