@@ -1,6 +1,9 @@
+import numpy as np
 import pytest
+from numpy.testing import assert_array_equal
 
 from planingfsi.fe.rigid_body import RigidBody
+from planingfsi.fe.rigid_body import RigidBodyMotionSolver
 
 
 @pytest.fixture()
@@ -41,3 +44,27 @@ def test_solve(rigid_body, attr_name, expected):
         rigid_body.update_position()
 
     assert getattr(rigid_body, attr_name) == expected
+
+
+@pytest.fixture()
+def solver(rigid_body) -> RigidBodyMotionSolver:
+    rigid_body.max_disp = np.array([0.5, 0.5])
+    return RigidBodyMotionSolver(rigid_body)
+
+
+@pytest.mark.parametrize(
+    ["free_dof", "disp", "expected"],
+    [
+        (np.array([True, True]), np.array([1.0, -1.0]), np.array([0.5, -0.5])),
+        (np.array([True, True]), np.array([0.2, -1.0]), np.array([0.1, -0.5])),
+        (np.array([True, True]), np.array([-0.2, -1.0]), np.array([-0.1, -0.5])),
+        (np.array([False, True]), np.array([1.0, -1.0]), np.array([0.0, -0.5])),
+    ],
+)
+def test_limit_disp(solver: RigidBodyMotionSolver, free_dof, disp, expected):
+    """We can limit the step. If it is limited, the ratio remains the same."""
+    solver.parent.free_dof = free_dof
+    limited_disp = solver._limit_disp(disp)
+    assert_array_equal(limited_disp, expected)
+    if np.all(free_dof):
+        assert limited_disp[1] / limited_disp[0] == pytest.approx(disp[1] / disp[0])

@@ -452,8 +452,8 @@ class RigidBodyMotionSolver:
         return disp
 
     def _limit_disp(self, disp: np.ndarray) -> np.ndarray:
-        """Limit the body displacement."""
-        disp_lim_pct = np.min(np.vstack((np.abs(disp), self.parent.max_disp)), axis=0) * np.sign(
+        """Limit the body displacement, ensuring the same ratio of draft-to-trim is maintained."""
+        disp_lim_pct = np.min(np.abs(np.vstack((disp, self.parent.max_disp))), axis=0) * np.sign(
             disp
         )
         for i in range(len(disp)):
