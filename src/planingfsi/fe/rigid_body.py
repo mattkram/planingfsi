@@ -478,6 +478,10 @@ class RigidBodyMotionSolver:
         if self.J is None:
             return self._reset_jacobian()
 
+        if self._step >= self._jacobian_reset_interval:
+            logger.debug("Resetting Jacobian for Motion")
+            self._reset_jacobian()
+
         f = self._get_residual(self.x)
         if self.disp_old is not None:
             self.x += self.disp_old
@@ -493,17 +497,10 @@ class RigidBodyMotionSolver:
             -self.J[np.ix_(dof, dof)], f.reshape(NUM_DIM, 1)[np.ix_(dof)]
         ).flatten()  # TODO: Check that the flatten() is required
 
-        if self.res_old is not None:
-            if any(np.abs(f) - np.abs(self.res_old) > 0.0):
-                self._step += 1
-
-        if self._step >= self._jacobian_reset_interval:
-            print("\nResetting Jacobian for Motion\n")
-            self._reset_jacobian()
-
         disp = self._limit_disp(dx[:] * self.parent.relax)
 
         self.disp_old = disp
         self.res_old = f[:]
         self._step += 1
+
         return disp
