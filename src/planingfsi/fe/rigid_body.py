@@ -466,12 +466,6 @@ class RigidBodyMotionSolver:
 
     def _get_residual(self, _):
         return np.array([self.parent.get_res_lift(), self.parent.get_res_moment()])
-        # return np.array(
-        #         [
-        #             self.parent.L - self.parent.weight,
-        #             self.parent.M - self.parent.weight * (self.parent.x_cg - self.parent.x_cr),
-        #         ]
-        #     )
 
     def get_disp(self) -> np.ndarray:
         """Get the rigid body displacement using Broyden's method."""
