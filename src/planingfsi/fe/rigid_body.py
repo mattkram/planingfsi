@@ -160,12 +160,11 @@ class RigidBody:
     @cached_property
     def nodes(self) -> list[fe.Node]:
         """Get a list of all unique `Node`s from all component substructures."""
-        nodes = []
+        nodes = set()
         for ss in self.substructures:
             for nd in ss.nodes:
-                if nd in nodes:
-                    nodes.append(nd)
-        return nodes
+                nodes.add(nd)
+        return list(nodes)
 
     def add_substructure(self, ss: Substructure) -> Substructure:
         """Add a substructure to the rigid body."""
@@ -185,6 +184,9 @@ class RigidBody:
 
     def update_position(self, draft_delta: float = None, trim_delta: float = None) -> None:
         """Update the position of the rigid body by passing the change in draft and trim."""
+        if not self.has_free_dof:
+            return
+
         if draft_delta is None or trim_delta is None:
             draft_delta, trim_delta = self.get_disp()
             # TODO: Consider removing this and fixing static types
