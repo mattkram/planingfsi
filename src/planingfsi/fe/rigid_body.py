@@ -485,7 +485,7 @@ class RigidBodyMotionSolver:
                 dx = np.reshape(self.disp_old, (NUM_DIM, 1))
                 df = np.reshape(self.f - self.res_old, (NUM_DIM, 1))
 
-                self.J += ((df - (self.J @ dx)) @ dx.T) / np.linalg.norm(dx) ** 2
+                self.J += (df - self.J @ dx) @ dx.T / np.linalg.norm(dx) ** 2
 
             dof = self.parent.free_dof
             dx = np.zeros_like(self.x)
