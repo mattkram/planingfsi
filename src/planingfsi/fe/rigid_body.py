@@ -487,7 +487,6 @@ class RigidBodyMotionSolver:
 
             dx = self.disp_old[:, np.newaxis]
             df = (f - self.res_old)[:, np.newaxis]
-
             self.J += (df - self.J @ dx) @ dx.T / np.linalg.norm(dx) ** 2
 
         dof = self.parent.free_dof
