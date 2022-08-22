@@ -410,6 +410,7 @@ class RigidBodyMotionSolver:
     def __init__(self, parent: RigidBody):
         self.parent = parent
 
+        self._jacobian_reset_interval = 6
         self.solver: solver.RootFinder | None = None
         self.disp_old: np.ndarray | None = None
         self.res_old: np.ndarray | None = None
@@ -419,14 +420,14 @@ class RigidBodyMotionSolver:
         self.Jit = 0
         self.x: np.ndarray | None = None
         self.f: np.ndarray | None = None
-        self.step = 0
+        self._step = 0
 
     def _reset_jacobian(self) -> np.ndarray:
         """Reset the solver Jacobian and modify displacement."""
         if self.J_tmp is None:
             self.Jit = 0
             self.J_tmp = np.zeros((NUM_DIM, NUM_DIM))
-            self.step = 0
+            self._step = 0
             self.Jfo = self._get_residual(self.x)
             self.res_old = self.Jfo * 1.0
         else:
@@ -495,9 +496,9 @@ class RigidBodyMotionSolver:
 
             if self.res_old is not None:
                 if any(np.abs(self.f) - np.abs(self.res_old) > 0.0):
-                    self.step += 1
+                    self._step += 1
 
-            if self.step >= 6:
+            if self._step >= self._jacobian_reset_interval:
                 print("\nResetting Jacobian for Motion\n")
                 self._reset_jacobian()
 
@@ -505,5 +506,5 @@ class RigidBodyMotionSolver:
 
             self.disp_old = disp
             self.res_old = self.f[:]
-            self.step += 1
+            self._step += 1
         return disp
