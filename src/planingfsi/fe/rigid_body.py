@@ -452,17 +452,19 @@ class RigidBodyMotionSolver:
         return disp
 
     def _limit_disp(self, disp: np.ndarray) -> np.ndarray:
-        """Limit the body displacement, ensuring the same ratio of draft-to-trim is maintained."""
-        disp_lim_pct = np.min(np.abs(np.vstack((disp, self.parent.max_disp))), axis=0) * np.sign(
-            disp
-        )
-        for i in range(len(disp)):
-            if disp[i] == 0.0 or not self.parent.free_dof[i]:
-                disp_lim_pct[i] = 1.0
-            else:
-                disp_lim_pct[i] /= disp[i]
+        """Limit the body displacement.
 
-        return disp * np.min(disp_lim_pct) * self.parent.free_dof
+        If both degrees of freedom are free, we ensure the same ratio of draft-to-trim is maintained.
+        If only one is free, or we have a zero displacement in either degree of freedom, then we only step
+        in the single direction.
+
+        """
+        limited_disp = np.min(np.abs(np.vstack((disp, self.parent.max_disp))), axis=0)
+
+        ind = disp != 0 & self.parent.free_dof
+        limit_fraction = np.min(limited_disp[ind] / np.abs(disp[ind]))
+
+        return disp * limit_fraction * self.parent.free_dof
 
     def _get_residual(self, _):
         return np.array([self.parent.get_res_lift(), self.parent.get_res_moment()])
