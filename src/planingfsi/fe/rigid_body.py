@@ -224,11 +224,9 @@ class RigidBody:
                 trim_delta = 0.0
 
         for nd in self.nodes:
-            xo, yo = nd.x, nd.y
-            new_pos = trig.rotate_point(
-                np.array([xo, yo]), np.array([self.x_cr, self.y_cr]), trim_delta
-            )
-            nd.move(new_pos[0] - xo, new_pos[1] - yo - draft_delta)
+            coords = nd.coordinates
+            new_pos = trig.rotate_point(coords, np.array([self.x_cr, self.y_cr]), trim_delta)
+            nd.move(*(new_pos - coords - np.array([0.0, draft_delta])))
 
         for s in self.substructures:
             s.update_geometry()
