@@ -101,7 +101,6 @@ class RigidBody:
 
         self._flexible_substructure_residual = 0.0
         self.substructures: list[Substructure] = []
-        self._nodes: list[fe.Node] = []
 
     @cached_property
     def config(self) -> Config:
@@ -158,15 +157,15 @@ class RigidBody:
         """A path to the file containing the rigid body motinon at a given iteration."""
         return self.parent.simulation.it_dir / f"motion_{self.name}.{self.config.io.data_format}"
 
-    @property
+    @cached_property
     def nodes(self) -> list[fe.Node]:
         """Get a list of all unique `Node`s from all component substructures."""
-        if not self._nodes:
-            for ss in self.substructures:
-                for nd in ss.nodes:
-                    if nd in self._nodes:
-                        self._nodes.append(nd)
-        return self._nodes
+        nodes = []
+        for ss in self.substructures:
+            for nd in ss.nodes:
+                if nd in nodes:
+                    nodes.append(nd)
+        return nodes
 
     def add_substructure(self, ss: Substructure) -> Substructure:
         """Add a substructure to the rigid body."""
