@@ -501,13 +501,9 @@ class RigidBodyMotionSolver:
                 print("\nResetting Jacobian for Motion\n")
                 self._reset_jacobian()
 
-            disp = dx.reshape(NUM_DIM)
-
-            disp *= self.parent.relax
-            disp = self._limit_disp(disp)
+            disp = self._limit_disp(dx[:] * self.parent.relax)
 
             self.disp_old = disp
-
-            self.res_old = self.f * 1.0
+            self.res_old = self.f[:]
             self.step += 1
         return disp
