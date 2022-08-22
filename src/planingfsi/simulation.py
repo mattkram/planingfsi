@@ -185,6 +185,8 @@ class Simulation:
             for key in fallback_keys:
                 dict_.setdefault(key, getattr(self.config.body, key))
 
+            dict_.setdefault("weight", self.config.body.seal_load_pct * self.config.body.weight)
+
             self.add_rigid_body(dict_)
 
         if not self.structural_solver.rigid_bodies:

@@ -53,8 +53,7 @@ class RigidBody:
     def __init__(
         self,
         name: str = "default",
-        weight: float | None = None,
-        load_pct: float = 1.0,
+        weight: float = 1.0,
         x_cg: float = 0.0,
         y_cg: float = 0.0,
         x_cr: float | None = None,
@@ -73,12 +72,7 @@ class RigidBody:
         self.name = name
         self.parent = parent
 
-        if weight is not None:
-            self.weight = weight
-        else:
-            self.weight = load_pct * self.config.body.weight
-
-        self.weight *= self.config.body.seal_load_pct
+        self.weight = weight
 
         self.x_cg = x_cg
         self.y_cg = y_cg
