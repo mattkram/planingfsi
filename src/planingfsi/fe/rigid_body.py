@@ -89,7 +89,6 @@ class RigidBody:
         max_trim_acc: float | None = None,
         beta: float = 0.25,
         gamma: float = 0.5,
-        motion_method: str | None = None,
         parent: StructuralSolver | None = None,
         **_: Any,
     ):
@@ -181,20 +180,6 @@ class RigidBody:
         self.resFun: Callable[[np.ndarray], np.ndarray] | None = None
 
         # Assign displacement function depending on specified method
-        motion_method = motion_method or self.config.body.motion_method
-        if any(self.free_dof):
-            self.get_disp = {
-                "Secant": self.get_disp_secant,
-                "Broyden": self.get_disp_broyden,
-                "BroydenNew": self.get_disp_broyden_new,
-                "Physical": self.get_disp_physical,
-                "PhysicalNoMass": self.get_disp_physical_no_mass,
-                "Newmark-Beta": self.get_disp_newmark_beta,
-                "Sep": self.get_disp_secant,
-            }.get(motion_method, self.get_disp_secant)
-        else:
-            self.get_disp = lambda: np.array((0.0, 0.0))
-
         self.flexible_substructure_residual = 0.0
         self.substructures: list["substructure.Substructure"] = []
         self._nodes: list[fe.Node] = []
@@ -395,119 +380,6 @@ class RigidBody:
                 * trig.cosd(self.config.body.initial_trim)
             )
 
-    def get_disp_physical(self) -> np.ndarray:
-        """Get the rigid body displacement using a time-domain model with inertia."""
-        disp = self.limit_disp(self.time_step * self.v)
-
-        for i in range(NUM_DIM):
-            if np.abs(disp[i]) == np.abs(self.max_disp[i]):
-                self.v[i] = disp[i] / self.time_step
-
-        self.v += self.time_step * self.a
-
-        self.a = np.array([self.weight - self.L, self.M - self.weight * (self.x_cg - self.x_cr)])
-        #    self.a -= self.Cdamp * (self.v + self.v**3) * config.ramp
-        self.a -= self.c_damp * self.v * self.ramp
-        self.a /= np.array([self.m, self.Iz])
-        self.a = np.min(
-            np.vstack((np.abs(self.a), self.max_acc)),
-            axis=0,
-        ) * np.sign(self.a)
-
-        #    accLimPct = np.min(np.vstack((np.abs(self.a), self.maxAcc)), axis=0) * np.sign(self.a)
-        #    for i in range(len(self.a)):
-        #      if self.a[i] == 0.0 or not self.freeDoF[i]:
-        #        accLimPct[i] = 1.0
-        #      else:
-        #        accLimPct[i] /= self.a[i]
-        #
-        #    self.a *= np.min(accLimPct)
-        disp *= self.ramp
-        return disp
-
-    def get_disp_newmark_beta(self) -> np.ndarray:
-        """Get the rigid body displacement using the Newmark-Beta method."""
-        self.a = np.array([self.weight - self.L, self.M - self.weight * (self.x_cg - self.x_cr)])
-        #    self.a -= self.Cdamp * self.v * config.ramp
-        self.a /= np.array([self.m, self.Iz])
-        self.a = np.min(
-            np.vstack((np.abs(self.a), self.max_acc)),
-            axis=0,
-        ) * np.sign(self.a)
-
-        dv = (1 - self.gamma) * self.a_old + self.gamma * self.a
-        dv *= self.time_step
-        dv *= 1 - self.num_damp
-        self.v += dv
-
-        disp = 0.5 * (1 - 2 * self.beta) * self.a_old + self.beta * self.a
-        disp *= self.time_step
-        disp += self.v_old
-        disp *= self.time_step
-
-        self.a_old = self.a
-        self.v_old = self.v
-
-        disp *= self.relax
-        disp *= self.ramp
-        disp = self.limit_disp(disp)
-
-        return disp
-
-    def get_disp_physical_no_mass(self) -> np.ndarray:
-        """Get the rigid body displacement using a time-domain model without inertia."""
-        force_moment = np.array(
-            [
-                self.weight - self.L,
-                self.M - self.weight * (self.config.body.xCofG - self.config.body.xCofR),
-            ]
-        )
-        #    F -= self.Cdamp * self.v
-
-        if self.predictor:
-            disp = force_moment / self.c_damp * self.time_step
-            self.predictor = False
-        else:
-            disp = 0.5 * self.time_step / self.c_damp * (force_moment - self.two_ago_f)
-            self.predictor = True
-
-        disp *= self.relax * self.ramp
-        disp = self.limit_disp(disp)
-
-        #    self.v = disp / self.timeStep
-
-        self.two_ago_f = self.f_old
-        self.f_old = disp * self.c_damp / self.time_step
-
-        return disp
-
-    def get_disp_secant(self) -> np.ndarray:
-        """Get the rigid body displacement using the Secant method."""
-        if self.solver is None:
-            self.resFun = lambda x: np.array(
-                [
-                    self.L - self.weight,
-                    self.M - self.weight * (self.config.body.xCofG - self.config.body.xCofR),
-                ]
-            )
-            self.solver = solver.RootFinder(
-                self.resFun,
-                np.array([self.config.body.initial_draft, self.config.body.initial_trim]),
-                "secant",
-                dxMax=self.max_disp * self.free_dof,
-            )
-
-        if self.disp_old is not None:
-            self.solver.take_step(self.disp_old)
-
-        # Solve for limited displacement
-        disp = self.solver.limit_step(self.solver.get_step())
-
-        self.two_ago_disp = self.disp_old
-        self.disp_old = disp
-
-        return disp
-
     def reset_jacobian(self) -> np.ndarray:
         """Reset the solver Jacobian and modify displacement."""
         # TODO: These are here for mypy, fix the types instead
@@ -542,41 +414,7 @@ class RigidBody:
 
         return disp
 
-    def get_disp_broyden_new(self) -> np.ndarray:
-        """Get the rigid body displacement using Broyden's method.
-
-        Todo:
-            There should only be one Broyden's method
-
-        """
-        if self.solver is None:
-            self.resFun = lambda x: np.array(
-                [
-                    f
-                    for f, free_dof in zip(
-                        [self.get_res_lift(), self.get_res_moment()], self.free_dof
-                    )
-                    if free_dof
-                ]
-            )
-            max_disp = [m for m, free_dof in zip(self.max_disp, self.free_dof) if free_dof]
-
-            self.x = np.array(
-                [f for f, free_dof in zip([self.draft, self.trim], self.free_dof) if free_dof]
-            )
-            self.solver = solver.RootFinder(self.resFun, self.x, "broyden", dxMax=max_disp)
-
-        if self.disp_old is not None:
-            self.solver.take_step(self.disp_old)
-
-        # Solve for limited displacement
-        disp = self.solver.limit_step(self.solver.get_step())
-
-        self.two_ago_disp = self.disp_old
-        self.disp_old = disp
-        return disp
-
-    def get_disp_broyden(self) -> np.ndarray:
+    def get_disp(self) -> np.ndarray:
         """Get the rigid body displacement using Broyden's method."""
         # TODO: These are here for mypy, fix the types instead
         # assert self.resFun is not None

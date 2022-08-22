@@ -11,7 +11,6 @@ def rigid_body(monkeypatch):
         weight=100.0,
         x_cr=0.0,
         x_cg=1.0,
-        motion_method="Broyden",
         max_draft_step=0.5,
         max_trim_step=0.5,
     )
