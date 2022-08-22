@@ -234,8 +234,7 @@ class RigidBody:
 
         for nd in self.parent.nodes:
             node_dof = self.parent.node_dofs[nd]
-            for i in range(2):
-                Fg[node_dof[i]] += nd.fixed_load[i]
+            Fg[node_dof] += nd.fixed_load[:, np.newaxis]
 
         # Determine fixed degrees of freedom
         dof = [False for _ in Fg]
