@@ -94,16 +94,9 @@ class RigidBody:
         self.initial_draft = initial_draft or self.config.body.initial_draft
         self.initial_trim = initial_trim or self.config.body.initial_trim
 
-        free_in_draft = free_in_draft or self.config.body.free_in_draft
-        free_in_trim = free_in_trim or self.config.body.free_in_trim
-        max_draft_step = max_draft_step or self.config.body.max_draft_step
-        max_trim_step = max_trim_step or self.config.body.max_trim_step
-        relax_draft = relax_draft or self.config.body.relax_draft
-        relax_trim = relax_trim or self.config.body.relax_trim
-
-        self.free_dof = np.array([free_in_draft, free_in_trim])
-        self.max_disp = np.array([max_draft_step, max_trim_step])
-        self.relax = np.array([relax_draft, relax_trim])
+        self._free_dof = np.array([free_in_draft, free_in_trim])
+        self._max_disp = np.array([max_draft_step, max_trim_step])
+        self._relax = np.array([relax_draft, relax_trim])
 
         self.D = 0.0
         self.L = 0.0
@@ -153,20 +146,24 @@ class RigidBody:
         return max(res_l, res_m, res_node_disp, res_torsion)
 
     @property
+    def has_free_dof(self) -> bool:
+        return self._free_dof.any()
+
+    @property
     def free_in_draft(self) -> bool:
-        return self.free_dof[0]
+        return self._free_dof[0]
 
     @free_in_draft.setter
     def free_in_draft(self, value: bool) -> None:
-        self.free_dof[0] = value
+        self._free_dof[0] = value
 
     @property
     def free_in_trim(self) -> bool:
-        return self.free_dof[1]
+        return self._free_dof[1]
 
     @free_in_trim.setter
     def free_in_trim(self, value: bool) -> None:
-        self.free_dof[1] = value
+        self._free_dof[1] = value
 
     @property
     def motion_file_path(self) -> Path:
@@ -455,12 +452,12 @@ class RigidBodyMotionSolver:
         in the single direction.
 
         """
-        limited_disp = np.min(np.abs(np.vstack((disp, self.parent.max_disp))), axis=0)
+        limited_disp = np.min(np.abs(np.vstack((disp, self.parent._max_disp))), axis=0)
 
-        ind = disp != 0 & self.parent.free_dof
+        ind = disp != 0 & self.parent._free_dof
         limit_fraction = min(limited_disp[ind] / np.abs(disp[ind]), default=0.0)
 
-        return disp * limit_fraction * self.parent.free_dof
+        return disp * limit_fraction * self.parent._free_dof
 
     def _get_residual(self, _):
         return np.array([self.parent.get_res_lift(), self.parent.get_res_moment()])
@@ -486,11 +483,11 @@ class RigidBodyMotionSolver:
             df = (f - self.res_old)[:, np.newaxis]
             self.J += (df - self.J @ dx) @ dx.T / np.linalg.norm(dx) ** 2
 
-        dof = self.parent.free_dof
+        dof = self.parent._free_dof
         dx = np.zeros_like(x)
         dx[np.ix_(dof)] = np.linalg.solve(-self.J[np.ix_(dof, dof)], f[np.ix_(dof)])
 
-        disp = self._limit_disp(dx[:] * self.parent.relax)
+        disp = self._limit_disp(dx[:] * self.parent._relax)
 
         self.disp_old = disp
         self.res_old = f[:]

@@ -48,7 +48,7 @@ def test_solve(rigid_body, attr_name, expected):
 
 @pytest.fixture()
 def solver(rigid_body) -> RigidBodyMotionSolver:
-    rigid_body.max_disp = np.array([0.5, 0.5])
+    rigid_body._max_disp = np.array([0.5, 0.5])
     return RigidBodyMotionSolver(rigid_body)
 
 
@@ -63,7 +63,7 @@ def solver(rigid_body) -> RigidBodyMotionSolver:
 )
 def test_limit_disp(solver: RigidBodyMotionSolver, free_dof, disp, expected):
     """We can limit the step. If it is limited, the ratio remains the same."""
-    solver.parent.free_dof = free_dof
+    solver.parent._free_dof = free_dof
     limited_disp = solver._limit_disp(disp)
     assert_array_equal(limited_disp, expected)
     if np.all(free_dof):
