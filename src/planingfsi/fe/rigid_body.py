@@ -162,7 +162,7 @@ class RigidBody:
             ],
             default=0.0,
         )
-        return max((res_l, res_m, res_node_disp, res_torsion))
+        return max(res_l, res_m, res_node_disp, res_torsion)
 
     @property
     def free_in_draft(self) -> bool:
