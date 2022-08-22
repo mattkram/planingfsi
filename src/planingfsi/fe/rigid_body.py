@@ -419,7 +419,6 @@ class RigidBodyMotionSolver:
         self.Jfo: np.ndarray | None = None
         self.Jit = 0
         self.x: np.ndarray | None = None
-        self.f: np.ndarray | None = None
         self._step = 0
 
     def _reset_jacobian(self) -> np.ndarray:
@@ -479,23 +478,23 @@ class RigidBodyMotionSolver:
         if self.J is None:
             disp = self._reset_jacobian()
         else:
-            self.f = self._get_residual(self.x)
+            f = self._get_residual(self.x)
             if self.disp_old is not None:
                 self.x += self.disp_old
 
                 dx = np.reshape(self.disp_old, (NUM_DIM, 1))
-                df = np.reshape(self.f - self.res_old, (NUM_DIM, 1))
+                df = np.reshape(f - self.res_old, (NUM_DIM, 1))
 
                 self.J += (df - self.J @ dx) @ dx.T / np.linalg.norm(dx) ** 2
 
             dof = self.parent.free_dof
             dx = np.zeros_like(self.x)
             dx[np.ix_(dof)] = np.linalg.solve(
-                -self.J[np.ix_(dof, dof)], self.f.reshape(NUM_DIM, 1)[np.ix_(dof)]
+                -self.J[np.ix_(dof, dof)], f.reshape(NUM_DIM, 1)[np.ix_(dof)]
             ).flatten()  # TODO: Check that the flatten() is required
 
             if self.res_old is not None:
-                if any(np.abs(self.f) - np.abs(self.res_old) > 0.0):
+                if any(np.abs(f) - np.abs(self.res_old) > 0.0):
                     self._step += 1
 
             if self._step >= self._jacobian_reset_interval:
@@ -505,6 +504,6 @@ class RigidBodyMotionSolver:
             disp = self._limit_disp(dx[:] * self.parent.relax)
 
             self.disp_old = disp
-            self.res_old = self.f[:]
+            self.res_old = f[:]
             self._step += 1
         return disp
