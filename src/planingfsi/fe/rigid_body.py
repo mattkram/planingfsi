@@ -116,18 +116,7 @@ class RigidBody:
         self.res_l = 1.0
         self.res_m = 1.0
 
-        # Attributes related to solver
-        self.solver: solver.RootFinder | None = None
-        self.disp_old: np.ndarray | None = None
-        self.res_old: np.ndarray | None = None
-        self.J: np.ndarray | None = None
-        self.J_tmp: np.ndarray | None = None
-        self.Jfo: np.ndarray | None = None
-        self.Jit = 0
-        self.x: np.ndarray | None = None
-        self.f: np.ndarray | None = None
-        self.step = 0
-        self.resFun: Callable[[np.ndarray], np.ndarray] | None = None
+        self.motion_solver = RigidBodyMotionSolver(self)
 
         # Assign displacement function depending on specified method
         self.flexible_substructure_residual = 0.0
@@ -324,102 +313,9 @@ class RigidBody:
                 * trig.cosd(self.config.body.initial_trim)
             )
 
-    def reset_jacobian(self) -> np.ndarray:
-        """Reset the solver Jacobian and modify displacement."""
-        # TODO: These are here for mypy, fix the types instead
-        assert self.resFun is not None
-        assert self.x is not None
-        if self.J_tmp is None:
-            self.Jit = 0
-            self.J_tmp = np.zeros((NUM_DIM, NUM_DIM))
-            self.step = 0
-            self.Jfo = self.resFun(self.x)
-            self.res_old = self.Jfo * 1.0
-        else:
-            f = self.resFun(self.x)
-            assert isinstance(self.disp_old, np.ndarray)
-            self.J_tmp[:, self.Jit] = (f - self.Jfo) / self.disp_old[self.Jit]
-            self.Jit += 1
-
-        disp = np.zeros((NUM_DIM,))
-        if self.Jit < NUM_DIM:
-            disp[self.Jit] = float(self.config.body.motion_jacobian_first_step)
-
-        if self.Jit > 0:
-            disp[self.Jit - 1] = -float(self.config.body.motion_jacobian_first_step)
-        self.disp_old = disp
-        if self.Jit >= NUM_DIM:
-            if self.J is None:
-                self.J = self.J_tmp.copy()
-            else:
-                self.J[:] = self.J_tmp
-            self.J_tmp = None
-            self.disp_old = None
-
-        return disp
-
     def get_disp(self) -> np.ndarray:
         """Get the rigid body displacement using Broyden's method."""
-        # TODO: These are here for mypy, fix the types instead
-        # assert self.resFun is not None
-        # assert self.x is not None
-
-        if self.solver is None:
-            self.resFun = lambda x: np.array(
-                [self.L - self.weight, self.M - self.weight * (self.x_cg - self.x_cr)]
-            )
-            #      self.resFun = lambda x: np.array([self.get_res_moment(), self.get_res_lift()])
-            self.x = np.array([self.draft, self.trim])
-            self.solver = RootFinder(self.resFun, self.x, method="Broyden")
-
-        if self.J is None:
-            disp = self.reset_jacobian()
-        else:
-            assert self.resFun is not None
-            self.f = self.resFun(self.x)
-            if self.disp_old is not None:
-                self.x += self.disp_old
-
-                dx = np.reshape(self.disp_old, (NUM_DIM, 1))
-                df = np.reshape(self.f - self.res_old, (NUM_DIM, 1))
-
-                self.J += np.dot(df - np.dot(self.J, dx), dx.T) / np.linalg.norm(dx) ** 2
-
-            dof = self.free_dof
-            dx = np.zeros_like(self.x)
-            dx[np.ix_(dof)] = np.linalg.solve(
-                -self.J[np.ix_(dof, dof)], self.f.reshape(NUM_DIM, 1)[np.ix_(dof)]
-            ).flatten()  # TODO: Check that the flatten() is required
-
-            if self.res_old is not None:
-                if any(np.abs(self.f) - np.abs(self.res_old) > 0.0):
-                    self.step += 1
-
-            if self.step >= 6:
-                print("\nResetting Jacobian for Motion\n")
-                self.reset_jacobian()
-
-            disp = dx.reshape(NUM_DIM)
-
-            disp *= self.relax
-            disp = self.limit_disp(disp)
-
-            self.disp_old = disp
-
-            self.res_old = self.f * 1.0
-            self.step += 1
-        return disp
-
-    def limit_disp(self, disp: np.ndarray) -> np.ndarray:
-        """Limit the body displacement."""
-        disp_lim_pct = np.min(np.vstack((np.abs(disp), self.max_disp)), axis=0) * np.sign(disp)
-        for i in range(len(disp)):
-            if disp[i] == 0.0 or not self.free_dof[i]:
-                disp_lim_pct[i] = 1.0
-            else:
-                disp_lim_pct[i] /= disp[i]
-
-        return disp * np.min(disp_lim_pct) * self.free_dof
+        return self.motion_solver.get_disp()
 
     def get_res_lift(self) -> float:
         """Get the residual of the vertical force balance."""
@@ -509,3 +405,114 @@ class RigidBody:
         self.La = dict_.get("LiftAir", np.nan)
         self.Da = dict_.get("DragAir", np.nan)
         self.Ma = dict_.get("MomentAir", np.nan)
+
+
+class RigidBodyMotionSolver:
+    def __init__(self, parent: RigidBody):
+        self.parent = parent
+
+        self.solver: solver.RootFinder | None = None
+        self.disp_old: np.ndarray | None = None
+        self.res_old: np.ndarray | None = None
+        self.J: np.ndarray | None = None
+        self.J_tmp: np.ndarray | None = None
+        self.Jfo: np.ndarray | None = None
+        self.Jit = 0
+        self.x: np.ndarray | None = None
+        self.f: np.ndarray | None = None
+        self.step = 0
+        self.resFun: Callable[[np.ndarray], np.ndarray] | None = None
+
+    def _reset_jacobian(self) -> np.ndarray:
+        """Reset the solver Jacobian and modify displacement."""
+        if self.J_tmp is None:
+            self.Jit = 0
+            self.J_tmp = np.zeros((NUM_DIM, NUM_DIM))
+            self.step = 0
+            self.Jfo = self.resFun(self.x)
+            self.res_old = self.Jfo * 1.0
+        else:
+            f = self.resFun(self.x)
+            self.J_tmp[:, self.Jit] = (f - self.Jfo) / self.disp_old[self.Jit]
+            self.Jit += 1
+
+        disp = np.zeros((NUM_DIM,))
+        if self.Jit < NUM_DIM:
+            disp[self.Jit] = float(self.parent.config.body.motion_jacobian_first_step)
+
+        if self.Jit > 0:
+            disp[self.Jit - 1] = -float(self.parent.config.body.motion_jacobian_first_step)
+        self.disp_old = disp
+        if self.Jit >= NUM_DIM:
+            if self.J is None:
+                self.J = self.J_tmp.copy()
+            else:
+                self.J[:] = self.J_tmp
+            self.J_tmp = None
+            self.disp_old = None
+
+        return disp
+
+    def _limit_disp(self, disp: np.ndarray) -> np.ndarray:
+        """Limit the body displacement."""
+        disp_lim_pct = np.min(np.vstack((np.abs(disp), self.parent.max_disp)), axis=0) * np.sign(
+            disp
+        )
+        for i in range(len(disp)):
+            if disp[i] == 0.0 or not self.parent.free_dof[i]:
+                disp_lim_pct[i] = 1.0
+            else:
+                disp_lim_pct[i] /= disp[i]
+
+        return disp * np.min(disp_lim_pct) * self.parent.free_dof
+
+    def get_disp(self) -> np.ndarray:
+        """Get the rigid body displacement using Broyden's method."""
+        if self.solver is None:
+            self.resFun = lambda x: np.array(
+                [
+                    self.parent.L - self.parent.weight,
+                    self.parent.M - self.parent.weight * (self.parent.x_cg - self.parent.x_cr),
+                ]
+            )
+            #      self.resFun = lambda x: np.array([self.get_res_moment(), self.get_res_lift()])
+            self.x = np.array([self.parent.draft, self.parent.trim])
+            self.solver = RootFinder(self.resFun, self.x, method="Broyden")
+
+        if self.J is None:
+            disp = self._reset_jacobian()
+        else:
+            assert self.resFun is not None
+            self.f = self.resFun(self.x)
+            if self.disp_old is not None:
+                self.x += self.disp_old
+
+                dx = np.reshape(self.disp_old, (NUM_DIM, 1))
+                df = np.reshape(self.f - self.res_old, (NUM_DIM, 1))
+
+                self.J += np.dot(df - np.dot(self.J, dx), dx.T) / np.linalg.norm(dx) ** 2
+
+            dof = self.parent.free_dof
+            dx = np.zeros_like(self.x)
+            dx[np.ix_(dof)] = np.linalg.solve(
+                -self.J[np.ix_(dof, dof)], self.f.reshape(NUM_DIM, 1)[np.ix_(dof)]
+            ).flatten()  # TODO: Check that the flatten() is required
+
+            if self.res_old is not None:
+                if any(np.abs(self.f) - np.abs(self.res_old) > 0.0):
+                    self.step += 1
+
+            if self.step >= 6:
+                print("\nResetting Jacobian for Motion\n")
+                self._reset_jacobian()
+
+            disp = dx.reshape(NUM_DIM)
+
+            disp *= self.parent.relax
+            disp = self._limit_disp(disp)
+
+            self.disp_old = disp
+
+            self.res_old = self.f * 1.0
+            self.step += 1
+        return disp
