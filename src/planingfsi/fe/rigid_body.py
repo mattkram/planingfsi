@@ -415,37 +415,37 @@ class RigidBodyMotionSolver:
         self.disp_old: np.ndarray | None = None
         self.res_old: np.ndarray | None = None
         self.J: np.ndarray | None = None
-        self.J_tmp: np.ndarray | None = None
-        self.Jfo: np.ndarray | None = None
-        self.Jit = 0
+        self._J_tmp: np.ndarray | None = None
+        self._J_fo: np.ndarray | None = None
+        self._J_it = 0
         self._step = 0
 
     def _reset_jacobian(self, x: np.ndarray) -> np.ndarray:
         """Reset the solver Jacobian and modify displacement."""
         f = self._get_residual(x)
-        if self.J_tmp is None:
-            self.Jit = 0
-            self.J_tmp = np.zeros((NUM_DIM, NUM_DIM))
+        if self._J_tmp is None:
+            self._J_tmp = np.zeros((NUM_DIM, NUM_DIM))
+            self._J_it = 0
             self._step = 0
-            self.Jfo = f
-            self.res_old = self.Jfo * 1.0
+            self._J_fo = f
+            self.res_old = self._J_fo * 1.0
         else:
-            self.J_tmp[:, self.Jit] = (f - self.Jfo) / self.disp_old[self.Jit]
-            self.Jit += 1
+            self._J_tmp[:, self._J_it] = (f - self._J_fo) / self.disp_old[self._J_it]
+            self._J_it += 1
 
         disp = np.zeros((NUM_DIM,))
-        if self.Jit < NUM_DIM:
-            disp[self.Jit] = float(self.parent.config.body.motion_jacobian_first_step)
+        if self._J_it < NUM_DIM:
+            disp[self._J_it] = float(self.parent.config.body.motion_jacobian_first_step)
 
-        if self.Jit > 0:
-            disp[self.Jit - 1] = -float(self.parent.config.body.motion_jacobian_first_step)
+        if self._J_it > 0:
+            disp[self._J_it - 1] = -float(self.parent.config.body.motion_jacobian_first_step)
         self.disp_old = disp
-        if self.Jit >= NUM_DIM:
+        if self._J_it >= NUM_DIM:
             if self.J is None:
-                self.J = self.J_tmp.copy()
+                self.J = self._J_tmp.copy()
             else:
-                self.J[:] = self.J_tmp
-            self.J_tmp = None
+                self.J[:] = self._J_tmp
+            self._J_tmp = None
             self.disp_old = None
 
         return disp
