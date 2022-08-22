@@ -159,7 +159,7 @@ class RigidBody:
 
     @cached_property
     def nodes(self) -> list[fe.Node]:
-        """Get a list of all unique `Node`s from all component substructures."""
+        """A list of all unique `Node`s from all component substructures."""
         nodes = set()
         for ss in self.substructures:
             for nd in ss.nodes:
