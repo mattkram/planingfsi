@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-from collections.abc import Callable
 from functools import cached_property
 from pathlib import Path
 from typing import TYPE_CHECKING
@@ -421,7 +420,6 @@ class RigidBodyMotionSolver:
         self.x: np.ndarray | None = None
         self.f: np.ndarray | None = None
         self.step = 0
-        self.resFun: Callable[[np.ndarray], np.ndarray] | None = None
 
     def _reset_jacobian(self) -> np.ndarray:
         """Reset the solver Jacobian and modify displacement."""
@@ -429,10 +427,10 @@ class RigidBodyMotionSolver:
             self.Jit = 0
             self.J_tmp = np.zeros((NUM_DIM, NUM_DIM))
             self.step = 0
-            self.Jfo = self.resFun(self.x)
+            self.Jfo = self._get_residual(self.x)
             self.res_old = self.Jfo * 1.0
         else:
-            f = self.resFun(self.x)
+            f = self._get_residual(self.x)
             self.J_tmp[:, self.Jit] = (f - self.Jfo) / self.disp_old[self.Jit]
             self.Jit += 1
 
@@ -466,24 +464,25 @@ class RigidBodyMotionSolver:
 
         return disp * np.min(disp_lim_pct) * self.parent.free_dof
 
+    def _get_residual(self, _):
+        return np.array([self.parent.get_res_lift(), self.parent.get_res_moment()])
+        # return np.array(
+        #         [
+        #             self.parent.L - self.parent.weight,
+        #             self.parent.M - self.parent.weight * (self.parent.x_cg - self.parent.x_cr),
+        #         ]
+        #     )
+
     def get_disp(self) -> np.ndarray:
         """Get the rigid body displacement using Broyden's method."""
         if self.solver is None:
-            self.resFun = lambda x: np.array(
-                [
-                    self.parent.L - self.parent.weight,
-                    self.parent.M - self.parent.weight * (self.parent.x_cg - self.parent.x_cr),
-                ]
-            )
-            #      self.resFun = lambda x: np.array([self.get_res_moment(), self.get_res_lift()])
             self.x = np.array([self.parent.draft, self.parent.trim])
-            self.solver = RootFinder(self.resFun, self.x, method="Broyden")
+            self.solver = RootFinder(self._get_residual, self.x, method="Broyden")
 
         if self.J is None:
             disp = self._reset_jacobian()
         else:
-            assert self.resFun is not None
-            self.f = self.resFun(self.x)
+            self.f = self._get_residual(self.x)
             if self.disp_old is not None:
                 self.x += self.disp_old
 
