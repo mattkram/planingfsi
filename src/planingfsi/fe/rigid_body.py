@@ -71,12 +71,8 @@ class RigidBody:
         parent: StructuralSolver | None = None,
         **_: Any,
     ):
-        self.parent = parent
-
-        self.draft = 0.0
-        self.trim = 0.0
-
         self.name = name
+        self.parent = parent
 
         if weight is not None:
             self.weight = weight
@@ -94,6 +90,8 @@ class RigidBody:
         self.x_cr_init = self.x_cr
         self.y_cr_init = self.y_cr
 
+        self.draft = 0.0
+        self.trim = 0.0
         self.initial_draft = initial_draft or self.config.body.initial_draft
         self.initial_trim = initial_trim or self.config.body.initial_trim
 
@@ -115,13 +113,13 @@ class RigidBody:
         self.La = 0.0
         self.Ma = 0.0
 
-        self.solver: solver.RootFinder | None = None
-        self.disp_old: np.ndarray | None = None
-        self.res_old: np.ndarray | None = None
-
         self.res_l = 1.0
         self.res_m = 1.0
 
+        # Attributes related to solver
+        self.solver: solver.RootFinder | None = None
+        self.disp_old: np.ndarray | None = None
+        self.res_old: np.ndarray | None = None
         self.J: np.ndarray | None = None
         self.J_tmp: np.ndarray | None = None
         self.Jfo: np.ndarray | None = None
