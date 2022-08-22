@@ -476,34 +476,34 @@ class RigidBodyMotionSolver:
             self.solver = RootFinder(self._get_residual, self.x, method="Broyden")
 
         if self.J is None:
-            disp = self._reset_jacobian()
-        else:
-            f = self._get_residual(self.x)
-            if self.disp_old is not None:
-                self.x += self.disp_old
+            return self._reset_jacobian()
 
-                dx = np.reshape(self.disp_old, (NUM_DIM, 1))
-                df = np.reshape(f - self.res_old, (NUM_DIM, 1))
+        f = self._get_residual(self.x)
+        if self.disp_old is not None:
+            self.x += self.disp_old
 
-                self.J += (df - self.J @ dx) @ dx.T / np.linalg.norm(dx) ** 2
+            dx = np.reshape(self.disp_old, (NUM_DIM, 1))
+            df = np.reshape(f - self.res_old, (NUM_DIM, 1))
 
-            dof = self.parent.free_dof
-            dx = np.zeros_like(self.x)
-            dx[np.ix_(dof)] = np.linalg.solve(
-                -self.J[np.ix_(dof, dof)], f.reshape(NUM_DIM, 1)[np.ix_(dof)]
-            ).flatten()  # TODO: Check that the flatten() is required
+            self.J += (df - self.J @ dx) @ dx.T / np.linalg.norm(dx) ** 2
 
-            if self.res_old is not None:
-                if any(np.abs(f) - np.abs(self.res_old) > 0.0):
-                    self._step += 1
+        dof = self.parent.free_dof
+        dx = np.zeros_like(self.x)
+        dx[np.ix_(dof)] = np.linalg.solve(
+            -self.J[np.ix_(dof, dof)], f.reshape(NUM_DIM, 1)[np.ix_(dof)]
+        ).flatten()  # TODO: Check that the flatten() is required
 
-            if self._step >= self._jacobian_reset_interval:
-                print("\nResetting Jacobian for Motion\n")
-                self._reset_jacobian()
+        if self.res_old is not None:
+            if any(np.abs(f) - np.abs(self.res_old) > 0.0):
+                self._step += 1
 
-            disp = self._limit_disp(dx[:] * self.parent.relax)
+        if self._step >= self._jacobian_reset_interval:
+            print("\nResetting Jacobian for Motion\n")
+            self._reset_jacobian()
 
-            self.disp_old = disp
-            self.res_old = f[:]
-            self._step += 1
+        disp = self._limit_disp(dx[:] * self.parent.relax)
+
+        self.disp_old = disp
+        self.res_old = f[:]
+        self._step += 1
         return disp
