@@ -35,9 +35,6 @@ class RigidBody:
         weight: If provided, the weight to use for the rigid body (scaled by `config.body.seal_load_pct`).
         load_pct: If `weight` is not provided, this value is multiplied by the global `config.body.weight`,
             which is then also scaled by `config.body.seal_load_pct`.
-        mass: An optional override for the mass. Otherwise, mass = weight / gravity.
-        rotational_inertia: An optional override for the rotational moment of inertia. Otherwise, will be
-            approximated from the mass and body reference length.
         x_cg: The x-coordinate of the center of gravity.
         y_cg: The y-coordinate of the center of gravity.
         x_cr: The x-coordinate of the center of rotation. Defaults to the CG.
@@ -46,18 +43,10 @@ class RigidBody:
         initial_trim: The initial trim of the body.
         relax_draft: The relaxation parameter to use for draft.
         relax_trim: The relaxation parameter to use for trim.
-        time_step: The time step to use when quasi-time-domain method is used.
-        num_damp: Numerical damping coefficient when quasi-time-domain method is used.
         max_draft_step: The maximum allowable change in draft during an iteration.
         max_trim_step: The maximum allowable change in trim during an iteration.
         free_in_draft: True if body is free to move in draft.
         free_in_trim: True if body is free to move in trim.
-        draft_damping: Damping coefficient to use for draft.
-        trim_damping: Damping coefficient to use for trim.
-        max_draft_acc: The maximum draft acceleration when quasi-time-domain method is used.
-        max_trim_acc: The maximum trim acceleration when quasi-time-domain method is used.
-        beta: The beta parameter when using Newmark-Beta method.
-        gamma: The gamma parameter when using Newmark-Beta method.
         parent: An optional reference to the parent structural solver.
 
     """
@@ -67,8 +56,6 @@ class RigidBody:
         name: str = "default",
         weight: float | None = None,
         load_pct: float = 1.0,
-        mass: float | None = None,
-        rotational_inertia: float | None = None,
         x_cg: float | None = None,
         y_cg: float | None = None,
         x_cr: float | None = None,
@@ -77,18 +64,10 @@ class RigidBody:
         initial_trim: float | None = None,
         relax_draft: float | None = None,
         relax_trim: float | None = None,
-        time_step: float | None = None,
-        num_damp: float | None = None,
         max_draft_step: float | None = None,
         max_trim_step: float | None = None,
         free_in_draft: bool | None = None,
         free_in_trim: bool | None = None,
-        draft_damping: float | None = None,
-        trim_damping: float | None = None,
-        max_draft_acc: float | None = None,
-        max_trim_acc: float | None = None,
-        beta: float = 0.25,
-        gamma: float = 0.5,
         parent: StructuralSolver | None = None,
         **_: Any,
     ):
@@ -106,13 +85,6 @@ class RigidBody:
 
         self.weight *= self.config.body.seal_load_pct
 
-        self.m = mass if mass is not None else self.weight / self.config.flow.gravity
-        self.Iz = (
-            rotational_inertia
-            if rotational_inertia is not None
-            else self.m * self.config.body.reference_length**2 / 12
-        )
-
         # TODO: The override logic should probably happen in the input file parsing, and not here
         self.x_cg = x_cg or self.config.body.xCofG
         self.y_cg = y_cg or self.config.body.yCofG
@@ -129,29 +101,12 @@ class RigidBody:
         free_in_trim = free_in_trim or self.config.body.free_in_trim
         max_draft_step = max_draft_step or self.config.body.max_draft_step
         max_trim_step = max_trim_step or self.config.body.max_trim_step
-        draft_damping = draft_damping or self.config.body.draft_damping
-        trim_damping = trim_damping or self.config.body.trim_damping
-        max_draft_acc = max_draft_acc or self.config.body.max_draft_acc
-        max_trim_acc = max_trim_acc or self.config.body.max_trim_acc
         relax_draft = relax_draft or self.config.body.relax_draft
         relax_trim = relax_trim or self.config.body.relax_trim
 
-        self.time_step = time_step or self.config.body.time_step
         self.free_dof = np.array([free_in_draft, free_in_trim])
         self.max_disp = np.array([max_draft_step, max_trim_step])
-        self.c_damp = np.array([draft_damping, trim_damping])
-        self.max_acc = np.array([max_draft_acc, max_trim_acc])
         self.relax = np.array([relax_draft, relax_trim])
-
-        self.v = np.zeros((NUM_DIM,))
-        self.a = np.zeros((NUM_DIM,))
-        self.v_old = np.zeros((NUM_DIM,))
-        self.a_old = np.zeros((NUM_DIM,))
-
-        # Parameters for Newmark-Beta method
-        self.beta = beta
-        self.gamma = gamma
-        self.num_damp = num_damp or self.config.solver.num_damp
 
         self.D = 0.0
         self.L = 0.0
@@ -163,10 +118,7 @@ class RigidBody:
         self.solver: solver.RootFinder | None = None
         self.disp_old: np.ndarray | None = None
         self.res_old: np.ndarray | None = None
-        self.two_ago_disp: np.ndarray | None = None
-        self.predictor = True
-        self.f_old: np.ndarray | None = None
-        self.two_ago_f: np.ndarray | None = None
+
         self.res_l = 1.0
         self.res_m = 1.0
 
