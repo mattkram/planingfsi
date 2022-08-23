@@ -42,7 +42,6 @@ class PotentialPlaningSolver:
         shear_stress: An array of shear stress at all solution points.
         x_coord_fs: An array of x-coordinates along the free surface.
         z_coord_fs: An array of z-coordinates along the free surface.
-        solver: A reference to the wetted-length root finder.
         fluid_it: The fluid solver iteration counter.
         min_len: An array of minimum wetted length for each `PlaningPlate`.
         max_len: An array of maximum wetted length for each `PlaningPlate`.
@@ -64,7 +63,7 @@ class PotentialPlaningSolver:
         self.x_coord_fs = np.array([])
         self.z_coord_fs = np.array([])
 
-        self.solver: solver.RootFinder | None = None
+        self._solver: solver.RootFinder | None = None
         self.fluid_it = 0
 
         self.min_len = np.array([])
@@ -245,11 +244,11 @@ class PotentialPlaningSolver:
         for p in self.planing_surfaces:
             p.initialize_end_pts()
 
-        if self.solver is None:
+        if self._solver is None:
             self.init_len = np.array([p.initial_length for p in self.planing_surfaces])
             self.min_len = np.array([p.minimum_length for p in self.planing_surfaces])
             self.max_len = np.array([p.maximum_length for p in self.planing_surfaces])
-            self.solver = solver.RootFinder(
+            self._solver = solver.RootFinder(
                 self._calculate_residual,
                 self.init_len,
                 self.config.solver.wetted_length_solver,
@@ -262,7 +261,7 @@ class PotentialPlaningSolver:
                 relax=self.config.solver.wetted_length_relax,
             )
         else:
-            self.solver.max_it = self.config.solver.wetted_length_max_it
+            self._solver.max_it = self.config.solver.wetted_length_max_it
             for i, p in enumerate(self.planing_surfaces):
                 length = p.length
                 if np.isnan(length) or length - self.min_len[i] < 1e-6:
@@ -270,11 +269,11 @@ class PotentialPlaningSolver:
                 else:
                     self.init_len[i] = length
 
-        self.solver.reinitialize(self.init_len)
-        self.solver.dx_max_decrease = self.config.solver.wetted_length_max_step_pct_dec * (
+        self._solver.reinitialize(self.init_len)
+        self._solver.dx_max_decrease = self.config.solver.wetted_length_max_step_pct_dec * (
             self.init_len - self.min_len
         )
-        self.solver.dx_max_increase = self.config.solver.wetted_length_max_step_pct_inc * (
+        self._solver.dx_max_increase = self.config.solver.wetted_length_max_step_pct_inc * (
             self.init_len - self.min_len
         )
 
@@ -296,12 +295,12 @@ class PotentialPlaningSolver:
 
         # Initialize planing surface lengths and then solve until residual is *zero*
         self._initialize_solver()
-        assert self.solver is not None
+        assert self._solver is not None
 
         if (self.init_len > 0.0).any():
             logger.info("  Solving for wetted length:")
             self.fluid_it = 0
-            self.solver.solve()
+            self._solver.solve()
 
         # Post-process results from current solution
         self.calculate_free_surface_profile()
