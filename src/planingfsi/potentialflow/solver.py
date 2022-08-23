@@ -1,7 +1,6 @@
 """Fundamental module for constructing and solving planing potential flow problems."""
 from __future__ import annotations
 
-import weakref
 from typing import TYPE_CHECKING
 from typing import Any
 
@@ -32,7 +31,7 @@ class PotentialPlaningSolver:
     """
 
     def __init__(self, simulation: Simulation):
-        self._simulation = weakref.ref(simulation)
+        self.simulation = simulation
 
         self.planing_surfaces: list[PlaningSurface] = []
         self.pressure_cushions: list[PressureCushion] = []
@@ -56,14 +55,6 @@ class PotentialPlaningSolver:
     def config(self) -> Config:
         """A reference to the simulation configuration."""
         return self.simulation.config
-
-    @property
-    def simulation(self) -> Simulation:
-        """A reference to the simulation object by resolving the weak reference."""
-        simulation = self._simulation()
-        if simulation is None:
-            raise ReferenceError("Simulation object cannot be accessed.")
-        return simulation
 
     @property
     def drag_wave(self) -> float:
