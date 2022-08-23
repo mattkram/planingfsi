@@ -276,14 +276,14 @@ class PotentialPlaningSolver:
             self._solver.solve()
 
         # Post-process results from current solution
-        self.calculate_free_surface_profile()
-        self.calculate_pressure_and_shear_profile()
+        self._calculate_free_surface_profile()
+        self._calculate_pressure_and_shear_profile()
 
         # Plot the pressure profile if specified
         if self.config.plotting.show_pressure:
             figure.plot_pressure(self)
 
-    def calculate_pressure_and_shear_profile(self) -> None:
+    def _calculate_pressure_and_shear_profile(self) -> None:
         """Calculate pressure and shear stress profiles over plate surface."""
         # Calculate forces on each patch
         for p in self.pressure_patches:
@@ -305,7 +305,7 @@ class PotentialPlaningSolver:
                 self.pressure[ind] += el.pressure
                 self.shear_stress[ind] += el.shear_stress
 
-    def calculate_free_surface_profile(self) -> None:
+    def _calculate_free_surface_profile(self) -> None:
         """Calculate free surface profile."""
         x_fs: list[float] = []
         for surf in self.planing_surfaces:
