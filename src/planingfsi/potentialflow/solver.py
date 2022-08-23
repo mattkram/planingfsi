@@ -32,10 +32,6 @@ class PotentialPlaningSolver:
         simulation: A reference to the parent Simulation object.
         planing_surfaces: A list of all `PlaningSurface` instances in the domain.
         pressure_cushions: A list of all `PressureCushion` instances in the domain.
-        pressure_patches: A list of all `PressurePatch` instances in the domain.
-            This is the sum of the planing surfaces and pressure cushions.
-        pressure_elements: A list of all `PressureElement` instances contained by
-            all `PressurePatch` instances.
         x_coord: An array of x-coordinates of all solution points.
         pressure: An array of pressure at all solution points.
         shear_stress: An array of shear stress at all solution points.
@@ -49,8 +45,6 @@ class PotentialPlaningSolver:
 
         self.planing_surfaces: list[PlaningSurface] = []
         self.pressure_cushions: list[PressureCushion] = []
-        self.pressure_patches: list[PressurePatch] = []
-        self.pressure_elements: list[PressureElement] = []
 
         self.x_coord = np.array([])
         self.pressure = np.array([])
@@ -98,15 +92,15 @@ class PotentialPlaningSolver:
             return sum(getattr(p, item) for p in self.pressure_patches)
         raise AttributeError
 
-    def _add_pressure_patch(self, instance: PressurePatch) -> None:
-        """Add pressure patch to the calculation.
+    @property
+    def pressure_patches(self) -> list[PressurePatch]:
+        """A list of all `PressurePatch` instances in the domain."""
+        return self.planing_surfaces + self.pressure_cushions
 
-        Args:
-            instance: The pressure patch object to add.
-
-        """
-        self.pressure_patches.append(instance)
-        self.pressure_elements.extend([el for el in instance.pressure_elements])
+    @property
+    def pressure_elements(self) -> list[PressureElement]:
+        """A list of all `PressureElement` instances contained by all `PressurePatch` instances."""
+        return [el for patch in self.pressure_patches for el in patch.pressure_elements]
 
     def add_planing_surface(
         self, dict_or_instance: dict[str, Any] | PlaningSurface | None, /
