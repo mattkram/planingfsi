@@ -297,9 +297,6 @@ class Simulation:
                 self._update_ramp()
                 self.update_solid_response()
                 self.update_fluid_response()
-                self.structural_solver.store_residual()
-            else:
-                self.structural_solver.residual = 0.0
 
             # Write, print, and plot results
             self._create_dirs()

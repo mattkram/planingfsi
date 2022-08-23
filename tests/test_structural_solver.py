@@ -2,7 +2,6 @@ from __future__ import annotations
 
 from typing import Any
 
-import numpy
 import pytest
 
 import planingfsi.fe.substructure as ss
@@ -74,22 +73,3 @@ def solver_with_body(solver: StructuralSolver) -> tuple[StructuralSolver, RigidB
     body.free_in_trim = True
 
     return solver, body
-
-
-@pytest.mark.parametrize("lift, expected", [(1.0, 1.0), (numpy.nan, 1.0), (2.0, 0.0)])
-def test_solver_lift_residual(
-    solver_with_body: tuple[StructuralSolver, RigidBody], lift: float, expected: float
-) -> None:
-    solver, body = solver_with_body
-    body.loads.L = lift
-    assert solver.lift_residual == pytest.approx(expected)
-
-
-@pytest.mark.parametrize("moment, expected", [(1.0, 1.0), (numpy.nan, 1.0)])
-def test_solver_moment_residual(
-    solver_with_body: tuple[StructuralSolver, RigidBody], moment: float, expected: float
-) -> None:
-    # TODO: Need to cover change in CoG, CoR
-    solver, body = solver_with_body
-    body.M = moment
-    assert solver.moment_residual == pytest.approx(expected)

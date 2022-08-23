@@ -98,6 +98,20 @@ class Substructure(abc.ABC):
     is_free = False
     _element_type: ElementType
 
+    def __new__(cls, *, type: str | None = None, **kwargs):
+        """This is a factory pattern. If the type is provided, that class will be used
+        to create the new object. If not provided, whichever class is instantiated will be used.
+        """
+        if type is None:
+            ss_class = cls
+        elif type.lower() == "flexible" or type.lower() == "truss":
+            ss_class = FlexibleMembraneSubstructure
+        elif type.lower() == "torsionalspring":
+            ss_class = TorsionalSpringSubstructure
+        else:
+            ss_class = RigidSubstructure
+        return super().__new__(ss_class)
+
     def __init__(
         self,
         *,

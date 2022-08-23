@@ -12,10 +12,7 @@ from planingfsi.config import Config
 from planingfsi.fe.felib import Node
 from planingfsi.fe.femesh import Mesh
 from planingfsi.fe.rigid_body import RigidBody
-from planingfsi.fe.substructure import FlexibleMembraneSubstructure
-from planingfsi.fe.substructure import RigidSubstructure
 from planingfsi.fe.substructure import Substructure
-from planingfsi.fe.substructure import TorsionalSpringSubstructure
 
 if TYPE_CHECKING:
     from planingfsi.simulation import Simulation
@@ -27,7 +24,6 @@ class StructuralSolver:
     Attributes:
         simulation: A reference to the parent `Simulation` object.
         rigid_bodies: A list of all `RigidBody` instances in the simulation.
-        residual: The current residual of the structural solver.
         nodes: A list of all nodes in the mesh.
         node_dofs: A mapping of node to the indices for that node in the global matrices.
 
@@ -36,7 +32,6 @@ class StructuralSolver:
     def __init__(self, simulation: Simulation):
         self.simulation = simulation
         self.rigid_bodies: list[RigidBody] = []
-        self.residual = 1.0  # TODO: Can this be a property instead?
         self.nodes: list[Node] = []
         self.node_dofs: dict[Node, list[int]] = {}
 
@@ -58,14 +53,9 @@ class StructuralSolver:
         return False
 
     @property
-    def lift_residual(self) -> float:
-        """The maximum lift force residual."""
-        return max(body.get_res_lift() for body in self.rigid_bodies)
-
-    @property
-    def moment_residual(self) -> float:
-        """The maximum trim moment residual."""
-        return max(body.get_res_moment() for body in self.rigid_bodies)
+    def residual(self) -> float:
+        """The current maximum residual amongst all rigid bodies in the simulation."""
+        return max((bd.residual for bd in self.rigid_bodies), default=0.0)
 
     @property
     def substructures(self) -> list[Substructure]:
@@ -104,17 +94,7 @@ class StructuralSolver:
             dict_ = {}
         else:
             dict_ = dict_or_instance or {}
-
-            # TODO: This logic is better handled by the factory pattern
-            ss_type = dict_.get("substructureType", "rigid")
-            ss_class: type[Substructure]
-            if ss_type.lower() == "flexible" or ss_type.lower() == "truss":
-                ss_class = FlexibleMembraneSubstructure
-            elif ss_type.lower() == "torsionalspring":
-                ss_class = TorsionalSpringSubstructure
-            else:
-                ss_class = RigidSubstructure
-            ss = ss_class(**dict_)
+            ss = Substructure(type=dict_.get("substructureType", "rigid"), **dict_)
         ss.solver = self
         self.substructures.append(ss)
 
@@ -154,10 +134,6 @@ class StructuralSolver:
             for bd in self.rigid_bodies:
                 bd.update_position()
                 bd.update_substructure_positions()
-
-    def store_residual(self) -> None:
-        """Calculate the residual."""
-        self.residual = max((bd.residual for bd in self.rigid_bodies), default=0.0)
 
     def _load_response(self) -> None:
         """Load the response from files."""
