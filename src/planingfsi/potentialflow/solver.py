@@ -204,13 +204,9 @@ class PotentialPlaningSolver:
 
         residual = np.array([p.residual for p in self.planing_surfaces])
 
-        def array_to_string(array: np.ndarray) -> str:
-            """Convert an array to a string."""
-            return ", ".join(["{0:11.4e}".format(a) for a in array]).join("[]")
-
         logger.info(f"    Wetted length iteration: {self._wetted_length_it}")
-        logger.info(f"      Lw:       {array_to_string(wetted_length)}")
-        logger.info(f"      Residual: {array_to_string(residual)}\n")
+        logger.info(f"      Lw:       {_array_to_string(wetted_length)}")
+        logger.info(f"      Residual: {_array_to_string(residual)}\n")
 
         self._wetted_length_it += 1
 
@@ -446,6 +442,11 @@ class PotentialPlaningSolver:
             )
         except IOError:
             self.z_coord_fs = np.zeros_like(self.x_coord_fs)
+
+
+def _array_to_string(array: np.ndarray) -> str:
+    """Convert an array to a string."""
+    return f'[{", ".join("{0:11.4e}".format(a) for a in array)}]'
 
 
 def _grow_points(x0: float, x1: float, x_max: float, rate: float = 1.1) -> np.ndarray:
