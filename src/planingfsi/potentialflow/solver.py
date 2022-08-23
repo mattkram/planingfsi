@@ -14,10 +14,12 @@ from planingfsi import math_helpers
 from planingfsi import solver
 from planingfsi import writers
 from planingfsi.config import Config
-from planingfsi.potentialflow import pressurepatch
 from planingfsi.potentialflow.pressureelement import PressureElement
+from planingfsi.potentialflow.pressurepatch import PlaningSurface
+from planingfsi.potentialflow.pressurepatch import PressureCushion
 
 if TYPE_CHECKING:
+    from planingfsi.potentialflow.pressurepatch import PressurePatch
     from planingfsi.simulation import Simulation
 
 
@@ -32,9 +34,9 @@ class PotentialPlaningSolver:
     def __init__(self, simulation: Simulation):
         self._simulation = weakref.ref(simulation)
 
-        self.planing_surfaces: list["pressurepatch.PlaningSurface"] = []
-        self.pressure_cushions: list["pressurepatch.PressureCushion"] = []
-        self.pressure_patches: list["pressurepatch.PressurePatch"] = []
+        self.planing_surfaces: list[PlaningSurface] = []
+        self.pressure_cushions: list[PressureCushion] = []
+        self.pressure_patches: list[PressurePatch] = []
         self.pressure_elements: list[PressureElement] = []
 
         self.x_coord = np.array([])
@@ -97,7 +99,7 @@ class PotentialPlaningSolver:
             return sum([getattr(p, item) for p in self.pressure_patches])
         raise AttributeError
 
-    def _add_pressure_patch(self, instance: "pressurepatch.PressurePatch") -> None:
+    def _add_pressure_patch(self, instance: PressurePatch) -> None:
         """Add pressure patch to the calculation.
 
         Args:
@@ -108,8 +110,8 @@ class PotentialPlaningSolver:
         self.pressure_elements.extend([el for el in instance.pressure_elements])
 
     def add_planing_surface(
-        self, dict_or_instance: dict[str, Any] | pressurepatch.PlaningSurface | None, /
-    ) -> "pressurepatch.PlaningSurface":
+        self, dict_or_instance: dict[str, Any] | PlaningSurface | None, /
+    ) -> PlaningSurface:
         """Add planing surface to the calculation from a dictionary file name.
 
         Args:
@@ -119,12 +121,12 @@ class PotentialPlaningSolver:
             Instance created from dictionary.
 
         """
-        if isinstance(dict_or_instance, pressurepatch.PlaningSurface):
+        if isinstance(dict_or_instance, PlaningSurface):
             instance = dict_or_instance
         elif dict_or_instance is not None:
-            instance = pressurepatch.PlaningSurface(**dict_or_instance)
+            instance = PlaningSurface(**dict_or_instance)
         else:
-            instance = pressurepatch.PlaningSurface()
+            instance = PlaningSurface()
         instance.parent = self
         self.planing_surfaces.append(instance)
         self._add_pressure_patch(instance)
@@ -132,8 +134,8 @@ class PotentialPlaningSolver:
 
     def add_pressure_cushion(
         self,
-        dict_or_instance: dict[str, Any] | pressurepatch.PressureCushion | None,
-    ) -> "pressurepatch.PressureCushion":
+        dict_or_instance: dict[str, Any] | PressureCushion | None,
+    ) -> PressureCushion:
         """Add pressure cushion to the calculation from a dictionary file name.
 
         Args:
@@ -143,12 +145,12 @@ class PotentialPlaningSolver:
             Instance created from dictionary.
 
         """
-        if isinstance(dict_or_instance, pressurepatch.PressureCushion):
+        if isinstance(dict_or_instance, PressureCushion):
             instance = dict_or_instance
         elif dict_or_instance is not None:
-            instance = pressurepatch.PressureCushion(**dict_or_instance)
+            instance = PressureCushion(**dict_or_instance)
         else:
-            instance = pressurepatch.PressureCushion()
+            instance = PressureCushion()
         instance.parent = self
         self.pressure_cushions.append(instance)
         self._add_pressure_patch(instance)

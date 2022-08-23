@@ -17,10 +17,10 @@ from planingfsi import writers
 from planingfsi.config import Config
 from planingfsi.dictionary import load_dict_from_file
 from planingfsi.potentialflow import pressureelement as pe
-from planingfsi.potentialflow import solver
 
 if TYPE_CHECKING:
     from planingfsi.fe.substructure import Interpolator
+    from planingfsi.potentialflow.solver import PotentialPlaningSolver
 
 
 class PressurePatch(abc.ABC):
@@ -37,7 +37,7 @@ class PressurePatch(abc.ABC):
 
     name: str
 
-    def __init__(self, *, parent: "solver.PotentialPlaningSolver" | None) -> None:
+    def __init__(self, *, parent: PotentialPlaningSolver | None) -> None:
         self.parent = parent
         self.pressure_elements: list[pe.PressureElement] = []
         self._end_pts = np.zeros(2)
@@ -236,7 +236,7 @@ class PressureCushion(PressurePatch):
         downstream_planing_surface: PlaningSurface | str | None = None,
         upstream_loc: float | None = None,
         downstream_loc: float | None = None,
-        parent: solver.PotentialPlaningSolver | None = None,
+        parent: PotentialPlaningSolver | None = None,
         **_: Any,
     ) -> None:
         super().__init__(parent=parent)
@@ -428,7 +428,7 @@ class PlaningSurface(PressurePatch):
         upstream_pressure: float = 0.0,
         is_sprung: bool = False,
         spring_constant: float = 1e4,
-        parent: "solver.PotentialPlaningSolver" | None = None,
+        parent: PotentialPlaningSolver | None = None,
         **_: Any,
     ) -> None:
         super().__init__(parent=parent)
