@@ -9,7 +9,6 @@ from scipy.optimize import fmin
 
 from planingfsi import figure
 from planingfsi import logger
-from planingfsi import math_helpers
 from planingfsi import solver
 from planingfsi import writers
 from planingfsi.config import Config
@@ -84,11 +83,6 @@ class PotentialPlaningSolver:
             * self.config.flow.gravity
             * (f(x_crest) - f(x_trough)) ** 2
         )
-
-    @property
-    def x_bar(self) -> float:
-        """The center of lift."""
-        return math_helpers.integrate(self.x_coord, self.pressure * self.x_coord) / self.lift_total
 
     def __getattr__(self, item: str) -> Any:
         """Calculate total forces as sum of forces on each patch."""
