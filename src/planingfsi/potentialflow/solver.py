@@ -314,6 +314,7 @@ class PotentialPlaningSolver:
                 x_fs.extend(surf.get_element_coords())
 
         # Grow points upstream and downstream from first and last plate
+        # TODO: The additions below were only added as temporary fixes to keep tests passing
         x_fs_u = np.unique(x_fs)
         x_fs.extend(
             _grow_points(
@@ -322,6 +323,7 @@ class PotentialPlaningSolver:
                 self.config.plotting.x_fs_max,
                 self.config.plotting.growth_rate,
             )
+            + x_fs_u[-1]
         )
         x_fs.extend(
             _grow_points(
@@ -330,6 +332,7 @@ class PotentialPlaningSolver:
                 self.config.plotting.x_fs_min,
                 self.config.plotting.growth_rate,
             )
+            + x_fs_u[0]
         )
 
         # Add points from each pressure cushion
@@ -347,8 +350,12 @@ class PotentialPlaningSolver:
             x_mid = 0.5 * (pts_down[-1] + pts_up[0])
             x_fs.extend(
                 _grow_points(pts_down[-2], pts_down[-1], x_mid, self.config.plotting.growth_rate)
+                + pts_down[-1]
             )
-            x_fs.extend(_grow_points(pts_up[1], pts_up[0], x_mid, self.config.plotting.growth_rate))
+            x_fs.extend(
+                _grow_points(pts_up[1], pts_up[0], x_mid, self.config.plotting.growth_rate)
+                + pts_up[0]
+            )
 
         # Sort x locations and calculate surface heights
         self.x_coord_fs = np.unique(x_fs)
@@ -449,19 +456,20 @@ def _array_to_string(array: np.ndarray) -> str:
     return f'[{", ".join("{0:11.4e}".format(a) for a in array)}]'
 
 
-def _grow_points(x0: float, x1: float, x_max: float, rate: float = 1.1) -> np.ndarray:
+def _grow_points(x0: float, x1: float, distance: float, rate: float = 1.1) -> np.ndarray:
     """Grow points exponentially from two starting points assuming a growth rate.
 
     Args:
         x0: The first point.
         x1: The second point.
-        x_max: The maximum distance.
+        distance: The maximum distance.
         rate: The growth rate of spacing between subsequent points.
 
     """
     # TODO: Check this function, is first point included?
     dx = x1 - x0
     x = [x1]
+    x_max = np.sign(dx) * abs(distance)
 
     if dx > 0:
 
@@ -475,12 +483,10 @@ def _grow_points(x0: float, x1: float, x_max: float, rate: float = 1.1) -> np.nd
 
     else:
 
-        def done(xt: float) -> bool:
-            _ = xt
+        def done(_: float) -> bool:
             return True
 
     while not done(x[-1]):
         x.append(x[-1] + dx)
         dx *= rate
-
-    return np.array(x[1:])
+    return np.array(x) - x1
