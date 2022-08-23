@@ -537,6 +537,14 @@ class PlaningSurface(PressurePatch):
         self._end_pts[:] = [x0, x0 + length]
         self._reset_element_coords()
 
+    @property
+    def residual(self) -> float:
+        """The residual to drive first element pressure to zero."""
+        if self.length > 0.0:
+            return self.pressure_elements[0].pressure / self.config.flow.stagnation_pressure
+        else:
+            return 0.0
+
     def initialize_end_pts(self) -> None:
         """Initialize end points to be at separation point and wetted length root."""
         assert self.interpolator is not None
@@ -558,13 +566,6 @@ class PlaningSurface(PressurePatch):
     def get_element_coords(self) -> np.ndarray:
         """Get position of pressure elements."""
         return self.base_pt + self.relative_position * self.length
-
-    def get_residual(self) -> float:
-        """Get residual to drive first element pressure to zero."""
-        if self.length > 0.0:
-            return self.pressure_elements[0].pressure / self.config.flow.stagnation_pressure
-        else:
-            return 0.0
 
     def calculate_forces(self) -> None:
         """Calculate the forces by integrating pressure and shear stress."""

@@ -202,7 +202,7 @@ class PotentialPlaningSolver:
         # Solve for unknown pressures and output residual
         self._calculate_pressure()
 
-        residual = np.array([p.get_residual() for p in self.planing_surfaces])
+        residual = np.array([p.residual for p in self.planing_surfaces])
 
         def array_to_string(array: np.ndarray) -> str:
             """Convert an array to a string."""
