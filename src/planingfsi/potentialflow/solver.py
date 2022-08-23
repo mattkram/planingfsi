@@ -42,7 +42,6 @@ class PotentialPlaningSolver:
         shear_stress: An array of shear stress at all solution points.
         x_coord_fs: An array of x-coordinates along the free surface.
         z_coord_fs: An array of z-coordinates along the free surface.
-        fluid_it: The fluid solver iteration counter.
         min_len: An array of minimum wetted length for each `PlaningPlate`.
         max_len: An array of maximum wetted length for each `PlaningPlate`.
         init_len: An array containing the initial guess wetted length for each `PlaningPlate`.
@@ -64,7 +63,7 @@ class PotentialPlaningSolver:
         self.z_coord_fs = np.array([])
 
         self._solver: solver.RootFinder | None = None
-        self.fluid_it = 0
+        self._wetted_length_it = 0
 
         self.min_len = np.array([])
         self.max_len = np.array([])
@@ -231,11 +230,11 @@ class PotentialPlaningSolver:
             """Convert an array to a string."""
             return ", ".join(["{0:11.4e}".format(a) for a in array]).join("[]")
 
-        logger.info(f"    Wetted length iteration: {self.fluid_it}")
+        logger.info(f"    Wetted length iteration: {self._wetted_length_it}")
         logger.info(f"      Lw:       {array_to_string(wetted_length)}")
         logger.info(f"      Residual: {array_to_string(residual)}\n")
 
-        self.fluid_it += 1
+        self._wetted_length_it += 1
 
         return residual
 
@@ -299,7 +298,7 @@ class PotentialPlaningSolver:
 
         if (self.init_len > 0.0).any():
             logger.info("  Solving for wetted length:")
-            self.fluid_it = 0
+            self._wetted_length_it = 0
             self._solver.solve()
 
         # Post-process results from current solution
