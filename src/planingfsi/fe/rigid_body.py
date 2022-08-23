@@ -216,7 +216,7 @@ class RigidBody:
 
         self.print_motion()
 
-    def update_flexible_substructure_positions(self) -> None:
+    def _update_flexible_substructure_positions(self) -> None:
         """Update the nodal positions of all component flexible substructures."""
         flexible_substructures = [
             ss for ss in self.substructures if isinstance(ss, FlexibleMembraneSubstructure)
@@ -262,7 +262,7 @@ class RigidBody:
 
     def update_substructure_positions(self) -> None:
         """Update the positions of all substructures."""
-        self.update_flexible_substructure_positions()
+        self._update_flexible_substructure_positions()
         for ss in self.substructures:
             logger.info(f"Updating position for substructure: {ss.name}")
             if isinstance(ss, TorsionalSpringSubstructure):
