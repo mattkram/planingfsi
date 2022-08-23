@@ -143,7 +143,7 @@ class PotentialPlaningSolver:
         self.pressure_cushions.append(instance)
         return instance
 
-    def calculate_pressure(self) -> None:
+    def _calculate_pressure(self) -> None:
         """Calculate pressure of each element to satisfy body boundary conditions."""
         # TODO: This calculation may be sped up by using vectorized functions
         # Form lists of unknown and source elements
@@ -200,7 +200,7 @@ class PotentialPlaningSolver:
             pressure_cushion.update_end_pts()
 
         # Solve for unknown pressures and output residual
-        self.calculate_pressure()
+        self._calculate_pressure()
 
         residual = np.array([p.get_residual() for p in self.planing_surfaces])
 
