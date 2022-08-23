@@ -28,6 +28,26 @@ class PotentialPlaningSolver:
     Pointers to the planing surfaces and pressure elements are stored for
     reference during initialization and problem setup. The potential planing
     calculation is then solved during iteration with the structural solver.
+
+    Attributes:
+        simulation: A reference to the parent Simulation object.
+        planing_surfaces: A list of all `PlaningSurface` instances in the domain.
+        pressure_cushions: A list of all `PressureCushion` instances in the domain.
+        pressure_patches: A list of all `PressurePatch` instances in the domain.
+            This is the sum of the planing surfaces and pressure cushions.
+        pressure_elements: A list of all `PressureElement` instances contained by
+            all `PressurePatch` instances.
+        x_coord: An array of x-coordinates of all solution points.
+        pressure: An array of pressure at all solution points.
+        shear_stress: An array of shear stress at all solution points.
+        x_coord_fs: An array of x-coordinates along the free surface.
+        z_coord_fs: An array of z-coordinates along the free surface.
+        solver: A reference to the wetted-length root finder.
+        fluid_it: The fluid solver iteration counter.
+        min_len: An array of minimum wetted length for each `PlaningPlate`.
+        max_len: An array of maximum wetted length for each `PlaningPlate`.
+        init_len: An array containing the initial guess wetted length for each `PlaningPlate`.
+
     """
 
     def __init__(self, simulation: Simulation):
