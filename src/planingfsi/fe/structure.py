@@ -27,7 +27,6 @@ class StructuralSolver:
     Attributes:
         simulation: A reference to the parent `Simulation` object.
         rigid_bodies: A list of all `RigidBody` instances in the simulation.
-        residual: The current residual of the structural solver.
         nodes: A list of all nodes in the mesh.
         node_dofs: A mapping of node to the indices for that node in the global matrices.
 
@@ -36,7 +35,6 @@ class StructuralSolver:
     def __init__(self, simulation: Simulation):
         self.simulation = simulation
         self.rigid_bodies: list[RigidBody] = []
-        self.residual = 1.0  # TODO: Can this be a property instead?
         self.nodes: list[Node] = []
         self.node_dofs: dict[Node, list[int]] = {}
 
@@ -56,6 +54,11 @@ class StructuralSolver:
                 if ss.is_free:
                     return True
         return False
+
+    @property
+    def residual(self) -> float:
+        """The current maximum residual amongst all rigid bodies in the simulation."""
+        return max((bd.residual for bd in self.rigid_bodies), default=0.0)
 
     @property
     def lift_residual(self) -> float:
@@ -154,10 +157,6 @@ class StructuralSolver:
             for bd in self.rigid_bodies:
                 bd.update_position()
                 bd.update_substructure_positions()
-
-    def store_residual(self) -> None:
-        """Calculate the residual."""
-        self.residual = max((bd.residual for bd in self.rigid_bodies), default=0.0)
 
     def _load_response(self) -> None:
         """Load the response from files."""
