@@ -61,16 +61,6 @@ class StructuralSolver:
         return max((bd.residual for bd in self.rigid_bodies), default=0.0)
 
     @property
-    def lift_residual(self) -> float:
-        """The maximum lift force residual."""
-        return max(body.get_res_lift() for body in self.rigid_bodies)
-
-    @property
-    def moment_residual(self) -> float:
-        """The maximum trim moment residual."""
-        return max(body.get_res_moment() for body in self.rigid_bodies)
-
-    @property
     def substructures(self) -> list[Substructure]:
         """A combined list of all substructures from all rigid bodies."""
         return [ss for body in self.rigid_bodies for ss in body.substructures]
