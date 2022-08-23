@@ -116,13 +116,10 @@ class PotentialPlaningSolver:
         """
         if isinstance(dict_or_instance, PlaningSurface):
             instance = dict_or_instance
-        elif dict_or_instance is not None:
-            instance = PlaningSurface(**dict_or_instance)
         else:
-            instance = PlaningSurface()
+            instance = PlaningSurface(**(dict_or_instance or {}))
         instance.parent = self
         self.planing_surfaces.append(instance)
-        self._add_pressure_patch(instance)
         return instance
 
     def add_pressure_cushion(
@@ -140,13 +137,10 @@ class PotentialPlaningSolver:
         """
         if isinstance(dict_or_instance, PressureCushion):
             instance = dict_or_instance
-        elif dict_or_instance is not None:
-            instance = PressureCushion(**dict_or_instance)
         else:
-            instance = PressureCushion()
+            instance = PressureCushion(**(dict_or_instance or {}))
         instance.parent = self
         self.pressure_cushions.append(instance)
-        self._add_pressure_patch(instance)
         return instance
 
     def calculate_pressure(self) -> None:
