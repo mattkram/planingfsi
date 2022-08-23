@@ -352,7 +352,7 @@ class PotentialPlaningSolver:
 
         # Sort x locations and calculate surface heights
         self.x_coord_fs = np.unique(x_fs)
-        self.z_coord_fs = np.array(list(map(self.get_free_surface_height, self.x_coord_fs)))
+        self.z_coord_fs = np.array([self.get_free_surface_height(x) for x in self.x_coord_fs])
 
     def get_free_surface_height(self, x: float) -> float:
         """Return free surface height at a given x-position considering the
