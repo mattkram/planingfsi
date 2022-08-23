@@ -42,9 +42,6 @@ class PotentialPlaningSolver:
         shear_stress: An array of shear stress at all solution points.
         x_coord_fs: An array of x-coordinates along the free surface.
         z_coord_fs: An array of z-coordinates along the free surface.
-        min_len: An array of minimum wetted length for each `PlaningPlate`.
-        max_len: An array of maximum wetted length for each `PlaningPlate`.
-        init_len: An array containing the initial guess wetted length for each `PlaningPlate`.
 
     """
 
@@ -65,9 +62,9 @@ class PotentialPlaningSolver:
         self._solver: solver.RootFinder | None = None
         self._wetted_length_it = 0
 
-        self.min_len = np.array([])
-        self.max_len = np.array([])
-        self.init_len = np.array([])
+        self._min_len = np.array([])
+        self._max_len = np.array([])
+        self._init_len = np.array([])
 
     @property
     def config(self) -> Config:
@@ -244,15 +241,15 @@ class PotentialPlaningSolver:
             p.initialize_end_pts()
 
         if self._solver is None:
-            self.init_len = np.array([p.initial_length for p in self.planing_surfaces])
-            self.min_len = np.array([p.minimum_length for p in self.planing_surfaces])
-            self.max_len = np.array([p.maximum_length for p in self.planing_surfaces])
+            self._init_len = np.array([p.initial_length for p in self.planing_surfaces])
+            self._min_len = np.array([p.minimum_length for p in self.planing_surfaces])
+            self._max_len = np.array([p.maximum_length for p in self.planing_surfaces])
             self._solver = solver.RootFinder(
                 self._calculate_residual,
-                self.init_len,
+                self._init_len,
                 self.config.solver.wetted_length_solver,
-                xMin=self.min_len,
-                xMax=self.max_len,
+                xMin=self._min_len,
+                xMax=self._max_len,
                 errLim=self.config.solver.wetted_length_tol,
                 firstStep=1e-6,
                 maxIt=self.config.solver.wetted_length_max_it_0,
@@ -263,17 +260,17 @@ class PotentialPlaningSolver:
             self._solver.max_it = self.config.solver.wetted_length_max_it
             for i, p in enumerate(self.planing_surfaces):
                 length = p.length
-                if np.isnan(length) or length - self.min_len[i] < 1e-6:
-                    self.init_len[i] = p.initial_length
+                if np.isnan(length) or length - self._min_len[i] < 1e-6:
+                    self._init_len[i] = p.initial_length
                 else:
-                    self.init_len[i] = length
+                    self._init_len[i] = length
 
-        self._solver.reinitialize(self.init_len)
+        self._solver.reinitialize(self._init_len)
         self._solver.dx_max_decrease = self.config.solver.wetted_length_max_step_pct_dec * (
-            self.init_len - self.min_len
+            self._init_len - self._min_len
         )
         self._solver.dx_max_increase = self.config.solver.wetted_length_max_step_pct_inc * (
-            self.init_len - self.min_len
+            self._init_len - self._min_len
         )
 
     def calculate_response(self) -> None:
@@ -296,7 +293,7 @@ class PotentialPlaningSolver:
         self._initialize_solver()
         assert self._solver is not None
 
-        if (self.init_len > 0.0).any():
+        if (self._init_len > 0.0).any():
             logger.info("  Solving for wetted length:")
             self._wetted_length_it = 0
             self._solver.solve()
