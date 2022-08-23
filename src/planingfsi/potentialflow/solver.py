@@ -96,13 +96,12 @@ class PotentialPlaningSolver:
             "drag_total",
             "drag_pressure",
             "drag_friction",
-            "drag_wave",
             "lift_total",
             "lift_pressure",
             "lift_friction",
             "moment_total",
         ]:
-            return sum([getattr(p, item) for p in self.pressure_patches])
+            return sum(getattr(p, item) for p in self.pressure_patches)
         raise AttributeError
 
     def _add_pressure_patch(self, instance: PressurePatch) -> None:
