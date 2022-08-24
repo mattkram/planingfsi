@@ -12,6 +12,8 @@ from planingfsi.potentialflow.solver import _grow_points
         (0.0, -1.0, -20.0),
         (1.0, 2.0, 51.0),
         (-1.0, -2.0, -51.0),
+        (50.0, 51.0, 100.0),
+        (-50.0, -51.0, -100.0),
     ],
 )
 def test_grow_points(x0, x1, max_x):
@@ -21,7 +23,7 @@ def test_grow_points(x0, x1, max_x):
 
     # https://math.stackexchange.com/a/1897065
     n = 0
-    while (abs(x1 - x0) * (1 - growth_rate**n) / (1 - growth_rate)) < abs(max_x):
+    while (abs(x1 - x0) * (1 - growth_rate**n) / (1 - growth_rate)) < abs(max_x - x0):
         n += 1
     tmp = (x1 - x0) * growth_rate ** np.array(range(n))
     tmp = np.cumsum(tmp)
