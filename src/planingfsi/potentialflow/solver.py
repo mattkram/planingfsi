@@ -456,20 +456,19 @@ def _array_to_string(array: np.ndarray) -> str:
     return f'[{", ".join("{0:11.4e}".format(a) for a in array)}]'
 
 
-def _grow_points(x0: float, x1: float, distance: float, rate: float = 1.1) -> np.ndarray:
+def _grow_points(x0: float, x1: float, x_max: float, rate: float = 1.1) -> np.ndarray:
     """Grow points exponentially from two starting points assuming a growth rate.
 
     Args:
         x0: The first point.
         x1: The second point.
-        distance: The maximum distance.
+        x_max: The maximum distance.
         rate: The growth rate of spacing between subsequent points.
 
     """
     # TODO: Check this function, is first point included?
     dx = x1 - x0
     x = [x1]
-    x_max = np.sign(dx) * abs(distance)
 
     if dx > 0:
 
