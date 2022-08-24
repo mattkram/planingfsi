@@ -460,26 +460,10 @@ def _grow_points(x0: float, x1: float, x_max: float, rate: float = 1.1) -> np.nd
         rate: The growth rate of spacing between subsequent points.
 
     """
-    # TODO: Check this function, is first point included?
-    dx = x1 - x0
-    x = [x1]
-
-    if dx > 0:
-
-        def done(xt: float) -> bool:
-            return xt > x_max
-
-    elif dx < 0:
-
-        def done(xt: float) -> bool:
-            return xt < x_max
-
-    else:
-
-        def done(_: float) -> bool:
-            return True
-
-    while not done(x[-1]):
-        x.append(x[-1] + dx)
-        dx *= rate
-    return np.array(x) - (x1 - x0)
+    # https://math.stackexchange.com/a/1897065
+    n = 0
+    while (abs(x1 - x0) * (1 - rate**n) / (1 - rate)) < abs(x_max - x0):
+        n += 1
+    lengths = (x1 - x0) * rate ** np.array(range(n))
+    distances = np.cumsum(lengths)
+    return x0 + np.hstack((np.array([0]), distances))
