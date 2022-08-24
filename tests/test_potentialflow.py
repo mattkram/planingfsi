@@ -30,3 +30,5 @@ def test_grow_points(x0, x1, max_x):
     tmp_ratio = (tmp[2:] - tmp[1:-1]) / (tmp[1:-1] - tmp[:-2])
     assert all(p == pytest.approx(growth_rate) for p in tmp_ratio)
     assert_array_almost_equal(points, tmp)
+    assert x0 in tmp
+    assert x1 in tmp
