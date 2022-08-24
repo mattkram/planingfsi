@@ -323,7 +323,6 @@ class PotentialPlaningSolver:
                 self.config.plotting.x_fs_max,
                 self.config.plotting.growth_rate,
             )
-            + x_fs_u[-1]
         )
         x_fs.extend(
             _grow_points(
@@ -332,7 +331,6 @@ class PotentialPlaningSolver:
                 self.config.plotting.x_fs_min,
                 self.config.plotting.growth_rate,
             )
-            + x_fs_u[0]
         )
 
         # Add points from each pressure cushion
@@ -350,12 +348,8 @@ class PotentialPlaningSolver:
             x_mid = 0.5 * (pts_down[-1] + pts_up[0])
             x_fs.extend(
                 _grow_points(pts_down[-2], pts_down[-1], x_mid, self.config.plotting.growth_rate)
-                + pts_down[-1]
             )
-            x_fs.extend(
-                _grow_points(pts_up[1], pts_up[0], x_mid, self.config.plotting.growth_rate)
-                + pts_up[0]
-            )
+            x_fs.extend(_grow_points(pts_up[1], pts_up[0], x_mid, self.config.plotting.growth_rate))
 
         # Sort x locations and calculate surface heights
         self.x_coord_fs = np.unique(x_fs)
@@ -488,4 +482,4 @@ def _grow_points(x0: float, x1: float, x_max: float, rate: float = 1.1) -> np.nd
     while not done(x[-1]):
         x.append(x[-1] + dx)
         dx *= rate
-    return np.array(x) - x1
+    return np.array(x) - (x1 - x0)
