@@ -422,7 +422,7 @@ class PotentialPlaningSolver:
     def _load_pressure_and_shear(self) -> None:
         """Load pressure and shear stress from file."""
         self.x_coord, self.pressure, self.shear_stress = np.loadtxt(
-            str(self.simulation.it_dir / f"pressureAndShear.{self.config.io.data_format}"),
+            self.simulation.it_dir / f"pressureAndShear.{self.config.io.data_format}",
             unpack=True,
         )
         for el in [el for patch in self.planing_surfaces for el in patch.pressure_elements]:
@@ -438,7 +438,7 @@ class PotentialPlaningSolver:
         """Load free surface coordinates from file."""
         try:
             self.x_coord_fs, self.z_coord_fs = np.loadtxt(
-                str(self.simulation.it_dir / f"freeSurface.{self.config.io.data_format}"),
+                self.simulation.it_dir / f"freeSurface.{self.config.io.data_format}",
                 unpack=True,
             )
         except IOError:
