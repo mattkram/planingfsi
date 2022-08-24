@@ -307,27 +307,33 @@ class PotentialPlaningSolver:
 
     def _calculate_free_surface_profile(self) -> None:
         """Calculate free surface profile."""
-        x_fs: list[float] = []
-        for surf in self.planing_surfaces:
-            if surf.length > 0:
-                # Add points from each planing surface
-                x_fs.extend(surf.get_element_coords())
+        x_fs_all: list[np.ndarray] = []  # A list of all sets of points
 
-        # Grow points upstream and downstream from first and last plate
-        # TODO: The additions below were only added as temporary fixes to keep tests passing
-        x_fs_u = np.unique(x_fs)
-        x_fs.extend(
+        # All unique points along all planing surfaces
+        x_all_planing = np.unique(
+            [
+                x
+                for surf in self.planing_surfaces
+                for x in surf.get_element_coords()
+                if surf.length > 0
+            ]
+        )
+        x_fs_all.append(x_all_planing)
+
+        # Upstream from first plate
+        x_fs_all.append(
             _grow_points(
-                x_fs_u[-2],
-                x_fs_u[-1],
+                x_all_planing[-2],
+                x_all_planing[-1],
                 self.config.plotting.x_fs_max,
                 self.config.plotting.growth_rate,
             )
         )
-        x_fs.extend(
+        # Downstream from last plate
+        x_fs_all.append(
             _grow_points(
-                x_fs_u[1],
-                x_fs_u[0],
+                x_all_planing[1],
+                x_all_planing[0],
                 self.config.plotting.x_fs_min,
                 self.config.plotting.growth_rate,
             )
@@ -346,13 +352,15 @@ class PotentialPlaningSolver:
                 pts_up = np.array([patch._end_pts[1], patch._end_pts[1] + 0.01])
 
             x_mid = 0.5 * (pts_down[-1] + pts_up[0])
-            x_fs.extend(
+            x_fs_all.append(
                 _grow_points(pts_down[-2], pts_down[-1], x_mid, self.config.plotting.growth_rate)
             )
-            x_fs.extend(_grow_points(pts_up[1], pts_up[0], x_mid, self.config.plotting.growth_rate))
+            x_fs_all.append(
+                _grow_points(pts_up[1], pts_up[0], x_mid, self.config.plotting.growth_rate)
+            )
 
         # Sort x locations and calculate surface heights
-        self.x_coord_fs = np.unique(x_fs)
+        self.x_coord_fs = np.unique(np.hstack(x_fs_all))
         self.z_coord_fs = np.array([self.get_free_surface_height(x) for x in self.x_coord_fs])
 
     def get_free_surface_height(self, x: float) -> float:
