@@ -48,7 +48,6 @@ class PressurePatch(abc.ABC):
         self.drag_total = np.nan
         self.drag_pressure = np.nan
         self.drag_friction = np.nan
-        self.drag_wave = np.nan
         self.lift_total = np.nan
         self.lift_pressure = np.nan
         self.lift_friction = np.nan
@@ -153,16 +152,18 @@ class PressurePatch(abc.ABC):
         """Calculate the force components for this pressure patch."""
         raise NotImplementedError
 
-    def _calculate_wave_drag(self) -> float:
+    @property
+    def drag_wave(self) -> float:
         """Calculate wave drag of patch."""
-        xo = -10 * self.config.flow.lam
-        (xTrough,) = fmin(self.get_free_surface_height, xo, disp=False)
-        (xCrest,) = fmin(lambda x: -self.get_free_surface_height(x), xo, disp=False)
+        f = self.get_free_surface_height
+        x_init = -10 * self.config.flow.lam
+        (x_trough,) = fmin(f, x_init, disp=False)
+        (x_crest,) = fmin(lambda x: -f(x), x_init, disp=False)
         return (
             0.0625
             * self.config.flow.density
             * self.config.flow.gravity
-            * (self.get_free_surface_height(xCrest) - self.get_free_surface_height(xTrough)) ** 2
+            * (f(x_crest) - f(x_trough)) ** 2
         )
 
     @property
@@ -379,10 +380,6 @@ class PressureCushion(PressurePatch):
                 el.pressure = 0.0 if el_num == 0 else self.cushion_pressure
             else:
                 el.pressure = self.cushion_pressure
-
-    def calculate_forces(self) -> None:
-        """Calculate the wave drag of the pressure cushion."""
-        self.drag_wave = self._calculate_wave_drag()
 
 
 class PlaningSurface(PressurePatch):
@@ -601,8 +598,6 @@ class PlaningSurface(PressurePatch):
             self.lift_total = 0.0
             self.moment_total = 0.0
             self.x_coords = np.array([])
-
-        self.drag_wave = self._calculate_wave_drag()
 
     def get_loads_in_range(
         self, x0: float, x1: float, /, *, pressure_limit: float | None = None
