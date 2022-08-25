@@ -179,17 +179,14 @@ class PotentialPlaningSolver:
         z_array -= np.array([np.sum([el.get_influence(x) for el in source_el]) for x in x_array])
 
         # Solve linear system
-        dim = len(unknown_el)
-        if not dim == 0:
+        if dim := len(unknown_el):
             p = np.linalg.solve(
                 np.reshape(influence_matrix, (dim, dim)), np.reshape(z_array, (dim, 1))
             )[:, 0]
-        else:
-            p = np.zeros_like(z_array)
 
-        # Apply calculated pressure to the elements
-        for pi, el in zip(p, unknown_el):
-            el.pressure = pi
+            # Apply calculated pressure to the elements
+            for pi, el in zip(p, unknown_el):
+                el.pressure = pi
 
         for el in nan_el:
             el.pressure = 0.0
