@@ -17,17 +17,16 @@ from planingfsi import writers
 from planingfsi.config import Config
 from planingfsi.dictionary import load_dict_from_file
 from planingfsi.potentialflow import pressureelement as pe
-from planingfsi.potentialflow import solver
 
 if TYPE_CHECKING:
     from planingfsi.fe.substructure import Interpolator
+    from planingfsi.potentialflow.solver import PotentialPlaningSolver
 
 
 class PressurePatch(abc.ABC):
     """Abstract base class representing a patch of pressure elements on the free surface.
 
     Attributes:
-        name: The name of the patch. Should be unique, but currently unenforced.
         pressure_elements: List of pressure elements.
         is_kutta_unknown: True of trailing edge pressure unknown.
         interpolator: Object to get interpolated body position if a `PlaningSurface`
@@ -37,7 +36,7 @@ class PressurePatch(abc.ABC):
 
     name: str
 
-    def __init__(self, *, parent: "solver.PotentialPlaningSolver" | None) -> None:
+    def __init__(self, *, parent: PotentialPlaningSolver | None) -> None:
         self.parent = parent
         self.pressure_elements: list[pe.PressureElement] = []
         self._end_pts = np.zeros(2)
@@ -49,7 +48,6 @@ class PressurePatch(abc.ABC):
         self.drag_total = np.nan
         self.drag_pressure = np.nan
         self.drag_friction = np.nan
-        self.drag_wave = np.nan
         self.lift_total = np.nan
         self.lift_pressure = np.nan
         self.lift_friction = np.nan
@@ -114,14 +112,15 @@ class PressurePatch(abc.ABC):
         if self._neighbor_down is not None:
             self._neighbor_down._neighbor_up = self
 
+    @property
     @abc.abstractmethod
-    def get_element_coords(self) -> np.ndarray:
+    def element_coords(self) -> np.ndarray:
         """Get the x-position of pressure elements."""
         return NotImplemented
 
     def _reset_element_coords(self) -> None:
         """Re-distribute pressure element positions along the patch."""
-        x = self.get_element_coords()
+        x = self.element_coords
         for i, el in enumerate(self.pressure_elements):
             el.x_coord = x[i]
             if not el.is_source and self.interpolator is not None:
@@ -146,23 +145,25 @@ class PressurePatch(abc.ABC):
             x: x-position at which to calculate free-surface height.
 
         """
-        return sum([el.get_influence(x) for el in self.pressure_elements])
+        return sum(el.get_influence(x) for el in self.pressure_elements)
 
     @abc.abstractmethod
     def calculate_forces(self) -> None:
         """Calculate the force components for this pressure patch."""
         raise NotImplementedError
 
-    def _calculate_wave_drag(self) -> float:
+    @property
+    def drag_wave(self) -> float:
         """Calculate wave drag of patch."""
-        xo = -10 * self.config.flow.lam
-        (xTrough,) = fmin(self.get_free_surface_height, xo, disp=False)
-        (xCrest,) = fmin(lambda x: -self.get_free_surface_height(x), xo, disp=False)
+        f = self.get_free_surface_height
+        x_init = -10 * self.config.flow.lam
+        (x_trough,) = fmin(f, x_init, disp=False)
+        (x_crest,) = fmin(lambda x: -f(x), x_init, disp=False)
         return (
             0.0625
             * self.config.flow.density
             * self.config.flow.gravity
-            * (self.get_free_surface_height(xCrest) - self.get_free_surface_height(xTrough)) ** 2
+            * (f(x_crest) - f(x_trough)) ** 2
         )
 
     @property
@@ -236,7 +237,7 @@ class PressureCushion(PressurePatch):
         downstream_planing_surface: PlaningSurface | str | None = None,
         upstream_loc: float | None = None,
         downstream_loc: float | None = None,
-        parent: solver.PotentialPlaningSolver | None = None,
+        parent: PotentialPlaningSolver | None = None,
         **_: Any,
     ) -> None:
         super().__init__(parent=parent)
@@ -251,12 +252,20 @@ class PressureCushion(PressurePatch):
         if isinstance(upstream_planing_surface, PlaningSurface):
             self.neighbor_up = upstream_planing_surface
         else:
-            self.neighbor_up = PlaningSurface.find_by_name(upstream_planing_surface)
+            self.neighbor_up = [
+                surf
+                for surf in self.parent.planing_surfaces
+                if surf.name == upstream_planing_surface
+            ][0]
 
         if isinstance(downstream_planing_surface, PlaningSurface):
             self.neighbor_down = downstream_planing_surface
         else:
-            self.neighbor_down = PlaningSurface.find_by_name(downstream_planing_surface)
+            self.neighbor_down = [
+                surf
+                for surf in self.parent.planing_surfaces
+                if surf.name == downstream_planing_surface
+            ][0]
 
         if self.neighbor_down is not None:
             self.neighbor_down.upstream_pressure = self.cushion_pressure
@@ -335,7 +344,8 @@ class PressureCushion(PressurePatch):
         """Set the length by moving the left end point relative to the right one."""
         self._end_pts[0] = self.base_pt - length
 
-    def get_element_coords(self) -> np.ndarray:
+    @property
+    def element_coords(self) -> np.ndarray:
         """Return x-locations of all elements."""
         if self.cushion_type != "smoothed" or np.isnan(self.smoothing_factor):
             return self._end_pts
@@ -371,10 +381,6 @@ class PressureCushion(PressurePatch):
             else:
                 el.pressure = self.cushion_pressure
 
-    def calculate_forces(self) -> None:
-        """Calculate the wave drag of the pressure cushion."""
-        self.drag_wave = self._calculate_wave_drag()
-
 
 class PlaningSurface(PressurePatch):
     """Planing Surface consisting of unknown elements.
@@ -395,26 +401,6 @@ class PlaningSurface(PressurePatch):
 
     """
 
-    _count = 0
-    _all: list["PlaningSurface"] = []
-
-    @classmethod
-    def find_by_name(cls, name: str | None) -> PlaningSurface | None:
-        """Return first planing surface matching provided name.
-
-        Args:
-            name: The name of the planing surface.
-
-        Returns:
-            PlaningSurface instance or None of no match found.
-
-        """
-        if name:
-            for obj in cls._all:
-                if obj.name == name:
-                    return obj
-        return None
-
     def __init__(
         self,
         *,
@@ -428,11 +414,10 @@ class PlaningSurface(PressurePatch):
         upstream_pressure: float = 0.0,
         is_sprung: bool = False,
         spring_constant: float = 1e4,
-        parent: "solver.PotentialPlaningSolver" | None = None,
+        parent: PotentialPlaningSolver | None = None,
         **_: Any,
     ) -> None:
         super().__init__(parent=parent)
-        PlaningSurface._all.append(self)
 
         self.name = name
         self.initial_length = initial_length
@@ -537,6 +522,14 @@ class PlaningSurface(PressurePatch):
         self._end_pts[:] = [x0, x0 + length]
         self._reset_element_coords()
 
+    @property
+    def residual(self) -> float:
+        """The residual to drive first element pressure to zero."""
+        if self.length > 0.0:
+            return self.pressure_elements[0].pressure / self.config.flow.stagnation_pressure
+        else:
+            return 0.0
+
     def initialize_end_pts(self) -> None:
         """Initialize end points to be at separation point and wetted length root."""
         assert self.interpolator is not None
@@ -552,19 +545,13 @@ class PlaningSurface(PressurePatch):
     def _reset_element_coords(self) -> None:
         """Set width of first element to be twice as wide."""
         super()._reset_element_coords()
-        x = self.get_element_coords()
+        x = self.element_coords
         self.pressure_elements[0].width = x[2] - x[0]
 
-    def get_element_coords(self) -> np.ndarray:
+    @property
+    def element_coords(self) -> np.ndarray:
         """Get position of pressure elements."""
         return self.base_pt + self.relative_position * self.length
-
-    def get_residual(self) -> float:
-        """Get residual to drive first element pressure to zero."""
-        if self.length > 0.0:
-            return self.pressure_elements[0].pressure / self.config.flow.stagnation_pressure
-        else:
-            return 0.0
 
     def calculate_forces(self) -> None:
         """Calculate the forces by integrating pressure and shear stress."""
@@ -611,8 +598,6 @@ class PlaningSurface(PressurePatch):
             self.lift_total = 0.0
             self.moment_total = 0.0
             self.x_coords = np.array([])
-
-        self.drag_wave = self._calculate_wave_drag()
 
     def get_loads_in_range(
         self, x0: float, x1: float, /, *, pressure_limit: float | None = None
@@ -674,7 +659,7 @@ class PlaningSurface(PressurePatch):
                 0.332 * self.config.flow.density * self.config.flow.flow_speed**2 * re_x**-0.5
             )
 
-        x = self.get_element_coords()[:-1]
+        x = self.element_coords[:-1]
         assert self.interpolator is not None
         s = np.array([self.interpolator.get_s_fixed_x(xx) for xx in x])
         s = s[-1] - s

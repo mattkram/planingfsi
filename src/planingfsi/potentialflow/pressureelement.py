@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import abc
+from typing import TYPE_CHECKING
 from typing import Any
 
 import numpy as np
@@ -9,7 +10,9 @@ from scipy.special import sici
 
 from planingfsi import math_helpers
 from planingfsi.config import Config
-from planingfsi.potentialflow import pressurepatch
+
+if TYPE_CHECKING:
+    from planingfsi.potentialflow.pressurepatch import PressurePatch
 
 
 def _get_aux_fg(lam: float) -> tuple[float, float]:
@@ -84,31 +87,15 @@ def _get_gamma3(lam: float, aux_f: float) -> float:
 class PressureElement(abc.ABC):
     """Abstract base class to represent all different types of pressure elements.
 
-    Attributes
-    ----------
-    x_coord : float
-        x-location of element.
-
-    z_coord : float
-        z-coordinate of element, if on body.
-
-    pressure : float
-        The pressure/strength of the element.
-
-    shear_stress : float
-        Shear stress at the element.
-
-    width : float
-        Width of element.
-
-    is_source : bool
-        True of element is a source.
-
-    is_on_body : bool
-        True if on body. Used for force calculation.
-
-    parent : PressurePatch
-        Pressure patch that this element belongs to.
+    Attributes:
+        x_coord: x-location of element.
+        z_coord: z-coordinate of element, if on body.
+        pressure: The pressure/strength of the element.
+        shear_stress: Shear stress at the element.
+        width: Width of element.
+        is_source: True of element is a source.
+        is_on_body: True if on body. Used for force calculation.
+        parent: Pressure patch that this element belongs to.
 
     """
 
@@ -123,12 +110,12 @@ class PressureElement(abc.ABC):
         width: np.ndarray | float = np.nan,
         is_source: bool = False,
         is_on_body: bool = False,
-        parent: "pressurepatch.PressurePatch" = None,
+        parent: PressurePatch | None = None,
     ):
         # TODO: Replace x_coord with coord pointer to Coordinate object, (e.g. self.coords.x)
         self.x_coord = x_coord
         self.z_coord = z_coord
-        self._pressure = pressure
+        self.pressure = pressure
         self.shear_stress = shear_stress
         self._width = np.zeros(2)
         # TODO: Remove ignore
@@ -153,15 +140,6 @@ class PressureElement(abc.ABC):
     def width(self, width: float) -> None:
         self._width[0] = width
 
-    @property
-    def pressure(self) -> float:
-        """Return the element pressure."""
-        return self._pressure
-
-    @pressure.setter
-    def pressure(self, value: float) -> None:
-        self._pressure = value
-
     def get_influence_coefficient(self, x_coord: float) -> float:
         """Return _get_local_influence_coefficient coefficient of element.
 
@@ -185,34 +163,32 @@ class PressureElement(abc.ABC):
     def get_influence(self, x_coord: float) -> float:
         """Return _get_local_influence_coefficient for actual pressure.
 
-        Args
-        ----
-        x_coord : float
-            Dimensional x-coordinate.
+        Args:
+            x_coord: Dimensional x-coordinate.
+
         """
         return self.get_influence_coefficient(x_coord) * self.pressure
 
+    @abc.abstractmethod
     def _get_local_influence_coefficient(self, x_coord: float) -> float:
-        """Return influence coefficient in iso-geometric coordinates. Each
-        subclass must implement its own method.
+        """Return influence coefficient in iso-geometric coordinates.
 
-        Args
-        ----
-        x_coord : float
-            x-coordinate, centered at element location.
+        Args:
+            x_coord: x-coordinate, centered at element location.
+
         """
         pass
 
     def __repr__(self) -> str:
         """Print element attributes."""
-        return "{}: (x,z) = ({}, {}), width = {}, is_source = {}, p = {}, is_on_body = {}".format(
-            self.__class__.__name__,
-            self.x_coord,
-            self.z_coord,
-            self.width,
-            self.is_source,
-            self.pressure,
-            self.is_on_body,
+        return ", ".join(
+            [
+                f"{self.__class__.__name__}: (x,z) = ({self.x_coord}, {self.z_coord})",
+                f"width = {self.width}",
+                f"is_source = {self.is_source}",
+                f"p = {self.pressure}",
+                f"is_on_body = {self.is_on_body}",
+            ]
         )
 
     @property
@@ -258,16 +234,7 @@ class AftHalfTriangularPressureElement(PressureElement):
 
 
 class ForwardHalfTriangularPressureElement(PressureElement):
-    """Pressure element that is triangular in profile but towards forward
-    direction.
-
-    Args
-    ----
-    **kwargs
-        Same as PressureElement arguments, with the following defaults
-        overridden:
-            is_on_body : True
-    """
+    """Pressure element that is triangular in profile but towards forward direction."""
 
     def __init__(self, is_on_body: bool = True, **kwargs: Any) -> None:
         # By default, this element is on the body.
@@ -306,16 +273,7 @@ class ForwardHalfTriangularPressureElement(PressureElement):
 
 
 class CompleteTriangularPressureElement(PressureElement):
-    """Pressure element that is triangular in profile towards both
-    directions.
-
-    Args
-    ----
-    **kwargs
-        Same as PressureElement arguments, with the following defaults
-        overridden:
-            is_on_body : True
-    """
+    """Pressure element that is triangular in profile towards both directions."""
 
     plot_color = "r"
 
@@ -400,13 +358,11 @@ class ForwardSemiInfinitePressureBand(PressureElement):
     plot_color = "r"
 
     def _get_local_influence_coefficient(self, x_coord: float) -> float:
-        """Return _get_local_influence_coefficient coefficient in iso-geometric
-        coordinates.
+        """Return _get_local_influence_coefficient coefficient in iso-geometric coordinates.
 
-        Args
-        ----
-        x_coord : float
-            x-coordinate, centered at element location.
+        Args:
+            x_coord: x-coordinate, centered at element location.
+
         """
         lambda_0 = self.config.flow.k0 * x_coord
         aux_f, _ = _get_aux_fg(lambda_0)

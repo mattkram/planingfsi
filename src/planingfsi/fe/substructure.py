@@ -729,7 +729,7 @@ class Interpolator:
             A tuple of (min, max) arclength.
 
         """
-        pts = self.fluid.get_element_coords()
+        pts = self.fluid.element_coords
         return self.get_s_fixed_x(pts[0]), self.get_s_fixed_x(pts[-1])
 
     def get_s_fixed_x(self, x: float, so_pct: float = 0.5) -> float:
