@@ -234,16 +234,7 @@ class AftHalfTriangularPressureElement(PressureElement):
 
 
 class ForwardHalfTriangularPressureElement(PressureElement):
-    """Pressure element that is triangular in profile but towards forward
-    direction.
-
-    Args
-    ----
-    **kwargs
-        Same as PressureElement arguments, with the following defaults
-        overridden:
-            is_on_body : True
-    """
+    """Pressure element that is triangular in profile but towards forward direction."""
 
     def __init__(self, is_on_body: bool = True, **kwargs: Any) -> None:
         # By default, this element is on the body.
@@ -282,16 +273,7 @@ class ForwardHalfTriangularPressureElement(PressureElement):
 
 
 class CompleteTriangularPressureElement(PressureElement):
-    """Pressure element that is triangular in profile towards both
-    directions.
-
-    Args
-    ----
-    **kwargs
-        Same as PressureElement arguments, with the following defaults
-        overridden:
-            is_on_body : True
-    """
+    """Pressure element that is triangular in profile towards both directions."""
 
     plot_color = "r"
 
@@ -376,13 +358,11 @@ class ForwardSemiInfinitePressureBand(PressureElement):
     plot_color = "r"
 
     def _get_local_influence_coefficient(self, x_coord: float) -> float:
-        """Return _get_local_influence_coefficient coefficient in iso-geometric
-        coordinates.
+        """Return _get_local_influence_coefficient coefficient in iso-geometric coordinates.
 
-        Args
-        ----
-        x_coord : float
-            x-coordinate, centered at element location.
+        Args:
+            x_coord: x-coordinate, centered at element location.
+
         """
         lambda_0 = self.config.flow.k0 * x_coord
         aux_f, _ = _get_aux_fg(lambda_0)
