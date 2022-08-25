@@ -251,12 +251,20 @@ class PressureCushion(PressurePatch):
         if isinstance(upstream_planing_surface, PlaningSurface):
             self.neighbor_up = upstream_planing_surface
         else:
-            self.neighbor_up = PlaningSurface.find_by_name(upstream_planing_surface)
+            self.neighbor_up = [
+                surf
+                for surf in self.parent.planing_surfaces
+                if surf.name == upstream_planing_surface
+            ][0]
 
         if isinstance(downstream_planing_surface, PlaningSurface):
             self.neighbor_down = downstream_planing_surface
         else:
-            self.neighbor_down = PlaningSurface.find_by_name(downstream_planing_surface)
+            self.neighbor_down = [
+                surf
+                for surf in self.parent.planing_surfaces
+                if surf.name == downstream_planing_surface
+            ][0]
 
         if self.neighbor_down is not None:
             self.neighbor_down.upstream_pressure = self.cushion_pressure
@@ -395,26 +403,6 @@ class PlaningSurface(PressurePatch):
 
     """
 
-    _count = 0
-    _all: list["PlaningSurface"] = []
-
-    @classmethod
-    def find_by_name(cls, name: str | None) -> PlaningSurface | None:
-        """Return first planing surface matching provided name.
-
-        Args:
-            name: The name of the planing surface.
-
-        Returns:
-            PlaningSurface instance or None of no match found.
-
-        """
-        if name:
-            for obj in cls._all:
-                if obj.name == name:
-                    return obj
-        return None
-
     def __init__(
         self,
         *,
@@ -432,7 +420,6 @@ class PlaningSurface(PressurePatch):
         **_: Any,
     ) -> None:
         super().__init__(parent=parent)
-        PlaningSurface._all.append(self)
 
         self.name = name
         self.initial_length = initial_length
