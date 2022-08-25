@@ -1,6 +1,7 @@
 """Fundamental module for constructing and solving planing potential flow problems."""
 from __future__ import annotations
 
+from pathlib import Path
 from typing import TYPE_CHECKING
 from typing import Any
 
@@ -101,6 +102,18 @@ class PotentialPlaningSolver:
     def pressure_elements(self) -> list[PressureElement]:
         """A list of all `PressureElement` instances contained by all `PressurePatch` instances."""
         return [el for patch in self.pressure_patches for el in patch.pressure_elements]
+
+    @property
+    def pressure_shear_file_path(self) -> Path:
+        return self.simulation.it_dir / f"pressureAndShear.{self.config.io.data_format}"
+
+    @property
+    def free_surface_file_path(self) -> Path:
+        return self.simulation.it_dir / f"freeSurface.{self.config.io.data_format}"
+
+    @property
+    def forces_file_path(self) -> Path:
+        return self.simulation.it_dir / f"forces_total.{self.config.io.data_format}"
 
     def add_planing_surface(
         self, dict_or_instance: dict[str, Any] | PlaningSurface | None, /
@@ -385,7 +398,7 @@ class PotentialPlaningSolver:
     def _write_forces(self) -> None:
         """Write forces to file."""
         writers.write_as_dict(
-            self.simulation.it_dir / f"forces_total.{self.config.io.data_format}",
+            self.forces_file_path,
             ["Drag", self.drag_total],
             ["WaveDrag", self.drag_wave],
             ["PressDrag", self.drag_pressure],
@@ -402,7 +415,7 @@ class PotentialPlaningSolver:
     def _write_pressure_and_shear(self) -> None:
         """Write pressure and shear stress profiles to data file."""
         writers.write_as_list(
-            self.simulation.it_dir / f"pressureAndShear.{self.config.io.data_format}",
+            self.pressure_shear_file_path,
             ["x [m]", self.x_coord],
             ["p [Pa]", self.pressure],
             ["shear_stress [Pa]", self.shear_stress],
@@ -411,7 +424,7 @@ class PotentialPlaningSolver:
     def _write_free_surface(self) -> None:
         """Write free-surface profile to file."""
         writers.write_as_list(
-            self.simulation.it_dir / f"freeSurface.{self.config.io.data_format}",
+            self.free_surface_file_path,
             ["x [m]", self.x_coord_fs],
             ["y [m]", self.z_coord_fs],
         )
@@ -430,8 +443,7 @@ class PotentialPlaningSolver:
     def _load_pressure_and_shear(self) -> None:
         """Load pressure and shear stress from file."""
         self.x_coord, self.pressure, self.shear_stress = np.loadtxt(
-            self.simulation.it_dir / f"pressureAndShear.{self.config.io.data_format}",
-            unpack=True,
+            self.pressure_shear_file_path, unpack=True
         )
         for el in [el for patch in self.planing_surfaces for el in patch.pressure_elements]:
             compare = np.abs(self.x_coord - el.x_coord) < 1e-6
@@ -445,10 +457,7 @@ class PotentialPlaningSolver:
     def _load_free_surface(self) -> None:
         """Load free surface coordinates from file."""
         try:
-            self.x_coord_fs, self.z_coord_fs = np.loadtxt(
-                self.simulation.it_dir / f"freeSurface.{self.config.io.data_format}",
-                unpack=True,
-            )
+            self.x_coord_fs, self.z_coord_fs = np.loadtxt(self.free_surface_file_path, unpack=True)
         except IOError:
             self.z_coord_fs = np.zeros_like(self.x_coord_fs)
 
