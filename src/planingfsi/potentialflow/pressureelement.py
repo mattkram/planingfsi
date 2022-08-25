@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import abc
+from typing import TYPE_CHECKING
 from typing import Any
 
 import numpy as np
@@ -9,7 +10,9 @@ from scipy.special import sici
 
 from planingfsi import math_helpers
 from planingfsi.config import Config
-from planingfsi.potentialflow import pressurepatch
+
+if TYPE_CHECKING:
+    from planingfsi.potentialflow.pressurepatch import PressurePatch
 
 
 def _get_aux_fg(lam: float) -> tuple[float, float]:
@@ -107,12 +110,12 @@ class PressureElement(abc.ABC):
         width: np.ndarray | float = np.nan,
         is_source: bool = False,
         is_on_body: bool = False,
-        parent: "pressurepatch.PressurePatch" = None,
+        parent: PressurePatch | None = None,
     ):
         # TODO: Replace x_coord with coord pointer to Coordinate object, (e.g. self.coords.x)
         self.x_coord = x_coord
         self.z_coord = z_coord
-        self._pressure = pressure
+        self.pressure = pressure
         self.shear_stress = shear_stress
         self._width = np.zeros(2)
         # TODO: Remove ignore
@@ -136,15 +139,6 @@ class PressureElement(abc.ABC):
     @width.setter
     def width(self, width: float) -> None:
         self._width[0] = width
-
-    @property
-    def pressure(self) -> float:
-        """Return the element pressure."""
-        return self._pressure
-
-    @pressure.setter
-    def pressure(self, value: float) -> None:
-        self._pressure = value
 
     def get_influence_coefficient(self, x_coord: float) -> float:
         """Return _get_local_influence_coefficient coefficient of element.
