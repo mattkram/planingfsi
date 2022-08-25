@@ -374,7 +374,7 @@ class PotentialPlaningSolver:
             Free-surface position at input x-position.
 
         """
-        return sum([patch.get_free_surface_height(x) for patch in self.pressure_patches])
+        return sum(patch.get_free_surface_height(x) for patch in self.pressure_patches)
 
     def write_results(self) -> None:
         """Write results to files."""

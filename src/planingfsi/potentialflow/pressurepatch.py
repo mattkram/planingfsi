@@ -146,7 +146,7 @@ class PressurePatch(abc.ABC):
             x: x-position at which to calculate free-surface height.
 
         """
-        return sum([el.get_influence(x) for el in self.pressure_elements])
+        return sum(el.get_influence(x) for el in self.pressure_elements)
 
     @abc.abstractmethod
     def calculate_forces(self) -> None:
