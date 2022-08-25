@@ -272,7 +272,7 @@ class PotentialPlaningSolver:
 
         """
         if self.config.io.results_from_file:
-            self.load_results()
+            self._load_results()
             return
 
         if not self.planing_surfaces:
@@ -429,7 +429,7 @@ class PotentialPlaningSolver:
             ["y [m]", self.z_coord_fs],
         )
 
-    def load_results(self) -> None:
+    def _load_results(self) -> None:
         """Load results from file."""
         self._load_forces()
         self._load_pressure_and_shear()
