@@ -84,31 +84,15 @@ def _get_gamma3(lam: float, aux_f: float) -> float:
 class PressureElement(abc.ABC):
     """Abstract base class to represent all different types of pressure elements.
 
-    Attributes
-    ----------
-    x_coord : float
-        x-location of element.
-
-    z_coord : float
-        z-coordinate of element, if on body.
-
-    pressure : float
-        The pressure/strength of the element.
-
-    shear_stress : float
-        Shear stress at the element.
-
-    width : float
-        Width of element.
-
-    is_source : bool
-        True of element is a source.
-
-    is_on_body : bool
-        True if on body. Used for force calculation.
-
-    parent : PressurePatch
-        Pressure patch that this element belongs to.
+    Attributes:
+        x_coord: x-location of element.
+        z_coord: z-coordinate of element, if on body.
+        pressure: The pressure/strength of the element.
+        shear_stress: Shear stress at the element.
+        width: Width of element.
+        is_source: True of element is a source.
+        is_on_body: True if on body. Used for force calculation.
+        parent: Pressure patch that this element belongs to.
 
     """
 
