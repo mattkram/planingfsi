@@ -113,14 +113,15 @@ class PressurePatch(abc.ABC):
         if self._neighbor_down is not None:
             self._neighbor_down._neighbor_up = self
 
+    @property
     @abc.abstractmethod
-    def get_element_coords(self) -> np.ndarray:
+    def element_coords(self) -> np.ndarray:
         """Get the x-position of pressure elements."""
         return NotImplemented
 
     def _reset_element_coords(self) -> None:
         """Re-distribute pressure element positions along the patch."""
-        x = self.get_element_coords()
+        x = self.element_coords
         for i, el in enumerate(self.pressure_elements):
             el.x_coord = x[i]
             if not el.is_source and self.interpolator is not None:
@@ -342,7 +343,8 @@ class PressureCushion(PressurePatch):
         """Set the length by moving the left end point relative to the right one."""
         self._end_pts[0] = self.base_pt - length
 
-    def get_element_coords(self) -> np.ndarray:
+    @property
+    def element_coords(self) -> np.ndarray:
         """Return x-locations of all elements."""
         if self.cushion_type != "smoothed" or np.isnan(self.smoothing_factor):
             return self._end_pts
@@ -546,10 +548,11 @@ class PlaningSurface(PressurePatch):
     def _reset_element_coords(self) -> None:
         """Set width of first element to be twice as wide."""
         super()._reset_element_coords()
-        x = self.get_element_coords()
+        x = self.element_coords
         self.pressure_elements[0].width = x[2] - x[0]
 
-    def get_element_coords(self) -> np.ndarray:
+    @property
+    def element_coords(self) -> np.ndarray:
         """Get position of pressure elements."""
         return self.base_pt + self.relative_position * self.length
 
@@ -661,7 +664,7 @@ class PlaningSurface(PressurePatch):
                 0.332 * self.config.flow.density * self.config.flow.flow_speed**2 * re_x**-0.5
             )
 
-        x = self.get_element_coords()[:-1]
+        x = self.element_coords[:-1]
         assert self.interpolator is not None
         s = np.array([self.interpolator.get_s_fixed_x(xx) for xx in x])
         s = s[-1] - s

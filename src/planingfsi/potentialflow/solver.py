@@ -301,9 +301,7 @@ class PotentialPlaningSolver:
 
         # Calculate pressure profile
         if self.pressure_patches:
-            self.x_coord = np.unique(
-                np.hstack([p.get_element_coords() for p in self.pressure_patches])
-            )
+            self.x_coord = np.unique(np.hstack([p.element_coords for p in self.pressure_patches]))
         else:
             self.x_coord = np.array([-1e6, 1e6])
         self.pressure = np.zeros_like(self.x_coord)
@@ -321,12 +319,7 @@ class PotentialPlaningSolver:
 
         # All unique points along all planing surfaces
         x_all_planing = np.unique(
-            [
-                x
-                for surf in self.planing_surfaces
-                for x in surf.get_element_coords()
-                if surf.length > 0
-            ]
+            [x for surf in self.planing_surfaces for x in surf.element_coords if surf.length > 0]
         )
         x_fs_all.append(x_all_planing)
 
@@ -352,12 +345,12 @@ class PotentialPlaningSolver:
         # Add points from each pressure cushion
         for patch in self.pressure_cushions:
             if patch.neighbor_down is not None:
-                pts_down = np.unique(patch.neighbor_down.get_element_coords())
+                pts_down = np.unique(patch.neighbor_down.element_coords)
             else:
                 pts_down = np.array([patch._end_pts[0] - 0.01, patch._end_pts[0]])
 
             if patch.neighbor_up is not None:
-                pts_up = np.unique(patch.neighbor_up.get_element_coords())
+                pts_up = np.unique(patch.neighbor_up.element_coords)
             else:
                 pts_up = np.array([patch._end_pts[1], patch._end_pts[1] + 0.01])
 
