@@ -163,34 +163,32 @@ class PressureElement(abc.ABC):
     def get_influence(self, x_coord: float) -> float:
         """Return _get_local_influence_coefficient for actual pressure.
 
-        Args
-        ----
-        x_coord : float
-            Dimensional x-coordinate.
+        Args:
+            x_coord: Dimensional x-coordinate.
+
         """
         return self.get_influence_coefficient(x_coord) * self.pressure
 
+    @abc.abstractmethod
     def _get_local_influence_coefficient(self, x_coord: float) -> float:
-        """Return influence coefficient in iso-geometric coordinates. Each
-        subclass must implement its own method.
+        """Return influence coefficient in iso-geometric coordinates.
 
-        Args
-        ----
-        x_coord : float
-            x-coordinate, centered at element location.
+        Args:
+            x_coord: x-coordinate, centered at element location.
+
         """
         pass
 
     def __repr__(self) -> str:
         """Print element attributes."""
-        return "{}: (x,z) = ({}, {}), width = {}, is_source = {}, p = {}, is_on_body = {}".format(
-            self.__class__.__name__,
-            self.x_coord,
-            self.z_coord,
-            self.width,
-            self.is_source,
-            self.pressure,
-            self.is_on_body,
+        return ", ".join(
+            [
+                f"{self.__class__.__name__}: (x,z) = ({self.x_coord}, {self.z_coord})",
+                f"width = {self.width}",
+                f"is_source = {self.is_source}",
+                f"p = {self.pressure}",
+                f"is_on_body = {self.is_on_body}",
+            ]
         )
 
     @property
