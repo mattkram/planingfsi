@@ -35,8 +35,8 @@ class FSIFigure:
 
         (self.line_nodes,) = plt.plot([], [], "ko")
 
-        (self.lineFS,) = plt.plot([], [], "b-")
-        (self.lineFSi,) = plt.plot([], [], "b--")
+        (self._handle_fs,) = self.geometry_ax.plot([], [], "b-")
+        (self._handle_fs_init,) = self.geometry_ax.plot([], [], "b--")
 
         # Line handles for element initial and current positions
         self.element_handles_0 = {}
@@ -136,10 +136,12 @@ class FSIFigure:
         return self.simulation.fluid_solver
 
     def _draw_free_surface(self) -> None:
-        """Create a plot of the free surface profile."""
-        self.lineFS.set_data(self.fluid.x_coord_fs, self.fluid.z_coord_fs)
+        """Draw the actual and undisturbed free-surface lines."""
+        self._handle_fs.set_data(self.fluid.x_coord_fs, self.fluid.z_coord_fs)
         end_pts = np.array([self.config.plotting.x_fs_min, self.config.plotting.x_fs_max])
-        self.lineFSi.set_data(end_pts, self.config.flow.waterline_height * np.ones_like(end_pts))
+        self._handle_fs_init.set_data(
+            end_pts, self.config.flow.waterline_height * np.ones_like(end_pts)
+        )
 
     @staticmethod
     def _get_pressure_plot_points(ss, s0: np.ndarray, p0: np.ndarray) -> Iterable[Iterable]:
