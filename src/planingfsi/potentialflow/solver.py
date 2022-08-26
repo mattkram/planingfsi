@@ -161,8 +161,8 @@ class PotentialPlaningSolver:
         # TODO: This calculation may be sped up by using vectorized functions
         # Form lists of unknown and source elements
         unknown_el = [el for el in self.pressure_elements if not el.is_source and el.width > 0.0]
-        nan_el = (el for el in self.pressure_elements if el.width <= 0.0)
-        source_el = (el for el in self.pressure_elements if el.is_source)
+        nan_el = [el for el in self.pressure_elements if el.width <= 0.0]
+        source_el = [el for el in self.pressure_elements if el.is_source]
         # Form arrays to build linear system
         # x location of unknown elements
         x_array = np.array([el.x_coord for el in unknown_el])
