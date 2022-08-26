@@ -22,6 +22,8 @@ if TYPE_CHECKING:
 
 
 class FSIFigure:
+    """A wrapper around a Matplotlib figure to plot the results/status of a PlaningFSI simulation."""
+
     def __init__(self, simulation: Simulation):
         self.simulation = simulation
         self.config = simulation.config
@@ -133,7 +135,7 @@ class FSIFigure:
     def fluid(self) -> "PotentialPlaningSolver":
         return self.simulation.fluid_solver
 
-    def plot_free_surface(self) -> None:
+    def _draw_free_surface(self) -> None:
         """Create a plot of the free surface profile."""
         self.lineFS.set_data(self.fluid.x_coord_fs, self.fluid.z_coord_fs)
         end_pts = np.array([self.config.plotting.x_fs_min, self.config.plotting.x_fs_max])
@@ -158,14 +160,14 @@ class FSIFigure:
             zip(*[xyi for c0, c1 in zip(coords0, coords1) for xyi in [c0, c1, np.ones(2) * np.nan]])
         )
 
-    def plot_pressure_profiles(self, ss: Substructure) -> None:
+    def _draw_pressure_profiles(self, ss: Substructure) -> None:
         """Plot the internal and external pressure profiles as lines."""
         if handle := self.line_fluid_pressure.get(ss):
             handle.set_data(self._get_pressure_plot_points(ss, ss.s_hydro, ss.p_hydro))
         if handle := self.line_air_pressure.get(ss):
             handle.set_data(self._get_pressure_plot_points(ss, ss.s_air, -ss.p_air))
 
-    def plot_substructure(self, ss: Substructure) -> None:
+    def _draw_substructure(self, ss: Substructure) -> None:
         """Plot the substructure elements and pressure profiles."""
         for el in ss.elements:
             if handle := self.element_handles.get(el):
@@ -183,17 +185,17 @@ class FSIFigure:
 
         #    for nd in [self.node[0],self.node[-1]]:
         #      nd.plot()
-        self.plot_pressure_profiles(ss)
+        self._draw_pressure_profiles(ss)
 
-    def plot_structure(self):
+    def _draw_structures(self):
         """Plot the structure."""
         for body in self.solid.rigid_bodies:
             for struct in body.substructures:
-                self.plot_substructure(struct)
+                self._draw_substructure(struct)
 
     def update(self) -> None:
-        self.plot_structure()
-        self.plot_free_surface()
+        self._draw_structures()
+        self._draw_free_surface()
         self.TXT.set_text(
             "\n".join(
                 [
