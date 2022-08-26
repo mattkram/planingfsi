@@ -26,7 +26,7 @@ class FSIFigure:
         self.simulation = simulation
         self.config = simulation.config
 
-        fig = plt.figure(figsize=(16, 12))
+        self.figure = fig = plt.figure(figsize=(16, 12))
         if self.config.plotting.watch:
             plt.ion()
         self.geometry_ax = fig.add_axes([0.05, 0.6, 0.9, 0.35])
