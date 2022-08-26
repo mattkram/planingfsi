@@ -147,10 +147,8 @@ class PressurePatch(abc.ABC):
         """
         return sum(el.get_influence(x) for el in self.pressure_elements)
 
-    @abc.abstractmethod
     def calculate_forces(self) -> None:
         """Calculate the force components for this pressure patch."""
-        raise NotImplementedError
 
     @property
     def drag_wave(self) -> float:
