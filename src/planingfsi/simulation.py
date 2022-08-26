@@ -74,7 +74,7 @@ class Simulation:
     def figure(self) -> FSIFigure | None:
         """The `FSIFigure` object where results are drawn. Will be None if plotting is disabled."""
         if self._figure is None and self.config.plotting.plot_any:
-            self._figure = FSIFigure(simulation=self, config=self.config)
+            self._figure = FSIFigure(simulation=self)
         return self._figure
 
     @property

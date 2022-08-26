@@ -12,7 +12,6 @@ import numpy as np
 from matplotlib.axes import Axes
 
 from planingfsi import trig
-from planingfsi.config import Config
 
 if TYPE_CHECKING:
     from planingfsi.fe.rigid_body import RigidBody
@@ -23,13 +22,12 @@ if TYPE_CHECKING:
 
 
 class FSIFigure:
-    def __init__(self, simulation: Simulation, config: Config):
-        # TODO: We can get the config via the simulation in a property
-        self.config = config
+    def __init__(self, simulation: Simulation):
         self.simulation = simulation
+        self.config = simulation.config
 
         fig = plt.figure(figsize=(16, 12))
-        if config.plotting.watch:
+        if self.config.plotting.watch:
             plt.ion()
         self.geometry_ax = fig.add_axes([0.05, 0.6, 0.9, 0.35])
 
@@ -79,35 +77,35 @@ class FSIFigure:
         xMin, xMax = min(x), max(x)
         yMin, yMax = min(y), max(y)
 
-        if config.plotting.xmin is not None:
-            xMin = config.plotting.xmin
-            config.plotting.ext_w = 0.0
+        if self.config.plotting.xmin is not None:
+            xMin = self.config.plotting.xmin
+            self.config.plotting.ext_w = 0.0
 
-        if config.plotting.xmax is not None:
-            xMax = config.plotting.xmax
-            config.plotting.ext_e = 0.0
+        if self.config.plotting.xmax is not None:
+            xMax = self.config.plotting.xmax
+            self.config.plotting.ext_e = 0.0
 
-        if config.plotting.ymin is not None:
-            yMin = config.plotting.ymin
-            config.plotting.ext_s = 0.0
+        if self.config.plotting.ymin is not None:
+            yMin = self.config.plotting.ymin
+            self.config.plotting.ext_s = 0.0
 
-        if config.plotting.ymax is not None:
-            yMax = config.plotting.ymax
-            config.plotting.ext_n = 0.0
+        if self.config.plotting.ymax is not None:
+            yMax = self.config.plotting.ymax
+            self.config.plotting.ext_n = 0.0
 
         plt.xlabel(r"$x$ [m]", fontsize=22)
         plt.ylabel(r"$y$ [m]", fontsize=22)
 
         plt.xlim(
             [
-                xMin - (xMax - xMin) * config.plotting.ext_w,
-                xMax + (xMax - xMin) * config.plotting.ext_e,
+                xMin - (xMax - xMin) * self.config.plotting.ext_w,
+                xMax + (xMax - xMin) * self.config.plotting.ext_e,
             ]
         )
         plt.ylim(
             [
-                yMin - (yMax - yMin) * config.plotting.ext_s,
-                yMax + (yMax - yMin) * config.plotting.ext_n,
+                yMin - (yMax - yMin) * self.config.plotting.ext_s,
+                yMax + (yMax - yMin) * self.config.plotting.ext_n,
             ]
         )
         plt.gca().set_aspect("equal")
