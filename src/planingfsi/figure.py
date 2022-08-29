@@ -28,12 +28,12 @@ class FSIFigure:
     def __init__(self, simulation: Simulation):
         self.simulation = simulation
 
-        self.figure = fig = plt.figure(figsize=(16, 12))
+        self.figure = fig = plt.figure(figsize=(16, 9))
         if self.config.plotting.watch:
             plt.ion()
         self.geometry_ax = fig.add_axes([0.05, 0.6, 0.9, 0.35])
 
-        (self.line_nodes,) = plt.plot([], [], "ko")
+        (self.line_nodes,) = self.geometry_ax.plot([], [], "ko")
 
         (self._handle_fs,) = self.geometry_ax.plot([], [], "b-")
         (self._handle_fs_init,) = self.geometry_ax.plot([], [], "b--")
@@ -46,11 +46,11 @@ class FSIFigure:
         self.line_air_pressure = {}
         self.line_fluid_pressure = {}
         for struct in self.solid.substructures:
-            (self.line_air_pressure[struct],) = plt.plot([], [], "g-")
-            (self.line_fluid_pressure[struct],) = plt.plot([], [], "r-")
+            (self.line_air_pressure[struct],) = self.geometry_ax.plot([], [], "g-")
+            (self.line_fluid_pressure[struct],) = self.geometry_ax.plot([], [], "r-")
             for el in struct.elements:
-                (self.element_handles_0[el],) = plt.plot([], [], "k--")
-                (self.element_handles[el],) = plt.plot([], [], "k-", linewidth=2)
+                (self.element_handles_0[el],) = self.geometry_ax.plot([], [], "k--")
+                (self.element_handles[el],) = self.geometry_ax.plot([], [], "k-", linewidth=2)
 
         self.lineCofR: list["CofRPlot"] = []
         for body in self.solid.rigid_bodies:
@@ -95,8 +95,8 @@ class FSIFigure:
             y_max = self.config.plotting.ymax
             self.config.plotting.ext_n = 0.0
 
-        plt.xlabel(r"$x$ [m]", fontsize=22)
-        plt.ylabel(r"$y$ [m]", fontsize=22)
+        self.geometry_ax.set_xlabel(r"$x$ [m]")
+        self.geometry_ax.set_ylabel(r"$y$ [m]")
 
         self.geometry_ax.set_xlim(
             x_min - (x_max - x_min) * self.config.plotting.ext_w,
@@ -107,7 +107,9 @@ class FSIFigure:
             y_max + (y_max - y_min) * self.config.plotting.ext_n,
         )
         self.geometry_ax.set_aspect("equal")
-        self.TXT = plt.text(0.05, 0.95, "", ha="left", va="top", transform=plt.gca().transAxes)
+        self.TXT = self.geometry_ax.text(
+            0.05, 0.95, "", ha="left", va="top", transform=self.geometry_ax.transAxes
+        )
 
         self.subplot: list[TimeHistorySubplot] = []
 
@@ -231,7 +233,7 @@ class FSIFigure:
                 s.write()
 
     def save(self) -> None:
-        plt.savefig(
+        self.figure.savefig(
             os.path.join(
                 self.config.path.fig_dir_name,
                 "frame{1:04d}.{0}".format(self.config.plotting.fig_format, self.simulation.it),
