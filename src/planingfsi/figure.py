@@ -14,6 +14,7 @@ from matplotlib.axes import Axes
 from planingfsi import trig
 
 if TYPE_CHECKING:
+    from planingfsi.config import Config
     from planingfsi.fe.rigid_body import RigidBody
     from planingfsi.fe.structure import StructuralSolver
     from planingfsi.fe.substructure import Substructure
@@ -26,7 +27,6 @@ class FSIFigure:
 
     def __init__(self, simulation: Simulation):
         self.simulation = simulation
-        self.config = simulation.config
 
         self.figure = fig = plt.figure(figsize=(16, 12))
         if self.config.plotting.watch:
@@ -126,6 +126,10 @@ class FSIFigure:
             self.subplot.append(MotionSubplot([0.05, 0.05, 0.25, 0.2], body, parent=self))
 
         self.subplot.append(ResidualSubplot([0.40, 0.05, 0.25, 0.45], self.solid, parent=self))
+
+    @property
+    def config(self) -> Config:
+        return self.simulation.config
 
     @property
     def solid(self) -> "StructuralSolver":
