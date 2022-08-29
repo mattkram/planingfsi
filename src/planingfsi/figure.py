@@ -76,41 +76,37 @@ class FSIFigure:
 
         x = [nd.x for struct in self.solid.substructures for nd in struct.nodes]
         y = [nd.y for struct in self.solid.substructures for nd in struct.nodes]
-        xMin, xMax = min(x), max(x)
-        yMin, yMax = min(y), max(y)
+        x_min, x_max = min(x), max(x)
+        y_min, y_max = min(y), max(y)
 
         if self.config.plotting.xmin is not None:
-            xMin = self.config.plotting.xmin
+            x_min = self.config.plotting.xmin
             self.config.plotting.ext_w = 0.0
 
         if self.config.plotting.xmax is not None:
-            xMax = self.config.plotting.xmax
+            x_max = self.config.plotting.xmax
             self.config.plotting.ext_e = 0.0
 
         if self.config.plotting.ymin is not None:
-            yMin = self.config.plotting.ymin
+            y_min = self.config.plotting.ymin
             self.config.plotting.ext_s = 0.0
 
         if self.config.plotting.ymax is not None:
-            yMax = self.config.plotting.ymax
+            y_max = self.config.plotting.ymax
             self.config.plotting.ext_n = 0.0
 
         plt.xlabel(r"$x$ [m]", fontsize=22)
         plt.ylabel(r"$y$ [m]", fontsize=22)
 
-        plt.xlim(
-            [
-                xMin - (xMax - xMin) * self.config.plotting.ext_w,
-                xMax + (xMax - xMin) * self.config.plotting.ext_e,
-            ]
+        self.geometry_ax.set_xlim(
+            x_min - (x_max - x_min) * self.config.plotting.ext_w,
+            x_max + (x_max - x_min) * self.config.plotting.ext_e,
         )
-        plt.ylim(
-            [
-                yMin - (yMax - yMin) * self.config.plotting.ext_s,
-                yMax + (yMax - yMin) * self.config.plotting.ext_n,
-            ]
+        self.geometry_ax.set_ylim(
+            y_min - (y_max - y_min) * self.config.plotting.ext_s,
+            y_max + (y_max - y_min) * self.config.plotting.ext_n,
         )
-        plt.gca().set_aspect("equal")
+        self.geometry_ax.set_aspect("equal")
         self.TXT = plt.text(0.05, 0.95, "", ha="left", va="top", transform=plt.gca().transAxes)
 
         self.subplot: list[TimeHistorySubplot] = []
