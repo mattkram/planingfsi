@@ -54,23 +54,23 @@ class FSIFigure:
 
         self.lineCofR: list["CofRPlot"] = []
         for bodies in self.solid.rigid_bodies:
+            # Initial position
             CofRPlot(
                 self.geometry_ax,
                 bodies,
                 grid_len=self.config.plotting.CofR_grid_len,
-                symbol=False,
-                style="k--",
-                marker="s",
+                cr_style="k--",
+                cg_marker="ks",
                 fill=False,
             )
+            # Current position (will get updated)
             self.lineCofR.append(
                 CofRPlot(
                     self.geometry_ax,
                     bodies,
                     grid_len=self.config.plotting.CofR_grid_len,
-                    symbol=False,
-                    style="k-",
-                    marker="o",
+                    cr_style="k-",
+                    cg_marker="ko",
                 )
             )
 
@@ -537,30 +537,47 @@ class ResidualSubplot(TimeHistorySubplot):
 
 
 class CofRPlot:
-    def __init__(self, ax: Axes, body: RigidBody, **kwargs: Any):
-        self.ax = ax
-        self.body = body
-        self.symbol = kwargs.get("symbol", True)
-        style = kwargs.get("style", "k-")
-        fill = kwargs.get("fill", True)
-        marker = kwargs.get("marker", "o")
-        if not fill:
-            fcol = "w"
-        else:
-            fcol = "k"
-        self._grid_len = kwargs.get("grid_len", 0.5)
+    """A set of lines and symbols to represent a body center of gravity and rotation.
 
-        (self.line,) = self.ax.plot([], [], style)
-        (self.lineCofG,) = self.ax.plot([], [], "k" + marker, markersize=8, markerfacecolor=fcol)
+    The center of rotation is drawn as two intersecting lines, center of gravity is a black marker.
+
+    Args:
+        ax: The axes to which this belongs.
+        cr_style: The style to use for the lines.
+        grid_len: The length to use for the grid lines.
+        cg_marker: The center of gravity marker shape.
+        fill: If True, fill the symbols with black.
+
+    """
+
+    def __init__(
+        self,
+        ax: Axes,
+        body: RigidBody,
+        *,
+        cr_style: str = "k-",
+        fill: bool = True,
+        cg_marker: str = "o",
+        grid_len: float = 0.5,
+    ):
+        self._ax = ax
+        self._body = body
+        self._grid_len = grid_len
+
+        (self._cr_handle,) = self._ax.plot([], [], cr_style)
+        (self._cg_handle,) = self._ax.plot(
+            [], [], cg_marker, markersize=8, markerfacecolor="w" if not fill else "k"
+        )
         self.update()
 
     def update(self) -> None:
-        c = np.array([self.body.x_cr, self.body.y_cr])
-        hvec = trig.rotate_vec_2d(np.array([0.5 * self._grid_len, 0.0]), self.body.trim)
-        vvec = trig.rotate_vec_2d(np.array([0.0, 0.5 * self._grid_len]), self.body.trim)
+        """Update the position and orientation of the handles."""
+        c = np.array([self._body.x_cr, self._body.y_cr])
+        hvec = trig.rotate_vec_2d(np.array([0.5 * self._grid_len, 0.0]), self._body.trim)
+        vvec = trig.rotate_vec_2d(np.array([0.0, 0.5 * self._grid_len]), self._body.trim)
         pts = np.array([c - hvec, c + hvec, c, c - vvec, c + vvec])
-        self.line.set_data(pts.T)
-        self.lineCofG.set_data(self.body.x_cg, self.body.y_cg)
+        self._cr_handle.set_data(pts.T)
+        self._cg_handle.set_data(self._body.x_cg, self._body.y_cg)
 
 
 def plot_pressure(solver: "PotentialPlaningSolver", fig_format: str = "png") -> None:
