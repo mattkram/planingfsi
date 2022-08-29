@@ -402,14 +402,13 @@ class TimeHistoryAxes:
                 ax.set_ylim([yMin, yMax])
 
     def write(self) -> None:
+        """Write the time series results from the axes to a file."""
         with Path(f"{self._name}_timeHistories.txt").open("w") as ff:
-            x = self._series[0].x
-            y = list(zip(*[s.y for s in self._series]))
-
-            for xi, yi in zip(x, y):
-                ff.write("{0:4.0f}".format(xi))
-                for yii in yi:
-                    ff.write(" {0:8.6e}".format(yii))
+            x = [pt[0] for pt in self._series[0]._points]
+            for i, x_i in enumerate(x):
+                ff.write("{0:4.0f}".format(x_i))
+                for s in self._series:
+                    ff.write(" {0:8.6e}".format(s._points[i][1]))
                 ff.write("\n")
 
 
