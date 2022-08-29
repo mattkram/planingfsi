@@ -117,13 +117,13 @@ class FSIFigure:
 
         if self.solid.rigid_bodies:
             body = self.solid.rigid_bodies[0]
-            self.subplot.append(ForceSubplot((0.70, 0.30, 0.25, 0.2), body, parent=self))
-            self.subplot.append(MotionSubplot((0.70, 0.05, 0.25, 0.2), body, parent=self))
+            self.subplot.append(ForceSubplot((0.70, 0.30, 0.25, 0.2), body=body, parent=self))
+            self.subplot.append(MotionSubplot((0.70, 0.05, 0.25, 0.2), body=body, parent=self))
 
         if len(self.solid.rigid_bodies) > 1:
             body = self.solid.rigid_bodies[1]
-            self.subplot.append(ForceSubplot((0.05, 0.30, 0.25, 0.2), body, parent=self))
-            self.subplot.append(MotionSubplot((0.05, 0.05, 0.25, 0.2), body, parent=self))
+            self.subplot.append(ForceSubplot((0.05, 0.30, 0.25, 0.2), body=body, parent=self))
+            self.subplot.append(MotionSubplot((0.05, 0.05, 0.25, 0.2), body=body, parent=self))
 
         self.subplot.append(ResidualSubplot((0.40, 0.05, 0.25, 0.45), self.solid, parent=self))
 
@@ -329,7 +329,7 @@ class TimeHistoryAxes:
     """
 
     def __init__(
-        self, pos: tuple[float, float, float, float], name: str = "default", *, parent: FSIFigure
+        self, pos: tuple[float, float, float, float], *, name: str = "default", parent: FSIFigure
     ) -> None:
         self._parent = parent
         self._name = name
@@ -416,8 +416,10 @@ class TimeHistoryAxes:
 
 
 class MotionSubplot(TimeHistoryAxes):
-    def __init__(self, pos: tuple[float, float, float, float], body: RigidBody, parent: FSIFigure):
-        super().__init__(pos, body.name, parent=parent)
+    def __init__(
+        self, pos: tuple[float, float, float, float], *, body: RigidBody, parent: FSIFigure
+    ):
+        super().__init__(pos, name=body.name, parent=parent)
 
         def itFunc() -> int:
             return self._parent.simulation.it
@@ -460,8 +462,10 @@ class MotionSubplot(TimeHistoryAxes):
 
 
 class ForceSubplot(TimeHistoryAxes):
-    def __init__(self, pos: tuple[float, float, float, float], body: RigidBody, parent: FSIFigure):
-        super().__init__(pos, body.name, parent=parent)
+    def __init__(
+        self, pos: tuple[float, float, float, float], *, body: RigidBody, parent: FSIFigure
+    ):
+        super().__init__(pos, name=body.name, parent=parent)
 
         def itFunc() -> int:
             return self._parent.simulation.it
@@ -515,7 +519,7 @@ class ResidualSubplot(TimeHistoryAxes):
     def __init__(
         self, pos: tuple[float, float, float, float], solid: "StructuralSolver", parent: FSIFigure
     ):
-        super().__init__(pos, "residuals", parent=parent)
+        super().__init__(pos, name="residuals", parent=parent)
 
         def itFunc() -> int:
             return self._parent.simulation.it
