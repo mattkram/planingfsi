@@ -103,7 +103,6 @@ class GeometrySubplot(Subplot):
 
         self._init_handles()
         self._init_axes()
-        self.TXT = self._ax.text(0.05, 0.95, "", ha="left", va="top", transform=self._ax.transAxes)
 
     def _init_handles(self):
         """Initialize all line handles."""
@@ -144,6 +143,10 @@ class GeometrySubplot(Subplot):
                     cg_marker="ko",
                 )
             )
+
+        self._handle_status_text = self._ax.text(
+            0.05, 0.95, "", ha="left", va="top", transform=self._ax.transAxes
+        )
 
     def _init_axes(self) -> None:
         """Initialize the axes with the correct limits and scaling."""
@@ -260,7 +263,7 @@ class GeometrySubplot(Subplot):
     def update(self, is_final: bool = False) -> None:
         self._draw_structures()
         self._draw_free_surface()
-        self.TXT.set_text(
+        self._handle_status_text.set_text(
             "\n".join(
                 [
                     f"Iteration {self.simulation.it}",
