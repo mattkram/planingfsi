@@ -376,30 +376,33 @@ class TimeHistoryAxes:
             s.update(is_final)
 
         for ax in self._ax:
-            xMin, xMax = 0.0, 5  # config.it + 5
-            yMin = np.nan
-            for i, l in enumerate(ax.get_lines()):
-                y = l.get_data()[1]
-                if len(np.shape(y)) == 0:
-                    y = np.array([y])
+            self._reset_axis_limits(ax)
 
-                try:
-                    y = y[np.ix_(~np.isnan(y))]
-                except TypeError:
-                    y = []
+    def _reset_axis_limits(self, ax: Axes) -> None:
+        x_min, x_max = 0, self._parent.simulation.it + 5
+        y_min, y_max = np.nan, np.nan
+        for i, l in enumerate(ax.get_lines()):
+            y = l.get_ydata()
+            if len(np.shape(y)) == 0:
+                y = np.array([y])
 
-                if not np.shape(y)[0] == 0:
-                    yMinL = np.min(y) - 0.02
-                    yMaxL = np.max(y) + 0.02
-                    if i == 0 or np.isnan(yMin):
-                        yMin, yMax = yMinL, yMaxL
-                    else:
-                        yMin = np.min([yMin, yMinL])
-                        yMax = np.max([yMax, yMaxL])
+            try:
+                y = y[np.ix_(~np.isnan(y))]
+            except TypeError:
+                y = []
 
-            ax.set_xlim([xMin, xMax])
-            if ~np.isnan(yMin) and ~np.isnan(yMax):
-                ax.set_ylim([yMin, yMax])
+            if not np.shape(y)[0] == 0:
+                y_min_l = np.min(y) - 0.02
+                y_max_l = np.max(y) + 0.02
+                if i == 0 or np.isnan(y_min):
+                    y_min, y_max = y_min_l, y_max_l
+                else:
+                    y_min = np.min([y_min, y_min_l])
+                    y_max = np.max([y_max, y_max_l])
+
+        ax.set_xlim(x_min, x_max)
+        if ~np.isnan(y_min) and ~np.isnan(y_max):
+            ax.set_ylim(y_min, y_max)
 
     def write(self) -> None:
         """Write the time series results from the axes to a file."""
