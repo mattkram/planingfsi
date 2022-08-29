@@ -28,102 +28,23 @@ class FSIFigure:
     def __init__(self, simulation: Simulation):
         self.simulation = simulation
 
-        self.figure = fig = plt.figure(figsize=(16, 9))
+        self.figure = plt.figure(figsize=(16, 9))
         if self.config.plotting.watch:
             plt.ion()
-        self.geometry_ax = fig.add_axes([0.05, 0.6, 0.9, 0.35])
 
-        (self.line_nodes,) = self.geometry_ax.plot([], [], "ko")
-
-        (self._handle_fs,) = self.geometry_ax.plot([], [], "b-")
-        (self._handle_fs_init,) = self.geometry_ax.plot([], [], "b--")
-
-        # Line handles for element initial and current positions
-        self.element_handles_0 = {}
-        self.element_handles = {}
-
-        # Line handles for the air and fluid pressure profiles
-        self.line_air_pressure = {}
-        self.line_fluid_pressure = {}
-        for struct in self.solid.substructures:
-            (self.line_air_pressure[struct],) = self.geometry_ax.plot([], [], "g-")
-            (self.line_fluid_pressure[struct],) = self.geometry_ax.plot([], [], "r-")
-            for el in struct.elements:
-                (self.element_handles_0[el],) = self.geometry_ax.plot([], [], "k--")
-                (self.element_handles[el],) = self.geometry_ax.plot([], [], "k-", linewidth=2)
-
-        self.lineCofR: list["CofRPlot"] = []
-        for body in self.solid.rigid_bodies:
-            # Initial position
-            CofRPlot(
-                self.geometry_ax,
-                body,
-                grid_len=self.config.plotting.CofR_grid_len,
-                cr_style="k--",
-                cg_marker="ks",
-                fill=False,
-            )
-            # Current position (will get updated)
-            self.lineCofR.append(
-                CofRPlot(
-                    self.geometry_ax,
-                    body,
-                    grid_len=self.config.plotting.CofR_grid_len,
-                    cr_style="k-",
-                    cg_marker="ko",
-                )
-            )
-
-        x = [nd.x for struct in self.solid.substructures for nd in struct.nodes]
-        y = [nd.y for struct in self.solid.substructures for nd in struct.nodes]
-        x_min, x_max = min(x), max(x)
-        y_min, y_max = min(y), max(y)
-
-        if self.config.plotting.xmin is not None:
-            x_min = self.config.plotting.xmin
-            self.config.plotting.ext_w = 0.0
-
-        if self.config.plotting.xmax is not None:
-            x_max = self.config.plotting.xmax
-            self.config.plotting.ext_e = 0.0
-
-        if self.config.plotting.ymin is not None:
-            y_min = self.config.plotting.ymin
-            self.config.plotting.ext_s = 0.0
-
-        if self.config.plotting.ymax is not None:
-            y_max = self.config.plotting.ymax
-            self.config.plotting.ext_n = 0.0
-
-        self.geometry_ax.set_xlabel(r"$x$ [m]")
-        self.geometry_ax.set_ylabel(r"$y$ [m]")
-
-        self.geometry_ax.set_xlim(
-            x_min - (x_max - x_min) * self.config.plotting.ext_w,
-            x_max + (x_max - x_min) * self.config.plotting.ext_e,
-        )
-        self.geometry_ax.set_ylim(
-            y_min - (y_max - y_min) * self.config.plotting.ext_s,
-            y_max + (y_max - y_min) * self.config.plotting.ext_n,
-        )
-        self.geometry_ax.set_aspect("equal")
-        self.TXT = self.geometry_ax.text(
-            0.05, 0.95, "", ha="left", va="top", transform=self.geometry_ax.transAxes
-        )
-
-        self.subplot: list[TimeHistorySubplot] = []
+        self.subplots: list[Subplot] = [GeometrySubplot((0.05, 0.6, 0.9, 0.35), parent=self)]
 
         if self.solid.rigid_bodies:
             body = self.solid.rigid_bodies[0]
-            self.subplot.append(ForceSubplot((0.70, 0.30, 0.25, 0.2), body=body, parent=self))
-            self.subplot.append(MotionSubplot((0.70, 0.05, 0.25, 0.2), body=body, parent=self))
+            self.subplots.append(ForceSubplot((0.70, 0.30, 0.25, 0.2), body=body, parent=self))
+            self.subplots.append(MotionSubplot((0.70, 0.05, 0.25, 0.2), body=body, parent=self))
 
         if len(self.solid.rigid_bodies) > 1:
             body = self.solid.rigid_bodies[1]
-            self.subplot.append(ForceSubplot((0.05, 0.30, 0.25, 0.2), body=body, parent=self))
-            self.subplot.append(MotionSubplot((0.05, 0.05, 0.25, 0.2), body=body, parent=self))
+            self.subplots.append(ForceSubplot((0.05, 0.30, 0.25, 0.2), body=body, parent=self))
+            self.subplots.append(MotionSubplot((0.05, 0.05, 0.25, 0.2), body=body, parent=self))
 
-        self.subplot.append(
+        self.subplots.append(
             ResidualSubplot((0.40, 0.05, 0.25, 0.45), solid=self.solid, parent=self)
         )
 
@@ -132,12 +53,145 @@ class FSIFigure:
         return self.simulation.config
 
     @property
-    def solid(self) -> "StructuralSolver":
+    def solid(self) -> StructuralSolver:
+        return self.simulation.structural_solver
+
+    def update(self) -> None:
+        """Update all subplots and redraw. If configured, also save figure as an image."""
+        for s in self.subplots:
+            s.update(is_final=self.simulation.is_converged)
+
+        plt.draw()
+
+        if self.config.plotting.save:
+            self.save()
+
+    def write_time_histories(self) -> None:
+        for s in self.subplots:
+            if isinstance(s, TimeHistorySubplot):
+                s.write()
+
+    def save(self) -> None:
+        self.figure.savefig(
+            os.path.join(
+                self.config.path.fig_dir_name,
+                "frame{1:04d}.{0}".format(self.config.plotting.fig_format, self.simulation.it),
+            ),
+            format=self.config.plotting.fig_format,
+        )  # , dpi=300)
+
+    def show(self) -> None:
+        plt.show(block=True)
+
+
+class Subplot:
+    """Base class for all subplots."""
+
+    def update(self, is_final: bool = False) -> None:
+        raise NotImplementedError
+
+
+class GeometrySubplot(Subplot):
+    """A subplot containing the geometry of the body as well as the free surface
+    and pressure profiles.
+
+    """
+
+    def __init__(self, pos: tuple[float, float, float, float], *, parent: FSIFigure):
+        self._parent = parent
+        self._ax = parent.figure.add_axes(pos)
+
+        (self.line_nodes,) = self._ax.plot([], [], "ko")
+
+        (self._handle_fs,) = self._ax.plot([], [], "b-")
+        (self._handle_fs_init,) = self._ax.plot([], [], "b--")
+
+        # Line handles for element initial and current positions
+        self.element_handles_0 = {}
+        self.element_handles = {}
+
+        # Line handles for the air and fluid pressure profiles
+        self.line_air_pressure = {}
+        self.line_fluid_pressure = {}
+        for struct in self._parent.solid.substructures:
+            (self.line_air_pressure[struct],) = self._ax.plot([], [], "g-")
+            (self.line_fluid_pressure[struct],) = self._ax.plot([], [], "r-")
+            for el in struct.elements:
+                (self.element_handles_0[el],) = self._ax.plot([], [], "k--")
+                (self.element_handles[el],) = self._ax.plot([], [], "k-", linewidth=2)
+
+        self.lineCofR: list[CofRPlot] = []
+        for body in self._parent.solid.rigid_bodies:
+            # Initial position
+            CofRPlot(
+                self._ax,
+                body,
+                grid_len=self._parent.config.plotting.CofR_grid_len,
+                cr_style="k--",
+                cg_marker="ks",
+                fill=False,
+            )
+            # Current position (will get updated)
+            self.lineCofR.append(
+                CofRPlot(
+                    self._ax,
+                    body,
+                    grid_len=self._parent.config.plotting.CofR_grid_len,
+                    cr_style="k-",
+                    cg_marker="ko",
+                )
+            )
+
+        x = [nd.x for struct in self._parent.solid.substructures for nd in struct.nodes]
+        y = [nd.y for struct in self._parent.solid.substructures for nd in struct.nodes]
+        x_min, x_max = min(x), max(x)
+        y_min, y_max = min(y), max(y)
+
+        if self._parent.config.plotting.xmin is not None:
+            x_min = self._parent.config.plotting.xmin
+            self._parent.config.plotting.ext_w = 0.0
+
+        if self._parent.config.plotting.xmax is not None:
+            x_max = self._parent.config.plotting.xmax
+            self._parent.config.plotting.ext_e = 0.0
+
+        if self._parent.config.plotting.ymin is not None:
+            y_min = self._parent.config.plotting.ymin
+            self._parent.config.plotting.ext_s = 0.0
+
+        if self._parent.config.plotting.ymax is not None:
+            y_max = self._parent.config.plotting.ymax
+            self.config.plotting.ext_n = 0.0
+
+        self._ax.set_xlabel(r"$x$ [m]")
+        self._ax.set_ylabel(r"$y$ [m]")
+
+        self._ax.set_xlim(
+            x_min - (x_max - x_min) * self.config.plotting.ext_w,
+            x_max + (x_max - x_min) * self.config.plotting.ext_e,
+        )
+        self._ax.set_ylim(
+            y_min - (y_max - y_min) * self.config.plotting.ext_s,
+            y_max + (y_max - y_min) * self.config.plotting.ext_n,
+        )
+        self._ax.set_aspect("equal")
+        self.TXT = self._ax.text(0.05, 0.95, "", ha="left", va="top", transform=self._ax.transAxes)
+
+    @property
+    def simulation(self) -> Simulation:
+        return self._parent.simulation
+
+    @property
+    def solid(self) -> StructuralSolver:
         return self.simulation.structural_solver
 
     @property
-    def fluid(self) -> "PotentialPlaningSolver":
+    def fluid(self) -> PotentialPlaningSolver:
         return self.simulation.fluid_solver
+
+    @property
+    def config(self) -> Config:
+        return self._parent.config
 
     def _draw_free_surface(self) -> None:
         """Draw the actual and undisturbed free-surface lines."""
@@ -199,7 +253,7 @@ class FSIFigure:
             for struct in body.substructures:
                 self._draw_substructure(struct)
 
-    def update(self) -> None:
+    def update(self, is_final: bool = False) -> None:
         self._draw_structures()
         self._draw_free_surface()
         self.TXT.set_text(
@@ -211,38 +265,8 @@ class FSIFigure:
                 ]
             )
         )
-
-        # Update each lower subplot
-        for s in self.subplot:
-            s.update(
-                self.solid.residual < self.config.solver.max_residual
-                and self.simulation.it > self.config.solver.num_ramp_it
-            )
-
         for line in self.lineCofR:
             line.update()
-
-        plt.draw()
-
-        if self.config.plotting.save:
-            self.save()
-
-    def write_time_histories(self) -> None:
-        for s in self.subplot:
-            if isinstance(s, TimeHistorySubplot):
-                s.write()
-
-    def save(self) -> None:
-        self.figure.savefig(
-            os.path.join(
-                self.config.path.fig_dir_name,
-                "frame{1:04d}.{0}".format(self.config.plotting.fig_format, self.simulation.it),
-            ),
-            format=self.config.plotting.fig_format,
-        )  # , dpi=300)
-
-    def show(self) -> None:
-        plt.show(block=True)
 
 
 class Series:
@@ -318,7 +342,7 @@ class Series:
             self.line_handle.set_markersize(10)
 
 
-class TimeHistorySubplot:
+class TimeHistorySubplot(Subplot):
     """A collection of axes (subplot) for displaying iteration series'.
 
     Args:

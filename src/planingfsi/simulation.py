@@ -93,6 +93,13 @@ class Simulation:
         return self.structural_solver.residual
 
     @property
+    def is_converged(self) -> bool:
+        return (
+            self.structural_solver.residual < self.config.solver.max_residual
+            and self.it > self.config.solver.num_ramp_it
+        )
+
+    @property
     def is_write_iteration(self) -> bool:
         """True if results should be written at the end of the current iteration."""
         return (
