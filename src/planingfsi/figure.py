@@ -339,19 +339,35 @@ class TimeHistoryAxes:
         self._add_axes(parent.figure.add_axes(pos))
 
     def _add_axes(self, ax: Axes) -> None:
+        """Add a set of child axes."""
         self._ax.append(ax)
 
     def _add_y_axes(self) -> None:
+        """Add a twin y-axis, which shares an x-axis but has a different y-axis scale."""
         self._add_axes(plt.twinx(self._ax[0]))
 
-    def add_series(self, series: "Series") -> "Series":
+    def add_series(self, series: Series) -> Series:
+        """Add a series to the subplot."""
         self._series.append(series)
         return series
 
     def set_properties(self, ax_ind: int = 0, **kwargs: Any) -> None:
+        """Set the properties of a specific axis by calling matplotlib's `plt.setp()` function.
+
+        Args:
+            ax_ind: The index of the axes.
+            kwargs: Keyword arguments to pass through to `plt.setp()`.
+
+        """
         plt.setp(self._ax[ax_ind], **kwargs)
 
     def create_legend(self, ax_ind: int = 0) -> None:
+        """Create a legend for a specific set of axes.
+
+        Args:
+            ax_ind: The index of the axes.
+
+        """
         line, name = list(
             zip(*[(s.line_handle, s.label) for s in self._series if s.label is not None])
         )
