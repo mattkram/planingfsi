@@ -113,19 +113,19 @@ class FSIFigure:
         plt.gca().set_aspect("equal")
         self.TXT = plt.text(0.05, 0.95, "", ha="left", va="top", transform=plt.gca().transAxes)
 
-        self.subplot: list["TimeHistory"] = []
+        self.subplot: list[TimeHistoryAxes] = []
 
         if self.solid.rigid_bodies:
             body = self.solid.rigid_bodies[0]
-            self.subplot.append(ForceSubplot([0.70, 0.30, 0.25, 0.2], body, parent=self))
-            self.subplot.append(MotionSubplot([0.70, 0.05, 0.25, 0.2], body, parent=self))
+            self.subplot.append(ForceSubplot((0.70, 0.30, 0.25, 0.2), body, parent=self))
+            self.subplot.append(MotionSubplot((0.70, 0.05, 0.25, 0.2), body, parent=self))
 
         if len(self.solid.rigid_bodies) > 1:
             body = self.solid.rigid_bodies[1]
-            self.subplot.append(ForceSubplot([0.05, 0.30, 0.25, 0.2], body, parent=self))
-            self.subplot.append(MotionSubplot([0.05, 0.05, 0.25, 0.2], body, parent=self))
+            self.subplot.append(ForceSubplot((0.05, 0.30, 0.25, 0.2), body, parent=self))
+            self.subplot.append(MotionSubplot((0.05, 0.05, 0.25, 0.2), body, parent=self))
 
-        self.subplot.append(ResidualSubplot([0.40, 0.05, 0.25, 0.45], self.solid, parent=self))
+        self.subplot.append(ResidualSubplot((0.40, 0.05, 0.25, 0.45), self.solid, parent=self))
 
     @property
     def config(self) -> Config:
@@ -229,7 +229,7 @@ class FSIFigure:
 
     def write_time_histories(self) -> None:
         for s in self.subplot:
-            if isinstance(s, TimeHistory):
+            if isinstance(s, TimeHistoryAxes):
                 s.write()
 
     def save(self) -> None:
@@ -318,44 +318,51 @@ class Series:
             self.line_handle.set_markersize(10)
 
 
-class TimeHistory:
-    def __init__(self, pos: list[float], name: str = "default", *, parent: FSIFigure) -> None:
-        self.parent = parent
-        self.series: list["Series"] = []
-        self.ax: list[Axes] = []
-        self.title = ""
-        self.xlabel = ""
-        self.ylabel = ""
+class TimeHistoryAxes:
+    """A collection of axes (subplot) for displaying iteration series'.
 
-        self.name = name
+    Args:
+        pos: The relative position of the axes in the figure.
+        parent: A reference to the parent FSIFigure.
+        name: A name for the subplot, used when exporting plot data to file.
 
-        self.add_axes(plt.axes(pos))
+    """
 
-    def add_axes(self, ax: Axes) -> None:
-        self.ax.append(ax)
+    def __init__(
+        self, pos: tuple[float, float, float, float], name: str = "default", *, parent: FSIFigure
+    ) -> None:
+        self._parent = parent
+        self._name = name
+        self._series: list[Series] = []
+        self._ax: list[Axes] = []
 
-    def add_y_axes(self) -> None:
-        self.add_axes(plt.twinx(self.ax[0]))
+        self._add_axes(parent.figure.add_axes(pos))
+
+    def _add_axes(self, ax: Axes) -> None:
+        self._ax.append(ax)
+
+    def _add_y_axes(self) -> None:
+        self._add_axes(plt.twinx(self._ax[0]))
 
     def add_series(self, series: "Series") -> "Series":
-        self.series.append(series)
+        self._series.append(series)
         return series
 
     def set_properties(self, ax_ind: int = 0, **kwargs: Any) -> None:
-        plt.setp(self.ax[ax_ind], **kwargs)
+        plt.setp(self._ax[ax_ind], **kwargs)
 
     def create_legend(self, ax_ind: int = 0) -> None:
         line, name = list(
-            zip(*[(s.line_handle, s.label) for s in self.series if s.label is not None])
+            zip(*[(s.line_handle, s.label) for s in self._series if s.label is not None])
         )
-        self.ax[ax_ind].legend(line, name, loc="lower left")
+        self._ax[ax_ind].legend(line, name, loc="lower left")
 
     def update(self, final: bool = False) -> None:
         """Update the figure."""
-        for s in self.series:
+        for s in self._series:
             s.update(final)
 
-        for ax in self.ax:
+        for ax in self._ax:
             xMin, xMax = 0.0, 5  # config.it + 5
             yMin = np.nan
             for i, l in enumerate(ax.get_lines()):
@@ -382,9 +389,9 @@ class TimeHistory:
                 ax.set_ylim([yMin, yMax])
 
     def write(self) -> None:
-        with Path(f"{self.name}_timeHistories.txt").open("w") as ff:
-            x = self.series[0].x
-            y = list(zip(*[s.y for s in self.series]))
+        with Path(f"{self._name}_timeHistories.txt").open("w") as ff:
+            x = self._series[0].x
+            y = list(zip(*[s.y for s in self._series]))
 
             for xi, yi in zip(x, y):
                 ff.write("{0:4.0f}".format(xi))
@@ -393,12 +400,12 @@ class TimeHistory:
                 ff.write("\n")
 
 
-class MotionSubplot(TimeHistory):
-    def __init__(self, pos: list[float], body: RigidBody, parent: FSIFigure):
-        TimeHistory.__init__(self, pos, body.name, parent=parent)
+class MotionSubplot(TimeHistoryAxes):
+    def __init__(self, pos: tuple[float, float, float, float], body: RigidBody, parent: FSIFigure):
+        super().__init__(pos, body.name, parent=parent)
 
-        def itFunc() -> float:
-            return 0.0  # config.it
+        def itFunc() -> int:
+            return self._parent.simulation.it
 
         def drftFunc() -> float:
             return body.draft
@@ -406,14 +413,14 @@ class MotionSubplot(TimeHistory):
         def trimFunc() -> float:
             return body.trim
 
-        self.add_y_axes()
+        self._add_y_axes()
 
         # Add plot series to appropriate axis
         self.add_series(
             Series(
                 itFunc,
                 drftFunc,
-                ax=self.ax[0],
+                ax=self._ax[0],
                 style="b-",
                 label="Draft",
             )
@@ -422,7 +429,7 @@ class MotionSubplot(TimeHistory):
             Series(
                 itFunc,
                 trimFunc,
-                ax=self.ax[1],
+                ax=self._ax[1],
                 style="r-",
                 label="Trim",
             )
@@ -437,12 +444,12 @@ class MotionSubplot(TimeHistory):
         self.create_legend()
 
 
-class ForceSubplot(TimeHistory):
-    def __init__(self, pos: list[float], body: RigidBody, parent: FSIFigure):
-        TimeHistory.__init__(self, pos, body.name, parent=parent)
+class ForceSubplot(TimeHistoryAxes):
+    def __init__(self, pos: tuple[float, float, float, float], body: RigidBody, parent: FSIFigure):
+        super().__init__(pos, body.name, parent=parent)
 
-        def itFunc() -> float:
-            return 0.0  # config.it
+        def itFunc() -> int:
+            return self._parent.simulation.it
 
         def liftFunc() -> float:
             return body.loads.L / body.weight
@@ -451,7 +458,7 @@ class ForceSubplot(TimeHistory):
             return body.loads.D / body.weight
 
         def momFunc() -> float:
-            return body.loads.M / (body.weight * self.parent.config.body.reference_length)
+            return body.loads.M / (body.weight * self._parent.config.body.reference_length)
 
         self.add_series(
             Series(
@@ -489,12 +496,14 @@ class ForceSubplot(TimeHistory):
         self.create_legend()
 
 
-class ResidualSubplot(TimeHistory):
-    def __init__(self, pos: list[float], solid: "StructuralSolver", parent: FSIFigure):
-        TimeHistory.__init__(self, pos, "residuals", parent=parent)
+class ResidualSubplot(TimeHistoryAxes):
+    def __init__(
+        self, pos: tuple[float, float, float, float], solid: "StructuralSolver", parent: FSIFigure
+    ):
+        super().__init__(pos, "residuals", parent=parent)
 
-        def itFunc() -> float:
-            return 0.0  # config.it
+        def itFunc() -> int:
+            return self._parent.simulation.it
 
         col = ["r", "b", "g"]
         for bd, coli in zip(solid.rigid_bodies, col):
