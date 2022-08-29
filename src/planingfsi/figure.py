@@ -282,7 +282,7 @@ class Series:
         self._ignore_first = ignore_first
 
         ax = ax or plt.gca()
-        (self.line_handle,) = ax.plot([], [], style)
+        (self.line_handle,) = ax.plot([], [], style, label=label)
 
         self._current_value_series: Series | None = None
         if include_history:
@@ -368,10 +368,7 @@ class TimeHistoryAxes:
             ax_ind: The index of the axes.
 
         """
-        line, name = list(
-            zip(*[(s.line_handle, s.label) for s in self._series if s.label is not None])
-        )
-        self._ax[ax_ind].legend(line, name, loc="lower left")
+        self._ax[ax_ind].legend(loc="lower left")
 
     def update(self, final: bool = False) -> None:
         """Update the figure."""
