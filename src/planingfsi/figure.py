@@ -113,7 +113,7 @@ class FSIFigure:
         plt.gca().set_aspect("equal")
         self.TXT = plt.text(0.05, 0.95, "", ha="left", va="top", transform=plt.gca().transAxes)
 
-        self.subplot: list[TimeHistoryAxes] = []
+        self.subplot: list[TimeHistorySubplot] = []
 
         if self.solid.rigid_bodies:
             body = self.solid.rigid_bodies[0]
@@ -229,7 +229,7 @@ class FSIFigure:
 
     def write_time_histories(self) -> None:
         for s in self.subplot:
-            if isinstance(s, TimeHistoryAxes):
+            if isinstance(s, TimeHistorySubplot):
                 s.write()
 
     def save(self) -> None:
@@ -318,7 +318,7 @@ class Series:
             self.line_handle.set_markersize(10)
 
 
-class TimeHistoryAxes:
+class TimeHistorySubplot:
     """A collection of axes (subplot) for displaying iteration series'.
 
     Args:
@@ -415,7 +415,7 @@ class TimeHistoryAxes:
                 ff.write("\n")
 
 
-class MotionSubplot(TimeHistoryAxes):
+class MotionSubplot(TimeHistorySubplot):
     def __init__(
         self, pos: tuple[float, float, float, float], *, body: RigidBody, parent: FSIFigure
     ):
@@ -461,7 +461,7 @@ class MotionSubplot(TimeHistoryAxes):
         self.create_legend()
 
 
-class ForceSubplot(TimeHistoryAxes):
+class ForceSubplot(TimeHistorySubplot):
     def __init__(
         self, pos: tuple[float, float, float, float], *, body: RigidBody, parent: FSIFigure
     ):
@@ -515,7 +515,7 @@ class ForceSubplot(TimeHistoryAxes):
         self.create_legend()
 
 
-class ResidualSubplot(TimeHistoryAxes):
+class ResidualSubplot(TimeHistorySubplot):
     def __init__(
         self, pos: tuple[float, float, float, float], solid: "StructuralSolver", parent: FSIFigure
     ):
