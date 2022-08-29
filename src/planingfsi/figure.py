@@ -101,24 +101,24 @@ class GeometrySubplot(Subplot):
         self._parent = parent
         self._ax = parent.figure.add_axes(pos)
 
-        (self.line_nodes,) = self._ax.plot([], [], "ko")
+        (self._handle_nodes,) = self._ax.plot([], [], "ko")
 
         (self._handle_fs,) = self._ax.plot([], [], "b-")
         (self._handle_fs_init,) = self._ax.plot([], [], "b--")
 
         # Line handles for element initial and current positions
-        self.element_handles_0 = {}
-        self.element_handles = {}
+        self._handles_elements_init = {}
+        self._handles_elements = {}
 
         # Line handles for the air and fluid pressure profiles
-        self.line_air_pressure = {}
-        self.line_fluid_pressure = {}
+        self._handles_air_pressure = {}
+        self._handles_hydro_pressure = {}
         for struct in self._parent.solid.substructures:
-            (self.line_air_pressure[struct],) = self._ax.plot([], [], "g-")
-            (self.line_fluid_pressure[struct],) = self._ax.plot([], [], "r-")
+            (self._handles_air_pressure[struct],) = self._ax.plot([], [], "g-")
+            (self._handles_hydro_pressure[struct],) = self._ax.plot([], [], "r-")
             for el in struct.elements:
-                (self.element_handles_0[el],) = self._ax.plot([], [], "k--")
-                (self.element_handles[el],) = self._ax.plot([], [], "k-", linewidth=2)
+                (self._handles_elements_init[el],) = self._ax.plot([], [], "k--")
+                (self._handles_elements[el],) = self._ax.plot([], [], "k-", linewidth=2)
 
         self.lineCofR: list[CofRPlot] = []
         for body in self._parent.solid.rigid_bodies:
@@ -222,18 +222,18 @@ class GeometrySubplot(Subplot):
 
     def _draw_pressure_profiles(self, ss: Substructure) -> None:
         """Plot the internal and external pressure profiles as lines."""
-        if handle := self.line_fluid_pressure.get(ss):
+        if handle := self._handles_hydro_pressure.get(ss):
             handle.set_data(self._get_pressure_plot_points(ss, ss.s_hydro, ss.p_hydro))
-        if handle := self.line_air_pressure.get(ss):
+        if handle := self._handles_air_pressure.get(ss):
             handle.set_data(self._get_pressure_plot_points(ss, ss.s_air, -ss.p_air))
 
     def _draw_substructure(self, ss: Substructure) -> None:
         """Plot the substructure elements and pressure profiles."""
         for el in ss.elements:
-            if handle := self.element_handles.get(el):
+            if handle := self._handles_elements.get(el):
                 handle.set_data([nd.x for nd in el.nodes], [nd.y for nd in el.nodes])
 
-            if handle := self.element_handles_0.get(el):
+            if handle := self._handles_elements_init.get(el):
                 base_pt = np.array([el.parent.rigid_body.x_cr_init, el.parent.rigid_body.y_cr_init])
                 pos = [
                     trig.rotate_point(pos, base_pt, el.parent.rigid_body.trim)
