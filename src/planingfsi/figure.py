@@ -101,15 +101,19 @@ class GeometrySubplot(Subplot):
         self._parent = parent
         self._ax = parent.figure.add_axes(pos)
 
-        (self._handle_nodes,) = self._ax.plot([], [], "ko")
+        self._init_handles()
+        self._init_axes()
+        self.TXT = self._ax.text(0.05, 0.95, "", ha="left", va="top", transform=self._ax.transAxes)
 
+    def _init_handles(self):
+        """Initialize all line handles."""
+        (self._handle_nodes,) = self._ax.plot([], [], "ko")
         (self._handle_fs,) = self._ax.plot([], [], "b-")
         (self._handle_fs_init,) = self._ax.plot([], [], "b--")
 
         # Line handles for element initial and current positions
         self._handles_elements_init = {}
         self._handles_elements = {}
-
         # Line handles for the air and fluid pressure profiles
         self._handles_air_pressure = {}
         self._handles_hydro_pressure = {}
@@ -119,7 +123,6 @@ class GeometrySubplot(Subplot):
             for el in struct.elements:
                 (self._handles_elements_init[el],) = self._ax.plot([], [], "k--")
                 (self._handles_elements[el],) = self._ax.plot([], [], "k-", linewidth=2)
-
         self.lineCofR: list[CofRPlot] = []
         for body in self._parent.solid.rigid_bodies:
             # Initial position
@@ -142,30 +145,29 @@ class GeometrySubplot(Subplot):
                 )
             )
 
-        x = [nd.x for struct in self._parent.solid.substructures for nd in struct.nodes]
-        y = [nd.y for struct in self._parent.solid.substructures for nd in struct.nodes]
+    def _init_axes(self) -> None:
+        """Initialize the axes with the correct limits and scaling."""
+        # Find max/min of all nodal coordinates
+        x = [nd.x for nd in self.solid.nodes]
+        y = [nd.y for nd in self.solid.nodes]
         x_min, x_max = min(x), max(x)
         y_min, y_max = min(y), max(y)
 
+        # Handle explicit setting of max/min dimensions
         if self._parent.config.plotting.xmin is not None:
             x_min = self._parent.config.plotting.xmin
             self._parent.config.plotting.ext_w = 0.0
-
         if self._parent.config.plotting.xmax is not None:
             x_max = self._parent.config.plotting.xmax
             self._parent.config.plotting.ext_e = 0.0
-
         if self._parent.config.plotting.ymin is not None:
             y_min = self._parent.config.plotting.ymin
             self._parent.config.plotting.ext_s = 0.0
-
         if self._parent.config.plotting.ymax is not None:
             y_max = self._parent.config.plotting.ymax
             self.config.plotting.ext_n = 0.0
 
-        self._ax.set_xlabel(r"$x$ [m]")
-        self._ax.set_ylabel(r"$y$ [m]")
-
+        # Set the limits & axis labels
         self._ax.set_xlim(
             x_min - (x_max - x_min) * self.config.plotting.ext_w,
             x_max + (x_max - x_min) * self.config.plotting.ext_e,
@@ -175,7 +177,9 @@ class GeometrySubplot(Subplot):
             y_max + (y_max - y_min) * self.config.plotting.ext_n,
         )
         self._ax.set_aspect("equal")
-        self.TXT = self._ax.text(0.05, 0.95, "", ha="left", va="top", transform=self._ax.transAxes)
+
+        self._ax.set_xlabel(r"$x$ [m]")
+        self._ax.set_ylabel(r"$y$ [m]")
 
     @property
     def simulation(self) -> Simulation:
