@@ -294,11 +294,11 @@ class Series:
                 style=style_current,
             )
 
-    def update(self, final: bool = False) -> None:
+    def update(self, is_final: bool = False) -> None:
         """Update the line data by calling the assigned callback functions.
 
         Args:
-            final: If True, it is the final iteration and the current value will
+            is_final: If True, it is the final iteration and the current value will
                 be drawn as a yellow star.
         """
         if self._current_value_series is None:
@@ -310,9 +310,9 @@ class Series:
 
         self.line_handle.set_data(*zip(*self._points))
         if self._current_value_series is not None:
-            self._current_value_series.update(final)
+            self._current_value_series.update(is_final)
 
-        if final:
+        if is_final:
             self.line_handle.set_marker("*")
             self.line_handle.set_markerfacecolor("y")
             self.line_handle.set_markersize(10)
@@ -370,10 +370,10 @@ class TimeHistoryAxes:
         """
         self._ax[ax_ind].legend(loc="lower left")
 
-    def update(self, final: bool = False) -> None:
+    def update(self, is_final: bool = False) -> None:
         """Update the figure."""
         for s in self._series:
-            s.update(final)
+            s.update(is_final)
 
         for ax in self._ax:
             xMin, xMax = 0.0, 5  # config.it + 5
