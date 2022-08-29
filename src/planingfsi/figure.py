@@ -245,61 +245,83 @@ class FSIFigure:
         plt.show(block=True)
 
 
-class PlotSeries:
+class Series:
+    """A container to represent a series on a figure.
+
+    Args:
+        x_func: A callable which returns x-coordinates of the series points.
+        y_func: A callable which returns y-coordinates of the series points.
+        include_history: If True, the full history will be stored and drawn. Otherwise,
+            only the latest point will be drawn.
+        ax: An axis handle. Defaults to `plt.gca()`.
+        label: An optional label to use for the plot legend.
+        ignore_first: If True, ignore the first point of the series.
+        style: The style to use for the history line.
+        style_current: The style to use for the symbol representing the current value.
+
+    """
+
     def __init__(
-        self, x_func: Callable[[], float], y_func: Callable[[], float], **kwargs: Any
+        self,
+        x_func: Callable[[], float],
+        y_func: Callable[[], float],
+        *,
+        include_history: bool = True,
+        ax: Axes | None = None,
+        label: str | None = None,
+        ignore_first: bool = False,
+        style: str = "k-",
+        style_current: str = "ro",
     ) -> None:
-        self.x: list[float] = []
-        self.y: list[float] = []
-        self.additionalSeries: list["PlotSeries"] = []
+        self._points: list[tuple[float, float]] = []
 
-        self.get_x = x_func
-        self.get_y = y_func
+        self._get_x = x_func
+        self._get_y = y_func
 
-        self.series_type = kwargs.get("type", "point")
-        self.ax = kwargs.get("ax", plt.gca())
-        self.legEnt = kwargs.get("legEnt", None)
-        self.ignore_first = kwargs.get("ignoreFirst", False)
+        self.label = label
+        self._ignore_first = ignore_first
 
-        (self.line,) = self.ax.plot([], [], kwargs.get("sty", "k-"))
+        ax = ax or plt.gca()
+        (self.line_handle,) = ax.plot([], [], style)
 
-        if self.series_type == "history+curr":
-            self.additionalSeries.append(
-                PlotSeries(
-                    x_func,
-                    y_func,
-                    ax=self.ax,
-                    type="point",
-                    sty=kwargs.get("currSty", "ro"),
-                )
+        self._current_value_series: Series | None = None
+        if include_history:
+            self._current_value_series = Series(
+                x_func,
+                y_func,
+                ax=ax,
+                include_history=False,
+                style=style_current,
             )
 
     def update(self, final: bool = False) -> None:
-        if self.series_type == "point":
-            self.x = [self.get_x()]
-            self.y = [self.get_y()]
-            if final:
-                self.line.set_marker("*")
-                self.line.set_markerfacecolor("y")
-                self.line.set_markersize(10)
+        """Update the line data by calling the assigned callback functions.
+
+        Args:
+            final: If True, it is the final iteration and the current value will
+                be drawn as a yellow star.
+        """
+        if self._current_value_series is None:
+            self._points = [(self._get_x(), self._get_y())]
+        elif self._ignore_first and not self._points:
+            self._points.append((np.nan, np.nan))
         else:
-            if self.ignore_first and self.get_x() == 0:
-                self.x.append(np.nan)
-                self.y.append(np.nan)
-            else:
-                self.x.append(self.get_x())
-                self.y.append(self.get_y())
+            self._points.append((self._get_x(), self._get_y()))
 
-        self.line.set_data(self.x, self.y)
+        self.line_handle.set_data(*zip(*self._points))
+        if self._current_value_series is not None:
+            self._current_value_series.update(final)
 
-        for s in self.additionalSeries:
-            s.update(final)
+        if final:
+            self.line_handle.set_marker("*")
+            self.line_handle.set_markerfacecolor("y")
+            self.line_handle.set_markersize(10)
 
 
 class TimeHistory:
     def __init__(self, pos: list[float], name: str = "default", *, parent: FSIFigure) -> None:
         self.parent = parent
-        self.series: list["PlotSeries"] = []
+        self.series: list["Series"] = []
         self.ax: list[Axes] = []
         self.title = ""
         self.xlabel = ""
@@ -315,7 +337,7 @@ class TimeHistory:
     def add_y_axes(self) -> None:
         self.add_axes(plt.twinx(self.ax[0]))
 
-    def add_series(self, series: "PlotSeries") -> "PlotSeries":
+    def add_series(self, series: "Series") -> "Series":
         self.series.append(series)
         return series
 
@@ -323,7 +345,9 @@ class TimeHistory:
         plt.setp(self.ax[ax_ind], **kwargs)
 
     def create_legend(self, ax_ind: int = 0) -> None:
-        line, name = list(zip(*[(s.line, s.legEnt) for s in self.series if s.legEnt is not None]))
+        line, name = list(
+            zip(*[(s.line_handle, s.label) for s in self.series if s.label is not None])
+        )
         self.ax[ax_ind].legend(line, name, loc="lower left")
 
     def update(self, final: bool = False) -> None:
@@ -386,23 +410,21 @@ class MotionSubplot(TimeHistory):
 
         # Add plot series to appropriate axis
         self.add_series(
-            PlotSeries(
+            Series(
                 itFunc,
                 drftFunc,
                 ax=self.ax[0],
-                sty="b-",
-                type="history+curr",
-                legEnt="Draft",
+                style="b-",
+                label="Draft",
             )
         )
         self.add_series(
-            PlotSeries(
+            Series(
                 itFunc,
                 trimFunc,
                 ax=self.ax[1],
-                sty="r-",
-                type="history+curr",
-                legEnt="Trim",
+                style="r-",
+                label="Trim",
             )
         )
 
@@ -432,33 +454,30 @@ class ForceSubplot(TimeHistory):
             return body.loads.M / (body.weight * self.parent.config.body.reference_length)
 
         self.add_series(
-            PlotSeries(
+            Series(
                 itFunc,
                 liftFunc,
-                sty="r-",
-                type="history+curr",
-                legEnt="Lift",
-                ignoreFirst=True,
+                style="r-",
+                label="Lift",
+                ignore_first=True,
             )
         )
         self.add_series(
-            PlotSeries(
+            Series(
                 itFunc,
                 dragFunc,
-                sty="b-",
-                type="history+curr",
-                legEnt="Drag",
-                ignoreFirst=True,
+                style="b-",
+                label="Drag",
+                ignore_first=True,
             )
         )
         self.add_series(
-            PlotSeries(
+            Series(
                 itFunc,
                 momFunc,
-                sty="g-",
-                type="history+curr",
-                legEnt="Moment",
-                ignoreFirst=True,
+                style="g-",
+                label="Moment",
+                ignore_first=True,
             )
         )
 
@@ -480,34 +499,31 @@ class ResidualSubplot(TimeHistory):
         col = ["r", "b", "g"]
         for bd, coli in zip(solid.rigid_bodies, col):
             self.add_series(
-                PlotSeries(
+                Series(
                     itFunc,
                     bd.get_res_lift,
-                    sty="{0}-".format(coli),
-                    type="history+curr",
-                    legEnt="ResL: {0}".format(bd.name),
-                    ignoreFirst=True,
+                    style="{0}-".format(coli),
+                    label="ResL: {0}".format(bd.name),
+                    ignore_first=True,
                 )
             )
             self.add_series(
-                PlotSeries(
+                Series(
                     itFunc,
                     bd.get_res_moment,
-                    sty="{0}--".format(coli),
-                    type="history+curr",
-                    legEnt="ResM: {0}".format(bd.name),
-                    ignoreFirst=True,
+                    style="{0}--".format(coli),
+                    label="ResM: {0}".format(bd.name),
+                    ignore_first=True,
                 )
             )
 
         self.add_series(
-            PlotSeries(
+            Series(
                 itFunc,
                 lambda: np.abs(solid.residual),
-                sty="k-",
-                type="history+curr",
-                legEnt="Total",
-                ignoreFirst=True,
+                style="k-",
+                label="Total",
+                ignore_first=True,
             )
         )
 
