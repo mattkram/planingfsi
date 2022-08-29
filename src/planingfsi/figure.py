@@ -53,11 +53,11 @@ class FSIFigure:
                 (self.element_handles[el],) = plt.plot([], [], "k-", linewidth=2)
 
         self.lineCofR: list["CofRPlot"] = []
-        for bodies in self.solid.rigid_bodies:
+        for body in self.solid.rigid_bodies:
             # Initial position
             CofRPlot(
                 self.geometry_ax,
-                bodies,
+                body,
                 grid_len=self.config.plotting.CofR_grid_len,
                 cr_style="k--",
                 cg_marker="ks",
@@ -67,7 +67,7 @@ class FSIFigure:
             self.lineCofR.append(
                 CofRPlot(
                     self.geometry_ax,
-                    bodies,
+                    body,
                     grid_len=self.config.plotting.CofR_grid_len,
                     cr_style="k-",
                     cg_marker="ko",
