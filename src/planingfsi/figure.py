@@ -125,7 +125,9 @@ class FSIFigure:
             self.subplot.append(ForceSubplot((0.05, 0.30, 0.25, 0.2), body=body, parent=self))
             self.subplot.append(MotionSubplot((0.05, 0.05, 0.25, 0.2), body=body, parent=self))
 
-        self.subplot.append(ResidualSubplot((0.40, 0.05, 0.25, 0.45), self.solid, parent=self))
+        self.subplot.append(
+            ResidualSubplot((0.40, 0.05, 0.25, 0.45), solid=self.solid, parent=self)
+        )
 
     @property
     def config(self) -> Config:
@@ -421,22 +423,13 @@ class MotionSubplot(TimeHistorySubplot):
     ):
         super().__init__(pos, name=body.name, parent=parent)
 
-        def itFunc() -> int:
-            return self._parent.simulation.it
-
-        def drftFunc() -> float:
-            return body.draft
-
-        def trimFunc() -> float:
-            return body.trim
-
         self._add_y_axes()
 
         # Add plot series to appropriate axis
         self.add_series(
             Series(
-                itFunc,
-                drftFunc,
+                lambda: self._parent.simulation.it,
+                lambda: body.draft,
                 ax=self._ax[0],
                 style="b-",
                 label="Draft",
@@ -444,8 +437,8 @@ class MotionSubplot(TimeHistorySubplot):
         )
         self.add_series(
             Series(
-                itFunc,
-                trimFunc,
+                lambda: self._parent.simulation.it,
+                lambda: body.trim,
                 ax=self._ax[1],
                 style="r-",
                 label="Trim",
@@ -467,22 +460,10 @@ class ForceSubplot(TimeHistorySubplot):
     ):
         super().__init__(pos, name=body.name, parent=parent)
 
-        def itFunc() -> int:
-            return self._parent.simulation.it
-
-        def liftFunc() -> float:
-            return body.loads.L / body.weight
-
-        def dragFunc() -> float:
-            return body.loads.D / body.weight
-
-        def momFunc() -> float:
-            return body.loads.M / (body.weight * self._parent.config.body.reference_length)
-
         self.add_series(
             Series(
-                itFunc,
-                liftFunc,
+                lambda: self._parent.simulation.it,
+                lambda: body.loads.L / body.weight,
                 style="r-",
                 label="Lift",
                 ignore_first=True,
@@ -490,8 +471,8 @@ class ForceSubplot(TimeHistorySubplot):
         )
         self.add_series(
             Series(
-                itFunc,
-                dragFunc,
+                lambda: self._parent.simulation.it,
+                lambda: body.loads.D / body.weight,
                 style="b-",
                 label="Drag",
                 ignore_first=True,
@@ -499,8 +480,8 @@ class ForceSubplot(TimeHistorySubplot):
         )
         self.add_series(
             Series(
-                itFunc,
-                momFunc,
+                lambda: self._parent.simulation.it,
+                lambda: body.loads.M / (body.weight * self._parent.config.body.reference_length),
                 style="g-",
                 label="Moment",
                 ignore_first=True,
@@ -508,8 +489,7 @@ class ForceSubplot(TimeHistorySubplot):
         )
 
         self.set_properties(
-            title=r"Force & Moment History: {0}".format(body.name),
-            #                       xlabel=r'Iteration', \
+            title=f"Force & Moment History: {body.name}",
             ylabel=r"$\mathcal{D}/W$, $\mathcal{L}/W$, $\mathcal{M}/WL_c$",
         )
         self.create_legend()
@@ -517,37 +497,34 @@ class ForceSubplot(TimeHistorySubplot):
 
 class ResidualSubplot(TimeHistorySubplot):
     def __init__(
-        self, pos: tuple[float, float, float, float], solid: "StructuralSolver", parent: FSIFigure
+        self, pos: tuple[float, float, float, float], *, solid: StructuralSolver, parent: FSIFigure
     ):
         super().__init__(pos, name="residuals", parent=parent)
 
-        def itFunc() -> int:
-            return self._parent.simulation.it
-
         col = ["r", "b", "g"]
-        for bd, coli in zip(solid.rigid_bodies, col):
+        for body, col_i in zip(solid.rigid_bodies, col):
             self.add_series(
                 Series(
-                    itFunc,
-                    bd.get_res_lift,
-                    style="{0}-".format(coli),
-                    label="ResL: {0}".format(bd.name),
+                    lambda: self._parent.simulation.it,
+                    body.get_res_lift,
+                    style=f"{col_i}-",
+                    label=f"Lift: {body.name}",
                     ignore_first=True,
                 )
             )
             self.add_series(
                 Series(
-                    itFunc,
-                    bd.get_res_moment,
-                    style="{0}--".format(coli),
-                    label="ResM: {0}".format(bd.name),
+                    lambda: self._parent.simulation.it,
+                    body.get_res_moment,
+                    style=f"{col_i}--",
+                    label=f"Moment: {body.name}",
                     ignore_first=True,
                 )
             )
 
         self.add_series(
             Series(
-                itFunc,
+                lambda: self._parent.simulation.it,
                 lambda: np.abs(solid.residual),
                 style="k-",
                 label="Total",
@@ -555,7 +532,7 @@ class ResidualSubplot(TimeHistorySubplot):
             )
         )
 
-        self.set_properties(title=r"Residual History", yscale="log")
+        self.set_properties(title="Residual History", xlabel="Iteration", yscale="log")
         self.create_legend()
 
 
