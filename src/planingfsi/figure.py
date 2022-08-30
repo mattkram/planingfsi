@@ -111,6 +111,7 @@ class GeometrySubplot(Subplot):
         # Line handles for element initial and current positions
         self._handles_elements_init = {}
         self._handles_elements = {}
+
         # Line handles for the air and fluid pressure profiles
         self._handles_air_pressure = {}
         self._handles_hydro_pressure = {}
@@ -120,6 +121,7 @@ class GeometrySubplot(Subplot):
             for el in struct.elements:
                 (self._handles_elements_init[el],) = self._ax.plot([], [], "k--")
                 (self._handles_elements[el],) = self._ax.plot([], [], "k-", linewidth=2)
+
         self.lineCofR: list[CofRPlot] = []
         for body in self._parent.solid.rigid_bodies:
             # Initial position
