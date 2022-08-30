@@ -77,7 +77,8 @@ class FSIFigure:
             format=self.config.plotting.fig_format,
         )  # , dpi=300)
 
-    def show(self) -> None:
+    @staticmethod
+    def show() -> None:
         plt.show(block=True)
 
 
