@@ -80,6 +80,7 @@ def run_dam_case():
     simulation.config.flow.froude_num = 1.0
     simulation.config.flow.waterline_height = 1.0
     simulation.config.plotting._pressure_scale_pct = 1e-8
+    simulation.config.plotting.ext_s = 0.0
     simulation.config.plotting.show = True  # Need this so the plot is updated for residual
     simulation.config.solver.max_it = 200
 
