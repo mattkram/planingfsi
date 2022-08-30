@@ -368,8 +368,7 @@ class Series:
         self.line_handle.set_data(*zip(*self._points))
         if self._current_value_series is not None:
             self._current_value_series.update(is_final)
-
-        if is_final:
+        elif is_final:
             self.line_handle.set_marker("*")
             self.line_handle.set_markerfacecolor("y")
             self.line_handle.set_markersize(10)
