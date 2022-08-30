@@ -173,17 +173,17 @@ class GeometrySubplot(Subplot):
         y_min, y_max = min(y), max(y)
 
         # Handle explicit setting of max/min dimensions
-        if self._parent.config.plotting.xmin is not None:
-            x_min = self._parent.config.plotting.xmin
-            self._parent.config.plotting.ext_w = 0.0
-        if self._parent.config.plotting.xmax is not None:
-            x_max = self._parent.config.plotting.xmax
-            self._parent.config.plotting.ext_e = 0.0
-        if self._parent.config.plotting.ymin is not None:
-            y_min = self._parent.config.plotting.ymin
-            self._parent.config.plotting.ext_s = 0.0
-        if self._parent.config.plotting.ymax is not None:
-            y_max = self._parent.config.plotting.ymax
+        if self.config.plotting.xmin is not None:
+            x_min = self.config.plotting.xmin
+            self.config.plotting.ext_w = 0.0
+        if self.config.plotting.xmax is not None:
+            x_max = self.config.plotting.xmax
+            self.config.plotting.ext_e = 0.0
+        if self.config.plotting.ymin is not None:
+            y_min = self.config.plotting.ymin
+            self.config.plotting.ext_s = 0.0
+        if self.config.plotting.ymax is not None:
+            y_max = self.config.plotting.ymax
             self.config.plotting.ext_n = 0.0
 
         # Set the limits & axis labels
