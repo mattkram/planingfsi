@@ -13,7 +13,7 @@ from planingfsi import writers
 from planingfsi.config import Config
 from planingfsi.dictionary import load_dict_from_file
 from planingfsi.fe.structure import StructuralSolver
-from planingfsi.figure import FSIFigure
+from planingfsi.figure import Figure
 from planingfsi.potentialflow.pressurepatch import PlaningSurface
 from planingfsi.potentialflow.solver import PotentialPlaningSolver
 
@@ -43,7 +43,7 @@ class Simulation:
         self.config = Config()
         self.structural_solver = StructuralSolver(self)
         self.fluid_solver = PotentialPlaningSolver(self)
-        self._figure: FSIFigure | None = None
+        self._figure: Figure | None = None
         self.it = 0
         self.ramp = 1.0
         self._it_dirs: list[Path] | None = None
@@ -71,10 +71,15 @@ class Simulation:
         return self.case_dir / self.config.path.mesh_dir_name
 
     @property
-    def figure(self) -> FSIFigure | None:
+    def fig_dir(self):
+        """A path to the directory in which figures will be saved."""
+        return self.case_dir / self.config.path.fig_dir_name
+
+    @property
+    def figure(self) -> Figure | None:
         """The `FSIFigure` object where results are drawn. Will be None if plotting is disabled."""
         if self._figure is None and self.config.plotting.plot_any:
-            self._figure = FSIFigure(simulation=self, config=self.config)
+            self._figure = Figure(simulation=self)
         return self._figure
 
     @property
@@ -91,6 +96,13 @@ class Simulation:
     @property
     def residual(self) -> float:
         return self.structural_solver.residual
+
+    @property
+    def is_converged(self) -> bool:
+        return (
+            self.structural_solver.residual < self.config.solver.max_residual
+            and self.it > self.config.solver.num_ramp_it
+        )
 
     @property
     def is_write_iteration(self) -> bool:
@@ -121,19 +133,6 @@ class Simulation:
     def update_solid_response(self) -> None:
         """Update the structural response."""
         self.structural_solver.calculate_response()
-
-    def _create_dirs(self) -> None:
-        """Ensure all required directories exist, including the case, iteration, and figure directories.
-
-        Remove all existing figures if they exist and it's the first iteration.
-
-        """
-        if self.config.plotting.save:
-            fig_dir = self.case_dir / self.config.path.fig_dir_name
-            fig_dir.mkdir(exist_ok=True)
-            if self.it == 0:
-                for f in fig_dir.glob("*"):
-                    f.unlink()
 
     def load_input_files(self, config_filename: Path | str) -> None:
         """Load all of the input files."""
@@ -281,7 +280,6 @@ class Simulation:
         self.reset()
 
         if self.config.io.results_from_file:
-            self._create_dirs()
             self._update_ramp()
 
         self.initialize_solvers()
@@ -299,7 +297,6 @@ class Simulation:
                 self.update_fluid_response()
 
             # Write, print, and plot results
-            self._create_dirs()
             self.write_results()
             self.print_status()
             self._update_figure()
@@ -332,7 +329,6 @@ class Simulation:
                 self.it = stored_iterations[current_ind + 1]
             except IndexError:
                 self.it = self.config.solver.max_it + 1
-            self._create_dirs()
         else:
             self.it += 1
 
