@@ -336,7 +336,6 @@ class Series:
         self._get_x = x_func
         self._get_y = y_func
 
-        self.label = label
         self._ignore_first = ignore_first
 
         ax = ax or plt.gca()
