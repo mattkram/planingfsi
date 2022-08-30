@@ -2,7 +2,6 @@ from __future__ import annotations
 
 import os
 from collections.abc import Callable
-from collections.abc import Iterable
 from pathlib import Path
 from typing import TYPE_CHECKING
 from typing import Any
@@ -209,23 +208,34 @@ class GeometrySubplot(Subplot):
         )
 
     @staticmethod
-    def _get_pressure_plot_points(ss, s0: np.ndarray, p0: np.ndarray) -> Iterable[Iterable]:
-        """Get coordinates required to plot pressure profile as lines."""
-        sp = [(s, p) for s, p in zip(s0, p0) if not np.abs(p) < 1e-4]
+    def _get_pressure_plot_points(ss: Substructure, s0: np.ndarray, p0: np.ndarray) -> np.ndarray:
+        """Get coordinates required to plot pressure profile as lines.
 
-        if not sp:
-            return [], []
+        Args:
+            ss: The substructure, from which to load coordinates and normal vectors.
+            s0: An array of arclengths.
+            p0: An array of pressures at the arclength points.
 
-        s0, p0 = list(zip(*sp))
-        nVec = list(map(ss.get_normal_vector, s0))
-        coords0 = [ss.get_coordinates(s) for s in s0]
-        coords1 = [
-            c + ss.config.plotting.pressure_scale * p * n for c, p, n in zip(coords0, p0, nVec)
-        ]
+        Returns:
+            An array containing x & y coordinates.
 
-        return list(
-            zip(*[xyi for c0, c1 in zip(coords0, coords1) for xyi in [c0, c1, np.ones(2) * np.nan]])
-        )
+        """
+        ind = p0 > 1e-4
+        s0 = s0[ind]
+        p0 = p0[ind]
+
+        if s0.size == 0:
+            return np.empty((2, 0))
+
+        normal_vec = np.array([ss.get_normal_vector(s) for s in s0])
+        coords0 = np.array([ss.get_coordinates(s) for s in s0])
+        coords1 = coords0 + ss.config.plotting.pressure_scale * p0[:, np.newaxis] * normal_vec
+
+        # We start with an array of NaN, and then slice in the start & end points for each line
+        data = np.full((s0.size * 3, 2), fill_value=np.nan)
+        data[::3, :] = coords0
+        data[1::3, :] = coords1
+        return data.T
 
     def _draw_pressure_profiles(self, ss: Substructure) -> None:
         """Plot the internal and external pressure profiles as lines."""
