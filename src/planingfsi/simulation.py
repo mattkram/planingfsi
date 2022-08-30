@@ -296,7 +296,7 @@ class Simulation:
 
             # Write, print, and plot results
             self.write_results()
-            self.print_status()
+            logger.info("Residual after iteration %4s: %5.3e", self.it, self.residual)
             self._update_figure()
 
             # Increment iteration count
@@ -356,9 +356,6 @@ class Simulation:
             self.config.solver.relax_FEM = (
                 1 - self.ramp
             ) * self.config.solver.relax_initial + self.ramp * self.config.solver.relax_final
-
-    def print_status(self) -> None:
-        logger.info("Residual after iteration %4s: %5.3e", self.it, self.residual)
 
     def write_results(self) -> None:
         """Write the current overall results to an iteration directory."""
