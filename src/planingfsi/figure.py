@@ -25,10 +25,10 @@ if TYPE_CHECKING:
 class FSIFigure:
     """A wrapper around a Matplotlib figure to plot the results/status of a PlaningFSI simulation."""
 
-    def __init__(self, simulation: Simulation):
+    def __init__(self, simulation: Simulation, *, figsize=(16, 9)):
         self.simulation = simulation
 
-        self.figure = plt.figure(figsize=(16, 9))
+        self.figure = plt.figure(figsize=figsize)
         if self.config.plotting.watch:
             plt.ion()
 
