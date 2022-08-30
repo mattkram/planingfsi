@@ -237,7 +237,7 @@ class GeometrySubplot(Subplot):
             An array containing x & y coordinates.
 
         """
-        ind = p0 > 1e-4
+        ind = np.abs(p0) > 1e-4
         s0 = s0[ind]
         p0 = p0[ind]
 
