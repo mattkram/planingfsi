@@ -134,18 +134,6 @@ class Simulation:
         """Update the structural response."""
         self.structural_solver.calculate_response()
 
-    def _create_dirs(self) -> None:
-        """Ensure all required directories exist, including the case, iteration, and figure directories.
-
-        Remove all existing figures if they exist and it's the first iteration.
-
-        """
-        if self.config.plotting.save:
-            self.fig_dir.mkdir(exist_ok=True)
-            if self.it == 0:
-                for f in self.fig_dir.glob("*"):
-                    f.unlink()
-
     def load_input_files(self, config_filename: Path | str) -> None:
         """Load all of the input files."""
         self.config.load_from_file(config_filename)
@@ -292,7 +280,6 @@ class Simulation:
         self.reset()
 
         if self.config.io.results_from_file:
-            self._create_dirs()
             self._update_ramp()
 
         self.initialize_solvers()
@@ -310,7 +297,6 @@ class Simulation:
                 self.update_fluid_response()
 
             # Write, print, and plot results
-            self._create_dirs()
             self.write_results()
             self.print_status()
             self._update_figure()
@@ -343,7 +329,6 @@ class Simulation:
                 self.it = stored_iterations[current_ind + 1]
             except IndexError:
                 self.it = self.config.solver.max_it + 1
-            self._create_dirs()
         else:
             self.it += 1
 

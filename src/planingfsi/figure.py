@@ -68,7 +68,17 @@ class FSIFigure:
                 s.write()
 
     def save(self) -> None:
-        """Save the figure to a file, numbered by the iteration."""
+        """Save the figure to a file, numbered by the iteration.
+
+        If it is the first iteration, clear out any existing figures.
+
+        """
+        self.simulation.fig_dir.mkdir(exist_ok=True)
+
+        if self.simulation.it == 0:
+            for f in self.simulation.fig_dir.glob("*"):
+                f.unlink()
+
         file_path = Path(
             self.simulation.fig_dir,
             f"frame{self.simulation.it:04d}.{self.config.plotting.fig_format}",
