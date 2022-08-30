@@ -34,8 +34,6 @@ class Simulation:
         it: The current iteration.
         ramp: The current ramping coefficient, used when applying loads and moving nodes.
             The value is between 1.0 and 0.0.
-        it_dirs: A list of paths to iteration directories stored in the filesystem, used when loading
-            existing results to "replay" a simulation.
 
     """
 
@@ -43,9 +41,9 @@ class Simulation:
         self.config = Config()
         self.structural_solver = StructuralSolver(self)
         self.fluid_solver = PotentialPlaningSolver(self)
-        self._figure: Figure | None = None
         self.it = 0
         self.ramp = 1.0
+        self._figure: Figure | None = None
         self._it_dirs: list[Path] | None = None
         self._case_dir: Path | None = None
 
