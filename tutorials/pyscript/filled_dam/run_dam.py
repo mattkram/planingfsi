@@ -3,7 +3,6 @@ from __future__ import annotations
 from collections.abc import Iterator
 
 import numpy as np
-from matplotlib import pyplot as plt
 
 from planingfsi import FlexibleMembraneSubstructure
 from planingfsi import Mesh
@@ -44,6 +43,8 @@ class MyGeometrySubplot(GeometrySubplot):
 
 
 class MyResidualSubplot(TimeHistorySubplot):
+    _is_ylog = True
+
     def __init__(self, pos: tuple[float, float, float, float], *, parent: Figure):
         super().__init__(pos, name="residuals", parent=parent)
         self.set_properties(title="Residual History", xlabel="Iteration", yscale="log")
@@ -53,15 +54,14 @@ class MyResidualSubplot(TimeHistorySubplot):
             lambda: self._parent.simulation.it,
             lambda: np.abs(self._parent.solid.residual),
             style="k-",
-            label="Total",
             ignore_first=True,
         )
 
 
 class MyFigure(Figure):
     def create_subplots(self) -> Iterator[Subplot]:
-        yield MyGeometrySubplot((0.05, 0.55, 0.9, 0.45), parent=self)
-        yield MyResidualSubplot((0.05, 0.05, 0.9, 0.4), parent=self)
+        yield MyGeometrySubplot((0.1, 0.55, 0.85, 0.4), parent=self)
+        yield MyResidualSubplot((0.1, 0.05, 0.85, 0.4), parent=self)
 
 
 def run_dam_case():
@@ -80,7 +80,8 @@ def run_dam_case():
     simulation.config.flow.froude_num = 1.0
     simulation.config.flow.waterline_height = 1.0
     simulation.config.plotting._pressure_scale_pct = 1e-8
-    simulation.config.solver.max_it = 100
+    simulation.config.plotting.show = True  # Need this so the plot is updated for residual
+    simulation.config.solver.max_it = 200
 
     body = simulation.add_rigid_body()
     dam = FlexibleMembraneSubstructure(
@@ -90,9 +91,10 @@ def run_dam_case():
     body.add_substructure(dam)
 
     simulation.load_mesh(mesh)
-    simulation.run()
 
     simulation._figure = MyFigure(simulation=simulation, figsize=(8, 8))
+    simulation.run()
+
     return simulation
 
 
@@ -103,5 +105,5 @@ def get_figure(simulation):
 
 if __name__ == "__main__":
     sim = run_dam_case()
-    get_figure(simulation=sim)
-    plt.show()
+    figure = get_figure(simulation=sim)
+    figure.show()
