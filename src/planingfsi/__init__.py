@@ -10,20 +10,26 @@ and the structural solver considers a large-deformation simple beam element.
 """
 import logging
 
+logging.basicConfig()
+
 logger = logging.getLogger("planingfsi")
 logger.setLevel(logging.INFO)
 
-# # Use tk by default. Otherwise try Agg. Otherwise, disable plotting.
-# _fallback_engine = "Agg"
-# if os.environ.get("DISPLAY") is None:
-#     matplotlib.use(_fallback_engine)
-# else:
-#     try:
-#         from matplotlib import pyplot
-#     except ImportError:
-#         try:
-#             matplotlib.use(_fallback_engine)
-#         except ImportError:
-#             from .config import plotting
-#
-#             plotting.plot_any = False
+from planingfsi.fe.femesh import Mesh
+from planingfsi.fe.substructure import FlexibleMembraneSubstructure
+from planingfsi.fe.substructure import RigidSubstructure
+from planingfsi.fe.substructure import TorsionalSpringSubstructure
+from planingfsi.potentialflow.pressurepatch import PlaningSurface
+from planingfsi.potentialflow.pressurepatch import PressureCushion
+from planingfsi.simulation import Simulation
+
+__all__ = [
+    "logger",
+    "Mesh",
+    "FlexibleMembraneSubstructure",
+    "RigidSubstructure",
+    "TorsionalSpringSubstructure",
+    "PlaningSurface",
+    "PressureCushion",
+    "Simulation",
+]

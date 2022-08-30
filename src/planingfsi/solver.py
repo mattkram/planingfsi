@@ -1,5 +1,8 @@
 """Solvers for single and multi-dimensional nonlinear problems."""
-from typing import Callable, Any
+from __future__ import annotations
+
+from collections.abc import Callable
+from typing import Any
 
 import numpy
 
@@ -40,14 +43,14 @@ class RootFinder:
         self.derivative_method = kwargs.get("derivativeMethod", "right")
         self.err = 1.0
         self.it = 0
-        self.jacobian: numpy.array = None
+        self.jacobian: numpy.ndarray | None = None
         self.x_prev = numpy.zeros((self.dim,))
         self.f_prev = numpy.zeros((self.dim,))
         self.max_jacobian_reset_step = kwargs.get("maxJacobianResetStep", 5)
         self.is_converged = False
 
         # Calculate function value at initial point
-        self.dx = numpy.zeros_like(xo)
+        self.dx: numpy.ndarray = numpy.zeros_like(xo)
         self.df = numpy.zeros_like(xo)
 
         self.evaluate_function()
@@ -73,6 +76,7 @@ class RootFinder:
     def limit_step(self, dx: numpy.ndarray = None) -> numpy.ndarray:
         if dx is None:
             dx = self.dx
+        assert dx is not None
         dx *= self.relax
 
         x = self.x + dx
@@ -84,12 +88,14 @@ class RootFinder:
 
         dx_lim_pct = numpy.ones_like(dx)
         for i in range(len(dx_lim_pct)):
+            assert dx is not None
             if dx[i] > 0:
                 dx_lim_pct[i] = numpy.min([dx[i], self.dx_max_increase[i]]) / dx[i]
             elif dx[i] < 0:
                 dx_lim_pct[i] = numpy.max([dx[i], -self.dx_max_decrease[i]]) / dx[i]
 
-        dx *= numpy.min(dx_lim_pct)
+        dx *= dx_lim_pct
+        assert dx is not None
         self.dx = dx
 
         return dx
@@ -153,6 +159,9 @@ class RootFinder:
         if self.it == 0 or self.jacobian is None:
             self.reset_jacobian()
 
+        # TODO: Consider removing this and fixing static types
+        assert self.jacobian is not None
+
         dx = numpy.reshape(self.dx, (self.dim, 1))
         df = numpy.reshape(self.df, (self.dim, 1))
 
@@ -164,6 +173,7 @@ class RootFinder:
             not x <= xMin and not x >= xMax for x, xMin, xMax in zip(self.x, self.x_min, self.x_max)
         ]
         if any(dof):
+            assert self.jacobian is not None
             b = self.f.reshape(self.dim, 1)
             dx[numpy.ix_(dof)] = numpy.linalg.solve(
                 -self.jacobian[numpy.ix_(dof, dof)], b[numpy.ix_(dof)]

@@ -11,13 +11,15 @@
 #
 # All configuration values have a default; values that are commented out
 # serve to show the default.
-
 # If extensions (or modules to document with autodoc) are in another directory,
 # add these directories to sys.path here. If the directory is relative to the
 # documentation root, use os.path.abspath to make it absolute, like shown here.
 #
-from pathlib import Path
+from __future__ import annotations
+
 from datetime import datetime
+from pathlib import Path
+from typing import Any
 
 import toml
 
@@ -31,6 +33,7 @@ import toml
 # extensions coming with Sphinx (named 'sphinx.ext.*') or your custom
 # ones.
 extensions = [
+    "myst_parser",
     "sphinx.ext.doctest",
     "sphinx.ext.intersphinx",
     "sphinx.ext.coverage",
@@ -40,7 +43,6 @@ extensions = [
     "sphinx.ext.napoleon",
     "sphinx.ext.viewcode",
     "sphinx_autodoc_typehints",
-    "m2r2",
 ]
 
 # Add any paths that contain templates here, relative to this directory.
@@ -138,7 +140,7 @@ autodoc_default_options = {
 # The theme to use for HTML and HTML Help pages.  See the documentation for
 # a list of builtin themes.
 #
-html_theme = "sphinx_rtd_theme"
+html_theme = "pydata_sphinx_theme"
 
 # Theme options are theme-specific and customize the look and feel of a theme
 # further.  For a list of options available for each theme, see the
@@ -148,7 +150,7 @@ html_theme = "sphinx_rtd_theme"
 
 # Add any paths that contain custom themes here, relative to this directory.
 # html_theme_path = [sphinx_rtd_theme.get_html_theme_path()]
-html_theme_path = []
+html_theme_path: list = []
 
 # The name for this set of Sphinx documents.
 # "<project> v<release> documentation" by default.
@@ -257,7 +259,7 @@ htmlhelp_basename = "PlaningFSIdoc"
 
 # -- Options for LaTeX output ---------------------------------------------
 
-latex_elements = {
+latex_elements: dict[str, Any] = {
     # The paper size ('letterpaper' or 'a4paper').
     #
     # 'papersize': 'letterpaper',

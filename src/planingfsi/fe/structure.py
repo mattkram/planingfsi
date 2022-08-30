@@ -1,172 +1,190 @@
-import os
-import weakref
-from typing import Dict, Any, List
+from __future__ import annotations
+
+from pathlib import Path
+from typing import TYPE_CHECKING
+from typing import Any
 
 import numpy as np
 
-from . import felib as fe
-from . import rigid_body as rigid_body_mod
-from .substructure import (
-    Substructure,
-    FlexibleSubstructure,
-    RigidSubstructure,
-    TorsionalSpringSubstructure,
-)
-from .. import config, logger
-from ..fsi import simulation as fsi_simulation
+from planingfsi import logger
+from planingfsi.config import NUM_DIM
+from planingfsi.config import Config
+from planingfsi.fe.felib import Node
+from planingfsi.fe.femesh import Mesh
+from planingfsi.fe.rigid_body import RigidBody
+from planingfsi.fe.substructure import Substructure
+
+if TYPE_CHECKING:
+    from planingfsi.simulation import Simulation
 
 
 class StructuralSolver:
-    """Parent object for solving the finite-element structure. Consists of
-    several rigid bodies and substructures.
+    """High-level finite-element structural solver, consisting of a number of rigid bodies.
+
+    Attributes:
+        simulation: A reference to the parent `Simulation` object.
+        rigid_bodies: A list of all `RigidBody` instances in the simulation.
+        nodes: A list of all nodes in the mesh.
+        node_dofs: A mapping of node to the indices for that node in the global matrices.
+
     """
 
-    def __init__(self, simulation: "fsi_simulation.Simulation") -> None:
-        self._simulation = weakref.ref(simulation)
-        self.rigid_body: List["rigid_body_mod.RigidBody"] = []
-        self.res = 1.0  # TODO: Can this be a property instead?
+    def __init__(self, simulation: Simulation):
+        self.simulation = simulation
+        self.rigid_bodies: list[RigidBody] = []
+        self.nodes: list[Node] = []
+        self.node_dofs: dict[Node, list[int]] = {}
 
     @property
-    def simulation(self) -> "fsi_simulation.Simulation":
-        """A reference to the simulation object by resolving the weak reference."""
-        simulation = self._simulation()
-        if simulation is None:
-            raise ReferenceError("Simulation object cannot be accessed.")
-        return simulation
+    def config(self) -> Config:
+        """A reference to the simulation configuration."""
+        return self.simulation.config
 
     @property
-    def substructure(self) -> List[Substructure]:
-        """A combined list of substructures from all rigid bodies."""
-        return [ss for body in self.rigid_body for ss in body.substructure]
+    def has_free_structure(self) -> bool:
+        """True if any rigid body or substructure are free to move."""
+        for rigid_body in self.rigid_bodies:
+            if rigid_body.has_free_dof:
+                return True
+
+            for ss in rigid_body.substructures:
+                if ss.is_free:
+                    return True
+        return False
 
     @property
-    def node(self) -> List[fe.Node]:
-        """A combined list of nodes from all substructures."""
-        return [nd for ss in self.substructure for nd in ss.node]
+    def residual(self) -> float:
+        """The current maximum residual amongst all rigid bodies in the simulation."""
+        return max((bd.residual for bd in self.rigid_bodies), default=0.0)
 
-    def add_rigid_body(self, dict_: Dict[str, Any] = None) -> "rigid_body_mod.RigidBody":
+    @property
+    def substructures(self) -> list[Substructure]:
+        """A combined list of all substructures from all rigid bodies."""
+        return [ss for body in self.rigid_bodies for ss in body.substructures]
+
+    def add_rigid_body(
+        self, dict_or_instance: dict[str, Any] | RigidBody | None = None
+    ) -> RigidBody:
         """Add a rigid body to the structure.
 
-        Args
-        ----
-        dict_: A dictionary containing rigid body specifications.
+        Args:
+            dict_or_instance: A dictionary of values, or a RigidBody instance.
 
         """
-        if dict_ is None:
-            dict_ = {}
-        rigid_body = rigid_body_mod.RigidBody(dict_, parent=self)
-        self.rigid_body.append(rigid_body)
+        if isinstance(dict_or_instance, RigidBody):
+            rigid_body = dict_or_instance
+            rigid_body.parent = self
+        else:
+            dict_ = dict_or_instance or {}
+            rigid_body = RigidBody(**dict_, parent=self)
+        self.rigid_bodies.append(rigid_body)
         return rigid_body
 
-    def add_substructure(self, dict_: Dict[str, Any] = None) -> "Substructure":
+    def add_substructure(
+        self, dict_or_instance: dict[str, Any] | Substructure | None = None
+    ) -> "Substructure":
         """Add a substructure to the structure, whose type is determined at run-time.
 
-        Args
-        ----
-        dict_: A dictionary containing substructure specifications.
+        Args:
+            dict_or_instance: A dictionary of values, or a Substructure instance.
 
         """
-        if dict_ is None:
+        if isinstance(dict_or_instance, Substructure):
+            ss = dict_or_instance
             dict_ = {}
-        # TODO: This logic is better handled by the factory pattern
-        ss_type = dict_.get("substructureType", "rigid")
-        ss: Substructure
-        if ss_type.lower() == "flexible" or ss_type.lower() == "truss":
-            ss = FlexibleSubstructure(dict_)
-        elif ss_type.lower() == "torsionalspring":
-            ss = TorsionalSpringSubstructure(dict_)
         else:
-            ss = RigidSubstructure(dict_)
-        self.substructure.append(ss)
+            dict_ = dict_or_instance or {}
+            ss = Substructure(type=dict_.get("substructureType", "rigid"), **dict_)
+        ss.solver = self
+        self.substructures.append(ss)
 
-        self._assign_substructure_to_body(dict_, ss)
+        self._assign_substructure_to_body(ss, **dict_)
 
         return ss
 
-    def _assign_substructure_to_body(self, dict_: Dict[str, Any], ss: "Substructure") -> None:
+    def _assign_substructure_to_body(
+        self, ss: "Substructure", body_name: str = "default", **_: Any
+    ) -> None:
         """Find parent body and add substructure to it."""
-        bodies = [b for b in self.rigid_body if b.name == dict_.get("bodyName", "default")]
+        bodies = [b for b in self.rigid_bodies if b.name == body_name]
         if bodies:
             body = bodies[0]
         else:
-            body = self.rigid_body[0]
+            body = self.rigid_bodies[0]
         body.add_substructure(ss)
-        logger.info(f"Adding Substructure {ss.name} of type {ss.type_} to rigid body {body.name}")
+        logger.info(
+            f"Adding Substructure {ss.name} of type {type(ss).__name__} to rigid body {body.name}"
+        )
 
     def initialize_rigid_bodies(self) -> None:
         """Initialize the position of all rigid bodies."""
-        for bd in self.rigid_body:
+        for bd in self.rigid_bodies:
             bd.initialize_position()
 
     def update_fluid_forces(self) -> None:
         """Update fluid forces on all rigid bodies."""
-        for bd in self.rigid_body:
+        for bd in self.rigid_bodies:
             bd.update_fluid_forces()
 
     def calculate_response(self) -> None:
         """Calculate the structural response, or load from files."""
-        if config.io.results_from_file:
+        if self.config.io.results_from_file:
             self._load_response()
         else:
-            for bd in self.rigid_body:
+            for bd in self.rigid_bodies:
                 bd.update_position()
                 bd.update_substructure_positions()
-
-    def get_residual(self) -> None:
-        """Calculate the residual."""
-        self.res = 0.0
-        for bd in self.rigid_body:
-            if bd.free_in_draft or bd.free_in_trim:
-                self.res = np.max([np.abs(bd.res_l), self.res])
-                self.res = np.max([np.abs(bd.res_m), self.res])
-            self.res = np.max([FlexibleSubstructure.res, self.res])
 
     def _load_response(self) -> None:
         """Load the response from files."""
         self.update_fluid_forces()
 
-        for bd in self.rigid_body:
+        for bd in self.rigid_bodies:
             bd.load_motion()
-            for ss in bd.substructure:
+            for ss in bd.substructures:
                 ss.load_coordinates()
-                ss.update_geometry()
 
     def write_results(self) -> None:
         """Write the results to file."""
-        for bd in self.rigid_body:
+        for bd in self.rigid_bodies:
             bd.write_motion()
-            for ss in bd.substructure:
+            for ss in bd.substructures:
                 ss.write_coordinates()
 
-    def plot(self) -> None:
-        """Plot the results."""
-        # TODO: Move to figure module
-        for body in self.rigid_body:
-            for struct in body.substructure:
-                struct.plot()
+    def _load_mesh_from_object(self, mesh: Mesh) -> None:
+        """Load a mesh from an existing object."""
+        for pt in mesh.points:
+            nd = Node(
+                coordinates=pt.position, is_dof_fixed=pt.is_dof_fixed, fixed_load=pt.fixed_load
+            )
+            node_num = len(self.nodes)  # Needs to be before we append the node
+            self.nodes.append(nd)
+            self.node_dofs[nd] = [node_num * NUM_DIM + i for i in [0, 1]]
 
-    def load_mesh(self) -> None:
-        """Load the mesh from files."""
+        for struct in self.substructures:
+            # Find submesh with same name as substructure
+            submesh = [submesh for submesh in mesh.submesh if submesh.name == struct.name][0]
+            struct.load_mesh(submesh)
+
+    def _load_mesh_from_dir(self, mesh_dir: Path) -> None:
+        """Load the mesh from a directory of files."""
+        # TODO: Can we do Mesh.from_dir() instead and then integrate the repeated logic into _load_mesh_from_object?
+        coords = np.loadtxt(mesh_dir / "nodes.txt")
+        fixed_dofs = np.loadtxt(mesh_dir / "fixedDOF.txt")
+        loads = np.loadtxt(mesh_dir / "fixedLoad.txt")
+        for c, fixed_dof, load in zip(coords, fixed_dofs, loads):
+            nd = Node(coordinates=c, is_dof_fixed=fixed_dof, fixed_load=load)
+            node_num = len(self.nodes)  # Needs to be before we append the node
+            self.nodes.append(nd)
+            self.node_dofs[nd] = [node_num * NUM_DIM + i for i in [0, 1]]
+
+        for struct in self.substructures:
+            struct.load_mesh(mesh_dir)
+
+    def load_mesh(self, mesh: Path | Mesh = Path("mesh")) -> None:
+        """Load the mesh from a directory of files or an existing mesh object."""
         # Create all nodes
-        x, y = np.loadtxt(os.path.join(config.path.mesh_dir, "nodes.txt"), unpack=True)
-        xf, yf = np.loadtxt(os.path.join(config.path.mesh_dir, "fixedDOF.txt"), unpack=True)
-        fx, fy = np.loadtxt(os.path.join(config.path.mesh_dir, "fixedLoad.txt"), unpack=True)
-
-        for xx, yy, xxf, yyf, ffx, ffy in zip(x, y, xf, yf, fx, fy):
-            nd = fe.Node()
-            nd.set_coordinates(xx, yy)
-            nd.is_dof_fixed = [bool(xxf), bool(yyf)]
-            nd.fixed_load = np.array([ffx, ffy])
-            self.node.append(nd)
-
-        for struct in self.substructure:
-            struct.load_mesh()
-            if (
-                struct.type_ == "rigid"
-                or struct.type_ == "rotating"
-                or struct.type_ == "torsionalSpring"
-            ):
-                struct.set_fixed_dof()
-
-        for ss in self.substructure:
-            ss.set_attachments()
+        if isinstance(mesh, Mesh):
+            self._load_mesh_from_object(mesh)
+        else:
+            self._load_mesh_from_dir(mesh)

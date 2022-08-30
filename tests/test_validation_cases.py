@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import os
 import shutil
 from pathlib import Path
@@ -6,6 +8,7 @@ from typing import Tuple
 
 import pytest
 from click.testing import CliRunner
+
 from planingfsi.cli import cli
 
 VALIDATED_EXTENSION = ".validated"
@@ -30,7 +33,7 @@ def run_case(tmpdir: Path, validation_base_dir: Path) -> RunCaseFunction:
 
     """
 
-    def f(case_name: str) -> Tuple[Path, Path]:
+    def f(case_name: str) -> tuple[Path, Path]:
         """Copy all input files from the base directory into the case directory and run the `mesh`
         and `run` CLI subcommands.
 
@@ -54,8 +57,11 @@ def run_case(tmpdir: Path, validation_base_dir: Path) -> RunCaseFunction:
         os.chdir(new_case_dir)
 
         cli_runner = CliRunner()
-        assert cli_runner.invoke(cli, ["mesh"]).exit_code == 0
-        assert cli_runner.invoke(cli, ["run"]).exit_code == 0
+        mesh_result = cli_runner.invoke(cli, ["mesh"], catch_exceptions=False)
+        assert mesh_result.exit_code == 0
+
+        run_result = cli_runner.invoke(cli, ["run"], catch_exceptions=False)
+        assert run_result.exit_code == 0
 
         return orig_case_dir, new_case_dir
 
@@ -67,7 +73,8 @@ def run_case(tmpdir: Path, validation_base_dir: Path) -> RunCaseFunction:
     (
         "flat_plate",
         "stepped_planing_plate",
-        "flexible_membrane",
+        pytest.param("flexible_membrane", marks=pytest.mark.slow),
+        pytest.param("sprung_plate", marks=pytest.mark.slow),
     ),
 )
 def test_run_validation_case(run_case: RunCaseFunction, case_name: str) -> None:
@@ -96,4 +103,4 @@ def assert_files_almost_equal(orig_file: Path, new_file: Path) -> None:
                     continue
                 f_values.append(f_val)
                 g_values.append(g_val)
-            assert f_values == pytest.approx(g_values)
+            assert f_values == pytest.approx(g_values, rel=1e-3, abs=1e-6)

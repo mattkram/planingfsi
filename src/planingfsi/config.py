@@ -1,20 +1,23 @@
-"""This module is used to store the global configuration. Values are stored
-after reading the configDict file, and values can be accessed by other
-packages and modules by importing the config module.
+"""This module is used to store the global configuration classes.
 
-Usage: from planingfsi import config
-
-The global attributes can then be simply accessed via config.attribute_name
+Values are generally read on from the `configDict` file, which is
+parsed into separate domain configurations. Each of these domain
+configurations are stored under the high-level `Config` instance.
+In general, the configuration is attached to the `Simulation`
+instance, which then serves as a reference point elsewhere in the code.
 
 """
+from __future__ import annotations
+
 import math
 from pathlib import Path
-from typing import Any, List, Type, Dict, Optional, Union
+from typing import Any
 
-from . import logger
-from .dictionary import load_dict_from_file
+from planingfsi import logger
+from planingfsi.dictionary import load_dict_from_file
 
 DICT_NAME = "configDict"
+NUM_DIM = 2
 
 
 class ConfigItem:
@@ -28,8 +31,8 @@ class ConfigItem:
     default: Any
 
     def __init__(self, *alt_keys: str, **kwargs: Any):
-        self.alt_keys: List[str] = list(alt_keys)
-        self.type_: Optional[Type] = kwargs.get("type")
+        self.alt_keys: list[str] = list(alt_keys)
+        self.type_: type | None = kwargs.get("type")
         try:
             self.default = kwargs["default"]
             if self.default is not None:
@@ -66,11 +69,11 @@ class ConfigItem:
         self.name = name
 
     @property
-    def keys(self) -> List[str]:
+    def keys(self) -> list[str]:
         """A list of keys to look for when reading in the value."""
         return [self.name] + self.alt_keys
 
-    def get_from_dict(self, dict_: Dict[str, Any]) -> Any:
+    def get_from_dict(self, dict_: dict[str, Any]) -> Any:
         """Try to read all keys from the dictionary until a non-None value is found.
 
         Returns the default value if no appropriate value is found in the dictionary.
@@ -88,7 +91,17 @@ class SubConfig:
     different sections. Also useful in helping define the namespace scopes.
     """
 
-    def load_from_file(self, filename: Union[Path, str]) -> None:
+    def __init__(self, parent: Config | None = None):
+        self._parent = parent
+
+    @property
+    def parent(self) -> "Config":
+        """Raises a ValueError if parent is not assigned."""
+        if self._parent is None:
+            raise ValueError("Must assign a parent to access this property.")
+        return self._parent
+
+    def load_from_file(self, filename: Path | str) -> None:
         """Load the configuration from a dictionary file.
 
         Args:
@@ -96,7 +109,8 @@ class SubConfig:
 
         """
         # Clear the attributes before loading the new ones
-        self.__dict__ = {}
+        # TODO: This is hacky
+        self.__dict__ = {"_parent": self.parent}
         dict_ = load_dict_from_file(filename)
         for key, config_item in self.__class__.__dict__.items():
             if isinstance(config_item, ConfigItem):
@@ -116,7 +130,6 @@ class FlowConfig(SubConfig):
         gravity (float): Acceleration due to gravity.
         kinematic_viscosity (float): Kinematic viscosity of the fluid.
         waterline_height (float): Height of the waterline above the reference.
-        num_dim (int): Number of dimensions.
         include_friction (bool): If True, include a flat-plate estimation for the frictional drag
             component.
 
@@ -126,7 +139,6 @@ class FlowConfig(SubConfig):
     gravity = ConfigItem("g", default=9.81)
     kinematic_viscosity = ConfigItem("nu", default=1e-6)
     waterline_height = ConfigItem("hWL", default=0.0)
-    num_dim = ConfigItem("dim", default=2)
     include_friction = ConfigItem("shearCalc", default=False)
 
     _froude_num = ConfigItem("Fr", default=None, type=float)
@@ -139,7 +151,7 @@ class FlowConfig(SubConfig):
         Defaults to reference length of the rigid body.
 
         """
-        return body.reference_length
+        return self.parent.body.reference_length
 
     @property
     def flow_speed(self) -> float:
@@ -176,12 +188,12 @@ class FlowConfig(SubConfig):
     @property
     def stagnation_pressure(self) -> float:
         """float: The pressure at the stagnation point."""
-        return 0.5 * self.density * self.flow_speed ** 2
+        return 0.5 * self.density * self.flow_speed**2
 
     @property
     def k0(self) -> float:
         """float: A wave number used internally in the potential-flow solver."""
-        return self.gravity / self.flow_speed ** 2
+        return self.gravity / self.flow_speed**2
 
     @property
     def lam(self) -> float:
@@ -271,7 +283,7 @@ class BodyConfig(SubConfig):
         try:
             return self._relax_draft
         except AttributeError:
-            return body.relax_rigid_body
+            return self.parent.body.relax_rigid_body
 
     @property
     def relax_trim(self) -> float:
@@ -283,7 +295,7 @@ class BodyConfig(SubConfig):
         try:
             return self._relax_trim
         except AttributeError:
-            return body.relax_rigid_body
+            return self.parent.body.relax_rigid_body
 
     @property
     def Pc(self) -> float:
@@ -337,11 +349,11 @@ class BodyConfig(SubConfig):
         try:
             return self._weight
         except AttributeError:
-            return self.mass * flow.gravity
+            return self.mass * self.parent.flow.gravity
 
     @weight.setter
     def weight(self, value: float) -> None:
-        self.mass = value / flow.gravity
+        self.mass = value / self.parent.flow.gravity
 
 
 class PlotConfig(SubConfig):
@@ -359,10 +371,10 @@ class PlotConfig(SubConfig):
 
     """
 
-    pType = ConfigItem("pScaleType", default="stagnation")
-    _pScale = ConfigItem("pScale", default=1.0)
-    _pScalePct = ConfigItem("pScalePct", default=1.0)
-    _pScaleHead = ConfigItem("pScaleHead", default=1.0)
+    pressure_scale_method = ConfigItem("pScaleType", default="stagnation")
+    _pressure_scale = ConfigItem("pScale", default=1.0)
+    _pressure_scale_pct = ConfigItem("pScalePct", default=1.0)
+    _pressure_scale_head = ConfigItem("pScaleHead", default=1.0)
     growth_rate = ConfigItem("growthRate", default=1.1)
     CofR_grid_len = ConfigItem("CofRGridLen", default=0.5)
     fig_format = ConfigItem("figFormat", default="png")
@@ -375,16 +387,16 @@ class PlotConfig(SubConfig):
     ext_n = ConfigItem("extN", default=0.1)
     ext_s = ConfigItem("extS", default=0.1)
 
-    xmin = ConfigItem("plotXMin", type=float)
-    xmax = ConfigItem("plotXMax", type=float)
-    ymin = ConfigItem("plotYMin", type=float)
-    ymax = ConfigItem("plotYMax", type=float)
+    xmin = ConfigItem("plotXMin", type=float, default=None)
+    xmax = ConfigItem("plotXMax", type=float, default=None)
+    ymin = ConfigItem("plotYMin", type=float, default=None)
+    ymax = ConfigItem("plotYMax", type=float, default=None)
 
     lambda_min = ConfigItem("lamMin", default=-1.0)
     lambda_max = ConfigItem("lamMax", default=1.0)
 
-    _x_fs_min = ConfigItem("xFSMin", type=float)
-    _x_fs_max = ConfigItem("xFSMax", type=float)
+    _x_fs_min = ConfigItem("xFSMin", type=float, default=None)
+    _x_fs_max = ConfigItem("xFSMax", type=float, default=None)
 
     # Whether to save, show, or watch plots
     save = ConfigItem("plotSave", default=False)
@@ -396,6 +408,10 @@ class PlotConfig(SubConfig):
     def watch(self) -> bool:
         """bool: If True, watch the plot figure."""
         return self._watch or self.show
+
+    @watch.setter
+    def watch(self, value: bool) -> None:
+        self._watch = value
 
     @property
     def plot_any(self) -> bool:
@@ -419,7 +435,7 @@ class PlotConfig(SubConfig):
             return self._x_fs_min
         if self.xmin is not None:
             return self.xmin
-        return self.lambda_min * flow.lam
+        return self.lambda_min * self.parent.flow.lam
 
     @property
     def x_fs_max(self) -> float:
@@ -428,20 +444,22 @@ class PlotConfig(SubConfig):
             return self._x_fs_max
         if self.xmax is not None:
             return self.xmax
-        return self.lambda_max * flow.lam
+        return self.lambda_max * self.parent.flow.lam
 
     @property
-    def pScale(self) -> float:
+    def pressure_scale(self) -> float:
         """float: Pressure value to use to scale the pressure profile."""
-        if plotting.pType == "stagnation":
-            pScale = flow.stagnation_pressure
-        elif plotting.pType == "cushion":
-            pScale = body.Pc if body.Pc > 0.0 else 1.0
-        elif plotting.pType == "hydrostatic":
-            pScale = flow.density * flow.gravity * self._pScaleHead
+        if self.pressure_scale_method == "stagnation":
+            ref_pressure = self.parent.flow.stagnation_pressure
+        elif self.pressure_scale_method == "cushion":
+            ref_pressure = self.parent.body.Pc if self.parent.body.Pc > 0.0 else 1.0
+        elif self.pressure_scale_method == "hydrostatic":
+            ref_pressure = (
+                self.parent.flow.density * self.parent.flow.gravity * self._pressure_scale_head
+            )
         else:
-            pScale = self._pScale
-        return pScale * self._pScalePct
+            ref_pressure = self._pressure_scale
+        return ref_pressure * self._pressure_scale_pct
 
 
 class PathConfig(SubConfig):
@@ -463,11 +481,13 @@ class PathConfig(SubConfig):
 
     case_dir = ConfigItem("caseDir", default=".")
     fig_dir_name = ConfigItem("figDirName", default="figures")
-    body_dict_dir = ConfigItem("bodyDictDir", default="bodyDict")
-    input_dict_dir = ConfigItem("inputDictDir", default="inputDict")
-    cushion_dict_dir = ConfigItem("pressureCushionDictDir", "cushionDictDir", default="cushionDict")
-    mesh_dir = ConfigItem("meshDir", default="mesh")
-    mesh_dict_dir = ConfigItem("meshDictDir", default="meshDict")
+    body_dict_dir_name = ConfigItem("bodyDictDir", default="bodyDict")
+    input_dict_dir_name = ConfigItem("inputDictDir", default="inputDict")
+    cushion_dict_dir_name = ConfigItem(
+        "pressureCushionDictDir", "cushionDictDir", default="cushionDict"
+    )
+    mesh_dir_name = ConfigItem("meshDir", default="mesh")
+    mesh_dict_name = ConfigItem("meshDictDir", default="meshDict")
 
 
 class IOConfig(SubConfig):
@@ -542,36 +562,28 @@ class SolverConfig(SubConfig):
             return self.wetted_length_max_step_pct
 
 
-# Create instances of each class and store on module
-flow = FlowConfig()
-body = BodyConfig()
-plotting = PlotConfig()
-path = PathConfig()
-io = IOConfig()
-solver = SolverConfig()
+class Config:
+    def __init__(self) -> None:
+        self.flow = FlowConfig(parent=self)
+        self.body = BodyConfig(parent=self)
+        self.plotting = PlotConfig(parent=self)
+        self.path = PathConfig(parent=self)
+        self.io = IOConfig(parent=self)
+        self.solver = SolverConfig(parent=self)
 
+    @classmethod
+    def from_file(cls, filename: Path | str) -> "Config":
+        obj = cls()
+        obj.load_from_file(filename)
+        return obj
 
-def load_from_file(filename: Union[Path, str]) -> None:
-    """Load the configuration from a file.
+    def load_from_file(self, filename: Path | str) -> None:
+        """Load the configuration from a file.
 
-    Args:
-        filename: The name of the file.
+        Args:
+            filename: The name of the file.
 
-    """
-    logger.info(f"Loading values from {filename}")
-    for c in [flow, body, plotting, path, io, solver]:
-        c.load_from_file(filename)
-
-
-# Load the default config dict file
-if Path(DICT_NAME).exists():
-    load_from_file(DICT_NAME)
-
-# Initialized constants
-# TODO: These should be moved to the Simulation class
-ramp = 1.0
-has_free_structure = False
-
-# TODO: This need to be factored out eventually
-res_l = 1.0
-res_m = 1.0
+        """
+        logger.info(f"Loading values from {filename}")
+        for c in [self.flow, self.body, self.plotting, self.path, self.io, self.solver]:
+            c.load_from_file(filename)
