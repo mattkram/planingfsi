@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from collections.abc import Callable
+from collections.abc import Iterator
 from pathlib import Path
 from typing import TYPE_CHECKING
 from typing import Any
@@ -30,19 +31,7 @@ class Figure:
         if self.config.plotting.watch:
             plt.ion()
 
-        self.subplots: list[Subplot] = [GeometrySubplot((0.05, 0.6, 0.9, 0.35), parent=self)]
-
-        if self.solid.rigid_bodies:
-            body = self.solid.rigid_bodies[0]
-            self.subplots.append(ForceSubplot((0.70, 0.30, 0.25, 0.2), body=body, parent=self))
-            self.subplots.append(MotionSubplot((0.70, 0.05, 0.25, 0.2), body=body, parent=self))
-
-        if len(self.solid.rigid_bodies) > 1:
-            body = self.solid.rigid_bodies[1]
-            self.subplots.append(ForceSubplot((0.05, 0.30, 0.25, 0.2), body=body, parent=self))
-            self.subplots.append(MotionSubplot((0.05, 0.05, 0.25, 0.2), body=body, parent=self))
-
-        self.subplots.append(ResidualSubplot((0.40, 0.05, 0.25, 0.45), parent=self))
+        self.subplots: list[Subplot] = list(self.create_subplots())
 
     @property
     def config(self) -> Config:
@@ -51,6 +40,25 @@ class Figure:
     @property
     def solid(self) -> StructuralSolver:
         return self.simulation.structural_solver
+
+    def create_subplots(self) -> Iterator[Subplot]:
+        """A generator method that is used to create all the subplots.
+
+        This method can be overridden in a subclass to create different layouts.
+
+        """
+        yield GeometrySubplot((0.05, 0.6, 0.9, 0.35), parent=self)
+        yield ResidualSubplot((0.40, 0.05, 0.25, 0.45), parent=self)
+
+        if self.solid.rigid_bodies:
+            body = self.solid.rigid_bodies[0]
+            yield ForceSubplot((0.70, 0.30, 0.25, 0.2), body=body, parent=self)
+            yield MotionSubplot((0.70, 0.05, 0.25, 0.2), body=body, parent=self)
+
+        if len(self.solid.rigid_bodies) > 1:
+            body = self.solid.rigid_bodies[1]
+            yield ForceSubplot((0.05, 0.30, 0.25, 0.2), body=body, parent=self)
+            yield MotionSubplot((0.05, 0.05, 0.25, 0.2), body=body, parent=self)
 
     def update(self) -> None:
         """Update all subplots and redraw. If configured, also save figure as an image."""
