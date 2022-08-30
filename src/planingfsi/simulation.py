@@ -275,7 +275,7 @@ class Simulation:
         The fluid and solid solvers are solved iteratively until convergence is reached.
 
         """
-        self.reset()
+        self.it = 0
 
         if self.config.io.results_from_file:
             self._update_ramp()
@@ -308,10 +308,6 @@ class Simulation:
 
         if self.figure is not None and self.config.plotting.show:
             self.figure.show()
-
-    def reset(self) -> None:
-        """Reset iteration counter."""
-        self.it = 0
 
     def initialize_solvers(self) -> None:
         """Initialize body at specified trim and draft and solve initial fluid problem."""
