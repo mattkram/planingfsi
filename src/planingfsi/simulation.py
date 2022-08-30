@@ -71,6 +71,11 @@ class Simulation:
         return self.case_dir / self.config.path.mesh_dir_name
 
     @property
+    def fig_dir(self):
+        """A path to the directory in which figures will be saved."""
+        return self.case_dir / self.config.path.fig_dir_name
+
+    @property
     def figure(self) -> FSIFigure | None:
         """The `FSIFigure` object where results are drawn. Will be None if plotting is disabled."""
         if self._figure is None and self.config.plotting.plot_any:
@@ -136,10 +141,9 @@ class Simulation:
 
         """
         if self.config.plotting.save:
-            fig_dir = self.case_dir / self.config.path.fig_dir_name
-            fig_dir.mkdir(exist_ok=True)
+            self.fig_dir.mkdir(exist_ok=True)
             if self.it == 0:
-                for f in fig_dir.glob("*"):
+                for f in self.fig_dir.glob("*"):
                     f.unlink()
 
     def load_input_files(self, config_filename: Path | str) -> None:

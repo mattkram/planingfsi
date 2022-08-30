@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import os
 from collections.abc import Callable
 from pathlib import Path
 from typing import TYPE_CHECKING
@@ -69,13 +68,12 @@ class FSIFigure:
                 s.write()
 
     def save(self) -> None:
-        self.figure.savefig(
-            os.path.join(
-                self.config.path.fig_dir_name,
-                "frame{1:04d}.{0}".format(self.config.plotting.fig_format, self.simulation.it),
-            ),
-            format=self.config.plotting.fig_format,
-        )  # , dpi=300)
+        """Save the figure to a file, numbered by the iteration."""
+        file_path = Path(
+            self.simulation.fig_dir,
+            f"frame{self.simulation.it:04d}.{self.config.plotting.fig_format}",
+        )
+        self.figure.savefig(file_path, format=self.config.plotting.fig_format)
 
     @staticmethod
     def show() -> None:
