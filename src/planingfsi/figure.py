@@ -248,20 +248,20 @@ class GeometrySubplot(Subplot):
         """Plot the substructure elements and pressure profiles."""
         for el in ss.elements:
             if handle := self._handles_elements.get(el):
-                handle.set_data([nd.x for nd in el.nodes], [nd.y for nd in el.nodes])
+                coords = np.array([nd.coordinates for nd in el.nodes])
+                handle.set_data(coords.T)
 
             if handle := self._handles_elements_init.get(el):
                 base_pt = np.array([el.parent.rigid_body.x_cr_init, el.parent.rigid_body.y_cr_init])
-                pos = [
-                    trig.rotate_point(pos, base_pt, el.parent.rigid_body.trim)
-                    - np.array([0, el.parent.rigid_body.draft])
-                    for pos in el._initial_coordinates
-                ]
-                x, y = list(zip(*[[posi[i] for i in range(2)] for posi in pos]))
-                handle.set_data(x, y)
+                pos = np.array(
+                    [
+                        trig.rotate_point(pos, base_pt, el.parent.rigid_body.trim)
+                        - np.array([0, el.parent.rigid_body.draft])
+                        for pos in el._initial_coordinates
+                    ]
+                )
+                handle.set_data(pos.T)
 
-        #    for nd in [self.node[0],self.node[-1]]:
-        #      nd.plot()
         self._draw_pressure_profiles(ss)
 
     def _draw_structures(self):
