@@ -34,8 +34,6 @@ class Simulation:
         it: The current iteration.
         ramp: The current ramping coefficient, used when applying loads and moving nodes.
             The value is between 1.0 and 0.0.
-        it_dirs: A list of paths to iteration directories stored in the filesystem, used when loading
-            existing results to "replay" a simulation.
 
     """
 
@@ -43,9 +41,9 @@ class Simulation:
         self.config = Config()
         self.structural_solver = StructuralSolver(self)
         self.fluid_solver = PotentialPlaningSolver(self)
-        self._figure: Figure | None = None
         self.it = 0
         self.ramp = 1.0
+        self._figure: Figure | None = None
         self._it_dirs: list[Path] | None = None
         self._case_dir: Path | None = None
 
@@ -125,17 +123,17 @@ class Simulation:
         """
         return self.structural_solver.add_rigid_body(rigid_body)
 
-    def update_fluid_response(self) -> None:
+    def _update_fluid_response(self) -> None:
         """Update the fluid response and apply to the structural solver."""
         self.fluid_solver.calculate_response()
         self.structural_solver.update_fluid_forces()
 
-    def update_solid_response(self) -> None:
+    def _update_solid_response(self) -> None:
         """Update the structural response."""
         self.structural_solver.calculate_response()
 
     def load_input_files(self, config_filename: Path | str) -> None:
-        """Load all of the input files."""
+        """Load all the input files."""
         self.config.load_from_file(config_filename)
         self._load_rigid_bodies()
         self._load_substructures()
@@ -192,7 +190,7 @@ class Simulation:
             # Add a dummy rigid body that cannot move
             self.add_rigid_body()
 
-        print(f"Rigid Bodies: {self.structural_solver.rigid_bodies}")
+        logger.info(f"Rigid Bodies: {self.structural_solver.rigid_bodies}")
 
     def _load_substructures(self) -> None:
         """Load all substructures from files."""
@@ -244,7 +242,7 @@ class Simulation:
             if dict_.get("has_planing_surface", False):
                 planing_surface = PlaningSurface(**dict_)
                 substructure.add_planing_surface(planing_surface, **dict_)
-        print(f"Substructures: {self.structural_solver.substructures}")
+        logger.info(f"Substructures: {self.structural_solver.substructures}")
 
     def _load_pressure_cushions(self) -> None:
         """Load all pressure cushions from files."""
@@ -265,7 +263,7 @@ class Simulation:
                 },
             )
             self.fluid_solver.add_pressure_cushion(dict_)
-        print(f"Pressure Cushions: {self.fluid_solver.pressure_cushions}")
+        logger.info(f"Pressure Cushions: {self.fluid_solver.pressure_cushions}")
 
     def load_mesh(self, mesh: Path | Mesh | None = None) -> None:
         """Load the mesh from files, or directly. By default, will load from "mesh" directory."""
@@ -277,7 +275,7 @@ class Simulation:
         The fluid and solid solvers are solved iteratively until convergence is reached.
 
         """
-        self.reset()
+        self.it = 0
 
         if self.config.io.results_from_file:
             self._update_ramp()
@@ -293,12 +291,12 @@ class Simulation:
             # Calculate response
             if self.structural_solver.has_free_structure:
                 self._update_ramp()
-                self.update_solid_response()
-                self.update_fluid_response()
+                self._update_solid_response()
+                self._update_fluid_response()
 
             # Write, print, and plot results
             self.write_results()
-            self.print_status()
+            logger.info("Residual after iteration %4s: %5.3e", self.it, self.residual)
             self._update_figure()
 
             # Increment iteration count
@@ -311,14 +309,10 @@ class Simulation:
         if self.figure is not None and self.config.plotting.show:
             self.figure.show()
 
-    def reset(self) -> None:
-        """Reset iteration counter."""
-        self.it = 0
-
     def initialize_solvers(self) -> None:
         """Initialize body at specified trim and draft and solve initial fluid problem."""
         self.structural_solver.initialize_rigid_bodies()
-        self.update_fluid_response()
+        self._update_fluid_response()
 
     def increment(self) -> None:
         """Increment iteration counter. If loading from files, use the next stored iteration."""
@@ -362,9 +356,6 @@ class Simulation:
             self.config.solver.relax_FEM = (
                 1 - self.ramp
             ) * self.config.solver.relax_initial + self.ramp * self.config.solver.relax_final
-
-    def print_status(self) -> None:
-        logger.info("Residual after iteration %4s: %5.3e", self.it, self.residual)
 
     def write_results(self) -> None:
         """Write the current overall results to an iteration directory."""
