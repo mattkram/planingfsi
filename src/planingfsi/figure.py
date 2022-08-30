@@ -629,7 +629,7 @@ class CofRPlot:
         self._cg_handle.set_data(self._body.x_cg, self._body.y_cg)
 
 
-def plot_pressure(solver: "PotentialPlaningSolver", fig_format: str = "png") -> None:
+def plot_pressure(solver: PotentialPlaningSolver, fig_format: str = "png") -> None:
     """Create a plot of the pressure and shear stress profiles."""
     fig, ax = plt.subplots(1, 1, figsize=(5.0, 5.0))
 
@@ -638,19 +638,9 @@ def plot_pressure(solver: "PotentialPlaningSolver", fig_format: str = "png") -> 
         ax.plot(el.x_coord * np.ones(2), [0.0, el.pressure], color=el.plot_color, linestyle="--")
 
     ax.plot(solver.x_coord, solver.pressure, "k-")
-    # ax.plot(solver.x_coord, solver.shear_stress * 1000, "c--")
-
-    # Scale x and y axes
-    # for line in ax.lines:
-    #     x, y = line.get_data()
-    #     line.set_data(
-    #         x / (config.body.reference_length * 2), y / config.flow.stagnation_pressure,
-    #     )
 
     ax.set_xlabel(r"$x\,\mathrm{[m]}$")
     ax.set_ylabel(r"$p\,\mathrm{[kPa]}$")
-    # ax.set_xlabel(r"$x/L_i$")
-    # ax.set_ylabel(r"$p/(1/2\rho U^2)$")
     ax.set_ylim(ymin=0.0)
 
     fig.savefig(f"pressureElements.{fig_format}", format=fig_format)
