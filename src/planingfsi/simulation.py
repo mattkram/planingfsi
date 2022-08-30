@@ -123,12 +123,12 @@ class Simulation:
         """
         return self.structural_solver.add_rigid_body(rigid_body)
 
-    def update_fluid_response(self) -> None:
+    def _update_fluid_response(self) -> None:
         """Update the fluid response and apply to the structural solver."""
         self.fluid_solver.calculate_response()
         self.structural_solver.update_fluid_forces()
 
-    def update_solid_response(self) -> None:
+    def _update_solid_response(self) -> None:
         """Update the structural response."""
         self.structural_solver.calculate_response()
 
@@ -291,8 +291,8 @@ class Simulation:
             # Calculate response
             if self.structural_solver.has_free_structure:
                 self._update_ramp()
-                self.update_solid_response()
-                self.update_fluid_response()
+                self._update_solid_response()
+                self._update_fluid_response()
 
             # Write, print, and plot results
             self.write_results()
@@ -316,7 +316,7 @@ class Simulation:
     def initialize_solvers(self) -> None:
         """Initialize body at specified trim and draft and solve initial fluid problem."""
         self.structural_solver.initialize_rigid_bodies()
-        self.update_fluid_response()
+        self._update_fluid_response()
 
     def increment(self) -> None:
         """Increment iteration counter. If loading from files, use the next stored iteration."""
