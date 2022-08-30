@@ -14,13 +14,17 @@
 </head>
 <body>
 
-<div id="log" class="alert alert-primary"></div>
 <div id="figure"></div>
+<div id="log" style="height:120px;width:100%;border:1px; overflow:auto;"></div>
+
+<py-script output="log">
+  from run_dam import run_dam_case
+  simulation = run_dam_case()
+</py-script>
 
 <py-script output="figure">
-  from run_dam import run_dam_case
-  figure = run_dam_case()
-  figure
+  from run_dam import get_figure
+  get_figure(simulation)
 </py-script>
 
 </body>

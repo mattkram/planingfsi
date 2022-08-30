@@ -10,7 +10,9 @@ from planingfsi import Mesh
 from planingfsi import Simulation
 from planingfsi.figure import Figure
 from planingfsi.figure import GeometrySubplot
+from planingfsi.figure import Series
 from planingfsi.figure import Subplot
+from planingfsi.figure import TimeHistorySubplot
 
 
 class MyGeometrySubplot(GeometrySubplot):
@@ -41,9 +43,25 @@ class MyGeometrySubplot(GeometrySubplot):
         self._draw_free_surface()
 
 
+class MyResidualSubplot(TimeHistorySubplot):
+    def __init__(self, pos: tuple[float, float, float, float], *, parent: Figure):
+        super().__init__(pos, name="residuals", parent=parent)
+        self.set_properties(title="Residual History", xlabel="Iteration", yscale="log")
+
+    def create_series(self) -> Iterator[Series]:
+        yield Series(
+            lambda: self._parent.simulation.it,
+            lambda: np.abs(self._parent.solid.residual),
+            style="k-",
+            label="Total",
+            ignore_first=True,
+        )
+
+
 class MyFigure(Figure):
     def create_subplots(self) -> Iterator[Subplot]:
-        yield MyGeometrySubplot((0.05, 0.6, 0.9, 0.35), parent=self)
+        yield MyGeometrySubplot((0.05, 0.55, 0.9, 0.45), parent=self)
+        yield MyResidualSubplot((0.05, 0.05, 0.9, 0.4), parent=self)
 
 
 def run_dam_case():
@@ -74,11 +92,16 @@ def run_dam_case():
     simulation.load_mesh(mesh)
     simulation.run()
 
-    simulation._figure = MyFigure(simulation=simulation, figsize=(8, 6))
+    simulation._figure = MyFigure(simulation=simulation, figsize=(8, 8))
+    return simulation
+
+
+def get_figure(simulation):
     simulation.figure.update()
     return simulation.figure.figure
 
 
 if __name__ == "__main__":
-    run_dam_case()
+    sim = run_dam_case()
+    get_figure(simulation=sim)
     plt.show()
