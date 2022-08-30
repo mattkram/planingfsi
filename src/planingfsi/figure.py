@@ -44,9 +44,7 @@ class FSIFigure:
             self.subplots.append(ForceSubplot((0.05, 0.30, 0.25, 0.2), body=body, parent=self))
             self.subplots.append(MotionSubplot((0.05, 0.05, 0.25, 0.2), body=body, parent=self))
 
-        self.subplots.append(
-            ResidualSubplot((0.40, 0.05, 0.25, 0.45), solid=self.solid, parent=self)
-        )
+        self.subplots.append(ResidualSubplot((0.40, 0.05, 0.25, 0.45), parent=self))
 
     @property
     def config(self) -> Config:
@@ -525,13 +523,11 @@ class ForceSubplot(TimeHistorySubplot):
 
 
 class ResidualSubplot(TimeHistorySubplot):
-    def __init__(
-        self, pos: tuple[float, float, float, float], *, solid: StructuralSolver, parent: FSIFigure
-    ):
+    def __init__(self, pos: tuple[float, float, float, float], *, parent: FSIFigure):
         super().__init__(pos, name="residuals", parent=parent)
 
         col = ["r", "b", "g"]
-        for body, col_i in zip(solid.rigid_bodies, col):
+        for body, col_i in zip(self._parent.solid.rigid_bodies, col):
             self.add_series(
                 Series(
                     lambda: self._parent.simulation.it,
@@ -554,7 +550,7 @@ class ResidualSubplot(TimeHistorySubplot):
         self.add_series(
             Series(
                 lambda: self._parent.simulation.it,
-                lambda: np.abs(solid.residual),
+                lambda: np.abs(self._parent.solid.residual),
                 style="k-",
                 label="Total",
                 ignore_first=True,
