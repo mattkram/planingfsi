@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <title>PyScript App</title>
+    <link rel="stylesheet" href="https://pyscript.net/alpha/pyscript.css"/>
+    <script defer src="https://pyscript.net/alpha/pyscript.js"></script>
+
+<py-env>
+- planingfsi==0.3.0
+- paths:
+  - ./run_dam.py
+</py-env>
+
+</head>
+<body>
+
+<div id="log" class="alert alert-primary"></div>
+<div id="figure"></div>
+
+<py-script output="figure">
+  from run_dam import run_dam_case
+  figure = run_dam_case()
+  figure
+</py-script>
+
+</body>
+</html>
