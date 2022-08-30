@@ -395,6 +395,7 @@ class TimeHistorySubplot(Subplot):
         self._ax: list[Axes] = []
 
         self._add_axes(parent.figure.add_axes(pos))
+        self.series = list(self.create_series())
 
     def _add_axes(self, ax: Axes) -> None:
         """Add a set of child axes."""
@@ -403,6 +404,9 @@ class TimeHistorySubplot(Subplot):
     def _add_y_axes(self) -> None:
         """Add a twin y-axis, which shares an x-axis but has a different y-axis scale."""
         self._add_axes(plt.twinx(self._ax[0]))
+
+    def create_series(self) -> Iterator[Series]:
+        raise NotImplementedError
 
     def add_series(self, series: Series) -> Series:
         """Add a series to the subplot."""
@@ -490,29 +494,7 @@ class TimeHistorySubplot(Subplot):
 class MotionSubplot(TimeHistorySubplot):
     def __init__(self, pos: tuple[float, float, float, float], *, body: RigidBody, parent: Figure):
         super().__init__(pos, name=body.name, parent=parent)
-
-        self._add_y_axes()
-
-        # Add plot series to appropriate axis
-        self.add_series(
-            Series(
-                lambda: self._parent.simulation.it,
-                lambda: body.draft,
-                ax=self._ax[0],
-                style="b-",
-                label="Draft",
-            )
-        )
-        self.add_series(
-            Series(
-                lambda: self._parent.simulation.it,
-                lambda: body.trim,
-                ax=self._ax[1],
-                style="r-",
-                label="Trim",
-            )
-        )
-
+        self._body = body
         self.set_properties(
             title=r"Motion History: {0}".format(body.name),
             xlabel=r"Iteration",
@@ -521,44 +503,59 @@ class MotionSubplot(TimeHistorySubplot):
         self.set_properties(1, ylabel=r"$\theta$ [deg]")
         self.create_legend()
 
+    def create_series(self) -> Iterator[Series]:
+        yield Series(
+            lambda: self._parent.simulation.it,
+            lambda: self._body.draft,
+            ax=self._ax[0],
+            style="b-",
+            label="Draft",
+        )
+
+        self._add_y_axes()
+        yield Series(
+            lambda: self._parent.simulation.it,
+            lambda: self._body.trim,
+            ax=self._ax[1],
+            style="r-",
+            label="Trim",
+        )
+
 
 class ForceSubplot(TimeHistorySubplot):
     def __init__(self, pos: tuple[float, float, float, float], *, body: RigidBody, parent: Figure):
         super().__init__(pos, name=body.name, parent=parent)
-
-        self.add_series(
-            Series(
-                lambda: self._parent.simulation.it,
-                lambda: body.loads.L / body.weight,
-                style="r-",
-                label="Lift",
-                ignore_first=True,
-            )
-        )
-        self.add_series(
-            Series(
-                lambda: self._parent.simulation.it,
-                lambda: body.loads.D / body.weight,
-                style="b-",
-                label="Drag",
-                ignore_first=True,
-            )
-        )
-        self.add_series(
-            Series(
-                lambda: self._parent.simulation.it,
-                lambda: body.loads.M / (body.weight * self._parent.config.body.reference_length),
-                style="g-",
-                label="Moment",
-                ignore_first=True,
-            )
-        )
-
+        self._body = body
         self.set_properties(
             title=f"Force & Moment History: {body.name}",
             ylabel=r"$\mathcal{D}/W$, $\mathcal{L}/W$, $\mathcal{M}/WL_c$",
         )
         self.create_legend()
+
+    def create_series(self) -> Iterator[Series]:
+
+        yield Series(
+            lambda: self._parent.simulation.it,
+            lambda: self._body.loads.L / self._body.weight,
+            style="r-",
+            label="Lift",
+            ignore_first=True,
+        )
+        yield Series(
+            lambda: self._parent.simulation.it,
+            lambda: self._body.loads.D / self._body.weight,
+            style="b-",
+            label="Drag",
+            ignore_first=True,
+        )
+        yield Series(
+            lambda: self._parent.simulation.it,
+            lambda: self._body.loads.M
+            / (self._body.weight * self._parent.config.body.reference_length),
+            style="g-",
+            label="Moment",
+            ignore_first=True,
+        )
 
 
 class ResidualSubplot(TimeHistorySubplot):
@@ -566,40 +563,34 @@ class ResidualSubplot(TimeHistorySubplot):
 
     def __init__(self, pos: tuple[float, float, float, float], *, parent: Figure):
         super().__init__(pos, name="residuals", parent=parent)
-
-        col = ["r", "b", "g"]
-        for body, col_i in zip(self._parent.solid.rigid_bodies, col):
-            self.add_series(
-                Series(
-                    lambda: self._parent.simulation.it,
-                    body.get_res_lift,
-                    style=f"{col_i}-",
-                    label=f"Lift: {body.name}",
-                    ignore_first=True,
-                )
-            )
-            self.add_series(
-                Series(
-                    lambda: self._parent.simulation.it,
-                    body.get_res_moment,
-                    style=f"{col_i}--",
-                    label=f"Moment: {body.name}",
-                    ignore_first=True,
-                )
-            )
-
-        self.add_series(
-            Series(
-                lambda: self._parent.simulation.it,
-                lambda: np.abs(self._parent.solid.residual),
-                style="k-",
-                label="Total",
-                ignore_first=True,
-            )
-        )
-
         self.set_properties(title="Residual History", xlabel="Iteration", yscale="log")
         self.create_legend()
+
+    def create_series(self) -> Iterator[Series]:
+        col = ["r", "b", "g"]
+        for body, col_i in zip(self._parent.solid.rigid_bodies, col):
+            yield Series(
+                lambda: self._parent.simulation.it,
+                body.get_res_lift,
+                style=f"{col_i}-",
+                label=f"Lift: {body.name}",
+                ignore_first=True,
+            )
+            yield Series(
+                lambda: self._parent.simulation.it,
+                body.get_res_moment,
+                style=f"{col_i}--",
+                label=f"Moment: {body.name}",
+                ignore_first=True,
+            )
+
+        yield Series(
+            lambda: self._parent.simulation.it,
+            lambda: np.abs(self._parent.solid.residual),
+            style="k-",
+            label="Total",
+            ignore_first=True,
+        )
 
 
 class CofRPlot:
