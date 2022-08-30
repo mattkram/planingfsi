@@ -20,7 +20,7 @@ if TYPE_CHECKING:
     from planingfsi.simulation import Simulation
 
 
-class FSIFigure:
+class Figure:
     """A wrapper around a Matplotlib figure to plot the results/status of a PlaningFSI simulation."""
 
     def __init__(self, simulation: Simulation, *, figsize=(16, 9)):
@@ -103,7 +103,7 @@ class GeometrySubplot(Subplot):
 
     """
 
-    def __init__(self, pos: tuple[float, float, float, float], *, parent: FSIFigure):
+    def __init__(self, pos: tuple[float, float, float, float], *, parent: Figure):
         self._parent = parent
         self._ax = parent.figure.add_axes(pos)
 
@@ -379,7 +379,7 @@ class TimeHistorySubplot(Subplot):
     """
 
     def __init__(
-        self, pos: tuple[float, float, float, float], *, name: str = "default", parent: FSIFigure
+        self, pos: tuple[float, float, float, float], *, name: str = "default", parent: Figure
     ) -> None:
         self._parent = parent
         self._name = name
@@ -466,9 +466,7 @@ class TimeHistorySubplot(Subplot):
 
 
 class MotionSubplot(TimeHistorySubplot):
-    def __init__(
-        self, pos: tuple[float, float, float, float], *, body: RigidBody, parent: FSIFigure
-    ):
+    def __init__(self, pos: tuple[float, float, float, float], *, body: RigidBody, parent: Figure):
         super().__init__(pos, name=body.name, parent=parent)
 
         self._add_y_axes()
@@ -503,9 +501,7 @@ class MotionSubplot(TimeHistorySubplot):
 
 
 class ForceSubplot(TimeHistorySubplot):
-    def __init__(
-        self, pos: tuple[float, float, float, float], *, body: RigidBody, parent: FSIFigure
-    ):
+    def __init__(self, pos: tuple[float, float, float, float], *, body: RigidBody, parent: Figure):
         super().__init__(pos, name=body.name, parent=parent)
 
         self.add_series(
@@ -544,7 +540,7 @@ class ForceSubplot(TimeHistorySubplot):
 
 
 class ResidualSubplot(TimeHistorySubplot):
-    def __init__(self, pos: tuple[float, float, float, float], *, parent: FSIFigure):
+    def __init__(self, pos: tuple[float, float, float, float], *, parent: Figure):
         super().__init__(pos, name="residuals", parent=parent)
 
         col = ["r", "b", "g"]

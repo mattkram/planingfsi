@@ -13,7 +13,7 @@ from planingfsi import writers
 from planingfsi.config import Config
 from planingfsi.dictionary import load_dict_from_file
 from planingfsi.fe.structure import StructuralSolver
-from planingfsi.figure import FSIFigure
+from planingfsi.figure import Figure
 from planingfsi.potentialflow.pressurepatch import PlaningSurface
 from planingfsi.potentialflow.solver import PotentialPlaningSolver
 
@@ -43,7 +43,7 @@ class Simulation:
         self.config = Config()
         self.structural_solver = StructuralSolver(self)
         self.fluid_solver = PotentialPlaningSolver(self)
-        self._figure: FSIFigure | None = None
+        self._figure: Figure | None = None
         self.it = 0
         self.ramp = 1.0
         self._it_dirs: list[Path] | None = None
@@ -76,10 +76,10 @@ class Simulation:
         return self.case_dir / self.config.path.fig_dir_name
 
     @property
-    def figure(self) -> FSIFigure | None:
+    def figure(self) -> Figure | None:
         """The `FSIFigure` object where results are drawn. Will be None if plotting is disabled."""
         if self._figure is None and self.config.plotting.plot_any:
-            self._figure = FSIFigure(simulation=self)
+            self._figure = Figure(simulation=self)
         return self._figure
 
     @property
