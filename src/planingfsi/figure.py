@@ -451,26 +451,27 @@ class TimeHistorySubplot(Subplot):
             x_min = min(x_min, np.min(x))
             x_max = max(x_max, np.max(x))
 
-            # If the y-scale is log, we can only have positive limits
-            if self._is_ylog:
-                if (y_min_tmp := np.min(y)) > 0:
-                    if np.isnan(y_min):
-                        y_min = y_min_tmp
-                    else:
-                        y_min = min(y_min, y_min_tmp)
+            y_min_tmp = np.min(y)
+            y_max_tmp = np.max(y)
 
-                if (y_max_tmp := np.max(y)) > 0:
-                    if np.isnan(y_max):
-                        y_max = y_max_tmp
-                    else:
-                        y_max = max(y_max, y_max_tmp)
-            else:
-                y_min = min(y_min, np.min(y))
-                y_max = max(y_max, np.max(y))
+            # If the y-scale is log, we can only have positive limits
+            # And we need to handle the case where y_min/max begins at Nan,
+            # where min/max functions don't work
+            if not self._is_ylog or y_min_tmp > 0:
+                if np.isnan(y_min):
+                    y_min = y_min_tmp
+                else:
+                    y_min = min(y_min, y_min_tmp)
+
+            if not self._is_ylog or y_max_tmp > 0:
+                if np.isnan(y_max):
+                    y_max = y_max_tmp
+                else:
+                    y_max = max(y_max, y_max_tmp)
 
         # This prevents a warning for the first iteration where y_min == y_max
         if y_min == y_max:
-            y_min, y_max = y_max * 0.9, y_max * 1.1
+            y_min, y_max = y_max - 0.1, y_max + 0.1
 
         ax.set_xlim(x_min, x_max)
         if ~np.isnan(y_min) and ~np.isnan(y_max):
