@@ -95,7 +95,10 @@ class Figure:
 
     @staticmethod
     def show() -> None:
-        plt.show(block=True)
+        try:
+            plt.show(block=True)
+        except Exception:
+            pass
 
 
 class Subplot:
