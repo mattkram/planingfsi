@@ -133,7 +133,7 @@ class Simulation:
         self.structural_solver.calculate_response()
 
     def load_input_files(self, config_filename: Path | str) -> None:
-        """Load all of the input files."""
+        """Load all the input files."""
         self.config.load_from_file(config_filename)
         self._load_rigid_bodies()
         self._load_substructures()
@@ -190,7 +190,7 @@ class Simulation:
             # Add a dummy rigid body that cannot move
             self.add_rigid_body()
 
-        print(f"Rigid Bodies: {self.structural_solver.rigid_bodies}")
+        logger.info(f"Rigid Bodies: {self.structural_solver.rigid_bodies}")
 
     def _load_substructures(self) -> None:
         """Load all substructures from files."""
@@ -242,7 +242,7 @@ class Simulation:
             if dict_.get("has_planing_surface", False):
                 planing_surface = PlaningSurface(**dict_)
                 substructure.add_planing_surface(planing_surface, **dict_)
-        print(f"Substructures: {self.structural_solver.substructures}")
+        logger.info(f"Substructures: {self.structural_solver.substructures}")
 
     def _load_pressure_cushions(self) -> None:
         """Load all pressure cushions from files."""
@@ -263,7 +263,7 @@ class Simulation:
                 },
             )
             self.fluid_solver.add_pressure_cushion(dict_)
-        print(f"Pressure Cushions: {self.fluid_solver.pressure_cushions}")
+        logger.info(f"Pressure Cushions: {self.fluid_solver.pressure_cushions}")
 
     def load_mesh(self, mesh: Path | Mesh | None = None) -> None:
         """Load the mesh from files, or directly. By default, will load from "mesh" directory."""
