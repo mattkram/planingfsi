@@ -391,11 +391,9 @@ class TimeHistorySubplot(Subplot):
     ) -> None:
         self._parent = parent
         self._name = name
-        self._series: list[Series] = []
         self._ax: list[Axes] = []
-
         self._add_axes(parent.figure.add_axes(pos))
-        self.series = list(self.create_series())
+        self._series = list(self.create_series())
 
     def _add_axes(self, ax: Axes) -> None:
         """Add a set of child axes."""
@@ -406,6 +404,7 @@ class TimeHistorySubplot(Subplot):
         self._add_axes(plt.twinx(self._ax[0]))
 
     def create_series(self) -> Iterator[Series]:
+        """A generator that must yield at least one series to plot on the axes."""
         raise NotImplementedError
 
     def add_series(self, series: Series) -> Series:
