@@ -385,6 +385,8 @@ class TimeHistorySubplot(Subplot):
 
     """
 
+    _is_ylog = False
+
     def __init__(
         self, pos: tuple[float, float, float, float], *, name: str = "default", parent: Figure
     ) -> None:
@@ -438,24 +440,37 @@ class TimeHistorySubplot(Subplot):
     def _reset_axis_limits(self, ax: Axes) -> None:
         x_min, x_max = 0, self._parent.simulation.it + 5
         y_min, y_max = np.nan, np.nan
-        for i, l in enumerate(ax.get_lines()):
-            y = l.get_ydata()
-            if len(np.shape(y)) == 0:
-                y = np.array([y])
 
-            try:
-                y = y[np.ix_(~np.isnan(y))]
-            except TypeError:
-                y = []
+        for series in self._series:
+            point_data = np.array(series._points)
+            x, y = point_data[~np.isnan(point_data[:, 1])].T
 
-            if not np.shape(y)[0] == 0:
-                y_min_l = np.min(y) - 0.02
-                y_max_l = np.max(y) + 0.02
-                if i == 0 or np.isnan(y_min):
-                    y_min, y_max = y_min_l, y_max_l
-                else:
-                    y_min = np.min([y_min, y_min_l])
-                    y_max = np.max([y_max, y_max_l])
+            if x.size == 0:
+                continue
+
+            x_min = min(x_min, np.min(x))
+            x_max = max(x_max, np.max(x))
+
+            # If the y-scale is log, we can only have positive limits
+            if self._is_ylog:
+                if (y_min_tmp := np.min(y)) > 0:
+                    if np.isnan(y_min):
+                        y_min = y_min_tmp
+                    else:
+                        y_min = min(y_min, y_min_tmp)
+
+                if (y_max_tmp := np.max(y)) > 0:
+                    if np.isnan(y_max):
+                        y_max = y_max_tmp
+                    else:
+                        y_max = max(y_max, y_max_tmp)
+            else:
+                y_min = min(y_min, np.min(y))
+                y_max = max(y_max, np.max(y))
+
+        # This prevents a warning for the first iteration where y_min == y_max
+        if y_min == y_max:
+            y_min, y_max = y_max * 0.9, y_max * 1.1
 
         ax.set_xlim(x_min, x_max)
         if ~np.isnan(y_min) and ~np.isnan(y_max):
@@ -547,6 +562,8 @@ class ForceSubplot(TimeHistorySubplot):
 
 
 class ResidualSubplot(TimeHistorySubplot):
+    _is_ylog = True
+
     def __init__(self, pos: tuple[float, float, float, float], *, parent: Figure):
         super().__init__(pos, name="residuals", parent=parent)
 
