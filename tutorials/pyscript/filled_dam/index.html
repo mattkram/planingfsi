@@ -6,7 +6,7 @@
     <script defer src="https://pyscript.net/alpha/pyscript.js"></script>
 
 <py-env>
-- planingfsi==0.3.0
+- planingfsi==0.3.1
 - paths:
   - ./run_dam.py
 </py-env>
@@ -14,18 +14,28 @@
 </head>
 <body>
 
+<button id="run">Run</button>
 <div id="figure"></div>
 <div id="log" style="height:120px;width:100%;border:1px; overflow:auto;"></div>
 
-<py-script output="log">
+
+<py-script>
+  from js import document
+
+  from run_dam import get_figure
   from run_dam import run_dam_case
-  simulation = run_dam_case()
+
+  run_button = document.getElementById("run")
+  output = Element("figure")
+
+  def run(event):
+      simulation = run_dam_case()
+      figure = get_figure(simulation)
+      output.write(figure)
+
+  run_button.onclick = run
 </py-script>
 
-<py-script output="figure">
-  from run_dam import get_figure
-  get_figure(simulation)
-</py-script>
 
 </body>
 </html>
