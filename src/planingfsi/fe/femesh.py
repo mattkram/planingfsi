@@ -567,7 +567,6 @@ class Curve(_ShapeBase):
         if self.curvature == 0:
             return self.chord
         else:
-
             return fzero(
                 lambda s: self._get_arc_length_residual(curvature=self.curvature, arc_length=s),
                 self.chord + 1e-6,
