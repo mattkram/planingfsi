@@ -535,7 +535,6 @@ class ForceSubplot(TimeHistorySubplot):
         self.create_legend()
 
     def create_series(self) -> Iterator[Series]:
-
         yield Series(
             lambda: self._parent.simulation.it,
             lambda: self._body.loads.L / self._body.weight,

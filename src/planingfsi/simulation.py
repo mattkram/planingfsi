@@ -287,7 +287,6 @@ class Simulation:
             self.residual >= self.config.solver.max_residual
             and self.it <= self.config.solver.max_it
         ):
-
             # Calculate response
             if self.structural_solver.has_free_structure:
                 self._update_ramp()
