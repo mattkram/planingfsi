@@ -7,7 +7,7 @@ repos:
   - id: check-yaml
   - id: check-docstring-first
 - repo: https://github.com/macisamuele/language-formatters-pre-commit-hooks
-  rev: v2.6.0
+  rev: v2.8.0
   hooks:
   - id: pretty-format-yaml
     args: [--autofix, --preserve-quotes, --indent, '2']
@@ -26,7 +26,7 @@ repos:
   - id: isort
     name: isort
 - repo: https://github.com/psf/black
-  rev: 23.1.0
+  rev: 23.3.0
   hooks:
   - id: black
 - repo: https://github.com/pycqa/flake8
