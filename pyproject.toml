@@ -1,46 +1,8 @@
-[tool.poetry]
-name = "planingfsi"
-version = "0.3.1"
-description = "Fluid-Structure Interaction for large deformation planing surfaces"
-readme = "README.md"
-authors = ["Matt Kramer <matthew.robert.kramer@gmail.com>"]
-license = "MIT"
-repository = "https://github.com/mattkram/planingfsi"
-documentation = "https://planingfsi.readthedocs.io"
-classifiers = [
-    "License :: OSI Approved :: MIT License",
-    "Programming Language :: Python",
-    "Programming Language :: Python :: 3",
-    "Programming Language :: Python :: 3.8",
-    "Programming Language :: Python :: 3.9",
-    "Programming Language :: Python :: 3.10",
-    "Topic :: Scientific/Engineering",
-]
-packages = [
-    { include = "planingfsi", from = "src" },
-]
-
-[tool.poetry.scripts]
-planingfsi = "planingfsi.cli:cli"
-
-[tool.poetry.dependencies]
-python = ">=3.8,<3.12"
-matplotlib = "^3.0"
-numpy = "^1.15"
-scipy = "^1.8.0"
-click = "^8.0"
-click-log = "^0.4.0"
-
-[tool.poetry.dev-dependencies]
-codecov = "^2.1.11"
-pytest = "^7.1.0"
-pytest-cov = "^3.0.0"
-mypy = "^0.971"
+[build-system]
+build-backend = "poetry.masonry.api"
+requires = ["poetry>=0.12"]
 
 [tool.black]
-line-length = 100
-target-version = ["py36"]
-include = '\.pyi?$'
 exclude = '''
 /(
     \.git
@@ -50,11 +12,49 @@ exclude = '''
   | dist
 )/
 '''
+include = '\.pyi?$'
+line-length = 100
+target-version = ["py36"]
 
 [tool.isort]
-profile = "black"
 force_single_line = true
+profile = "black"
 
-[build-system]
-requires = ["poetry>=0.12"]
-build-backend = "poetry.masonry.api"
+[tool.poetry]
+authors = ["Matt Kramer <matthew.robert.kramer@gmail.com>"]
+classifiers = [
+  "License :: OSI Approved :: MIT License",
+  "Programming Language :: Python",
+  "Programming Language :: Python :: 3",
+  "Programming Language :: Python :: 3.8",
+  "Programming Language :: Python :: 3.9",
+  "Programming Language :: Python :: 3.10",
+  "Topic :: Scientific/Engineering"
+]
+description = "Fluid-Structure Interaction for large deformation planing surfaces"
+documentation = "https://planingfsi.readthedocs.io"
+license = "MIT"
+name = "planingfsi"
+packages = [
+  {include = "planingfsi", from = "src"}
+]
+readme = "README.md"
+repository = "https://github.com/mattkram/planingfsi"
+version = "0.3.1"
+
+[tool.poetry.dependencies]
+click = "^8.0"
+click-log = "^0.4.0"
+matplotlib = "^3.0"
+numpy = "^1.15"
+python = ">=3.8,<3.12"
+scipy = "^1.8.0"
+
+[tool.poetry.dev-dependencies]
+codecov = "^2.1.11"
+mypy = "^0.971"
+pytest = "^7.1.0"
+pytest-cov = "^3.0.0"
+
+[tool.poetry.scripts]
+planingfsi = "planingfsi.cli:cli"
