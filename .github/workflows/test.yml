@@ -22,32 +22,24 @@ jobs:
       uses: actions/setup-python@v2
       with:
         python-version: ${{ matrix.python-version }}
-    - name: Install Poetry
-      uses: snok/install-poetry@v1
-      with:
-        virtualenvs-create: true
-        virtualenvs-in-project: true
-    - name: Load cached venv
-      id: cached-poetry-dependencies
-      uses: actions/cache@v2
-      with:
-        path: .venv
-        key: venv-${{ runner.os }}-${{ hashFiles('**/poetry.lock') }}
-    - name: Install library and dependencies
-      if: steps.cached-poetry-dependencies.outputs.cache-hit != 'true'
-      run: poetry install --no-interaction
     - name: Static type checking
       continue-on-error: true
       run: |
         poetry run mypy .
-    - name: Test with pytest
+    - name: Install dependencies
       run: |
-        poetry run pytest \
-          --junitxml=./test-reports/junit.xml \
-          --cov-report xml:./test-reports/coverage.xml \
-          --cov planingfsi \
-          --slow \
-          tests
+        python -m pip install --upgrade pip
+        python -m pip install tox tox-gh-actions
+    - name: Test with tox
+      run: tox
+#    - name: Test with pytest
+#      run: |
+#        poetry run pytest \
+#          --junitxml=./test-reports/junit.xml \
+#          --cov-report xml:./test-reports/coverage.xml \
+#          --cov planingfsi \
+#          --slow \
+#          tests
     - name: Publish code coverage
       run: |
         poetry run codecov -t $CODECOV_TOKEN
