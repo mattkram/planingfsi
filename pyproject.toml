@@ -64,6 +64,15 @@ target-version = ["py36"]
 force_single_line = true
 profile = "black"
 
+[tool.mypy]
+disallow_untyped_defs = true
+files = [
+  "src/**/*.py",
+  "tests/**/*.py"
+]
+ignore_missing_imports = true
+python_version = "3.10"
+
 [tool.tox]
 legacy_tox_ini = """
   [tox]
