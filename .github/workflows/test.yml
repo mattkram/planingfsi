@@ -32,16 +32,9 @@ jobs:
         python -m pip install tox tox-gh-actions
     - name: Test with tox
       run: tox
-#    - name: Test with pytest
-#      run: |
-#        poetry run pytest \
-#          --junitxml=./test-reports/junit.xml \
-#          --cov-report xml:./test-reports/coverage.xml \
-#          --cov planingfsi \
-#          --slow \
-#          tests
     - name: Publish code coverage
       run: |
-        poetry run codecov -t $CODECOV_TOKEN
+        pip install codecov
+        codecov -t $CODECOV_TOKEN
       env:
         CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}

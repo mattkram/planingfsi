@@ -67,7 +67,7 @@ profile = "black"
 [tool.tox]
 legacy_tox_ini = """
   [tox]
-  envlist = py38,py39,py310,py311,mypy
+  envlist = clean,py38,py39,py310,py311,mypy
   isolated_build = True
 
   [gh-actions]
@@ -80,10 +80,22 @@ legacy_tox_ini = """
   [testenv]
   deps =
       pytest
-  commands = pytest
+      pytest-cov
+  commands = pytest \
+      --junitxml=./test-reports/junit.xml \
+      --cov-append \
+      --cov-report xml:./test-reports/coverage.xml \
+      --cov planingfsi \
+      --slow
 
   [testenv:mypy]
   deps =
       mypy
   commands = mypy .
+
+  [testenv:clean]
+  deps = coverage
+  skip_install = true
+  commands = coverage erase
+
 """
