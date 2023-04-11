@@ -76,7 +76,7 @@ python_version = "3.10"
 [tool.tox]
 legacy_tox_ini = """
   [tox]
-  envlist = clean,py38,py39,py310,py311,mypy
+  envlist = clean,py38,py39,py310,py311,py312,mypy
   isolated_build = True
 
   [gh-actions]
@@ -85,6 +85,7 @@ legacy_tox_ini = """
     3.9: py39
     3.10: py310
     3.11: py311
+    3.12-dev: py312
 
   [testenv]
   deps =
