@@ -19,7 +19,7 @@ classifiers = [
 dependencies = [
   "click<=8.2",
   "click-log<=0.4.0",
-  "matplotlib<=3.7",
+  "matplotlib<=3.7.1",
   "numpy<=1.25",
   "scipy<=1.11"
 ]
