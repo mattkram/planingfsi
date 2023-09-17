@@ -20,7 +20,7 @@ dependencies = [
   "click<=8.2",
   "click-log<=0.4.0",
   "matplotlib<=3.8.0",
-  "numpy<=1.25.2",
+  "numpy<=1.26.0",
   "scipy<=1.11.2"
 ]
 description = "Fluid-Structure Interaction for large deformation planing surfaces"
