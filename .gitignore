@@ -22,6 +22,9 @@ wheels/
 MANIFEST
 poetry.lock
 
+# Generated version file
+src/planingfsi/_version.py
+
 # Unit test / coverage reports
 htmlcov/
 .tox/
