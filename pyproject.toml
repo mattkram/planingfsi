@@ -21,14 +21,14 @@ dependencies = [
   "click-log<=0.4.0",
   "matplotlib<=3.8.2",
   "numpy<=1.26.3",
-  "scipy<=1.11.4"
+  "scipy<=1.12.0"
 ]
 description = "Fluid-Structure Interaction for large deformation planing surfaces"
+dynamic = ["version"]
 license = {text = "MIT"}
 name = "planingfsi"
 readme = "README.md"
 requires-python = ">=3.8,<3.12"
-dynamic = ["version"]
 
 [project.optional-dependencies]
 dev = [
@@ -73,6 +73,9 @@ files = [
 ignore_missing_imports = true
 python_version = "3.10"
 
+[tool.setuptools_scm]
+version_file = "src/planingfsi/_version.py"
+
 [tool.tox]
 legacy_tox_ini = """
   [tox]
@@ -108,6 +111,3 @@ legacy_tox_ini = """
   commands = coverage erase
 
 """
-
-[tool.setuptools_scm]
-version_file = "src/planingfsi/_version.py"
