@@ -8,6 +8,7 @@ The fluid solver is based on linearized potential-flow assumptions,
 and the structural solver considers a large-deformation simple beam element.
 
 """
+
 import logging
 
 logging.basicConfig()

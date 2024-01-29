@@ -7,6 +7,7 @@ In general, the configuration is attached to the `Simulation`
 instance, which then serves as a reference point elsewhere in the code.
 
 """
+
 from __future__ import annotations
 
 import math

@@ -1,4 +1,5 @@
 """High-level control of a `planingfsi` simulation."""
+
 from __future__ import annotations
 
 from pathlib import Path

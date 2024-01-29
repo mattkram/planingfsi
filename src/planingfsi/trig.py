@@ -1,4 +1,5 @@
 """Convenient trigonometric functions."""
+
 import math
 from typing import Union
 
