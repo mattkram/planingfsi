@@ -1,4 +1,5 @@
 """Classes representing a pressure patch on the free surface."""
+
 from __future__ import annotations
 
 import abc
@@ -653,9 +654,7 @@ class PlaningSurface(PressurePatch):
         def get_shear_stress(xx: float) -> float:
             """Calculate the shear stress at a given location."""
             re_x = self.config.flow.flow_speed * xx / self.config.flow.kinematic_viscosity
-            return (
-                0.332 * self.config.flow.density * self.config.flow.flow_speed**2 * re_x**-0.5
-            )
+            return 0.332 * self.config.flow.density * self.config.flow.flow_speed**2 * re_x**-0.5
 
         x = self.element_coords[:-1]
         assert self.interpolator is not None

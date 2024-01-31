@@ -1,4 +1,5 @@
 """Module containing definitions of different types of pressure element."""
+
 from __future__ import annotations
 
 import abc

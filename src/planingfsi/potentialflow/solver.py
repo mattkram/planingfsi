@@ -1,4 +1,5 @@
 """Fundamental module for constructing and solving planing potential flow problems."""
+
 from __future__ import annotations
 
 from pathlib import Path

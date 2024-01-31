@@ -4,6 +4,7 @@ Example: A length e.g. can be represented as 1.0 * unit.ft to represent one foot
     which will return 0.3048 meters.
 
 """
+
 import math
 
 # Acceleration due to gravity
