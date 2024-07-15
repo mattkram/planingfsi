@@ -7,7 +7,7 @@ repos:
   - id: check-yaml
   - id: check-docstring-first
 - repo: https://github.com/macisamuele/language-formatters-pre-commit-hooks
-  rev: v2.13.0
+  rev: v2.14.0
   hooks:
   - id: pretty-format-yaml
     args: [--autofix, --preserve-quotes, --indent, '2']
@@ -32,6 +32,6 @@ repos:
   hooks:
   - id: black
 - repo: https://github.com/pycqa/flake8
-  rev: 7.0.0
+  rev: 7.1.0
   hooks:
   - id: flake8
