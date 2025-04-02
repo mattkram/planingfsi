@@ -21,7 +21,7 @@ dependencies = [
   "click-log<=0.4.0",
   "matplotlib<=3.10.1",
   "numpy<=2.2.4",
-  "scipy<=1.15.1"
+  "scipy<=1.15.2"
 ]
 description = "Fluid-Structure Interaction for large deformation planing surfaces"
 dynamic = ["version"]
