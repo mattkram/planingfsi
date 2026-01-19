@@ -22,8 +22,8 @@ def _get_aux_fg(lam: float) -> tuple[float, float]:
     calls to scipy.special.sici().
     """
     lam = abs(lam)
-    (aux_sine, aux_cosine) = sici(lam)
-    (sine, cosine) = np.sin(lam), np.cos(lam)
+    aux_sine, aux_cosine = sici(lam)
+    sine, cosine = np.sin(lam), np.cos(lam)
     return (
         cosine * (0.5 * np.pi - aux_sine) + sine * aux_cosine,
         sine * (0.5 * np.pi - aux_sine) - cosine * aux_cosine,
