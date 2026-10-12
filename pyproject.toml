@@ -4,7 +4,7 @@ requires = ["setuptools>=42", "setuptools-scm[toml]>=6.2"]
 
 [project]
 authors = [
-  {name = "Matt Kramer", email = "matthew.robert.kramer@gmail.com"}
+  { name = "Matt Kramer", email = "matthew.robert.kramer@gmail.com" }
 ]
 classifiers = [
   "License :: OSI Approved :: MIT License",
@@ -25,7 +25,7 @@ dependencies = [
 ]
 description = "Fluid-Structure Interaction for large deformation planing surfaces"
 dynamic = ["version"]
-license = {text = "MIT"}
+license = { text = "MIT" }
 name = "planingfsi"
 readme = "README.md"
 requires-python = ">=3.8"
